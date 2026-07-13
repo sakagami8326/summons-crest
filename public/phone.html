@@ -143,6 +143,26 @@
   @keyframes drawIn { from { transform:scale(.3) rotateY(180deg); opacity:0; } }
   #drawModal .tap { position:absolute; bottom:6dvh; width:100%; text-align:center;
       font-size:2dvh; letter-spacing:3px; color:rgba(241,232,208,.8); }
+
+  /* キャラ選択 */
+  #charSel { position:fixed; left:0; right:0; top:15dvh; bottom:0; display:none; z-index:35;
+      flex-direction:column; align-items:center; gap:1dvh; }
+  #charSel.on { display:flex; }
+  #csRow { display:flex; gap:2vw; flex:1; width:100%; justify-content:center;
+      padding:0 calc(2vw + env(safe-area-inset-left)); overflow-x:auto; }
+  .csCard { flex:none; width:21vw; border-radius:1.6dvh; border:2px solid var(--cc);
+      background:rgba(0,0,0,.35); display:flex; flex-direction:column; align-items:center;
+      padding:1.4dvh 1dvh; cursor:pointer; transition:transform .15s; }
+  .csCard:active { transform:scale(.97); }
+  .csCard img { height:52dvh; object-fit:contain; filter:drop-shadow(0 4px 8px rgba(0,0,0,.5)); }
+  .csCard .csName { font-size:2.4dvh; letter-spacing:2px; margin-top:.8dvh; }
+  .csCard .csState { font-size:1.6dvh; color:rgba(241,232,208,.75); min-height:1.4em; }
+  .csCard.mine { box-shadow:0 0 0 3px #F2D062, 0 0 20px rgba(242,208,98,.5); }
+  .csCard.dim { filter:brightness(.5) saturate(.5); cursor:default; }
+  /* ダイス画像ボタン */
+  .diceImgBtn { background:none; border:none; cursor:pointer; padding:0; }
+  .diceImgBtn img { height:23dvh; filter:drop-shadow(0 5px 14px rgba(0,0,0,.55)); transition:transform .12s; }
+  .diceImgBtn:active img { transform:scale(.93); }
 </style>
 </head>
 <body>
@@ -168,8 +188,12 @@
   <div id="shopScene">
     <img class="keeper" id="pKeeper" src="/assets/keeper.png">
     <div class="bubble" id="pBubble">いらっしゃい、旅の召喚士どの</div>
+    <div id="shopGold" style="position:absolute; left:calc(2vw + env(safe-area-inset-left)); top:3dvh;
+      background:rgba(16,13,36,.8); border:1px solid var(--gold); border-radius:999px;
+      color:var(--gold-soft); font-size:2.4dvh; letter-spacing:1px; padding:1dvh 2.4dvh;"></div>
     <div id="shopBtns"></div>
   </div>
+  <div id="charSel"><div id="csMsg" style="font-size:2.2dvh;color:var(--gold-soft);letter-spacing:2px"></div><div id="csRow"></div></div>
   <div id="drawModal"><div id="drawCard"></div><div class="tap">タップで閉じる</div></div>
 
 <script>
@@ -342,6 +366,27 @@ function render() {
   }
   if (rolling) return;
 
+  // キャラ選択オーバーレイ
+  if (state.phase === 'select') {
+    const opts = p && p.type === 'select_char' ? p.options.map(o => o.id) : [];
+    $('charSel').classList.add('on');
+    $('csMsg').textContent = p ? '使用するキャラクターをタップ'
+      : (m.charId ? C.CHARS[m.charId].name + ' で決定 ─ 他のプレイヤーを待っています' : '…');
+    $('csRow').innerHTML = Object.entries(C.CHARS).map(([id, c]) => {
+      const taken = state.players.find(x => x.confirmed && x.charId === id && x.id !== pid);
+      const mine = m.charId === id;
+      const enabled = opts.includes(id);
+      return `<div class="csCard ${mine ? 'mine' : ''} ${(!enabled && !mine) ? 'dim' : ''}"
+        style="--cc:${c.color}" data-id="${id}">
+        <img src="/assets/full_${id}.png">
+        <div class="csName">${c.name}</div>
+        <div class="csState">${mine ? 'あなた' : taken ? taken.name + 'が使用' : ''}</div></div>`;
+    }).join('');
+    document.querySelectorAll('.csCard').forEach(el => el.onclick = () => {
+      const oid = el.dataset.id;
+      if ((pend() && pend().type === 'select_char') && pend().options.some(o => o.id === oid)) choose(oid);
+    });
+  } else $('charSel').classList.remove('on');
   // ショップシーンの開閉
   const inMarket = pend() && pend().type === 'market';
   if (!inMarket) { $('shopScene').classList.remove('on'); inShopHand = false; }
@@ -382,20 +427,20 @@ function render() {
     $('msg').textContent = p.prompt;
     const extra = p.options.filter(o => o.id !== 'roll').map(o =>
       `<button class="abtn ghost" onclick="choose('${o.id}')">${o.label}</button>`).join('');
-    A.innerHTML = '<button class="abtn" id="diceBtn">🎲 振る</button>' + extra;
+    A.innerHTML = '<button class="diceImgBtn" id="diceBtn"><img src="/assets/dice_btn.png"></button>' + extra;
     $('diceBtn').onclick = startRoll;
   } else if (p.type === 'curse_target') {
     $('msg').textContent = p.prompt;
     A.innerHTML = '<div class="btnCol">' + p.options.map(o =>
       `<button class="abtn ${o.id === 'ct:cancel' ? 'ghost' : ''}" onclick="choose('${o.id}')">${o.label}</button>`).join('') + '</div>';
   } else if (p.type === 'select_char') {
-    $('msg').textContent = p.prompt;
-    A.innerHTML = '<div class="btnCol">' + p.options.map(o =>
-      `<button class="abtn" style="border-color:${C.CHARS[o.id].color}" onclick="choose('${o.id}')">${o.label}</button>`).join('') + '</div>';
+    $('msg').textContent = '';
+    A.innerHTML = '';
   } else if (p.type === 'market' && !inShopHand) {
     $('msg').textContent = '';
     A.innerHTML = '';
     $('shopScene').classList.add('on');
+    $('shopGold').textContent = '💰 ' + m.gold + ' G';
     $('shopBtns').innerHTML =
       `<button class="shopBtn ghost" onclick="inShopHand=true; render()">🂠 手札を見る</button>` +
       p.options.map(o =>
