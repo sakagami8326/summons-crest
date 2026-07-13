@@ -118,6 +118,35 @@
   #bflash { position:fixed; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:75; }
   #bflash.go { animation:bflash .45s; }
   @keyframes bflash { 15% { opacity:.95; } 100% { opacity:0; } }
+
+  /* ショップ */
+  #shopOv { position:fixed; inset:0; display:none; z-index:65;
+      background:url('/assets/shop_bg.jpg') center / cover; }
+  #shopOv.on { display:block; }
+  #shopKeeper { position:absolute; left:4vw; bottom:0; height:74vh;
+      filter:drop-shadow(0 0 30px rgba(0,0,0,.6)); }
+  #shopBubble { position:absolute; left:26vw; top:12vh; background:var(--parchment); color:#3A2B18;
+      font-size:3vh; letter-spacing:3px; padding:2vh 4vh; border-radius:2vh;
+      border:2px solid #8A6A1E; box-shadow:0 4px 14px rgba(0,0,0,.5); }
+  #shopBubble::after { content:""; position:absolute; left:-16px; top:55%; border:12px solid transparent;
+      border-right-color:var(--parchment); }
+  #shopWho { position:absolute; right:3vw; top:4vh; font-size:2.6vh; letter-spacing:3px;
+      color:var(--gold-soft); background:rgba(0,0,0,.5); border:1px solid var(--gold);
+      border-radius:999px; padding:1vh 3vh; }
+  #shopAction { position:absolute; left:50%; bottom:7vh; transform:translateX(-50%);
+      font-size:3vh; letter-spacing:3px; color:var(--gold-soft);
+      text-shadow:0 2px 8px rgba(0,0,0,.9); background:rgba(16,13,36,.65);
+      border-radius:1vh; padding:1.2vh 3vh; max-width:80vw; }
+  /* 召喚カットイン */
+  #summonCut { position:fixed; inset:0; display:none; z-index:66; align-items:center;
+      justify-content:center; gap:5vw; background:rgba(10,8,25,.72); }
+  #summonCut.on { display:flex; }
+  #summonCut img.pl { height:64vh; filter:drop-shadow(0 0 30px rgba(0,0,0,.7)); }
+  #scCreature img { height:36vh !important; width:auto !important; }
+  #scText { position:absolute; bottom:10vh; width:100%; text-align:center; font-size:4vh;
+      letter-spacing:6px; color:var(--gold-soft); text-shadow:0 2px 10px rgba(0,0,0,.9); }
+  @keyframes vpop { from { transform:scale(1.7); opacity:0; } to { transform:scale(1); opacity:1; } }
+  #vicImg { width:min(46vw, 620px); animation:vpop .55s ease; }
 </style>
 </head>
 <body>
@@ -147,10 +176,18 @@
   </div>
 
   <div class="overlay" id="winOv">
-    <div class="goldText">勝  利</div>
+    <img id="vicImg" src="/assets/telop_victory.png">
     <img id="winArt" src="">
     <div id="winText" class="hint" style="font-size:20px;"></div>
   </div>
+
+  <div id="shopOv">
+    <img id="shopKeeper" src="/assets/keeper.png">
+    <div id="shopBubble">いらっしゃい</div>
+    <div id="shopWho"></div>
+    <div id="shopAction"></div>
+  </div>
+  <div id="summonCut"><img class="pl" id="scPlayer"><div id="scCreature"></div><div id="scText"></div></div>
 
   <div id="battle">
     <div class="bside" id="bAtk"></div>
@@ -283,6 +320,8 @@ const proj = (gx, gy) => ({ x: OX + (gx - gy) * TW / 2, y: OY + (gx + gy) * TH /
 const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby']);
 
 let code = null, state = null, prev = { phase: null, turn: -1, battleAt: 0, diceAt: 0 };
+const pawnAnim = {}, prevPos = {};
+let animBusy = false, smileT = null;
 let ownersCache = '';
 
 async function boot() {
@@ -446,8 +485,9 @@ function renderBoard() {
 // ===== コマ(常設・アニメーション) =====
 function renderPawns() {
   const layer = $('pawnLayer');
+  const posOf = p => pawnAnim[p.id] !== undefined ? pawnAnim[p.id] : p.pos;
   const groups = {};
-  state.players.forEach(p => (groups[p.pos] = groups[p.pos] || []).push(p));
+  state.players.forEach(p => (groups[posOf(p)] = groups[posOf(p)] || []).push(p));
   state.players.forEach(p => {
     let el = $('pw-' + p.id), sh = $('pws-' + p.id);
     if (!el) {
@@ -456,7 +496,7 @@ function renderPawns() {
       el = document.createElement('div'); el.className = 'sprite pawnEl'; el.id = 'pw-' + p.id;
       layer.appendChild(el);
     }
-    const g = groups[p.pos];
+    const g = groups[posOf(p)];
     const k = g.indexOf(p);
     const crowd = g.length >= 3;
     const w = crowd ? 46 : 58;
@@ -464,13 +504,14 @@ function renderPawns() {
     const slots = g.length === 1 ? [[-28, 14]] :
       g.length === 2 ? [[-32, 12], [30, 16]] : [[-38, 4], [-14, 14], [14, 14], [38, 4]];
     const [dx, dy] = slots[Math.min(k, slots.length - 1)];
-    const o = state.owners[p.pos];
+    const pp = posOf(p);
+    const o = state.owners[pp];
     const lift = o ? (o.level - 1) * 7 : 0;
-    const { x, y } = proj(GEO[p.pos][0], GEO[p.pos][1]);
+    const { x, y } = proj(GEO[pp][0], GEO[pp][1]);
     el.style.left = (x + dx) + 'px'; el.style.top = (y - lift + dy) + 'px';
-    el.style.zIndex = GEO[p.pos][0] + GEO[p.pos][1] + 102 + (dy > 8 ? 1 : 0);
+    el.style.zIndex = GEO[pp][0] + GEO[pp][1] + 102 + (dy > 8 ? 1 : 0);
     sh.style.left = (x + dx) + 'px'; sh.style.top = (y - lift + dy - 5) + 'px';
-    sh.style.zIndex = GEO[p.pos][0] + GEO[p.pos][1] + 100;
+    sh.style.zIndex = GEO[pp][0] + GEO[pp][1] + 100;
   });
 }
 
@@ -574,6 +615,69 @@ function render() {
   if (state.log && state.log.length)
     $('ticker').innerHTML = state.log.slice(-3).map((l, k, a) =>
       `<div style="opacity:${0.45 + 0.55 * (k + 1) / a.length}">${l}</div>`).join('');
+  // ===== 移動アニメーション(出目表示→1マスずつ) =====
+  if (state.phase === 'playing') {
+    state.players.forEach(p => { if (!(p.id in prevPos)) prevPos[p.id] = p.pos; });
+    const mover = state.players.find(p => prevPos[p.id] !== p.pos);
+    if (mover && !animBusy) {
+      animBusy = true;
+      const from = prevPos[mover.id], to = mover.pos;
+      const steps = (to - from + 28) % 28 || 28;
+      let sN = 0;
+      pawnAnim[mover.id] = from;
+      const hop = () => {
+        sN++;
+        pawnAnim[mover.id] = (from + sN) % 28;
+        renderPawns();
+        if (sN < steps) setTimeout(hop, 250);
+        else { delete pawnAnim[mover.id]; prevPos[mover.id] = to; animBusy = false; renderPawns(); }
+      };
+      setTimeout(hop, state.lastDice && state.lastDice.player === mover.id ? 1000 : 250);
+    }
+  }
+  // ===== ショップ演出 =====
+  const shopping = Object.entries(state.pending).find(([, x]) => x.type === 'market');
+  const shopOpen = !!shopping && state.phase === 'playing';
+  if (shopOpen) {
+    const last = state.log[state.log.length - 1] || '';
+    if (!prev.shop) {
+      showTelop('shop');
+      $('shopBubble').textContent = 'いらっしゃい、旅の召喚士どの';
+      $('shopKeeper').src = '/assets/keeper.png';
+      $('shopAction').textContent = '';
+      prev.shopLog = last;
+    } else if (prev.shopLog !== last) {
+      prev.shopLog = last;
+      $('shopAction').textContent = last;
+      if (/購入|引いた|秘宝/.test(last)) {
+        $('shopKeeper').src = '/assets/keeper_smile.png';
+        $('shopBubble').textContent = 'まいど!';
+        clearTimeout(smileT);
+        smileT = setTimeout(() => { $('shopKeeper').src = '/assets/keeper.png';
+          $('shopBubble').textContent = '他にご用は?'; }, 1700);
+      }
+    }
+    $('shopOv').classList.add('on');
+    $('shopWho').textContent = player(shopping[0]).name + ' が買い物中';
+  } else $('shopOv').classList.remove('on');
+  prev.shop = shopOpen;
+  // ===== 召喚カットイン(前はnull→今は所有、のマスを検出) =====
+  if (state.phase === 'playing' && prev.ownersArr) {
+    if ((!state.lastBattle || state.lastBattle.at === prev.battleAt)) {
+      for (let i = 0; i < 28; i++) {
+        if (!prev.ownersArr[i] && state.owners[i]) {
+          const o = state.owners[i], pl = player(o.player);
+          $('scPlayer').src = '/assets/full_' + pl.charId + '.png';
+          $('scCreature').innerHTML = artHTML(o.creature, 1, 200);
+          $('scText').textContent = pl.name + 'が' + state.catalog.CREATURES[o.creature].name + 'を召喚!';
+          $('summonCut').classList.add('on');
+          setTimeout(() => $('summonCut').classList.remove('on'), 2200);
+          break;
+        }
+      }
+    }
+  }
+  prev.ownersArr = state.owners;
   // テロップ
   if (state.phase === 'playing' && prev.phase !== 'playing') showTelop('game');
   else if (state.phase === 'playing' && state.turn !== prev.turn)
