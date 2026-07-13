@@ -9,7 +9,7 @@ const os = require('os');
 
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
-const RULES = { startGold: 300, castleBonus: 150, shrineBonus: 50, tollUnit: 30,
+const RULES = { startGold: 300, castleBonus: 200, shrineBonus: 100, tollUnit: 30,
                 levelCost: { 2: 100, 3: 200, 4: 300 }, gemPrice: 80, drawPrice: 100, maxLevel: 4 };
 
 // ===== 盤面(28マス周回) =====
@@ -113,6 +113,12 @@ function makeRoom() {
   return room;
 }
 
+function payTo(r, payer, receiver, amount) {
+  const paid = Math.min(payer.gold, amount);
+  payer.gold -= paid;
+  if (receiver) receiver.gold += paid;
+  return paid;
+}
 const log = (r, m) => { r.log.push(m); if (r.log.length > 60) r.log.shift(); };
 const cur = r => r.players[r.turn];
 const pById = (r, id) => r.players.find(p => p.id === id);
@@ -189,6 +195,7 @@ function doRoll(r, p) {
     for (let d = 0; d < bonus / RULES.castleBonus; d++)
       if (r.deck.length) { p.hand.push(r.deck.shift()); drew++; }
   }
+  r.lastDice.castle = bonus ? { gold: bonus, drew } : null;
   if (bonus) log(r, `${p.name}は${dice}を出した(城通過 +${bonus}G、カードを${drew}枚引いた)`);
   else log(r, `${p.name}は${dice}を出した`);
   resolveTile(r, p);
@@ -196,10 +203,12 @@ function doRoll(r, p) {
 
 function resolveTile(r, p) {
   const i = p.pos, tile = TILES[i];
-  if (tile.t === 'castle') { log(r, `${p.name}は城で休息`); return endTurn(r); }
-  if (tile.t === 'gate') { log(r, `${p.name}は変化の門を眺めた(効果は次段階で実装)`); return endTurn(r); }
+  if (tile.t === 'castle') { log(r, `${p.name}は城に到着`); return askUpgrade(r, p, '城'); }
+  if (tile.t === 'gate') { log(r, `${p.name}は門に到着`); return askUpgrade(r, p, '門'); }
   if (tile.t === 'shrine') {
     p.gold += RULES.shrineBonus; p.shrineVisits++;
+    r.lastEvent = { type: 'shrine', player: p.id, gold: RULES.shrineBonus,
+                    visits: p.shrineVisits, at: Date.now() };
     log(r, `${p.name}は祠に参拝(+${RULES.shrineBonus}G / 通算${p.shrineVisits}回)`);
     return endTurn(r);
   }
@@ -212,13 +221,7 @@ function resolveTile(r, p) {
     opts.push({ id: 'pass', label: '見送る' });
     return ask(r, p.id, 'tile', `空き地(${tile.e})に到着`, opts);
   }
-  if (o.player === p.id) {
-    const opts = [];
-    if (o.level < RULES.maxLevel && p.gold >= RULES.levelCost[o.level + 1])
-      opts.push({ id: 'levelup', label: `土地をLv${o.level + 1}に上げる(−${RULES.levelCost[o.level + 1]}G)` });
-    opts.push({ id: 'pass', label: '何もしない' });
-    return ask(r, p.id, 'tile', `自領地(${tile.e} Lv${o.level})に到着`, opts);
-  }
+  if (o.player === p.id) return askUpgrade(r, p, '自領地');
   // 敵領地
   const enemy = pById(r, o.player);
   const toll = o.level * chainCount(r, o.player, tile.e) * RULES.tollUnit;
@@ -227,6 +230,17 @@ function resolveTile(r, p) {
   ask(r, p.id, 'tile', `${enemy.name}の領地(${tile.e} Lv${o.level} / 通行料${toll}G)`, opts);
 }
 
+function askUpgrade(r, p, where) {
+  const opts = [];
+  r.owners.forEach((o, i) => {
+    if (o && o.player === p.id && o.level < RULES.maxLevel && p.gold >= RULES.levelCost[o.level + 1])
+      opts.push({ id: 'up:' + i, label:
+        `${TILES[i].e} Lv${o.level}→${o.level + 1}: ${CREATURES[o.creature].name}の土地(−${RULES.levelCost[o.level + 1]}G)` });
+  });
+  if (!opts.length) { log(r, `${p.name}は${where}で休息した(強化できる領地なし)`); return endTurn(r); }
+  opts.push({ id: 'pass', label: '強化しない' });
+  ask(r, p.id, 'upgrade', `${where}に到着 ─ 好きな領地を強化できる`, opts);
+}
 function askMarket(r, p) {
   const opts = [];
   if (r.deck.length && p.gold >= RULES.drawPrice)
@@ -292,8 +306,8 @@ function resolveBattle(r) {
     log(r, `${atk.name}の勝利! Lv${o.level}の土地を奪取した!`);
   } else {
     atk.hand.splice(atk.hand.indexOf(b.atkCreature), 1);
-    const toll = o.level * chainCount(r, def.player ?? def.id, tile.e) * RULES.tollUnit;
-    atk.gold -= toll; def.gold += toll;
+    const toll = o.level * chainCount(r, def.id, tile.e) * RULES.tollUnit;
+    payTo(r, atk, def, toll);
     def.battleWins++;
     log(r, `${def.name}が防衛成功! ${atk.name}のクリーチャーは消滅し、通行料${toll}Gも支払った`);
   }
@@ -335,6 +349,19 @@ function handleChoose(r, playerId, optionId) {
     return beginTurn(r);
   }
 
+  if (pend.type === 'upgrade') {
+    if (optionId.startsWith('up:')) {
+      const i = +optionId.slice(3);
+      const o = r.owners[i];
+      p.gold -= RULES.levelCost[o.level + 1]; o.level++;
+      log(r, `${p.name}は${CREATURES[o.creature].name}の土地をLv${o.level}に育てた` +
+        (o.level === RULES.maxLevel && CREATURES[o.creature].evo
+          ? ` ─ ${CREATURES[o.creature].name}が${CREATURES[o.creature].evo}に進化!` : ''));
+      if (checkVictory(r)) return;
+    }
+    return endTurn(r);
+  }
+
   if (pend.type === 'tile') {
     const i = p.pos, o = r.owners[i];
     if (optionId.startsWith('summon:')) {
@@ -345,16 +372,11 @@ function handleChoose(r, playerId, optionId) {
       log(r, `${p.name}は${CREATURES[c].name}を召喚し、土地を領地化!`);
       updateTitles(r); if (checkVictory(r)) return; return endTurn(r);
     }
-    if (optionId === 'levelup') {
-      p.gold -= RULES.levelCost[o.level + 1]; o.level++;
-      log(r, `${p.name}は土地をLv${o.level}に育てた${o.level === RULES.maxLevel && CREATURES[o.creature].evo ? ` ─ ${CREATURES[o.creature].name}が${CREATURES[o.creature].evo}に進化!` : ''}`);
-      if (checkVictory(r)) return; return endTurn(r);
-    }
     if (optionId === 'toll') {
       const enemy = pById(r, o.player);
       const toll = o.level * chainCount(r, o.player, TILES[i].e) * RULES.tollUnit;
-      p.gold -= toll; enemy.gold += toll;
-      log(r, `${p.name}は通行料${toll}Gを支払った`);
+      const paid = payTo(r, p, enemy, toll);
+      log(r, `${p.name}は通行料${paid}Gを支払った${paid < toll ? '(所持金不足のため全額)' : ''}`);
       return endTurn(r);
     }
     if (optionId === 'invade') return startBattle(r, p, i);
@@ -366,7 +388,7 @@ function handleChoose(r, playerId, optionId) {
       const o = r.owners[p.pos];
       const enemy = pById(r, o.player);
       const toll = o.level * chainCount(r, o.player, TILES[p.pos].e) * RULES.tollUnit;
-      p.gold -= toll; enemy.gold += toll; r.battle = null;
+      payTo(r, p, enemy, toll); r.battle = null;
       log(r, `${p.name}は侵略を取りやめ、通行料${toll}Gを支払った`);
       return endTurn(r);
     }
@@ -458,7 +480,7 @@ function publicState(r, viewerId) {
   return {
     code: r.code, phase: r.phase, turn: r.turn, round: r.round, target: TARGET_PTS,
     tiles: TILES, owners: r.owners, market: r.market, log: r.log,
-    titles: r.titles, duel: r.duel, curses: r.curses, lastBattle: r.lastBattle, lastDice: r.lastDice || null,
+    titles: r.titles, duel: r.duel, curses: r.curses, lastEvent: r.lastEvent || null, lastBattle: r.lastBattle, lastDice: r.lastDice || null,
     winner: r.winner, pending: r.pending, catalog: { CREATURES, SUPPORTS, ITEMS, CHARS },
     players: r.players.map(p => ({
       id: p.id, name: p.name, charId: p.charId || null, confirmed: !!p.confirmed,

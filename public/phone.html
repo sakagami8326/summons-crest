@@ -354,7 +354,11 @@ function render() {
   const m = me(), C = state.catalog, p = pend();
   $('myFace').src = m.charId ? '/assets/f_' + m.charId + '.png' : '';
   $('myName').textContent = m.name + (m.charId ? '(' + C.CHARS[m.charId].name + ')' : '');
-  $('myStat').innerHTML = `★${m.points}/${state.target} ｜ ${m.gold}G ｜ 💎${m.gems}`;
+  const elemN = ['fire','water','earth','wind'].map(e => {
+    const n = state.owners ? state.owners.filter((o, i) => o && o.player === pid && state.tiles[i].e === e).length : 0;
+    return `<span style="color:${RUNE[e]}">${{fire:'火',water:'水',earth:'土',wind:'風'}[e]}${n}</span>`;
+  }).join(' ');
+  $('myStat').innerHTML = `★${m.points}/${state.target} ｜ ${m.gold}G ｜ 💎${m.gems}<br>領地: ${elemN}`;
 
   // ダイスの出目が自分のものなら着地させる
   if (rolling && state.lastDice && state.lastDice.player === pid && state.lastDice.at !== lastDiceAt) {
