@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#141227">
+<title>Summons Crest — 手元</title>
+<style>
+  :root { --ink:#141227; --ink2:#1E1B3C; --gold:#C9A227; --gold-soft:#EFD98F; --parchment:#F1E8D0; }
+  * { box-sizing:border-box; margin:0; -webkit-tap-highlight-color:transparent; }
+  body { background:radial-gradient(ellipse at 50% 0%, #2A2650 0%, var(--ink) 70%);
+         height:100dvh; overflow:hidden; color:var(--parchment);
+         font-family:"Hiragino Mincho ProN","Yu Mincho",serif; user-select:none; }
+  #rotate { display:none; position:fixed; inset:0; z-index:99; background:var(--ink);
+        align-items:center; justify-content:center; flex-direction:column; gap:14px;
+        font-size:17px; letter-spacing:3px; }
+  #rotate .ic { font-size:52px; animation:tilt 1.6s ease-in-out infinite alternate; }
+  @keyframes tilt { to { transform:rotate(-90deg); } }
+  @media (orientation:portrait) { body.ingame #rotate { display:flex; } }
+
+  /* 参加フォーム(縦横どちらでも) */
+  #join { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center;
+        padding-top:6dvh; gap:12px; z-index:50; background:var(--ink); }
+  #join img { height:16dvh; }
+  #join input { font-family:inherit; font-size:17px; text-align:center; letter-spacing:3px;
+        background:var(--ink2); color:var(--parchment); border:1px solid var(--gold);
+        border-radius:10px; padding:11px; width:min(70vw, 300px); }
+  #join button { font-family:inherit; font-size:16px; letter-spacing:3px; padding:12px;
+        width:min(70vw, 300px); background:linear-gradient(180deg,#E8C55A,#B8901F);
+        color:#241C05; border:1px solid #F2D062; border-radius:10px; cursor:pointer; }
+  #err { color:#F09595; font-size:13px; min-height:1.2em; }
+
+  header { display:flex; align-items:center; gap:10px; height:15dvh;
+        padding:6px calc(12px + env(safe-area-inset-right)) 6px calc(12px + env(safe-area-inset-left)); }
+  .me { display:flex; align-items:center; gap:8px; background:rgba(0,0,0,.35);
+        border:1px solid var(--gold); border-radius:999px; padding:4px 14px 4px 5px; flex:none; }
+  .me img { width:9dvh; height:9dvh; border-radius:50%; border:2px solid var(--gold); object-fit:cover; }
+  .me .nm { font-size:13px; letter-spacing:1px; }
+  .me .st { font-size:12px; color:var(--gold-soft); font-family:sans-serif; }
+  #msg { flex:1; text-align:center; font-size:2.5dvh; letter-spacing:2px; color:var(--gold-soft);
+        text-shadow:0 1px 4px rgba(0,0,0,.6); min-width:0; }
+  #fsBtn { font-family:inherit; font-size:12px; background:rgba(0,0,0,.4); color:rgba(241,232,208,.8);
+        border:1px solid rgba(201,162,39,.5); border-radius:7px; padding:5px 9px; }
+
+  #action { height:29dvh; display:flex; align-items:center; justify-content:center; gap:14px;
+        padding:0 16px; overflow:hidden; }
+  .abtn { font-family:inherit; font-size:2.3dvh; letter-spacing:2px; padding:1.8dvh 3.4dvh;
+        background:linear-gradient(180deg,#E8C55A,#B8901F); color:#241C05;
+        border:2px solid #F2D062; border-radius:12px; cursor:pointer;
+        box-shadow:0 4px 14px rgba(0,0,0,.5); }
+  .abtn:active { transform:scale(.96); }
+  .abtn:disabled { filter:grayscale(.75) brightness(.55); }
+  .abtn.ghost { background:transparent; color:var(--gold-soft); border:1px solid var(--gold); box-shadow:none; }
+  .abtn.danger { background:linear-gradient(180deg,#D96A50,#A3402B); border-color:#F0937B; color:#2A0B05; }
+  .btnCol { display:flex; flex-direction:column; gap:8px; max-height:27dvh; overflow-y:auto; padding:4px; }
+  .btnCol .abtn { font-size:1.9dvh; padding:1.2dvh 2.4dvh; text-align:left; }
+  .waitDots { font-size:4dvh; color:var(--gold); letter-spacing:6px; animation:blink 1.2s infinite; }
+  @keyframes blink { 50% { opacity:.3; } }
+
+  /* 3Dダイス */
+  #diceBtn { width:16dvh; height:16dvh; border-radius:50%; font-size:2.5dvh; white-space:nowrap;
+        box-shadow:0 0 0 8px rgba(201,162,39,.15), 0 4px 14px rgba(0,0,0,.5); }
+  .diceStage { position:relative; width:15dvh; height:18dvh; perspective:700px; }
+  .diceStage.drop { animation:dbounce 1.4s cubic-bezier(.3,.6,.4,1); }
+  @keyframes dbounce { 0%{transform:translateY(-15dvh)} 52%{transform:translateY(0)}
+    68%{transform:translateY(-4dvh)} 80%{transform:translateY(0)} 89%{transform:translateY(-1.4dvh)} 100%{transform:translateY(0)} }
+  .dice3d { position:absolute; left:50%; top:42%; width:11dvh; height:11dvh; margin:-5.5dvh 0 0 -5.5dvh;
+        transform-style:preserve-3d; }
+  .dface { position:absolute; inset:0; background:linear-gradient(160deg,#F5EDD8,#DCCFA8);
+        border:2px solid var(--gold); border-radius:1.6dvh; backface-visibility:hidden;
+        display:flex; align-items:center; justify-content:center;
+        box-shadow:inset 0 0 1.4dvh rgba(90,59,20,.25); }
+  .dface svg { width:74%; height:74%; }
+  .f1{transform:translateZ(5.5dvh)} .f2{transform:rotateX(90deg) translateZ(5.5dvh)}
+  .f3{transform:rotateY(90deg) translateZ(5.5dvh)} .f4{transform:rotateY(-90deg) translateZ(5.5dvh)}
+  .f5{transform:rotateX(-90deg) translateZ(5.5dvh)} .f6{transform:rotateY(180deg) translateZ(5.5dvh)}
+
+  /* 手札 */
+  #handWrap { height:56dvh; padding:0 calc(10px + env(safe-area-inset-right))
+        calc(6px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left)); }
+  #hand { display:flex; gap:10px; height:100%; overflow-x:auto; padding:14px 6px 4px; }
+  .card { flex:none; width:28dvh; height:100%; position:relative; perspective:700px; cursor:pointer;
+        transition:transform .15s; }
+  .card.sel { transform:translateY(-12px); }
+  .card.sel .face { border-color:#F2D062; box-shadow:0 0 0 2px #F2D062, 0 8px 20px rgba(242,208,98,.4); }
+  .card.dim { filter:brightness(.6) saturate(.6); cursor:default; }
+  .flip { position:absolute; inset:0; transform-style:preserve-3d;
+        transition:transform .55s cubic-bezier(.3,1.4,.5,1); }
+  .flip.flipped { transform:rotateY(180deg); }
+  .face { position:absolute; inset:0; backface-visibility:hidden; border-radius:10px;
+        background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22300%22%20height%3D%22470%22%3E%3Cdefs%3E%3Cfilter%20id%3D%22g%22%3E%3CfeTurbulence%20type%3D%22fractalNoise%22%20baseFrequency%3D%220.55%22%20numOctaves%3D%222%22%20seed%3D%229%22%20result%3D%22n%22%2F%3E%3CfeColorMatrix%20in%3D%22n%22%20values%3D%220%200%200%200%200.32%200%200%200%200%200.25%200%200%200%200%200.13%200%200%200%200.28%200%22%20result%3D%22c%22%2F%3E%3CfeComposite%20in%3D%22c%22%20operator%3D%22in%22%20in2%3D%22SourceAlpha%22%2F%3E%3C%2Ffilter%3E%3CradialGradient%20id%3D%22v%22%20cx%3D%2250%25%22%20cy%3D%2242%25%22%20r%3D%2280%25%22%3E%3Cstop%20offset%3D%2252%25%22%20stop-color%3D%22%235A3B14%22%20stop-opacity%3D%220%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%235A3B14%22%20stop-opacity%3D%220.34%22%2F%3E%3C%2FradialGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%22300%22%20height%3D%22470%22%20fill%3D%22%23EDE1BF%22%2F%3E%3Crect%20width%3D%22300%22%20height%3D%22470%22%20fill%3D%22%23000%22%20filter%3D%22url%28%23g%29%22%2F%3E%3Crect%20width%3D%22300%22%20height%3D%22470%22%20fill%3D%22url%28%23v%29%22%2F%3E%3C%2Fsvg%3E") center / cover; color:#3A2B18; border:2px solid #2C2A4A;
+        padding:8px; display:flex; flex-direction:column; align-items:center;
+        box-shadow:0 3px 8px rgba(0,0,0,.45); overflow:hidden; }
+  .face::before { content:""; position:absolute; inset:4px; border:1px solid rgba(201,162,39,.85);
+        border-radius:7px; pointer-events:none; }
+  .face.back { transform:rotateY(180deg); border-color:#8A6A1E;
+        box-shadow:inset 0 0 40px rgba(201,162,39,.25), 0 3px 8px rgba(0,0,0,.45); }
+  .evoRibbon { position:absolute; top:12px; left:-34px; transform:rotate(-38deg);
+        background:linear-gradient(180deg,#E8C55A,#B8901F); color:#241C05; font-size:1.5dvh;
+        letter-spacing:2px; padding:2px 38px; box-shadow:0 1px 4px rgba(0,0,0,.4); }
+  .face .cost { position:absolute; top:6px; left:6px; width:4.4dvh; height:4.4dvh; border-radius:50%;
+        background:#2C2A4A; color:var(--gold-soft); display:flex; align-items:center; justify-content:center;
+        font-size:1.7dvh; font-family:sans-serif; border:1px solid var(--gold); z-index:2; }
+  .face .art { height:54%; display:flex; align-items:flex-end; margin-top:3dvh; }
+  .face .art img { max-height:100%; filter:drop-shadow(0 3px 4px rgba(58,43,24,.35)); }
+  .face .tok2 { width:11dvh; height:11dvh; border-radius:50%; margin-top:4dvh; color:#F6EFDD;
+        display:flex; align-items:center; justify-content:center; font-size:2dvh; border:3px solid #2C2A4A; }
+  .face .glyph { height:54%; display:flex; align-items:center; justify-content:center;
+        font-size:8.5dvh; margin-top:3dvh; color:#2C2A4A; }
+  .face .nm { font-size:1.9dvh; letter-spacing:1px; margin-top:.6dvh; }
+  .face .stats { display:flex; gap:8px; font-family:sans-serif; font-size:1.6dvh; margin-top:.4dvh; }
+  .face .stats b { color:#A3402B; } .face .stats i { color:#2E5E4E; font-style:normal; }
+  .face .stats .up { color:#8A6A1E; font-weight:700; }
+  .face .type { position:absolute; bottom:5px; right:9px; font-size:1.3dvh; color:rgba(58,43,24,.6); }
+  .flipBtn { position:absolute; bottom:5px; left:7px; z-index:5; font-family:inherit; font-size:1.4dvh;
+        background:#2C2A4A; color:var(--gold-soft); border:1px solid var(--gold);
+        border-radius:999px; padding:2px 9px; cursor:pointer; }
+</style>
+</head>
+<body>
+  <div id="rotate"><div class="ic">📱</div>スマホを横向きにしてください</div>
+
+  <div id="join">
+    <img src="/assets/logo.png">
+    <input id="codeIn" placeholder="ルームコード" maxlength="4" autocapitalize="characters">
+    <input id="nameIn" placeholder="なまえ" maxlength="8">
+    <button id="joinBtn">参加する</button>
+    <div id="err"></div>
+  </div>
+
+  <header style="display:none" id="hdr">
+    <div class="me"><img id="myFace" src=""><div><div class="nm" id="myName"></div>
+      <div class="st" id="myStat"></div></div></div>
+    <div id="msg"></div>
+    <button id="fsBtn">⛶ 全画面</button>
+  </header>
+  <div id="action" style="display:none"></div>
+  <div id="handWrap" style="display:none"><div id="hand"></div></div>
+
+<script>
+const $ = id => document.getElementById(id);
+let room = null, pid = null, state = null, selected = null, rolling = false;
+const flipped = new Set();
+const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby']);
+const RUNE = { fire:'#FF7A45', water:'#56A8E8', earth:'#7FD35C', wind:'#5BE0D0' };
+const GLYPH = { weapon:'⚔', gweapon:'⚔', shield:'🛡', gshield:'🛡', jinx:'❂' };
+
+$('joinBtn').onclick = async () => {
+  const r = await fetch('/api/join', { method:'POST', body: JSON.stringify({
+    room: $('codeIn').value.trim().toUpperCase(), name: $('nameIn').value.trim() }) });
+  const d = await r.json();
+  if (d.error) { $('err').textContent = d.error; return; }
+  room = d.room; pid = d.playerId;
+  $('join').style.display = 'none';
+  ['hdr','action','handWrap'].forEach(id => $(id).style.display = '');
+  document.body.classList.add('ingame');
+  new EventSource('/api/events?room=' + room + '&me=' + pid).onmessage = e => { state = JSON.parse(e.data); render(); };
+};
+$('fsBtn').onclick = async () => {
+  if (!document.fullscreenElement) {
+    await document.documentElement.requestFullscreen({ navigationUI:'hide' }).catch(() => {});
+    try { await screen.orientation.lock('landscape'); } catch (e) {}
+  } else document.exitFullscreen();
+};
+const choose = optionId =>
+  fetch('/api/action', { method:'POST', body: JSON.stringify({ room, type:'choose', playerId: pid, optionId }) });
+
+const me = () => state.players.find(p => p.id === pid);
+const pend = () => state.pending[pid];
+
+// 手札の各カードが「今どの選択肢に対応するか」
+function cardOption(c) {
+  const p = pend();
+  if (!p) return null;
+  const map = { tile: 'summon:' + c, pick_creature: 'atk:' + c, support: 'sup:' + c };
+  const oid = map[p.type];
+  return oid && p.options.some(o => o.id === oid) ? oid : null;
+}
+function selectableKind() {
+  const p = pend();
+  if (!p) return null;
+  if (p.type === 'tile' && p.options.some(o => o.id.startsWith('summon:'))) return 'creature';
+  if (p.type === 'pick_creature') return 'creature';
+  if (p.type === 'support') return 'support';
+  return null;
+}
+
+function cardHTML(c, i) {
+  const C = state.catalog;
+  const cr = C.CREATURES[c], sp = C.SUPPORTS[c];
+  const kind = cr ? 'creature' : 'support';
+  const skind = selectableKind();
+  const dim = skind && kind !== skind || (skind && !cardOption(c));
+  const sel = selected === i;
+  let front, back = '';
+  if (cr) {
+    const art = HAS_ART.has(c)
+      ? `<div class="art"><img src="/assets/c_${c}.png"></div>`
+      : `<div class="tok2" style="background:${RUNE[cr.elem] || '#6E7288'}">${cr.name.slice(0,4)}</div>`;
+    front = `<div class="cost">${cr.cost}G</div>${art}
+      <div class="nm">${cr.name}</div>
+      <div class="stats"><span>ST <b>${cr.st}</b></span><span>HP <i>${cr.hp}</i></span></div>
+      <div class="type">クリーチャー</div>
+      ${cr.evo ? `<button class="flipBtn" data-i="${i}">進化 ⟳</button>` : ''}`;
+    if (cr.evo) {
+      const eart = HAS_ART.has(c)
+        ? `<div class="art"><img src="/assets/e_${c}.png"></div>`
+        : `<div class="tok2" style="background:${RUNE[cr.elem] || '#6E7288'}">${cr.evo.slice(0,4)}</div>`;
+      back = `<div class="face back"><div class="evoRibbon">LvMAX進化</div>${eart}
+        <div class="nm">${cr.evo}</div>
+        <div class="stats"><span>ST ${cr.st}<span class="up">→${cr.evoSt}</span></span>
+          <span>HP ${cr.hp}<span class="up">→${cr.evoHp}</span></span></div>
+        <div class="type">進化形</div>
+        <button class="flipBtn" data-i="${i}">もどす ⟲</button></div>`;
+    }
+  } else if (C.ITEMS && C.ITEMS[c]) {
+    const it = C.ITEMS[c];
+    front = `<div class="glyph" style="color:#5A2E6E">☠</div><div class="nm">${it.name}</div>
+      <div class="stats" style="font-size:1.3dvh; text-align:center; padding:0 4px">${it.desc}</div>
+      <div class="type">妨害</div>`;
+  } else {
+    front = `<div class="glyph">${GLYPH[c] || '❖'}</div><div class="nm">${sp.name}</div>
+      <div class="stats">${sp.st ? 'ST+' + sp.st : ''}${sp.hp ? 'HP+' + sp.hp : ''}${sp.jinx ? '相手の支援を無効化' : ''}</div>
+      <div class="type">支援</div>`;
+  }
+  return `<div class="card ${sel ? 'sel' : ''} ${dim ? 'dim' : ''}" data-i="${i}" data-c="${c}">
+    <div class="flip ${flipped.has(i) ? 'flipped' : ''}"><div class="face front">${front}</div>${back}</div></div>`;
+}
+
+function renderHand() {
+  $('hand').innerHTML = me().hand.map((c, i) => cardHTML(c, i)).join('');
+  document.querySelectorAll('.card').forEach(el => el.onclick = () => {
+    const i = +el.dataset.i, c = el.dataset.c;
+    if (!cardOption(c)) return;
+    selected = selected === i ? null : i;
+    render();
+  });
+  document.querySelectorAll('.flipBtn').forEach(b => b.onclick = e => {
+    e.stopPropagation();
+    const i = +b.dataset.i;
+    flipped.has(i) ? flipped.delete(i) : flipped.add(i);
+    b.closest('.flip').classList.toggle('flipped');
+  });
+}
+
+const PIPS = { 1:[[30,30]], 2:[[16,16],[44,44]], 3:[[16,16],[30,30],[44,44]],
+  4:[[16,16],[44,16],[16,44],[44,44]], 5:[[16,16],[44,16],[30,30],[16,44],[44,44]],
+  6:[[16,16],[44,16],[16,30],[44,30],[16,44],[44,44]] };
+const DICE_FACES = [1,2,3,4,5,6].map(v => `<div class="dface f${v}"><svg viewBox="0 0 60 60">${
+  PIPS[v].map(([x,y]) => `<circle cx="${x}" cy="${y}" r="5.4" fill="#2C2A4A"/>`).join('')}</svg></div>`).join('');
+const FACE_ROT = { 1:[0,0], 2:[-90,0], 3:[0,-90], 4:[0,90], 5:[90,0], 6:[0,180] };
+let lastDiceAt = 0;
+
+function startRoll() {
+  rolling = true;
+  $('action').innerHTML = `<div class="diceStage drop"><div class="dice3d" id="die3d">${DICE_FACES}</div></div>`;
+  const die = $('die3d');
+  die.style.transition = 'none';
+  die.style.transform = 'rotateX(-30deg) rotateY(25deg)';
+  let spin = 0;
+  const iv = setInterval(() => {
+    spin += 47;
+    die.style.transform = `rotateX(${spin * 1.3}deg) rotateY(${spin}deg)`;
+  }, 60);
+  die.dataset.iv = iv;
+  choose('roll');
+}
+function settleDice(n) {
+  const die = $('die3d');
+  if (!die) { rolling = false; return; }
+  clearInterval(+die.dataset.iv);
+  const [fx, fy] = FACE_ROT[n];
+  die.style.transition = 'transform 1.1s cubic-bezier(.16,.84,.26,1.02)';
+  die.style.transform = `rotateX(${fx + 720}deg) rotateY(${fy + 1080}deg)`;
+  setTimeout(() => { rolling = false; render(); }, 1400);
+}
+
+function render() {
+  if (!state) return;
+  const m = me(), C = state.catalog, p = pend();
+  $('myFace').src = m.charId ? '/assets/f_' + m.charId + '.png' : '';
+  $('myName').textContent = m.name + (m.charId ? '(' + C.CHARS[m.charId].name + ')' : '');
+  $('myStat').innerHTML = `★${m.points}/${state.target} ｜ ${m.gold}G ｜ 💎${m.gems}`;
+
+  // ダイスの出目が自分のものなら着地させる
+  if (rolling && state.lastDice && state.lastDice.player === pid && state.lastDice.at !== lastDiceAt) {
+    lastDiceAt = state.lastDice.at;
+    $('msg').textContent = state.lastDice.value + ' が出た!';
+    settleDice(state.lastDice.value);
+    renderHand();
+    return;
+  }
+  if (rolling) return;
+
+  const A = $('action');
+  const sel = selected !== null ? m.hand[selected] : null;
+
+  if (state.phase === 'ended') {
+    $('msg').textContent = state.winner === pid ? '🏆 あなたの勝利!'
+      : state.players.find(x => x.id === state.winner).name + 'の勝利…';
+    A.innerHTML = '';
+  } else if (!p) {
+    const t = state.players[state.turn];
+    const otherSupport = Object.values(state.pending).some(x => x.type === 'support');
+    $('msg').textContent = state.phase === 'lobby' ? '開始を待っています…'
+      : state.phase === 'select' ? '他のプレイヤーの選択待ち…'
+      : otherSupport ? '相手の支援カードを待っています…'
+      : (t ? t.name + 'の手番です' : '…');
+    A.innerHTML = '<div class="waitDots">● ● ●</div>';
+    selected = null;
+  } else if (p.type === 'roll') {
+    $('msg').textContent = p.prompt;
+    const extra = p.options.filter(o => o.id !== 'roll').map(o =>
+      `<button class="abtn ghost" onclick="choose('${o.id}')">${o.label}</button>`).join('');
+    A.innerHTML = '<button class="abtn" id="diceBtn">🎲 振る</button>' + extra;
+    $('diceBtn').onclick = startRoll;
+  } else if (p.type === 'curse_target') {
+    $('msg').textContent = p.prompt;
+    A.innerHTML = '<div class="btnCol">' + p.options.map(o =>
+      `<button class="abtn ${o.id === 'ct:cancel' ? 'ghost' : ''}" onclick="choose('${o.id}')">${o.label}</button>`).join('') + '</div>';
+  } else if (p.type === 'select_char') {
+    $('msg').textContent = p.prompt;
+    A.innerHTML = '<div class="btnCol">' + p.options.map(o =>
+      `<button class="abtn" style="border-color:${C.CHARS[o.id].color}" onclick="choose('${o.id}')">${o.label}</button>`).join('') + '</div>';
+  } else if (p.type === 'market') {
+    $('msg').textContent = p.prompt;
+    A.innerHTML = '<div class="btnCol">' + p.options.map(o =>
+      `<button class="abtn ${o.id === 'done' ? 'ghost' : ''}" onclick="choose('${o.id}')">${o.label}</button>`).join('') + '</div>';
+  } else {
+    // tile / pick_creature / support: カード選択+ボタン
+    $('msg').innerHTML = p.prompt;
+    const btns = [];
+    if (sel && cardOption(sel)) {
+      const opt = p.options.find(o => o.id === cardOption(sel));
+      btns.push(`<button class="abtn" onclick="choose('${opt.id}')">${opt.label}</button>`);
+    } else if (selectableKind()) {
+      btns.push(`<button class="abtn" disabled>カードを選んでください</button>`);
+    }
+    for (const o of p.options) {
+      if (o.id.startsWith('summon:') || o.id.startsWith('atk:') || (o.id.startsWith('sup:') && o.id !== 'sup:none')) continue;
+      const cls = o.id === 'invade' ? 'danger' : (o.id === 'pass' || o.id === 'cancel' || o.id === 'sup:none') ? 'ghost' : '';
+      btns.push(`<button class="abtn ${cls}" onclick="choose('${o.id}'); selected=null;">${o.label}</button>`);
+    }
+    A.innerHTML = btns.join('');
+  }
+  renderHand();
+}
+</script>
+</body>
+</html>
