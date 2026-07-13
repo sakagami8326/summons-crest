@@ -147,6 +147,47 @@
       letter-spacing:6px; color:var(--gold-soft); text-shadow:0 2px 10px rgba(0,0,0,.9); }
   @keyframes vpop { from { transform:scale(1.7); opacity:0; } to { transform:scale(1); opacity:1; } }
   #vicImg { width:min(46vw, 620px); animation:vpop .55s ease; }
+
+  #diceOv { position:fixed; left:50%; top:44%; transform:translate(-50%,-50%);
+      z-index:55; pointer-events:none; display:none; }
+  #diceOv.on { display:block; }
+  .dStage { position:relative; width:15vh; height:18vh; perspective:700px;
+      animation:dbounce 1.4s cubic-bezier(.3,.6,.4,1); }
+  @keyframes dbounce { 0%{transform:translateY(-15vh)} 52%{transform:translateY(0)}
+    68%{transform:translateY(-4vh)} 80%{transform:translateY(0)} 89%{transform:translateY(-1.4vh)} 100%{transform:translateY(0)} }
+  .dCube { position:absolute; left:50%; top:42%; width:11vh; height:11vh; margin:-5.5vh 0 0 -5.5vh;
+      transform-style:preserve-3d; }
+  .dF { position:absolute; inset:0; background:linear-gradient(160deg,#F5EDD8,#DCCFA8);
+      border:2px solid var(--gold); border-radius:1.6vh; backface-visibility:hidden;
+      display:flex; align-items:center; justify-content:center;
+      box-shadow:inset 0 0 1.4vh rgba(90,59,20,.25); }
+  .dF svg { width:74%; height:74%; }
+  .dF1{transform:translateZ(5.5vh)} .dF2{transform:rotateX(90deg) translateZ(5.5vh)}
+  .dF3{transform:rotateY(90deg) translateZ(5.5vh)} .dF4{transform:rotateY(-90deg) translateZ(5.5vh)}
+  .dF5{transform:rotateX(-90deg) translateZ(5.5vh)} .dF6{transform:rotateY(180deg) translateZ(5.5vh)}
+  .gfloat { position:fixed; z-index:90; font:700 15px sans-serif; pointer-events:none;
+      text-shadow:0 1px 3px rgba(0,0,0,.7); animation:grise 1.5s ease forwards; }
+  @keyframes grise { from { opacity:0; transform:translateY(6px); }
+    25% { opacity:1; } to { opacity:0; transform:translateY(-26px); } }
+
+  .selCard { width:230px; border-radius:12px; border:2px solid rgba(201,162,39,.55);
+      padding:12px 10px 14px; text-align:center; position:relative;
+      background:linear-gradient(170deg, var(--cbg1), var(--cbg2)); }
+  .selCard img { height:44vh; max-width:100%; object-fit:contain;
+      filter:drop-shadow(0 6px 10px rgba(0,0,0,.5)); }
+  .selCard .scn { font-size:21px; letter-spacing:3px; margin-top:8px;
+      text-shadow:0 2px 6px rgba(0,0,0,.7); }
+  .selCard .sce { font-size:12px; color:rgba(241,232,208,.8); letter-spacing:2px; }
+  .selCard .scp { margin-top:8px; border-radius:999px; padding:3px 16px; font-size:12.5px;
+      letter-spacing:2px; border:1px solid rgba(255,255,255,.5); background:rgba(0,0,0,.4);
+      display:inline-block; min-height:1.5em; }
+  .selCard .scp.done { border-color:var(--gold); color:var(--gold-soft); }
+  .selCard.contested { border-color:#E86A5A; box-shadow:0 0 14px rgba(232,106,90,.5); }
+  .duelist2 { display:flex; flex-direction:column; align-items:center; gap:10px; font-size:16px; }
+  .die2 { width:80px; height:80px; border-radius:13px; background:var(--parchment); color:var(--ink);
+      font-size:44px; font-weight:700; display:flex; align-items:center; justify-content:center;
+      border:3px solid var(--gold); }
+  .duelist2.win .die2 { box-shadow:0 0 24px rgba(242,208,98,.85); }
 </style>
 </head>
 <body>
@@ -155,10 +196,11 @@
   <div id="hud"></div>
   <div id="telop"><img id="telopImg"><div id="telopSub"></div></div>
   <div id="diceFloat"></div>
-  <div id="ticker" style="position:fixed; left:50%; bottom:12px; transform:translateX(-50%);
-    z-index:35; font-size:13px; letter-spacing:1px; color:rgba(241,232,208,.9);
+  <div id="diceOv"></div>
+  <div id="ticker" style="position:fixed; right:16px; top:80px; z-index:35; width:340px;
+    font-size:12.5px; letter-spacing:1px; color:rgba(241,232,208,.9);
     background:rgba(16,13,36,.7); border:1px solid rgba(201,162,39,.4); border-radius:8px;
-    padding:6px 18px; max-width:76vw; text-align:center; line-height:1.7;"></div>
+    padding:8px 14px; line-height:1.8;"></div>
 
   <div class="overlay on" id="lobby">
     <p class="hint">スマホで <b id="phoneUrl">…</b> を開き、コードを入力して参加</p>
@@ -169,10 +211,19 @@
   </div>
 
   <div class="overlay" id="selectOv">
-    <div class="goldText" style="font-size:38px; letter-spacing:8px;">プレイヤー選択</div>
-    <p class="hint">各自のスマホでキャラクターを選んでください(重複はダイス勝負)</p>
+    <div style="display:flex; align-items:center; gap:18px;">
+      <div class="goldText" style="font-size:36px; letter-spacing:8px;">プレイヤー選択</div>
+      <div id="selConflict" style="display:none; background:#5A1512; border:1px solid #E86A5A;
+        color:#F5B0A5; border-radius:999px; padding:4px 16px; font-size:13px; letter-spacing:2px;">❗ 競合あり ─ 全員決定後にダイス勝負</div>
+    </div>
+    <p class="hint">各自のスマホでキャラクターを選んでください</p>
     <div class="selRow" id="selRow"></div>
-    <div id="duelLine" class="hint"></div>
+  </div>
+  <div class="overlay" id="duelOv" style="z-index:85">
+    <div class="goldText" style="font-size:30px; letter-spacing:6px;">ダイス勝負!</div>
+    <div id="duelChar" class="hint" style="font-size:17px;"></div>
+    <div id="duelRow" style="display:flex; gap:44px;"></div>
+    <div id="duelResult" class="hint" style="font-size:19px; color:var(--gold-soft); min-height:1.6em;"></div>
   </div>
 
   <div class="overlay" id="winOv">
@@ -259,11 +310,11 @@ const QR = (() => {
       set(22 + r, 22 + c, Math.max(Math.abs(r), Math.abs(c)) !== 1);
     const FMT = '111011111000100';                                 // L・マスク0の形式情報
     const fbit = i => FMT[14 - i] === '1';
-    for (let i = 0; i <= 5; i++) set(8, i, fbit(i));
-    set(8, 7, fbit(6)); set(8, 8, fbit(7)); set(7, 8, fbit(8));
-    for (let i = 9; i <= 14; i++) set(14 - i, 8, fbit(i));
-    for (let i = 0; i <= 7; i++) set(SIZE - 1 - i, 8, fbit(i));
-    for (let i = 8; i <= 14; i++) set(8, SIZE - 15 + i, fbit(i));
+    for (let i = 0; i <= 5; i++) set(i, 8, fbit(i));
+    set(7, 8, fbit(6)); set(8, 8, fbit(7)); set(8, 7, fbit(8));
+    for (let i = 9; i <= 14; i++) set(8, 14 - i, fbit(i));
+    for (let i = 0; i <= 7; i++) set(8, SIZE - 1 - i, fbit(i));
+    for (let i = 8; i <= 14; i++) set(SIZE - 15 + i, 8, fbit(i));
     set(SIZE - 8, 8, true);                                        // 暗モジュール
 
     let bi = 0;
@@ -321,6 +372,61 @@ const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby']
 
 let code = null, state = null, prev = { phase: null, turn: -1, battleAt: 0, diceAt: 0 };
 const pawnAnim = {}, prevPos = {};
+const prevGold = {};
+const D_PIPS = { 1:[[30,30]], 2:[[16,16],[44,44]], 3:[[16,16],[30,30],[44,44]],
+  4:[[16,16],[44,16],[16,44],[44,44]], 5:[[16,16],[44,16],[30,30],[16,44],[44,44]],
+  6:[[16,16],[44,16],[16,30],[44,30],[16,44],[44,44]] };
+const D_FACES = [1,2,3,4,5,6].map(v => `<div class="dF dF${v}"><svg viewBox="0 0 60 60">${
+  D_PIPS[v].map(([x,y]) => `<circle cx="${x}" cy="${y}" r="5.4" fill="#2C2A4A"/>`).join('')}</svg></div>`).join('');
+const D_ROT = { 1:[0,0], 2:[-90,0], 3:[0,-90], 4:[0,90], 5:[90,0], 6:[0,180] };
+let duelPlaying = false;
+async function playDuel(d) {
+  duelPlaying = true;
+  const C = state.catalog.CHARS;
+  $('duelChar').textContent = '対象キャラ: ' + C[d.char].name;
+  $('duelRow').innerHTML = d.contenders.map((c, i) =>
+    `<div class="duelist2" id="dl${i}"><div>${c.name}</div><div class="die2" id="dd${i}">?</div></div>`).join('');
+  $('duelResult').textContent = '';
+  $('selectOv').classList.remove('on');
+  $('duelOv').classList.add('on');
+  for (let t = 0; t < 13; t++) {
+    d.contenders.forEach((_, i) => $('dd' + i).textContent = 1 + Math.floor(Math.random() * 6));
+    await new Promise(r => setTimeout(r, 70 + t * 11));
+  }
+  d.contenders.forEach((c, i) => $('dd' + i).textContent = c.roll);
+  const winIdx = d.contenders.findIndex(c => c.id === d.winner);
+  $('dl' + winIdx).classList.add('win');
+  $('duelResult').textContent = d.contenders[winIdx].name + 'が' + C[d.char].name + 'を獲得! 敗者は選び直し';
+  await new Promise(r => setTimeout(r, 2400));
+  $('duelOv').classList.remove('on');
+  duelPlaying = false;
+  render();
+}
+function showDice3D(n) {
+  const ov = $('diceOv');
+  ov.innerHTML = `<div class="dStage"><div class="dCube" id="dCube">${D_FACES}</div></div>`;
+  ov.classList.add('on');
+  const die = $('dCube');
+  die.style.transform = 'rotateX(-30deg) rotateY(25deg)';
+  void die.offsetWidth;
+  die.style.transition = 'transform 1.35s cubic-bezier(.16,.84,.26,1.02)';
+  const [fx, fy] = D_ROT[n];
+  die.style.transform = `rotateX(${fx + 720}deg) rotateY(${fy + 1080}deg)`;
+  setTimeout(() => ov.classList.remove('on'), 2400);
+}
+function spawnGold(pid, delta) {
+  const plate = $('plate-' + pid);
+  if (!plate) return;
+  const r = plate.getBoundingClientRect();
+  const el = document.createElement('div');
+  el.className = 'gfloat';
+  el.style.left = (r.right + 8) + 'px';
+  el.style.top = (r.top + 20) + 'px';
+  el.style.color = delta > 0 ? '#F2D062' : '#F09595';
+  el.textContent = (delta > 0 ? '+' : '') + delta + 'G';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1500);
+}
 let animBusy = false, smileT = null;
 let ownersCache = '';
 
@@ -333,6 +439,7 @@ async function boot() {
   $('startBtn').onclick = () =>
     fetch('/api/action', { method: 'POST', body: JSON.stringify({ room: code, type: 'start_select' }) });
   new EventSource('/api/events?room=' + code).onmessage = e => { state = JSON.parse(e.data); render(); };
+  ['redani','linnei','grease','mio'].forEach(c => { new Image().src = '/assets/full_' + c + '.png'; });
   fitWorld(); addEventListener('resize', fitWorld);
 }
 function fitWorld() {
@@ -386,8 +493,7 @@ function renderBoard() {
       ? `<g transform="translate(${DW/2} ${DH/2+1}) scale(1,0.55)">
            <g transform="translate(1.2,2.4)" opacity=".45">${ELEM_DARK[t.e]}</g>
            <g opacity="${o ? .95 : .62}" style="filter:drop-shadow(0 0 4px ${RUNE[t.e]})">${ELEM[t.e]}</g></g>`
-      : `<g transform="translate(${DW/2-20},${DH/2-20}) scale(1.7)" opacity=".85"
-           style="filter:drop-shadow(0 0 4px ${RUNE[key2]})">${ICONS[key2].split('#F6EFDD').join(RUNE[key2])}</g>`;
+      : '';
     const own = o ? `
       <path d="M${DW/2} 3 L${DW-6} ${DH/2} L${DW/2} ${DH-3} L6 ${DH/2} Z" fill="none"
         stroke="${ownColor}" stroke-width="${1.5 + o.level * .7}" opacity=".95"
@@ -423,6 +529,25 @@ function renderBoard() {
     </svg>`;
     st.appendChild(el);
   }
+  // 特殊マスの建造物
+  const STRUCTS = { castle: ['struct_castle', 116], shrine: ['struct_shrine', 78], market: ['struct_market', 100], gate: ['struct_gate', 118] };
+  state.tiles.forEach((t, i) => {
+    const sc = STRUCTS[t.t];
+    if (!sc) return;
+    const { x, y } = proj(GEO[i][0], GEO[i][1]);
+    const sh = document.createElement('div');
+    sh.className = 'shadow';
+    sh.style.left = x + 'px'; sh.style.top = y + 'px';
+    sh.style.width = (sc[1] * 0.8) + 'px';
+    sh.style.zIndex = GEO[i][0] + GEO[i][1] + 100;
+    st.appendChild(sh);
+    const el = document.createElement('div');
+    el.className = 'sprite';
+    el.style.left = x + 'px'; el.style.top = (y + 8) + 'px';
+    el.style.zIndex = GEO[i][0] + GEO[i][1] + 101;
+    el.innerHTML = `<img src="/assets/${sc[0]}.png" width="${sc[1]}" style="display:block">`;
+    st.appendChild(el);
+  });
   // クリーチャー
   for (let i = 0; i < 28; i++) {
     const o = state.owners[i];
@@ -596,35 +721,43 @@ function render() {
     $('startBtn').disabled = state.players.length < 2;
   }
   // キャラ選択
-  $('selectOv').classList.toggle('on', state.phase === 'select');
+  $('selectOv').classList.toggle('on', state.phase === 'select' && !duelPlaying);
   if (state.phase === 'select') {
     const C = state.catalog.CHARS;
-    $('selRow').innerHTML = state.players.map(p => `
-      <div class="selCard" style="border-color:${p.charId ? C[p.charId].color : '#C9A227'}">
-        <b>${p.name}</b><br>${p.charId ? C[p.charId].name : '選択中…'}<br>
-        ${p.confirmed ? '✅ 決定' : '⏳'}</div>`).join('');
+    const CBG = { redani: ['#4A1210', '#2A0B0A'], linnei: ['#10254E', '#0A1430'],
+                  grease: ['#1B3318', '#0E1D0D'], mio: ['#123A37', '#0A201E'] };
+    let conflict = false;
+    $('selRow').innerHTML = Object.entries(C).map(([cid, c]) => {
+      const who = state.players.filter(p => p.charId === cid);
+      if (who.length >= 2) conflict = true;
+      const pill = !who.length ? '─'
+        : who.length >= 2 ? '⚔ 競合中: ' + who.map(p => p.name).join(' vs ')
+        : who[0].name + ' が使用';
+      return `<div class="selCard ${who.length >= 2 ? 'contested' : ''}"
+        style="--cbg1:${CBG[cid][0]}; --cbg2:${CBG[cid][1]};
+        border-color:${who.length ? c.color : 'rgba(201,162,39,.55)'}">
+        <img src="/assets/full_${cid}.png">
+        <div class="scn">${c.name}</div>
+        <div class="sce">${{redani:'火属性',linnei:'水属性',grease:'土属性',mio:'風属性'}[cid]}</div>
+        <div class="scp ${who.length === 1 && who[0].confirmed ? 'done' : ''}">${pill}</div>
+      </div>`;
+    }).join('');
+    $('selConflict').style.display = conflict ? 'block' : 'none';
     if (state.duel && state.duel.at !== prev.duelAt) {
       prev.duelAt = state.duel.at;
-      $('duelLine').textContent = '🎲 ' + C[state.duel.char].name + 'を巡るダイス勝負: ' +
-        state.duel.contenders.map(c => `${c.name}=${c.roll}`).join(' / ');
+      playDuel(state.duel);
     }
-  }
+  } else $('duelOv').classList.remove('on');
   if (state.phase === 'playing' || state.phase === 'ended') {
-    renderBoard(); renderPawns(); renderHUD();
-  }
-  if (state.log && state.log.length)
-    $('ticker').innerHTML = state.log.slice(-3).map((l, k, a) =>
-      `<div style="opacity:${0.45 + 0.55 * (k + 1) / a.length}">${l}</div>`).join('');
-  // ===== 移動アニメーション(出目表示→1マスずつ) =====
-  if (state.phase === 'playing') {
+    // 移動アニメーション(描画の前に開始位置を確定させる)
     state.players.forEach(p => { if (!(p.id in prevPos)) prevPos[p.id] = p.pos; });
     const mover = state.players.find(p => prevPos[p.id] !== p.pos);
     if (mover && !animBusy) {
       animBusy = true;
       const from = prevPos[mover.id], to = mover.pos;
       const steps = (to - from + 28) % 28 || 28;
-      let sN = 0;
       pawnAnim[mover.id] = from;
+      let sN = 0;
       const hop = () => {
         sN++;
         pawnAnim[mover.id] = (from + sN) % 28;
@@ -632,9 +765,19 @@ function render() {
         if (sN < steps) setTimeout(hop, 250);
         else { delete pawnAnim[mover.id]; prevPos[mover.id] = to; animBusy = false; renderPawns(); }
       };
-      setTimeout(hop, state.lastDice && state.lastDice.player === mover.id ? 1000 : 250);
+      setTimeout(hop, state.lastDice && state.lastDice.player === mover.id ? 1800 : 250);
     }
+    renderBoard(); renderPawns(); renderHUD();
+    // お金の増減フロート
+    state.players.forEach(p => {
+      const g0 = prevGold[p.id];
+      if (g0 !== undefined && g0 !== p.gold) spawnGold(p.id, p.gold - g0);
+      prevGold[p.id] = p.gold;
+    });
   }
+  if (state.log && state.log.length)
+    $('ticker').innerHTML = state.log.slice(-5).map((l, k, a) =>
+      `<div style="opacity:${0.45 + 0.55 * (k + 1) / a.length}">${l}</div>`).join('');
   // ===== ショップ演出 =====
   const shopping = Object.entries(state.pending).find(([, x]) => x.type === 'market');
   const shopOpen = !!shopping && state.phase === 'playing';
@@ -667,11 +810,15 @@ function render() {
       for (let i = 0; i < 28; i++) {
         if (!prev.ownersArr[i] && state.owners[i]) {
           const o = state.owners[i], pl = player(o.player);
-          $('scPlayer').src = '/assets/full_' + pl.charId + '.png';
-          $('scCreature').innerHTML = artHTML(o.creature, 1, 200);
-          $('scText').textContent = pl.name + 'が' + state.catalog.CREATURES[o.creature].name + 'を召喚!';
-          $('summonCut').classList.add('on');
-          setTimeout(() => $('summonCut').classList.remove('on'), 2200);
+          const img = $('scPlayer');
+          const show = () => {
+            $('scCreature').innerHTML = artHTML(o.creature, 1, 200);
+            $('scText').textContent = pl.name + 'が' + state.catalog.CREATURES[o.creature].name + 'を召喚!';
+            $('summonCut').classList.add('on');
+            setTimeout(() => $('summonCut').classList.remove('on'), 2200);
+          };
+          if (img.src.endsWith('full_' + pl.charId + '.png') && img.complete) show();
+          else { img.onload = show; img.src = '/assets/full_' + pl.charId + '.png'; }
           break;
         }
       }
@@ -686,9 +833,7 @@ function render() {
   // ダイス
   if (state.lastDice && state.lastDice.at !== prev.dice) {
     prev.dice = state.lastDice.at;
-    $('diceFloat').textContent = state.lastDice.value;
-    $('diceFloat').classList.add('show');
-    setTimeout(() => $('diceFloat').classList.remove('show'), 2200);
+    showDice3D(state.lastDice.value);
   }
   // 戦闘
   if (state.lastBattle && state.lastBattle.at !== prev.battleAt) {
