@@ -199,9 +199,9 @@
 <script>
 const $ = id => document.getElementById(id);
 let room = null, pid = null, state = null, selected = null, rolling = false;
-let inShopHand = false, expectDraw = false, prevHandKey = '';
+let inShopHand = false, expectDraw = false, prevHandKey = '', moveT = null;
 const flipped = new Set();
-const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby']);
+const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby','ludi','garble','barbaro']);
 const RUNE = { fire:'#FF7A45', water:'#56A8E8', earth:'#7FD35C', wind:'#5BE0D0' };
 const GLYPH = { weapon:'⚔', gweapon:'⚔', shield:'🛡', gshield:'🛡', jinx:'❂' };
 
@@ -411,6 +411,22 @@ function render() {
   }
   prevHandKey = handKey;
 
+  // テレビ側の移動アニメが終わるまで、到着系UIの表示を待つ
+  {
+    const ld = state.lastDice;
+    if (p && ['tile', 'upgrade', 'market'].includes(p.type) && ld && ld.player === pid) {
+      const doneAt = ld.at + 1900 + ld.value * 250 + 900;
+      if (Date.now() < doneAt) {
+        $('msg').textContent = '移動中…';
+        $('action').innerHTML = '<div class="waitDots">● ● ●</div>';
+        $('shopScene').classList.remove('on');
+        clearTimeout(moveT);
+        moveT = setTimeout(render, doneAt - Date.now() + 40);
+        renderHand();
+        return;
+      }
+    }
+  }
   const A = $('action');
   const sel = selected !== null ? m.hand[selected] : null;
 
@@ -462,11 +478,15 @@ function render() {
     } else if (selectableKind()) {
       btns.push(`<button class="abtn" disabled>カードを選んでください</button>`);
     }
+    const NUM = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
+    let upN = 0;
     for (const o of p.options) {
       if (o.id.startsWith('summon:') || o.id.startsWith('atk:') || (o.id.startsWith('sup:') && o.id !== 'sup:none')) continue;
       const cls = o.id === 'invade' ? 'danger' : (o.id === 'pass' || o.id === 'cancel' || o.id === 'sup:none') ? 'ghost' : '';
-      btns.push(`<button class="abtn ${cls}" onclick="choose('${o.id}'); selected=null;">${o.label}</button>`);
+      const prefix = p.type === 'upgrade' && o.id.startsWith('up:') ? (NUM[upN++] || '') + ' ' : '';
+      btns.push(`<button class="abtn ${cls}" onclick="choose('${o.id}'); selected=null;">${prefix}${o.label}</button>`);
     }
+    if (p.type === 'upgrade' && upN) $('msg').innerHTML = p.prompt + '<br><small style="font-size:1.7dvh">テレビの盤面の番号と対応しています</small>';
     A.innerHTML = btns.join('');
   }
   renderHand();

@@ -248,10 +248,22 @@
       color:#B26AE0; text-shadow:0 0 22px #7A2EB8; pointer-events:none; animation:fxbolt .9s ease forwards; }
   @keyframes fxbolt { 0% { opacity:0; transform:translate(-50%,-260%); }
       25% { opacity:1; transform:translate(-50%,-100%); } 70% { opacity:1; } 100% { opacity:0; } }
+
+  .upDia { position:absolute; transform:translate(-50%,-50%); pointer-events:none; }
+  .upDia svg path { fill:none; }
+  .upDia.pulse svg path { animation:uppulse 1s ease-in-out infinite; }
+  @keyframes uppulse { 0%,100% { stroke-opacity:.95; stroke-width:4; } 50% { stroke-opacity:.35; stroke-width:2; } }
+  .upNum { position:absolute; transform:translate(-50%,-50%); z-index:365; width:34px; height:34px;
+      border-radius:50%; background:linear-gradient(180deg,#E8C55A,#B8901F); color:#241C05;
+      border:2px solid #F2D062; display:flex; align-items:center; justify-content:center;
+      font:700 18px serif; box-shadow:0 2px 8px rgba(0,0,0,.6); pointer-events:none;
+      animation:uppulse2 1s ease-in-out infinite; }
+  @keyframes uppulse2 { 0%,100% { transform:translate(-50%,-50%) scale(1); } 50% { transform:translate(-50%,-50%) scale(1.12); } }
 </style>
 </head>
 <body>
   <img id="logoImg" src="/assets/logo.png">
+  <div id="verTag" style="position:fixed; left:10px; bottom:8px; z-index:20; font-size:11px; color:rgba(241,232,208,.45); letter-spacing:1px;"></div>
   <div id="world"><div id="stage"></div><div id="pawnLayer"></div><div id="spot"></div></div>
   <div id="hud"></div>
   <div id="telop"><img id="telopImg"><div id="telopSub"></div></div>
@@ -261,8 +273,10 @@
   <div id="tpBubble"></div>
   <div id="turnPortrait"><img id="tpImg"><div class="tpn" id="tpName"></div></div>
   <div class="overlay on" id="titleOv">
-    <img class="cast" style="left:3vw" src="/assets/full_mio.png">
-    <img class="cast" style="right:3vw" src="/assets/full_redani.png">
+    <img class="cast" style="left:0vw; height:48vh" src="/assets/full_mio.png">
+    <img class="cast" style="left:12vw; height:56vh" src="/assets/full_grease.png">
+    <img class="cast" style="right:12vw; height:56vh" src="/assets/full_redani.png">
+    <img class="cast" style="right:0vw; height:48vh" src="/assets/full_linnei.png">
     <img class="tlogo" src="/assets/logo.png">
     <button class="gbtn" id="titleCreate">ルームを作る</button>
     <p class="hint">テレビ/大画面でこの画面を開き、スマホで参加します</p>
@@ -444,7 +458,7 @@ const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby',
 let code = null, state = null, prev = { phase: null, turn: -1, battleAt: 0, diceAt: 0 };
 const pawnAnim = {}, prevPos = {};
 const prevGold = {};
-let queuedTurn = null, firedTurn = -1;
+let queuedTurn = null, firedTurn = -1, lastMoveEnd = 0, shopWaitT = null, lastUpKey = '';
 const D_PIPS = { 1:[[30,30]], 2:[[16,16],[44,44]], 3:[[16,16],[30,30],[44,44]],
   4:[[16,16],[44,16],[16,44],[44,44]], 5:[[16,16],[44,16],[30,30],[16,44],[44,44]],
   6:[[16,16],[44,16],[16,30],[44,30],[16,44],[44,44]] };
@@ -852,11 +866,14 @@ async function playBattle(b) {
   await wait(1800);
   $('battle').classList.remove('on');
   hideLogo(false);
+  showBanner(b.win ? '⚔ 侵略成功!' : '🛡 防衛成功!',
+    b.win ? atk.name + 'が' + def.name + 'の土地を奪取!' : def.name + 'が攻撃を退けた');
 }
 
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.14';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -913,7 +930,7 @@ function render() {
           wait = 1600;
         }
         if (sN < steps) setTimeout(hop, wait);
-        else { delete pawnAnim[mover.id]; prevPos[mover.id] = to; animBusy = false; render(); }
+        else { delete pawnAnim[mover.id]; prevPos[mover.id] = to; animBusy = false; lastMoveEnd = Date.now(); render(); }
       };
       setTimeout(hop, state.lastDice && state.lastDice.player === mover.id ? 1900 : 250);
     }
@@ -938,7 +955,12 @@ function render() {
       `<div style="opacity:${0.45 + 0.55 * (k + 1) / a.length}">${l}</div>`).join('');
   // ===== ショップ演出 =====
   const shopping = Object.entries(state.pending).find(([, x]) => x.type === 'market');
-  const shopOpen = !!shopping && state.phase === 'playing' && !animBusy;
+  let shopOpen = !!shopping && state.phase === 'playing' && !animBusy;
+  if (shopOpen && Date.now() - lastMoveEnd < 900) {
+    shopOpen = false;
+    clearTimeout(shopWaitT);
+    shopWaitT = setTimeout(render, 950 - (Date.now() - lastMoveEnd));
+  }
   if (shopOpen) {
     const last = state.log[state.log.length - 1] || '';
     if (!prev.shop) {
@@ -1042,6 +1064,53 @@ function render() {
       if (key !== lastCalloutKey) {
         lastCalloutKey = key;
         showCallout(cur.pos, pd.prompt.replace(' ─ ', '<br>'));
+      }
+    }
+  }
+  // 強化選択のボード上ハイライト
+  {
+    const cur2 = state.players[state.turn];
+    const pd2 = cur2 && state.pending[cur2.id];
+    const active = state.phase === 'playing' && pd2 && pd2.type === 'upgrade' && !animBusy;
+    let layer = $('upLayer');
+    if (!layer) {
+      layer = document.createElement('div');
+      layer.id = 'upLayer';
+      layer.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:360;';
+      $('world').appendChild(layer);
+    }
+    const upKey = active ? cur2.id + '|' + pd2.options.map(o => o.id).join(',') : '';
+    if (upKey !== lastUpKey) {
+      lastUpKey = upKey;
+      layer.innerHTML = '';
+      if (active) {
+        const dia = (i, color, pulse, grow) => {
+          const o = state.owners[i];
+          const lift = o ? (o.level - 1) * 7 : 0;
+          const { x, y } = worldPos(i);
+          const w = DW + (grow ? 18 : 8), h2 = DH + (grow ? 9 : 4);
+          const el = document.createElement('div');
+          el.className = 'upDia' + (pulse ? ' pulse' : '');
+          el.style.left = x + 'px'; el.style.top = (y - lift) + 'px';
+          el.innerHTML = `<svg width="${w}" height="${h2}" viewBox="0 0 ${w} ${h2}" overflow="visible">
+            <path d="M${w/2} 0 L${w} ${h2/2} L${w/2} ${h2} L0 ${h2/2} Z"
+              stroke="${color}" stroke-width="3.5" opacity=".9"
+              style="filter:drop-shadow(0 0 6px ${color})"/></svg>`;
+          layer.appendChild(el);
+        };
+        state.owners.forEach((o, i) => { if (o && o.player === cur2.id) dia(i, cur2.color, false, false); });
+        const NUM = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
+        pd2.options.filter(o => o.id.startsWith('up:')).forEach((o, k) => {
+          const i = +o.id.slice(3);
+          dia(i, '#F2D062', true, true);
+          const lift = (state.owners[i].level - 1) * 7;
+          const { x, y } = worldPos(i);
+          const n = document.createElement('div');
+          n.className = 'upNum';
+          n.style.left = x + 'px'; n.style.top = (y - lift - 86) + 'px';
+          n.textContent = NUM[k] || (k + 1);
+          layer.appendChild(n);
+        });
       }
     }
   }

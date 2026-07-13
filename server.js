@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
+const VERSION = '0.14';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -48,6 +49,9 @@ const CREATURES = {
   mermaid: { name: 'マーメイド',       elem: 'water', st: 20, hp: 50, cost: 90 },
   kraken:  { name: 'クラーケン',       elem: 'water', st: 50, hp: 50, cost: 170 },
   kbaby:   { name: 'キングベビー', evo: 'キング', elem: 'water', st: 30, hp: 40, cost: 120, evoSt: 50, evoHp: 60 },
+  ludi:    { name: 'ルディ', evo: 'シンルー', elem: 'wind', st: 25, hp: 40, cost: 120, evoSt: 45, evoHp: 60 },
+  garble:  { name: 'ガーブル', evo: 'ガレス・ゲイル', elem: 'wind', st: 35, hp: 25, cost: 120, evoSt: 55, evoHp: 45 },
+  barbaro: { name: 'バルバロ', evo: 'バーグランダ', elem: 'earth', st: 30, hp: 45, cost: 120, evoSt: 50, evoHp: 65 },
   golem:   { name: 'ロックゴーレム',   elem: 'earth', st: 30, hp: 60, cost: 140 },
   dwarf:   { name: 'ドワーフ戦士',     elem: 'earth', st: 40, hp: 40, cost: 100 },
   harpy:   { name: 'ハーピー',         elem: 'wind',  st: 40, hp: 30, cost: 90 },
@@ -72,9 +76,15 @@ const CHARS = {
   grease: { name: 'グリース', color: '#639922' },
   mio:    { name: 'ミオ',     color: '#4FA69C' },
 };
-const MARKET_POOL = ['drake','hound','qbaby','mermaid','kraken','kbaby','golem','dwarf','harpy','griffon','mimic','gargoyle'];
+const MARKET_POOL = ['drake','hound','qbaby','mermaid','kraken','kbaby','golem','dwarf','harpy','griffon','mimic','gargoyle','ludi','garble','barbaro'];
 
 // ===== ルーム管理 =====
+function refillDeck(r) {
+  if (!r.deck.length) {
+    r.deck = [...MARKET_POOL, ...MARKET_POOL].sort(() => Math.random() - 0.5);
+    log(r, '📦 市場の山札が補充された');
+  }
+}
 const rooms = new Map();
 const code4 = () => {
   const cs = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -192,8 +202,10 @@ function doRoll(r, p) {
   if (bonus) {
     p.gold += bonus;
     // 城を通過するたびにマーケットの山札から1枚ドロー(内容は非公開)
-    for (let d = 0; d < bonus / RULES.castleBonus; d++)
-      if (r.deck.length) { p.hand.push(r.deck.shift()); drew++; }
+    for (let d = 0; d < bonus / RULES.castleBonus; d++) {
+      refillDeck(r);
+      p.hand.push(r.deck.shift()); drew++;
+    }
   }
   r.lastDice.castle = bonus ? { gold: bonus, drew } : null;
   if (bonus) log(r, `${p.name}は${dice}を出した(城通過 +${bonus}G、カードを${drew}枚引いた)`);
@@ -243,8 +255,8 @@ function askUpgrade(r, p, where) {
 }
 function askMarket(r, p) {
   const opts = [];
-  if (r.deck.length && p.gold >= RULES.drawPrice)
-    opts.push({ id: 'draw', label: `クリーチャーをランダムに1体引く(−${RULES.drawPrice}G / 残り${r.deck.length}体)` });
+  if (p.gold >= RULES.drawPrice)
+    opts.push({ id: 'draw', label: `クリーチャーをランダムに1体引く(−${RULES.drawPrice}G)` });
   for (const [id, s] of Object.entries(SUPPORTS))
     if (s.cost <= p.gold) opts.push({ id: 'buys:' + id, label: `支援「${s.name}」を購入(−${s.cost}G)` });
   if (ITEMS.curse.cost <= p.gold)
@@ -405,6 +417,7 @@ function handleChoose(r, playerId, optionId) {
   if (pend.type === 'market') {
     if (optionId === 'draw') {
       p.gold -= RULES.drawPrice;
+      refillDeck(r);
       p.hand.push(r.deck.shift());
       log(r, `${p.name}は市場でクリーチャーを1体引いた(中身は非公開)`);
     } else if (optionId.startsWith('buys:')) {
@@ -478,7 +491,7 @@ function startGame(r) {
 // ===== 公開状態とHTTP =====
 function publicState(r, viewerId) {
   return {
-    code: r.code, phase: r.phase, turn: r.turn, round: r.round, target: TARGET_PTS,
+    ver: VERSION, code: r.code, phase: r.phase, turn: r.turn, round: r.round, target: TARGET_PTS,
     tiles: TILES, owners: r.owners, market: r.market, log: r.log,
     titles: r.titles, duel: r.duel, curses: r.curses, lastEvent: r.lastEvent || null, lastBattle: r.lastBattle, lastDice: r.lastDice || null,
     winner: r.winner, pending: r.pending, catalog: { CREATURES, SUPPORTS, ITEMS, CHARS },
