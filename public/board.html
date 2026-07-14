@@ -259,16 +259,44 @@
       font:700 18px serif; box-shadow:0 2px 8px rgba(0,0,0,.6); pointer-events:none;
       animation:uppulse2 1s ease-in-out infinite; }
   @keyframes uppulse2 { 0%,100% { transform:translate(-50%,-50%) scale(1); } 50% { transform:translate(-50%,-50%) scale(1.12); } }
+
+  /* ULTカットイン */
+  #ultCut { position:fixed; inset:0; display:none; z-index:72; overflow:hidden; }
+  #ultCut.on { display:block; }
+  #ultBg { position:absolute; inset:0; opacity:0; transition:opacity .25s; }
+  #ultCut.on #ultBg { opacity:1; }
+  #ultArt { position:absolute; bottom:-6vh; left:-40vw; height:88vh;
+      filter:drop-shadow(0 0 40px rgba(0,0,0,.7)); animation:ultSlide 2.5s cubic-bezier(.2,.8,.3,1) forwards; }
+  @keyframes ultSlide { 0% { left:-45vw; } 25% { left:6vw; } 78% { left:9vw; } 100% { left:14vw; opacity:0; } }
+  #ultLines { position:absolute; inset:0; opacity:.5;
+      background:repeating-linear-gradient(100deg, transparent 0 26px, rgba(255,255,255,.28) 26px 30px);
+      animation:ultLines .5s linear infinite; }
+  @keyframes ultLines { to { background-position:220px 0; } }
+  #ultName { position:absolute; left:52%; top:38%; transform:translate(-50%,-50%) scale(2.2);
+      opacity:0; font-size:9.5vh; letter-spacing:2vh; font-weight:700; white-space:nowrap;
+      background:linear-gradient(180deg,#FFE9A0 8%,#E8C55A 35%,#8A6A1E 62%,#F2D062 88%);
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+      filter:drop-shadow(0 3px 0 #4A3608) drop-shadow(0 0 26px rgba(242,208,98,.6));
+      animation:vpop .45s .35s forwards; }
+  #ultSub { position:absolute; left:52%; top:52%; transform:translateX(-50%); font-size:2.6vh;
+      letter-spacing:5px; color:var(--parchment); text-shadow:0 2px 8px rgba(0,0,0,.9);
+      opacity:0; animation:vpop .4s .6s forwards; }
+  .dRow { display:flex; gap:2.5vh; }
 </style>
 </head>
 <body>
   <img id="logoImg" src="/assets/logo.png">
+  <div id="connBar" style="display:none; position:fixed; top:0; left:50%; transform:translateX(-50%);
+    z-index:98; background:#5A1512; color:#F5B0A5; font-size:14px; letter-spacing:2px;
+    padding:6px 26px; border-radius:0 0 10px 10px; border:1px solid #E86A5A; border-top:0;">⚡ 再接続中…</div>
   <div id="verTag" style="position:fixed; left:10px; bottom:8px; z-index:20; font-size:11px; color:rgba(241,232,208,.45); letter-spacing:1px;"></div>
   <div id="world"><div id="stage"></div><div id="pawnLayer"></div><div id="spot"></div></div>
   <div id="hud"></div>
   <div id="telop"><img id="telopImg"><div id="telopSub"></div></div>
   <div id="diceFloat"></div>
   <div id="diceOv"></div>
+  <div id="ultCut"><div id="ultBg"></div><div id="ultLines"></div>
+    <img id="ultArt"><div id="ultName"></div><div id="ultSub"></div></div>
   <div id="centerBanner"></div>
   <div id="tpBubble"></div>
   <div id="turnPortrait"><img id="tpImg"><div class="tpn" id="tpName"></div></div>
@@ -279,6 +307,7 @@
     <img class="cast" style="right:0vw; height:48vh" src="/assets/full_linnei.png">
     <img class="tlogo" src="/assets/logo.png">
     <button class="gbtn" id="titleCreate">ルームを作る</button>
+    <button class="gbtn" id="titleResume" style="display:none; filter:hue-rotate(-18deg)"></button>
     <p class="hint">テレビ/大画面でこの画面を開き、スマホで参加します</p>
   </div>
   <div id="ticker" style="position:fixed; right:16px; top:80px; z-index:35; width:340px;
@@ -327,7 +356,7 @@
 
   <div id="battle">
     <div class="bside" id="bAtk"></div>
-    <div id="bmid"><div id="bcap"></div><div id="bcards"></div></div>
+    <div id="bmid"><div id="bcap"></div><div id="bcards"></div><div id="bnotes" style="font-size:1.9vh; color:var(--gold-soft); line-height:1.8; min-height:6vh; text-shadow:0 1px 4px rgba(0,0,0,.8)"></div></div>
     <div class="bside" id="bDef"></div>
   </div>
   <div id="bflash"></div>
@@ -489,6 +518,23 @@ async function playDuel(d) {
   render();
 }
 let bannerT = null, spotT = null, lastCalloutKey = '';
+async function playUlt(u) {
+  const ch = state.catalog.CHARS[u.charId];
+  hideLogo(true);
+  $('bflash').classList.add('go');
+  $('ultBg').style.background =
+    `radial-gradient(ellipse at 30% 60%, ${ch.color}55 0%, rgba(10,8,25,.94) 62%)`;
+  $('ultArt').src = '/assets/full_' + u.charId + '.png';
+  $('ultName').textContent = u.name;
+  $('ultSub').textContent = player(u.player).name + 'の固有スキル発動!';
+  const art = $('ultArt');
+  art.style.animation = 'none'; void art.offsetWidth; art.style.animation = '';
+  $('ultCut').classList.add('on');
+  setTimeout(() => $('bflash').classList.remove('go'), 500);
+  await wait(2550);
+  $('ultCut').classList.remove('on');
+  hideLogo(false);
+}
 const hideLogo = v => { $('logoImg').style.opacity = v ? 0 : 1; };
 function worldPos(i) { return proj(GEO[i][0], GEO[i][1]); }
 function showCallout(i, text) {
@@ -548,6 +594,24 @@ function showBanner(main, sub) {
   clearTimeout(bannerT);
   bannerT = setTimeout(() => el.classList.remove('show'), 1900);
 }
+function showDiceMulti(arr) {
+  const ov = $('diceOv');
+  ov.innerHTML = '<div class="dRow">' + arr.map((_, k) =>
+    `<div class="dStage" style="animation-delay:${k * 180}ms; transform:scale(.82)">
+      <div class="dCube" id="dCubeM${k}">${D_FACES}</div></div>`).join('') +
+    `</div><div id="diceMsg">合計 ${arr.reduce((a, b) => a + b, 0)} !</div>`;
+  ov.classList.add('on');
+  arr.forEach((n, k) => {
+    const die = $('dCubeM' + k);
+    die.style.transform = 'rotateX(-30deg) rotateY(25deg)';
+    void die.offsetWidth;
+    die.style.transition = `transform ${1.2 + k * 0.25}s cubic-bezier(.16,.84,.26,1.02)`;
+    const [fx, fy] = D_ROT[n];
+    die.style.transform = `rotateX(${fx + 720}deg) rotateY(${fy + 1080}deg)`;
+  });
+  setTimeout(() => $('diceMsg') && $('diceMsg').classList.add('show'), 2000);
+  setTimeout(() => ov.classList.remove('on'), 3300);
+}
 function showDice3D(n) {
   const ov = $('diceOv');
   ov.innerHTML = `<div class="dStage"><div class="dCube" id="dCube">${D_FACES}</div></div><div id="diceMsg">${n} が出た!</div>`;
@@ -581,18 +645,56 @@ document.getElementById('titleCreate').onclick = () => {
   document.getElementById('titleOv').classList.remove('on');
   boot();
 };
-async function boot() {
-  const c = await (await fetch('/api/create', { method: 'POST' })).json();
-  code = c.code;
+let es = null, lastMsgAt = 0;
+function connectBoard() {
+  if (es) es.close();
+  es = new EventSource('/api/events?room=' + code);
+  es.onmessage = e => {
+    lastMsgAt = Date.now();
+    $('connBar').style.display = 'none';
+    state = JSON.parse(e.data);
+    render();
+  };
+  es.onerror = () => { $('connBar').style.display = 'block'; };
+}
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && code && Date.now() - lastMsgAt > 8000) connectBoard();
+});
+function enterRoom(c, phoneUrl) {
+  code = c;
   $('bigcode').textContent = code;
-  $('phoneUrl').textContent = c.phoneUrl;
-  $('qrBox').innerHTML = QR.svg(c.phoneUrl, 5);
+  $('phoneUrl').textContent = phoneUrl;
+  $('qrBox').innerHTML = QR.svg(phoneUrl, 5);
   $('startBtn').onclick = () =>
     fetch('/api/action', { method: 'POST', body: JSON.stringify({ room: code, type: 'start_select' }) });
-  new EventSource('/api/events?room=' + code).onmessage = e => { state = JSON.parse(e.data); render(); };
-  ['redani','linnei','grease','mio'].forEach(c => { new Image().src = '/assets/full_' + c + '.png'; });
-  fitWorld(); addEventListener('resize', fitWorld);
+  try { localStorage.setItem('sc_board', code); } catch (e) {}
+  connectBoard();
+  fitWorld();
 }
+async function boot() {
+  const c = await (await fetch('/api/create', { method: 'POST' })).json();
+  enterRoom(c.code, c.phoneUrl);
+}
+['redani','linnei','grease','mio'].forEach(c => { new Image().src = '/assets/full_' + c + '.png'; });
+addEventListener('resize', fitWorld);
+// 前回のルームが生きていれば「戻る」ボタンを出す
+(async () => {
+  let saved = null;
+  try { saved = localStorage.getItem('sc_board'); } catch (e) {}
+  if (!saved) return;
+  try {
+    const d = await (await fetch('/api/room?code=' + saved)).json();
+    if (d.exists && d.phase !== 'ended') {
+      const btn = document.getElementById('titleResume');
+      btn.textContent = '前回のルーム ' + saved + ' に戻る';
+      btn.style.display = 'inline-block';
+      btn.onclick = () => {
+        document.getElementById('titleOv').classList.remove('on');
+        enterRoom(saved, d.phoneUrl);
+      };
+    }
+  } catch (e) {}
+})();
 function fitWorld() {
   const s = Math.min(innerWidth / 1300, (innerHeight - 16) / 915, 1);
   $('world').style.transform = `translateX(-50%) scale(${s})`;
@@ -616,7 +718,7 @@ function artHTML(cid, lv, w) {
 
 // ===== 盤面描画 =====
 function renderBoard() {
-  const key = JSON.stringify(state.owners) + JSON.stringify(state.curses || {}) + state.players.map(p => p.id + p.color).join('');
+  const key = JSON.stringify(state.owners) + JSON.stringify(state.curses || {}) + (state.barrier || '') + state.players.map(p => p.id + p.color).join('');
   if (key === ownersCache) return;
   ownersCache = key;
   const st = $('stage');
@@ -645,7 +747,11 @@ function renderBoard() {
            <g transform="translate(1.2,2.4)" opacity=".45">${ELEM_DARK[t.e]}</g>
            <g opacity="${o ? .95 : .62}" style="filter:drop-shadow(0 0 4px ${RUNE[t.e]})">${ELEM[t.e]}</g></g>`
       : '';
+    const barrier = o && state.barrier === o.player;
     const own = o ? `
+      ${barrier ? `<path d="M${DW/2} -1 L${DW-2} ${DH/2} L${DW/2} ${DH+1} L2 ${DH/2} Z" fill="none"
+        stroke="#BFEFFF" stroke-width="2.5" opacity=".9"
+        style="filter:drop-shadow(0 0 8px #9FE8FF)"/>` : ''}
       <path d="M${DW/2} 3 L${DW-6} ${DH/2} L${DW/2} ${DH-3} L6 ${DH/2} Z" fill="none"
         stroke="${ownColor}" stroke-width="${1.5 + o.level * .7}" opacity=".95"
         style="filter:drop-shadow(0 0 ${3 + o.level * 3}px ${ownColor})"/>
@@ -739,7 +845,8 @@ function renderBoard() {
     if (!o) return;
     const { x, y } = proj(GEO[i][0], GEO[i][1]);
     const lift = (o.level - 1) * 7;
-    const toll = o.level * chain(o.player, state.tiles[i].e) * 30;
+    let toll = o.level * chain(o.player, state.tiles[i].e) * 30;
+    if (o.creature === 'orphe') toll = Math.round(toll * 1.2);
     const cands = [[52,-76],[-52,-76],[62,-34],[-62,-34],[0,-106]];
     let pos = cands[0];
     for (const [dx, dy] of cands) {
@@ -847,6 +954,7 @@ async function playBattle(b) {
     <div class="sfaceB sfrontB">${sup === 'none' ? '<div>─</div><div>支援なし</div>' : '<div style="font-size:24px">⚔</div><div>' + C.SUPPORTS[sup].name + '</div>'}</div>
   </div></div>`;
   $('bcards').innerHTML = card(b.atkSupport) + card(b.defSupport);
+  $('bnotes').innerHTML = '';
   $('bcap').textContent = '支援カード ─ 同時オープン!';
   ['bAtk','bDef'].forEach(id => $(id).classList.remove('lungeL','lungeR','dead'));
   hideLogo(true);
@@ -854,6 +962,8 @@ async function playBattle(b) {
   await wait(900);
   document.querySelectorAll('.sflipB').forEach(f => f.classList.add('open'));
   await wait(1000);
+  if (b.notes && b.notes.length)
+    $('bnotes').innerHTML = b.notes.map(n => '✦ ' + n).join('<br>');
   $('bcap').textContent = `ST ${b.st} ${b.win ? '≧' : '<'} HP ${b.hp}`;
   await wait(900);
   $('bAtk').classList.add('lungeL'); $('bDef').classList.add('lungeR');
@@ -873,7 +983,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.14';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.19';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -926,13 +1036,14 @@ function render() {
         renderPawns();
         let wait = 250;
         if (idx === 0 && castleEv) {   // 城を通過: 一旦停止して収入とドローを見せる
-          showBanner(`🏰 +${castleEv.gold}G`, `カードを${castleEv.drew}枚ドロー!`);
+          showBanner(`🏰 +${castleEv.gold}G`, 'カードを選択!(3枚から1枚)');
           wait = 1600;
         }
         if (sN < steps) setTimeout(hop, wait);
         else { delete pawnAnim[mover.id]; prevPos[mover.id] = to; animBusy = false; lastMoveEnd = Date.now(); render(); }
       };
-      setTimeout(hop, state.lastDice && state.lastDice.player === mover.id ? 1900 : 250);
+      const mine = state.lastDice && state.lastDice.player === mover.id;
+      setTimeout(hop, mine ? (state.lastDice.multi ? 2900 : 1900) : 250);
     }
     renderBoard(); renderPawns(); renderHUD();
     // お金の増減フロート + 移動が対になっていれば金貨を飛ばす
@@ -1055,6 +1166,16 @@ function render() {
     $('tpBubble').innerHTML = bt;
     $('tpBubble').classList.toggle('show', !!bt);
   }
+  // ドラフトのオーラ通知(中身は見せず気配だけ)
+  {
+    const de = Object.entries(state.pending).find(([, x]) => x.type === 'draft');
+    const dKey = de ? de[0] + '|' + (de[1].aura || '') : '';
+    if (dKey !== prev.draftKey) {
+      prev.draftKey = dKey;
+      if (de && (de[1].aura === 'L'))
+        showBanner('✨ 伝説級の気配…!', player(de[0]).name + 'のドラフトに何かが眠っている');
+    }
+  }
   // マス吹き出し(停止イベントの現地表示)
   if (state.phase === 'playing' && !animBusy) {
     const cur = state.players[state.turn];
@@ -1114,6 +1235,11 @@ function render() {
       }
     }
   }
+  // 固有スキルのカットイン
+  if (state.lastUlt && state.lastUlt.at !== prev.ultAt) {
+    prev.ultAt = state.lastUlt.at;
+    playUlt(state.lastUlt);
+  }
   // 祠イベントの中央表示
   if (state.lastEvent && state.lastEvent.at !== prev.eventAt) {
     prev.eventAt = state.lastEvent.at;
@@ -1154,7 +1280,8 @@ function render() {
   // ダイス
   if (state.lastDice && state.lastDice.at !== prev.dice) {
     prev.dice = state.lastDice.at;
-    showDice3D(state.lastDice.value);
+    if (state.lastDice.multi) showDiceMulti(state.lastDice.multi);
+    else showDice3D(state.lastDice.value);
   }
   // 戦闘
   if (state.lastBattle && state.lastBattle.at !== prev.battleAt) {

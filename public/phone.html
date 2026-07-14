@@ -163,9 +163,72 @@
   .diceImgBtn { background:none; border:none; cursor:pointer; padding:0; }
   .diceImgBtn img { height:23dvh; filter:drop-shadow(0 5px 14px rgba(0,0,0,.55)); transition:transform .12s; }
   .diceImgBtn:active img { transform:scale(.93); }
+
+  .face .fx { font-size:1.32dvh; color:#5C4A2E; text-align:center; padding:0 8px;
+      line-height:1.35; min-height:2.4dvh; }
+  #draftOv { position:fixed; inset:0; display:none; z-index:56; background:rgba(10,8,25,.92);
+      flex-direction:column; align-items:center; padding-top:2dvh; gap:1.4dvh; }
+  #draftOv.on { display:flex; }
+  #draftTitle { font-size:2.4dvh; letter-spacing:3px; color:var(--gold-soft); }
+  #draftRow { display:flex; gap:2.4vw; flex:1; padding-bottom:2dvh; }
+  .draftCard { width:27dvh; cursor:pointer; transition:transform .15s; position:relative; }
+  .draftCard:active { transform:scale(.96); }
+  .draftCard .face { position:relative; height:100%; }
+
+  /* クリーチャー一覧(図鑑) */
+  #galleryBtn { font-family:inherit; font-size:12px; background:rgba(0,0,0,.4); color:rgba(241,232,208,.85);
+      border:1px solid rgba(201,162,39,.5); border-radius:7px; padding:5px 9px; margin-right:6px; }
+  #galleryOv { position:fixed; inset:0; display:none; z-index:57; background:rgba(10,8,25,.96);
+      flex-direction:column; }
+  #galleryOv.on { display:flex; }
+  .gTop { display:flex; align-items:center; gap:14px; padding:1.4dvh calc(14px + env(safe-area-inset-left));
+      height:9dvh; flex:none; }
+  .gTop .ttl { font-size:2.4dvh; letter-spacing:3px; color:var(--gold-soft); }
+  .gTop label { display:flex; align-items:center; gap:6px; font-size:1.9dvh; color:rgba(241,232,208,.85);
+      margin-left:auto; }
+  .gTop input[type=checkbox] { width:2.4dvh; height:2.4dvh; accent-color:#C9A227; }
+  .gTop .gClose { font-family:inherit; font-size:1.9dvh; background:transparent; color:var(--gold-soft);
+      border:1px solid var(--gold); border-radius:8px; padding:.8dvh 2.2dvh; }
+  #gGrid { flex:1; overflow-y:auto; display:flex; flex-wrap:wrap; gap:1.6dvh;
+      padding:0 calc(14px + env(safe-area-inset-left)) 3dvh; align-content:flex-start;
+      justify-content:center; }
+  .gCard { flex:none; width:19.5dvh; height:30dvh; position:relative; perspective:700px; cursor:pointer; }
+  #galZoom { position:fixed; inset:0; display:none; z-index:62; align-items:center;
+      justify-content:center; background:rgba(10,8,25,.88); }
+  #galZoom.on { display:flex; }
+  #galZoomCard { width:38dvh; height:58dvh; animation:drawIn .4s ease; }
+  #galZoom .tap { position:absolute; bottom:5dvh; width:100%; text-align:center;
+      font-size:2dvh; letter-spacing:3px; color:rgba(241,232,208,.8); }
+
+  /* レアリティ */
+  .rarBadge { position:absolute; top:6px; right:6px; z-index:3; font-size:1.5dvh; font-family:serif;
+      width:4dvh; height:4dvh; border-radius:50%; display:flex; align-items:center; justify-content:center;
+      color:#F6EFDD; text-shadow:0 1px 2px rgba(0,0,0,.5); }
+  .rarBadge.N { background:#6E7288; } .rarBadge.R { background:linear-gradient(160deg,#5C7FD8,#2C4A9E); }
+  .rarBadge.L { background:linear-gradient(160deg,#F2D062,#B8901F); color:#241C05; }
+  .draftCard.rar-R .face { border-color:#5C7FD8; box-shadow:0 0 14px rgba(92,127,216,.6), 0 3px 8px rgba(0,0,0,.45); }
+  .draftCard.rar-L .face { border-color:#F2D062;
+      box-shadow:0 0 20px rgba(242,208,98,.85), 0 0 44px rgba(242,208,98,.4), 0 3px 8px rgba(0,0,0,.45); }
+  .draftCard.rar-L .face::after { content:""; position:absolute; inset:0; border-radius:8px; pointer-events:none;
+      background:linear-gradient(115deg, transparent 30%, rgba(255,230,160,.35) 42%,
+        rgba(160,220,255,.3) 50%, rgba(255,180,230,.3) 58%, transparent 70%);
+      background-size:280% 280%; animation:holo 2.2s linear infinite; }
+  @keyframes holo { 0% { background-position:120% 0; } 100% { background-position:-60% 0; } }
+  .draftCard.rar-L::before { content:"✦"; position:absolute; top:-1.6dvh; left:50%; transform:translateX(-50%);
+      z-index:4; color:#F2D062; font-size:2.6dvh; text-shadow:0 0 10px #F2D062; animation:blink 1s infinite; }
+
+  .ultBtn { font-family:inherit; font-size:2.2dvh; letter-spacing:2px; padding:1.6dvh 3dvh;
+      background:linear-gradient(160deg,#3A2E58,#1E1B3C); color:#F2D062;
+      border:2px solid #F2D062; border-radius:12px; cursor:pointer;
+      box-shadow:0 0 14px rgba(242,208,98,.5); animation:ultpulse 1.4s ease-in-out infinite; }
+  @keyframes ultpulse { 0%,100% { box-shadow:0 0 10px rgba(242,208,98,.4); }
+      50% { box-shadow:0 0 24px rgba(242,208,98,.85); } }
 </style>
 </head>
 <body>
+  <div id="connBar" style="display:none; position:fixed; top:0; left:50%; transform:translateX(-50%);
+    z-index:98; background:#5A1512; color:#F5B0A5; font-size:1.8dvh; letter-spacing:2px;
+    padding:.8dvh 3dvh; border-radius:0 0 1.2dvh 1.2dvh; border:1px solid #E86A5A; border-top:0;">⚡ 再接続中…</div>
   <div id="rotate"><div class="ic">📱</div>スマホを横向きにしてください</div>
 
   <div id="join">
@@ -180,6 +243,7 @@
     <div class="me"><img id="myFace" src=""><div><div class="nm" id="myName"></div>
       <div class="st" id="myStat"></div></div></div>
     <div id="msg"></div>
+    <button id="galleryBtn">🃏 一覧</button>
     <button id="fsBtn">⛶ 全画面</button>
   </header>
   <div id="action" style="display:none"></div>
@@ -194,6 +258,16 @@
     <div id="shopBtns"></div>
   </div>
   <div id="charSel"><div id="csMsg" style="font-size:2.2dvh;color:var(--gold-soft);letter-spacing:2px"></div><div id="csRow"></div></div>
+  <div id="draftOv"><div id="draftTitle">カードを1枚選んで獲得</div><div id="draftRow"></div></div>
+  <div id="galleryOv">
+    <div class="gTop">
+      <div class="ttl">クリーチャー一覧</div>
+      <label><input type="checkbox" id="galleryEvoChk"> 進化後を表示</label>
+      <button class="gClose" id="galleryClose">✕ 閉じる</button>
+    </div>
+    <div id="gGrid"></div>
+  </div>
+  <div id="galZoom"><div id="galZoomCard"></div><div class="tap">タップで閉じる</div></div>
   <div id="drawModal"><div id="drawCard"></div><div class="tap">タップで閉じる</div></div>
 
 <script>
@@ -205,17 +279,51 @@ const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby',
 const RUNE = { fire:'#FF7A45', water:'#56A8E8', earth:'#7FD35C', wind:'#5BE0D0' };
 const GLYPH = { weapon:'⚔', gweapon:'⚔', shield:'🛡', gshield:'🛡', jinx:'❂' };
 
+let es = null, lastMsgAt = 0;
+function connect() {
+  if (es) es.close();
+  es = new EventSource('/api/events?room=' + room + '&me=' + pid);
+  es.onmessage = e => {
+    lastMsgAt = Date.now();
+    $('connBar').style.display = 'none';
+    state = JSON.parse(e.data);
+    render();
+  };
+  es.onerror = () => { $('connBar').style.display = 'block'; };
+}
+function enterGame() {
+  $('join').style.display = 'none';
+  ['hdr','action','handWrap'].forEach(id => $(id).style.display = '');
+  document.body.classList.add('ingame');
+  connect();
+}
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && room && Date.now() - lastMsgAt > 8000) connect();
+});
 $('joinBtn').onclick = async () => {
   const r = await fetch('/api/join', { method:'POST', body: JSON.stringify({
     room: $('codeIn').value.trim().toUpperCase(), name: $('nameIn').value.trim() }) });
   const d = await r.json();
   if (d.error) { $('err').textContent = d.error; return; }
   room = d.room; pid = d.playerId;
-  $('join').style.display = 'none';
-  ['hdr','action','handWrap'].forEach(id => $(id).style.display = '');
-  document.body.classList.add('ingame');
-  new EventSource('/api/events?room=' + room + '&me=' + pid).onmessage = e => { state = JSON.parse(e.data); render(); };
+  try { localStorage.setItem('sc_session', JSON.stringify({ room, pid })); } catch (e) {}
+  enterGame();
 };
+// 保存済みセッションがあれば自動復帰
+(async () => {
+  let sess = null;
+  try { sess = JSON.parse(localStorage.getItem('sc_session') || 'null'); } catch (e) {}
+  if (!sess) return;
+  try {
+    const r = await fetch('/api/resume', { method:'POST',
+      body: JSON.stringify({ room: sess.room, playerId: sess.pid }) });
+    if (!r.ok) throw 0;
+    room = sess.room; pid = sess.pid;
+    enterGame();
+  } catch (e) {
+    try { localStorage.removeItem('sc_session'); } catch (e2) {}
+  }
+})();
 $('fsBtn').onclick = async () => {
   if (!document.fullscreenElement) {
     await document.documentElement.requestFullscreen({ navigationUI:'hide' }).catch(() => {});
@@ -223,10 +331,58 @@ $('fsBtn').onclick = async () => {
   } else document.exitFullscreen();
 };
 const choose = optionId => {
-  if (optionId === 'draw') expectDraw = true;
   fetch('/api/action', { method:'POST', body: JSON.stringify({ room, type:'choose', playerId: pid, optionId }) });
 };
 document.getElementById('drawModal').onclick = () => $('drawModal').classList.remove('on');
+let galleryEvo = false;
+function artOrToken(cid, cr, evo, tokSize) {
+  if (HAS_ART.has(cid))
+    return `<div class="art"><img src="/assets/${evo ? 'e_' : 'c_'}${cid}.png"></div>`;
+  const nm = evo && cr.evo ? cr.evo : cr.name;
+  return `<div class="tok2" style="background:${RUNE[cr.elem] || '#6E7288'};width:${tokSize};height:${tokSize}">${nm.slice(0,4)}</div>`;
+}
+function galleryFace(cid, cr, evo) {
+  if (evo) return `<div class="face back" style="transform:rotateY(180deg)">
+    <div class="evoRibbon">LvMAX進化</div>${artOrToken(cid, cr, true, '9dvh')}
+    <div class="nm">${cr.evo}</div>
+    <div class="stats"><span>ST <b>${cr.evoSt}</b></span><span>HP <i>${cr.evoHp}</i></span></div>
+    <div class="fx">${cr.fx || ''}</div><div class="type">進化形</div></div>`;
+  return `<div class="face front"><div class="cost">${cr.cost}G</div>
+    ${artOrToken(cid, cr, false, '9dvh')}
+    <div class="nm">${cr.name}</div>
+    <div class="stats"><span>ST <b>${cr.st}</b></span><span>HP <i>${cr.hp}</i></span></div>
+    <div class="fx">${cr.fx || ''}</div>
+    <div class="rarBadge ${cr.rarity || 'N'}">${cr.rarity || 'N'}</div>
+    <div class="type">${cr.evo ? 'クリーチャー(進化あり)' : 'クリーチャー'}</div></div>`;
+}
+function buildGallery() {
+  const C = state.catalog.CREATURES;
+  $('gGrid').innerHTML = Object.entries(C).map(([cid, cr]) => `
+    <div class="gCard" data-cid="${cid}">
+      <div class="flip" data-evo="${cr.evo ? 1 : 0}">
+        ${galleryFace(cid, cr, false)}
+        ${cr.evo ? galleryFace(cid, cr, true) : ''}
+      </div>
+    </div>`).join('');
+  applyGalleryFlip(false);
+  document.querySelectorAll('.gCard').forEach(el => el.onclick = () => {
+    const cid = el.dataset.cid, cr = state.catalog.CREATURES[cid];
+    $('galZoomCard').innerHTML = galleryFace(cid, cr, galleryEvo && !!cr.evo)
+      .replace('rotateY(180deg)', 'none');
+    $('galZoom').classList.add('on');
+  });
+}
+function applyGalleryFlip(animate) {
+  document.querySelectorAll('#gGrid .flip').forEach((f, i) => {
+    f.style.transitionDelay = animate ? (i * 45) + 'ms' : '0ms';
+    f.classList.toggle('flipped', galleryEvo && f.dataset.evo === '1');
+  });
+}
+$('galleryBtn').onclick = () => { if (!state) return; buildGallery(); $('galleryOv').classList.add('on'); };
+$('galleryClose').onclick = () => $('galleryOv').classList.remove('on');
+$('galleryEvoChk').onchange = e => { galleryEvo = e.target.checked; applyGalleryFlip(true); };
+$('galZoom').onclick = () => $('galZoom').classList.remove('on');
+
 function bigCardHTML(c) {
   const cr = state.catalog.CREATURES[c];
   const art = HAS_ART.has(c)
@@ -236,6 +392,8 @@ function bigCardHTML(c) {
     <div class="cost">${cr.cost}G</div>${art}
     <div class="nm" style="font-size:3dvh">${cr.name}</div>
     <div class="stats" style="font-size:2.4dvh"><span>ST <b>${cr.st}</b></span><span>HP <i>${cr.hp}</i></span></div>
+    <div class="fx" style="font-size:1.7dvh">${cr.fx || ''}</div>
+    <div class="rarBadge ${cr.rarity || 'N'}">${cr.rarity || 'N'}</div>
     <div class="type">クリーチャー</div></div>`;
 }
 
@@ -274,6 +432,8 @@ function cardHTML(c, i) {
     front = `<div class="cost">${cr.cost}G</div>${art}
       <div class="nm">${cr.name}</div>
       <div class="stats"><span>ST <b>${cr.st}</b></span><span>HP <i>${cr.hp}</i></span></div>
+      <div class="fx">${cr.fx || ''}</div>
+      <div class="rarBadge ${cr.rarity || 'N'}">${cr.rarity || 'N'}</div>
       <div class="type">クリーチャー</div>
       ${cr.evo ? `<button class="flipBtn" data-i="${i}">進化 ⟳</button>` : ''}`;
     if (cr.evo) {
@@ -284,6 +444,7 @@ function cardHTML(c, i) {
         <div class="nm">${cr.evo}</div>
         <div class="stats"><span>ST ${cr.st}<span class="up">→${cr.evoSt}</span></span>
           <span>HP ${cr.hp}<span class="up">→${cr.evoHp}</span></span></div>
+        <div class="fx">${cr.fx || ''}</div>
         <div class="type">進化形</div>
         <button class="flipBtn" data-i="${i}">もどす ⟲</button></div>`;
     }
@@ -391,6 +552,7 @@ function render() {
       if ((pend() && pend().type === 'select_char') && pend().options.some(o => o.id === oid)) choose(oid);
     });
   } else $('charSel').classList.remove('on');
+  if (!p || p.type !== 'draft') $('draftOv').classList.remove('on');
   // ショップシーンの開閉
   const inMarket = pend() && pend().type === 'market';
   if (!inMarket) { $('shopScene').classList.remove('on'); inShopHand = false; }
@@ -414,7 +576,7 @@ function render() {
   // テレビ側の移動アニメが終わるまで、到着系UIの表示を待つ
   {
     const ld = state.lastDice;
-    if (p && ['tile', 'upgrade', 'market'].includes(p.type) && ld && ld.player === pid) {
+    if (p && ['tile', 'upgrade', 'market', 'draft'].includes(p.type) && ld && ld.player === pid) {
       const doneAt = ld.at + 1900 + ld.value * 250 + 900;
       if (Date.now() < doneAt) {
         $('msg').textContent = '移動中…';
@@ -446,16 +608,30 @@ function render() {
   } else if (p.type === 'roll') {
     $('msg').textContent = p.prompt;
     const extra = p.options.filter(o => o.id !== 'roll').map(o =>
-      `<button class="abtn ghost" onclick="choose('${o.id}')">${o.label}</button>`).join('');
+      `<button class="${o.id === 'ult' ? 'ultBtn' : 'abtn ghost'}" onclick="choose('${o.id}')">${o.label}</button>`).join('');
     A.innerHTML = '<button class="diceImgBtn" id="diceBtn"><img src="/assets/dice_btn.png"></button>' + extra;
     $('diceBtn').onclick = startRoll;
-  } else if (p.type === 'curse_target') {
+  } else if (p.type === 'curse_target' || p.type === 'ult_mio') {
     $('msg').textContent = p.prompt;
     A.innerHTML = '<div class="btnCol">' + p.options.map(o =>
       `<button class="abtn ${o.id === 'ct:cancel' ? 'ghost' : ''}" onclick="choose('${o.id}')">${o.label}</button>`).join('') + '</div>';
   } else if (p.type === 'select_char') {
     $('msg').textContent = '';
     A.innerHTML = '';
+  } else if (p.type === 'draft') {
+    $('msg').textContent = '';
+    A.innerHTML = '';
+    $('shopScene').classList.remove('on');
+    $('draftOv').classList.add('on');
+    $('draftRow').innerHTML = p.options.map(o => {
+      const cid = o.id.slice(5);
+      const rr = state.catalog.CREATURES[cid].rarity || 'N';
+      return `<div class="draftCard rar-${rr}" data-o="${o.id}">${bigCardHTML(cid)}</div>`;
+    }).join('');
+    document.querySelectorAll('.draftCard').forEach(el =>
+      el.onclick = () => { choose(el.dataset.o); $('draftOv').classList.remove('on'); });
+    renderHand();
+    return;
   } else if (p.type === 'market' && !inShopHand) {
     $('msg').textContent = '';
     A.innerHTML = '';
