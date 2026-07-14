@@ -7,11 +7,14 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const VERSION = '0.23';
+const VERSION = '0.26';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, shrineBonus: 100, tollUnit: 30,
-                levelCost: { 2: 100, 3: 200, 4: 300 }, gemPrice: 80, drawPrice: 100, maxLevel: 4 };
+                levelCost: { 2: 100, 3: 200, 4: 300 }, gemPrice: 80, drawPrice: 100, maxLevel: 4,
+                evoLevel: 3, forgeCost: 150 };
+const baseId = c => (c || '').replace(/_f$/, '');
+const isEvolved = (o) => o.level >= RULES.evoLevel || /_f$/.test(o.creature);
 
 // ===== 盤面(28マス周回) =====
 const TILES = [
@@ -44,16 +47,16 @@ const CREATURES = {
   cleo:   { name: 'クレオ',         evo: 'クレステッド',   elem: null,    st: 30, hp: 30, cost: 40, evoSt: 50, evoHp: 45, fx: '【適応】どの属性でも地形補正を得る', rarity: 'N' },
   // マーケット
   drake:   { name: 'ファイアドレイク', elem: 'fire',  st: 55, hp: 35, cost: 120, rarity: 'R' },
-  hound:   { name: 'ヘルハウンド',     elem: 'fire',  st: 40, hp: 20, cost: 80, fx: '【群れ】攻撃時、自分の火の土地×ST+5', rarity: 'N' },
   qbaby:   { name: 'クイーンベビー', evo: 'クイーン', elem: 'fire', st: 35, hp: 30, cost: 120, evoSt: 55, evoHp: 50, fx: '【女王の威光】両隣の自領地の防衛HP+10(進化+20)', rarity: 'L' },
   mermaid: { name: 'マーメイド',       elem: 'water', st: 20, hp: 50, cost: 90, fx: '【真珠】召喚時、宝石1個を得る', rarity: 'N' },
-  kraken:  { name: 'クラーケン',       elem: 'water', st: 55, hp: 55, cost: 170, rarity: 'R' },
   kbaby:   { name: 'キングベビー', evo: 'キング', elem: 'water', st: 30, hp: 40, cost: 120, evoSt: 50, evoHp: 60, fx: '【王の徴収】通行料受取時+20G(進化+40G)', rarity: 'L' },
   ludi:    { name: 'ルディ', evo: 'シンルー', elem: 'wind', st: 25, hp: 40, cost: 120, evoSt: 45, evoHp: 60, fx: '【雲隠れ】防衛時、相手の支援を無効化', rarity: 'L' },
   garble:  { name: 'ガーブル', evo: 'ガレス・ゲイル', elem: 'wind', st: 35, hp: 25, cost: 120, evoSt: 55, evoHp: 45, fx: '【風刃】攻撃時、相手の地形補正を無視', rarity: 'R' },
   barbaro: { name: 'バルバロ', evo: 'バーグランダ', elem: 'earth', st: 30, hp: 45, cost: 120, evoSt: 50, evoHp: 65, fx: '【逆鱗】防衛成功時、相手から20G奪う(進化40G)', rarity: 'R' },
+  detropas:{ name: 'デトロパス', evo: 'クラーケンイービル', elem: 'fire', st: 30, hp: 25, cost: 90, evoSt: 50, evoHp: 45, fx: '【群れ】攻撃時、自分の火の土地×ST+5', rarity: 'N' },
+  goagoa:  { name: 'ゴアゴア', evo: 'ノーク・ゴーア', elem: 'water', st: 40, hp: 40, cost: 150, evoSt: 60, evoHp: 65, rarity: 'R' },
+  fugorm:  { name: 'フーゴルム', evo: 'ゴーレムアイン', elem: 'earth', st: 35, hp: 40, cost: 100, evoSt: 55, evoHp: 60, fx: '【鍛冶】召喚時、支援「武器」を得る', rarity: 'N' },
   golem:   { name: 'ロックゴーレム',   elem: 'earth', st: 30, hp: 60, cost: 140, rarity: 'R' },
-  dwarf:   { name: 'ドワーフ戦士',     elem: 'earth', st: 40, hp: 40, cost: 100, fx: '【鍛冶】召喚時、支援「武器」を得る', rarity: 'N' },
   harpy:   { name: 'ハーピー',         elem: 'wind',  st: 40, hp: 30, cost: 90, fx: '【略奪】侵略成功時、相手から50G奪う', rarity: 'N' },
   griffon: { name: 'グリフォン',       elem: 'wind',  st: 50, hp: 40, cost: 150, rarity: 'R' },
   mimic:   { name: 'ミミック',         elem: null,    st: 30, hp: 30, cost: 70, fx: '【擬態】戦闘時、相手の基礎ST/HPをコピー', rarity: 'N' },
@@ -82,7 +85,11 @@ const ULTS = {
   grease: { name: '大地の大結界', desc: '次の手番まで全領地が侵略不可+呪い解除' },
   mio:    { name: '追い風の導き', desc: '好きなマスへ移動して止まる' },
 };
-const MARKET_POOL = ['drake','hound','qbaby','mermaid','kraken','kbaby','golem','dwarf','harpy','griffon','mimic','gargoyle','ludi','garble','barbaro'];
+for (const [cid, c] of Object.entries({ ...CREATURES }))
+  if (c.evo) CREATURES[cid + '_f'] = { name: c.evo, elem: c.elem, st: c.evoSt, hp: c.evoHp,
+    cost: c.cost, fx: c.fx, rarity: c.rarity, forged: true };
+
+const MARKET_POOL = ['drake','detropas','qbaby','mermaid','goagoa','kbaby','golem','fugorm','harpy','griffon','mimic','gargoyle','ludi','garble','barbaro'];
 const RARITY_COPIES = { L: 1, R: 2, N: 3 };
 function makeDeck() {
   const d = [];
@@ -153,13 +160,13 @@ function chainCount(r, playerId, elem) {
 function tollOf(r, i) {
   const o = r.owners[i];
   const base = o.level * chainCount(r, o.player, TILES[i].e) * RULES.tollUnit;
-  return o.creature === 'orphe' ? Math.round(base * 1.2) : base;
+  return baseId(o.creature) === 'orphe' ? Math.round(base * 1.2) : base;
 }
 function kingBonus(r, receiver) {
   let bonus = 0;
   r.owners.forEach(o => {
-    if (o && o.player === receiver.id && o.creature === 'kbaby')
-      bonus += o.level >= RULES.maxLevel ? 40 : 20;
+    if (o && o.player === receiver.id && baseId(o.creature) === 'kbaby')
+      bonus += isEvolved(o) ? 40 : 20;
   });
   if (bonus) {
     receiver.gold += bonus;
@@ -201,9 +208,9 @@ function ask(r, playerId, type, prompt, options) {
 function askRoll(r, p) {
   const opts = [{ id: 'roll', label: '🎲 サイコロを振る' }];
   if (!p.ultUsed && ULTS[p.charId])
-    opts.push({ id: 'ult', label: `⚡ 固有スキル【${ULTS[p.charId].name}】` });
+    opts.push({ id: 'ult', label: `固有スキル【${ULTS[p.charId].name}】` });
   if (p.hand.includes('curse') &&
-      r.owners.some((o, i) => o && o.player !== p.id && !r.curses[i] && o.creature !== 'gargoyle'))
+      r.owners.some((o, i) => o && o.player !== p.id && !r.curses[i] && baseId(o.creature) !== 'gargoyle'))
     opts.push({ id: 'usecurse', label: '☠ 衰弱の呪いを使う' });
   ask(r, p.id, 'roll', 'あなたの手番です', opts);
 }
@@ -247,16 +254,7 @@ function doRoll(r, p) {
 function resolveTile(r, p) {
   const i = p.pos, tile = TILES[i];
   if (tile.t === 'castle') { log(r, `${p.name}は城に到着`); return askUpgrade(r, p, '城'); }
-  if (tile.t === 'gate') {
-    log(r, `${p.name}は門に到着`);
-    const canUp = r.owners.some((o, i) => o && o.player === p.id &&
-      o.level < RULES.maxLevel && p.gold >= upCost(r, p, i));
-    const opts = [];
-    if (canUp) opts.push({ id: 'g_up', label: '領地を強化する' });
-    opts.push({ id: 'g_draft', label: 'カードを引く(3枚から選択)' });
-    opts.push({ id: 'pass', label: '何もしない' });
-    return ask(r, p.id, 'gate', '変化の門 ─ 恩恵を選べ', opts);
-  }
+  if (tile.t === 'gate') { log(r, `${p.name}は門に到着`); return askGate(r, p); }
   if (tile.t === 'shrine') {
     p.gold += RULES.shrineBonus; p.shrineVisits++;
     r.lastEvent = { type: 'shrine', player: p.id, gold: RULES.shrineBonus,
@@ -316,6 +314,27 @@ function startDraft(r, p, resume) {
     label: `${CREATURES[c].name}(ST${CREATURES[c].st}/HP${CREATURES[c].hp})${CREATURES[c].fx ? ' ' + CREATURES[c].fx : ''}`,
   })));
 }
+function askGate(r, p) {
+  const canUp = r.owners.some((o, i) => o && o.player === p.id &&
+    o.level < RULES.maxLevel && p.gold >= upCost(r, p, i));
+  const canForge = p.gold >= RULES.forgeCost &&
+    p.hand.some(c => CREATURES[c] && CREATURES[c].evo);
+  const opts = [];
+  if (canUp) opts.push({ id: 'g_up', label: '領地を強化する' });
+  opts.push({ id: 'g_draft', label: 'カードを引く(3枚から選択)' });
+  if (canForge) opts.push({ id: 'g_forge', label: `鍛錬 ─ 手札のクリーチャーを進化させる(−${RULES.forgeCost}G)` });
+  opts.push({ id: 'pass', label: '何もしない' });
+  ask(r, p.id, 'gate', '変化の門 ─ 恩恵を選べ', opts);
+}
+function askForge(r, p) {
+  const opts = [];
+  p.hand.forEach((c, i) => {
+    if (CREATURES[c] && CREATURES[c].evo)
+      opts.push({ id: 'fg:' + i, label: `${CREATURES[c].name} → ${CREATURES[c].evo}(ST${CREATURES[c].evoSt}/HP${CREATURES[c].evoHp})` });
+  });
+  opts.push({ id: 'back', label: 'やめる(門にもどる)' });
+  ask(r, p.id, 'forge', `鍛錬 ─ 進化させるクリーチャーを選べ(−${RULES.forgeCost}G)`, opts);
+}
 function askMarket(r, p) {
   const half = r.halfMarket === p.id;
   const hm = x => half ? Math.round(x / 2) : x;
@@ -359,14 +378,14 @@ function resolveBattle(r) {
   const o = r.owners[b.tile];
   const tile = TILES[b.tile];
   const ac = CREATURES[b.atkCreature], dc = CREATURES[o.creature];
-  const defEvolved = o.level >= RULES.maxLevel;
+  const defEvolved = isEvolved(o);
   const notes = [];
 
   // --- 支援カード(呪具・雲隠れによる無効化) ---
   const aSup = b.supports[atk.id] !== 'none' ? SUPPORTS[b.supports[atk.id]] : null;
   const dSup = b.supports[def.id] !== 'none' ? SUPPORTS[b.supports[def.id]] : null;
   let aJinxed = dSup && dSup.jinx, dJinxed = aSup && aSup.jinx;
-  if (o.creature === 'ludi' && aSup && !aJinxed) {
+  if (baseId(o.creature) === 'ludi' && aSup && !aJinxed) {
     aJinxed = true;
     notes.push('【雲隠れ】' + dc.name + 'が相手の支援を無効化!');
   }
@@ -374,31 +393,31 @@ function resolveBattle(r) {
 
   // --- 擬態(基礎値のコピー) ---
   let aBase = { st: ac.st, hp: ac.hp }, dBase = { st: dc.st, hp: dc.hp };
-  if (b.atkCreature === 'mimic') { aBase = { st: dc.st, hp: dc.hp }; notes.push('【擬態】ミミックが' + dc.name + 'をコピー!'); }
-  if (o.creature === 'mimic') { dBase = { st: ac.st, hp: ac.hp }; notes.push('【擬態】ミミックが' + ac.name + 'をコピー!'); }
+  if (baseId(b.atkCreature) === 'mimic') { aBase = { st: dc.st, hp: dc.hp }; notes.push('【擬態】ミミックが' + dc.name + 'をコピー!'); }
+  if (baseId(o.creature) === 'mimic') { dBase = { st: ac.st, hp: ac.hp }; notes.push('【擬態】ミミックが' + ac.name + 'をコピー!'); }
 
   // --- 攻撃側ST ---
   let st = aBase.st + (aEff ? aEff.st : 0);
-  if (b.atkCreature === 'gecko') { st += 10; notes.push('【猛攻】ST+10!'); }
-  if (b.atkCreature === 'hound') {
+  if (baseId(b.atkCreature) === 'gecko') { st += 10; notes.push('【猛攻】ST+10!'); }
+  if (baseId(b.atkCreature) === 'detropas') {
     const fires = r.owners.reduce((n, oo, i) => n + (oo && oo.player === atk.id && TILES[i].e === 'fire' ? 1 : 0), 0);
     if (fires) { st += fires * 5; notes.push(`【群れ】火の領地${fires}つでST+${fires * 5}!`); }
   }
 
   // --- 防衛側HP(地形・女王・呪い) ---
-  let terrain = (dc.elem === tile.e || o.creature === 'cleo') ? o.level * 10 : 0;
-  if (o.creature === 'cleo' && dc.elem !== tile.e) notes.push('【適応】クレオが地形に順応!');
-  if (o.creature === 'nome' && terrain) { terrain *= 2; notes.push('【岩壁】地形補正2倍!'); }
-  if (b.atkCreature === 'garble' && terrain) { terrain = 0; notes.push('【風刃】地形補正を無視!'); }
+  let terrain = (dc.elem === tile.e || baseId(o.creature) === 'cleo') ? o.level * 10 : 0;
+  if (baseId(o.creature) === 'cleo' && dc.elem !== tile.e) notes.push('【適応】クレオが地形に順応!');
+  if (baseId(o.creature) === 'nome' && terrain) { terrain *= 2; notes.push('【岩壁】地形補正2倍!'); }
+  if (baseId(b.atkCreature) === 'garble' && terrain) { terrain = 0; notes.push('【風刃】地形補正を無視!'); }
   let queenBonus = 0;
   for (const d of [-1, 1]) {
     const ni = (b.tile + d + 28) % 28;
     const no = r.owners[ni];
-    if (no && no.player === def.id && no.creature === 'qbaby')
-      queenBonus += no.level >= RULES.maxLevel ? 20 : 10;
+    if (no && no.player === def.id && baseId(no.creature) === 'qbaby')
+      queenBonus += isEvolved(no) ? 20 : 10;
   }
   if (queenBonus) notes.push(`【女王の威光】防衛HP+${queenBonus}!`);
-  const curse = (r.curses[b.tile] && o.creature !== 'gargoyle') ? r.curses[b.tile].hp : 0;
+  const curse = (r.curses[b.tile] && baseId(o.creature) !== 'gargoyle') ? r.curses[b.tile].hp : 0;
   const hp = dBase.hp + terrain + queenBonus + (dEff ? dEff.hp : 0) - curse;
 
   // 支援カードは勝敗問わず消費
@@ -416,19 +435,19 @@ function resolveBattle(r) {
   if (win) {
     atk.hand.splice(atk.hand.indexOf(b.atkCreature), 1);
     // 旋風: 敗北した防衛側ガストンは手札に帰還
-    if (o.creature === 'gaston') {
-      def.hand.push('gaston');
+    if (baseId(o.creature) === 'gaston') {
+      def.hand.push(o.creature);
       log(r, `【旋風】${def.name}のガストンは風に乗って帰還した`);
     }
     r.owners[b.tile] = { player: atk.id, level: o.level, creature: b.atkCreature };
     atk.battleWins++;
     log(r, `${atk.name}の勝利! Lv${o.level}の土地を奪取した!`);
-    if (b.atkCreature === 'harpy') {
+    if (baseId(b.atkCreature) === 'harpy') {
       const got = payTo(r, def, atk, 50);
       if (got) log(r, `【略奪】ハーピーが${def.name}から${got}Gを奪った!`);
     }
   } else {
-    if (b.atkCreature === 'gaston') {
+    if (baseId(b.atkCreature) === 'gaston') {
       log(r, `【旋風】${atk.name}のガストンは風に乗って帰還した`);
     } else {
       atk.hand.splice(atk.hand.indexOf(b.atkCreature), 1);
@@ -438,7 +457,7 @@ function resolveBattle(r) {
     kingBonus(r, def);
     def.battleWins++;
     log(r, `${def.name}が防衛成功! 通行料${toll}Gも支払わせた`);
-    if (o.creature === 'barbaro') {
+    if (baseId(o.creature) === 'barbaro') {
       const extra = payTo(r, atk, def, defEvolved ? 40 : 20);
       if (extra) log(r, `【逆鱗】バーグランダの怒りで追加${extra}Gを支払った!`);
     }
@@ -510,7 +529,7 @@ function handleChoose(r, playerId, optionId) {
     return resolveTile(r, p);
   }
   if (pend.type === 'roll' && optionId === 'usecurse') {
-    const opts = r.owners.map((o, i) => o && o.player !== p.id && !r.curses[i] && o.creature !== 'gargoyle'
+    const opts = r.owners.map((o, i) => o && o.player !== p.id && !r.curses[i] && baseId(o.creature) !== 'gargoyle'
       ? { id: 'ct:' + i, label: `${pById(r, o.player).name}の${CREATURES[o.creature].name}(${TILES[i].e} Lv${o.level})` }
       : null).filter(Boolean);
     opts.push({ id: 'ct:cancel', label: 'やめる' });
@@ -546,6 +565,18 @@ function handleChoose(r, playerId, optionId) {
   if (pend.type === 'gate') {
     if (optionId === 'g_up') return askUpgrade(r, p, '門');
     if (optionId === 'g_draft') return startDraft(r, p, 'end');
+    if (optionId === 'g_forge') return askForge(r, p);
+    return endTurn(r);
+  }
+
+  if (pend.type === 'forge') {
+    if (optionId === 'back') return askGate(r, p);
+    const i = +optionId.slice(3);
+    const c = p.hand[i];
+    if (!CREATURES[c] || !CREATURES[c].evo || p.gold < RULES.forgeCost) return askGate(r, p);
+    p.gold -= RULES.forgeCost;
+    p.hand[i] = c + '_f';
+    log(r, `⚒ 【鍛錬】${p.name}の${CREATURES[c].name}が${CREATURES[c].evo}に進化した!`);
     return endTurn(r);
   }
 
@@ -555,7 +586,7 @@ function handleChoose(r, playerId, optionId) {
       const o = r.owners[i];
       p.gold -= upCost(r, p, i); o.level++;
       log(r, `${p.name}は${CREATURES[o.creature].name}の土地をLv${o.level}に育てた` +
-        (o.level === RULES.maxLevel && CREATURES[o.creature].evo
+        (o.level === RULES.evoLevel && CREATURES[o.creature].evo
           ? ` ─ ${CREATURES[o.creature].name}が${CREATURES[o.creature].evo}に進化!` : ''));
       if (checkVictory(r)) return;
     }
@@ -570,8 +601,8 @@ function handleChoose(r, playerId, optionId) {
       p.hand.splice(p.hand.indexOf(c), 1);
       r.owners[i] = { player: p.id, level: 1, creature: c };
       log(r, `${p.name}は${CREATURES[c].name}を召喚し、土地を領地化!`);
-      if (c === 'mermaid') { p.gems++; log(r, `【真珠】${p.name}は宝石を1個得た(所持${p.gems}個)`); }
-      if (c === 'dwarf') { p.hand.push('weapon'); log(r, `【鍛冶】${p.name}は支援「武器」を得た`); }
+      if (baseId(c) === 'mermaid') { p.gems++; log(r, `【真珠】${p.name}は宝石を1個得た(所持${p.gems}個)`); }
+      if (baseId(c) === 'fugorm') { p.hand.push('weapon'); log(r, `【鍛冶】${p.name}は支援「武器」を得た`); }
       updateTitles(r); if (checkVictory(r)) return; return endTurn(r);
     }
     if (optionId === 'toll') {
@@ -683,7 +714,7 @@ function startGame(r) {
 // ===== 公開状態とHTTP =====
 function publicState(r, viewerId) {
   return {
-    ver: VERSION, code: r.code, phase: r.phase, turn: r.turn, round: r.round, target: TARGET_PTS,
+    ver: VERSION, code: r.code, phase: r.phase, evoLevel: RULES.evoLevel, turn: r.turn, round: r.round, target: TARGET_PTS,
     tiles: TILES, owners: r.owners, market: r.market, log: r.log,
     titles: r.titles, duel: r.duel, curses: r.curses, lastEvent: r.lastEvent || null,
     barrier: r.barrier || null, lastUlt: r.lastUlt || null, lastBattle: r.lastBattle, lastDice: r.lastDice || null,

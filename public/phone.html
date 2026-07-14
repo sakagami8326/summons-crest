@@ -36,7 +36,7 @@
         padding:6px calc(12px + env(safe-area-inset-right)) 6px calc(12px + env(safe-area-inset-left)); }
   .me { display:flex; align-items:center; gap:8px; background:rgba(0,0,0,.35);
         border:1px solid var(--gold); border-radius:999px; padding:4px 14px 4px 5px; flex:none; }
-  .me img { width:12dvh; height:12dvh; border-radius:50%; border:2px solid var(--gold); object-fit:cover; }
+  .me > img { width:12dvh; height:12dvh; border-radius:50%; border:2px solid var(--gold); object-fit:cover; flex:none; }
   .me .nm { font-size:2.4dvh; letter-spacing:1px; }
   .me .st { font-size:2.1dvh; color:var(--gold-soft); font-family:sans-serif; }
   #msg { flex:1; text-align:center; font-size:2.5dvh; letter-spacing:2px; color:var(--gold-soft);
@@ -103,9 +103,9 @@
   .face .cost { position:absolute; top:6px; left:6px; width:4.4dvh; height:4.4dvh; border-radius:50%;
         background:#2C2A4A; color:var(--gold-soft); display:flex; align-items:center; justify-content:center;
         font-size:1.7dvh; font-family:sans-serif; border:1px solid var(--gold); z-index:2; }
-  .face .art { height:54%; display:flex; align-items:flex-end; margin-top:3dvh; }
+  .face .art { height:50%; display:flex; align-items:flex-end; justify-content:center; margin-top:6.2dvh; }
   .face .art img { max-height:100%; filter:drop-shadow(0 3px 4px rgba(58,43,24,.35)); }
-  .face .tok2 { width:11dvh; height:11dvh; border-radius:50%; margin-top:4dvh; color:#F6EFDD;
+  .face .tok2 { width:10dvh; height:10dvh; border-radius:50%; margin-top:6.5dvh; color:#F6EFDD;
         display:flex; align-items:center; justify-content:center; font-size:2dvh; border:3px solid #2C2A4A; }
   .face .glyph { height:54%; display:flex; align-items:center; justify-content:center;
         font-size:8.5dvh; margin-top:3dvh; color:#2C2A4A; }
@@ -197,7 +197,7 @@
   #galZoom { position:fixed; inset:0; display:none; z-index:62; align-items:center;
       justify-content:center; background:rgba(10,8,25,.88); }
   #galZoom.on { display:flex; }
-  #galZoomCard { width:38dvh; height:58dvh; animation:drawIn .4s ease; }
+  #galZoomCard { position:relative; width:38dvh; height:58dvh; animation:drawIn .4s ease; }
   #galZoom .tap { position:absolute; bottom:5dvh; width:100%; text-align:center;
       font-size:2dvh; letter-spacing:3px; color:rgba(241,232,208,.8); }
 
@@ -229,6 +229,29 @@
       background:rgba(0,0,0,.4); border-radius:1dvh; padding:.8dvh 1.2dvh; margin-top:.6dvh;
       min-height:6.5dvh; }
   .csCard .csUlt b { color:var(--gold-soft); }
+
+  .face .elemIc { position:absolute; top:1dvh; left:50%; transform:translateX(-50%);
+      width:4.6dvh; height:4.6dvh; border-radius:50%; background:rgba(20,18,39,.85);
+      border:1px solid var(--gold); display:flex; align-items:center; justify-content:center; z-index:2; }
+  .face .elemIc svg { width:70%; height:70%; }
+  .face .elemIc.none { color:#9AA0B0; font-size:1.7dvh; font-family:serif; }
+  /* ULT確認 */
+  #ultConfirm { position:fixed; inset:0; display:none; z-index:64; align-items:center;
+      justify-content:center; background:rgba(10,8,25,.85); }
+  #ultConfirm.on { display:flex; }
+  .ucBox { width:min(70vw, 60dvh); background:var(--ink2); border:2px solid #F2D062;
+      border-radius:2dvh; padding:3dvh; text-align:center; box-shadow:0 0 30px rgba(242,208,98,.4); }
+  .ucBox .ucn { font-size:2.8dvh; letter-spacing:3px; color:var(--gold-soft); }
+  .ucBox .ucd { font-size:2dvh; color:rgba(241,232,208,.9); margin:1.6dvh 0; line-height:1.7; }
+  .ucBox .ucw { font-size:1.7dvh; color:#F09595; margin-bottom:2dvh; }
+  .ucBox .row { display:flex; gap:2dvh; justify-content:center; }
+  /* ショップ2列 */
+  #shopBtns { display:grid !important; grid-template-columns:1fr 1fr; gap:1.2dvh;
+      align-content:start; }
+  .shopBtn .sbT { font-size:2dvh; letter-spacing:1px; }
+  .shopBtn .sbD { font-size:1.5dvh; color:rgba(36,28,5,.75); margin-top:.5dvh; line-height:1.4; }
+  .shopBtn.ghost .sbD { color:rgba(241,232,208,.6); }
+  .shopBtn.full { grid-column:1 / -1; text-align:center; }
 </style>
 </head>
 <body>
@@ -249,7 +272,7 @@
     <div class="me"><img id="myFace" src=""><div><div class="nm" id="myName"></div>
       <div class="st" id="myStat"></div></div></div>
     <div id="msg"></div>
-    <button id="galleryBtn">一覧</button>
+    <button id="galleryBtn">クリーチャー一覧</button>
     <button id="fsBtn">⛶ 全画面</button>
   </header>
   <div id="action" style="display:none"></div>
@@ -274,14 +297,24 @@
     <div id="gGrid"></div>
   </div>
   <div id="galZoom"><div id="galZoomCard"></div><div class="tap">タップで閉じる</div></div>
+  <div id="ultConfirm"><div class="ucBox">
+    <div class="ucn" id="ucName"></div>
+    <div class="ucd" id="ucDesc"></div>
+    <div class="ucw">固有スキルは1ゲームに1回しか発動できません</div>
+    <div class="row">
+      <button class="abtn" onclick="choose('ult'); document.getElementById('ultConfirm').classList.remove('on')">発動する</button>
+      <button class="abtn ghost" onclick="document.getElementById('ultConfirm').classList.remove('on')">やめる</button>
+    </div>
+  </div></div>
   <div id="drawModal"><div id="drawCard"></div><div class="tap">タップで閉じる</div></div>
 
 <script>
 const $ = id => document.getElementById(id);
 let room = null, pid = null, state = null, selected = null, rolling = false;
 let inShopHand = false, expectDraw = false, prevHandKey = '', moveT = null;
+let lastPendKey = '', pendSince = 0;
 const flipped = new Set();
-const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby','ludi','garble','barbaro']);
+const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby','ludi','garble','barbaro','detropas','goagoa','fugorm']);
 const RUNE = { fire:'#FF7A45', water:'#56A8E8', earth:'#7FD35C', wind:'#5BE0D0' };
 const ELEM_MINI = {"fire": "<g transform=\"scale(0.0636) translate(-364.2,-542.7)\" fill=\"#FF7A45\">\n  \n  <g id=\"_レイヤー_1-2\" data-name=\"レイヤー 1\">\n    <g>\n      <path class=\"cls-1\" d=\"M502.96,875.18c20.7,1.95,39.15,7.09,58.74,14.54-43.77,9.03-79.6,29.35-112.36,60.41-39.53,38.23-65.33,84-86.12,135.36-35.43-90.99-97.53-174.86-198.25-195.78,18.26-7.38,37.21-12.26,57.75-14.52-2.88-27.94-29.1-44.35-54.23-53.16-16.27-5.71-31.56-11.33-46.99-19.1C42.5,763.12-1.91,686.81.06,598.13c.87-39.27,12.06-76.51,33.38-109.32l-1.27,35.33c.55,23.13,7.03,45.18,20.01,64.07,13.05,18.98,36.27,37.2,58.34,29.97,10.94-3.58,18.09-13.55,20.1-24.81,3.74-20.99-6.85-39.2-17.8-56.7-9.63-15.39-17.32-31.41-20.64-49.46-11.95-65.01,22.27-137.39,67.09-184.91-8.39,43.48-9.38,86.8,14.2,123.64,8.42,13.16,18.97,24.19,33,30.91,5.43,2.6,12.52,3.31,17.47-.2,10.73-7.62,9.28-27.96,2.85-41.97-20.05-43.72-14.79-88.55,4.15-132.01,11.3-25.94,26.38-48.84,44.03-70.93l39.07-48.91c13.62-17.05,24.01-35.47,32.29-55.67,15.07-36.76,15.18-68.74,5.01-107.14,38.76,43.25,60.82,98.08,51.01,156.05-2.06,12.18-5.43,23.43-8.89,35.18l-10.01,33.97c-5.3,22.07-3.06,45.01,8.04,64.73,4.83,8.58,11.47,15.6,20.23,19.61,14.59,6.68,30.43-.19,36.21-15.03,8.22-21.08-3.31-42.01,4.98-70.96,5.72-19.96,17.2-36.54,33.3-50.1l.82,1.13c-13.25,28.33-11.54,54.43,5.95,79.96,6.64,9.69,13.54,18.57,18.55,29.36,10.94,23.53,13.31,49.4,8.45,74.97-3.67,19.31-11.35,36.65-21.72,53.17-6.19,9.86-9.16,21.21-6.55,32.59,2.17,9.46,10.12,15.09,19.71,14.54,6.76-.39,13-2.65,18.68-6.36,30.5-19.89,45.21-58.61,46.55-94.7.73-19.8-1.96-38.21-4.52-58.79,47.94,52.05,84.36,136.93,61,204.61-10.73,31.09-33.56,49.27-35.62,78.1-.89,12.39,2.84,24.63,12.84,32.17,19.68,14.85,46.62-1.72,61.85-21.33,14.05-18.09,21.53-39.63,23.54-62.52l-.52-41.69c32.87,50.66,40.44,113.71,26.34,171.7-15.11,62.14-56.63,112.8-113.4,141.68-17.61,8.96-35.5,15.28-54.29,21.66-22.7,7.7-48.02,25.07-50.9,51.49ZM363.33,955.02c13.81-61.5,38.41-114.16,89.31-151.63,17.65-13,35.81-23.58,55.15-33.79,11.38-6.01,22.1-12.01,32.23-19.79,20.67-15.87,33.46-38.35,28.29-64.62-5.4-27.39-22.52-51.29-42.71-70.31-4.9,31.51-21.04,59.29-52.4,66.97-10.97,2.14-21.79,1.24-31.33-4.17-14.37-8.15-20.35-24.21-14.61-39.8,2.96-8.05,7.99-14.86,12.94-21.92l19.79-28.19c6.21-10.43,11.43-21.3,12.51-33.68s-3.73-23.7-11.66-32.47l-28.03-30.98c-35.2-38.9-64.75-87.38-79.07-138.71-15.65,48.77-41.16,95.25-70.71,137.78l-18.94,29.12c-6.18,9.49-9.8,20.71-9.46,32.29.76,25.72,21.35,50.54,35.99,71.67,4.72,6.82,8.4,14.13,9.59,22.24,2.03,13.78-4.31,26.02-16.36,32.67-9.49,5.24-20.47,6.37-31.43,4.22-31.23-6.11-49.22-35.78-53.42-66.98-19.88,18.05-37.09,42.46-42.82,68.87-4.17,19.23,1.3,37.7,14.16,52.49,9.28,10.67,20.75,18.63,33.3,25.56l44.47,24.55c19.28,10.64,35.8,24.02,51.5,39.48,35.09,36.95,52.32,79.43,63.72,129.14Z\"/>\n      <path class=\"cls-1\" d=\"M363.05,847.33c-16.83-45.53-44.66-91.38-92.3-110.16,36.86-13.23,56.29-41.76,70.59-76.15,9.14-21.99,15.8-44.44,21.78-67.18,5.91,22.93,12.33,44.22,20.74,65.69,14.73,35.11,33.5,64.13,71.34,77.59-47.87,19.57-74.15,63.27-92.15,110.21Z\"/>\n    </g>\n  </g>\n</g>", "water": "<g transform=\"scale(0.0906) translate(-257.0,-380.9)\" fill=\"#56A8E8\">\n  \n  <g id=\"_レイヤー_1-2\" data-name=\"レイヤー 1\">\n    <g>\n      <path class=\"cls-1\" d=\"M19.05,562.68c-11.22-21.93-17.99-44.02-19.05-68.72,13.15,26.51,30.6,49.14,53.23,68.12,58.5,49.04,139.18,69.99,213.08,47.73,62.24-18.75,112.53-70.62,113.37-137.33.35-27.99-9.48-54.29-28.75-74.11-27.57-28.35-69.6-37.97-105.93-22.99-24.04,10.23-40.73,29.34-46.61,55.61-11.57-40.42,14.37-84.41,49.59-106.41,59.46-37.13,135.42-24,186.46,22.28,33.2,30.11,53.1,72.37,55.31,117.58,2.16,43.96-11.88,86.39-36.36,122.52-27.43,40.49-68.5,71.26-111.93,93.16l-47.23,23.81c-23.27,12.98-46.71,29.38-49.61,57.93-22.02-25.43-11.47-59.44,10.34-83.41-93.01,8.43-190.79-31.36-235.93-115.76Z\"/>\n      <path class=\"cls-1\" d=\"M125.83,409.61c6.28,54.11,50.15,95.1,105.96,92.42,19.84-.95,37.87-7.97,51.93-21.62,13.65-13.47,18.88-30.72,17.04-50.94,11.08,16.53,12.57,36.55,7.61,55.47-5.68,21.7-20.06,39.13-38.79,51.31-16.04,9.55-33.05,15.18-51.89,17.25-39.58,4.34-78.36-5.84-111.75-27.17-36.11-23.06-62.21-57.76-74.25-98.97-7.4-25.33-9.54-51.14-5.39-77.29,4.33-27.26,13.34-52.47,26.55-76.64,13.36-24.46,29.29-46.34,47.85-67.1l45.76-51.21c12.95-14.49,23.91-29.5,33.82-46.13,10.54-18.83,17.65-38.38,19.8-59.89,1.66-16.66-1.02-32.23-4.69-49.12,12.97,10.38,21.7,23.15,28.14,37.74,20.14,45.67,11.1,99.33-9.05,144.19-7.3,16.25-15.93,30.81-24.51,46.33,26.46-30.98,63.42-61.88,105.37-60.6,25.67.78,47.65,14.98,57.96,38.4,6.31,16.18,7.3,33.5,1.09,51.03-12.08-29.59-45.94-37.43-76.65-34.33-19.44,2.11-37.34,7.78-54.63,17.21-43.82,23.9-76.62,64.15-91.57,111.85-5.97,19.05-7.99,38.13-5.71,57.81Z\"/>\n      <circle class=\"cls-1\" cx=\"451.74\" cy=\"228.23\" r=\"29.57\"/>\n      <circle class=\"cls-1\" cx=\"496.55\" cy=\"316.35\" r=\"17.43\"/>\n    </g>\n  </g>\n</g>", "earth": "<g transform=\"scale(0.0906) translate(-288.8,-380.6)\" fill=\"#7FD35C\">\n  \n  <g id=\"_レイヤー_1-2\" data-name=\"レイヤー 1\">\n    <g>\n      <polygon class=\"cls-1\" points=\"352.8 488.32 289.43 571.63 176.59 422.15 289.31 273.16 334.44 331.7 402.31 422.02 352.8 488.32\"/>\n      <polygon class=\"cls-1\" points=\"350.15 303.53 289.43 222.91 228.57 303.43 211.93 262.28 190.53 234.85 289.49 0 349.12 140.82 388.54 234.79 366.88 262.01 350.15 303.53\"/>\n      <polygon class=\"cls-1\" points=\"119.04 541.65 67.79 510.21 0 467.42 18.32 433.28 67.47 343.02 162.25 391.41 141.41 422.24 204.2 509.31 119.04 541.65\"/>\n      <polygon class=\"cls-1\" points=\"459.42 541.65 375.34 509.51 440.05 422.27 417.45 390.53 510.49 343.1 534.2 386.87 577.6 467.49 554.13 482.31 459.42 541.65\"/>\n      <polygon class=\"cls-1\" points=\"198.78 668.62 151.35 632.63 82.57 579.08 151.62 552.64 216.45 528.24 262.09 588.9 242.75 612.84 198.78 668.62\"/>\n      <polygon class=\"cls-1\" points=\"476.79 593.97 380.16 668.64 316.69 588.82 362.67 528.24 496.25 579.04 476.79 593.97\"/>\n      <polygon class=\"cls-1\" points=\"199.66 333.79 174.23 371.48 103.81 317.22 90.34 206.22 175.14 261.71 199.66 333.79\"/>\n      <polygon class=\"cls-1\" points=\"404.48 371.32 378.84 333.97 403.48 261.64 487.98 206.1 479.02 278.07 474.37 317.29 404.48 371.32\"/>\n      <polygon class=\"cls-1\" points=\"289.38 761.18 245.51 648.62 289.23 597.38 333.14 648.4 289.38 761.18\"/>\n      <polygon class=\"cls-1\" points=\"378.21 724.35 334.35 697.53 343.37 658.8 358.06 676.09 378.21 724.35\"/>\n      <polygon class=\"cls-1\" points=\"244.25 697.61 199.98 724.71 221.07 676.13 235.37 658.6 244.25 697.61\"/>\n    </g>\n  </g>\n</g>", "wind": "<g transform=\"scale(0.0704) translate(-308.9,-489.7)\" fill=\"#5BE0D0\">\n  \n  <g id=\"_レイヤー_1-2\" data-name=\"レイヤー 1\">\n    <g>\n      <path class=\"cls-1\" d=\"M155.69,420.63c-33.71,46.8-40.32,106.48,5.67,145.45,19.26,16.33,42.38,25.85,67.55,28.52,54.45,5.79,105.18-22,130.17-71.49,3.3,12.52,3.52,23.9,2.1,36.22-7.35,63.37-57.02,106.94-118.32,119.63-105.77,21.89-215.06-47.34-232.99-154.48-11.27-67.3,16.7-135.76,55.4-190.12,15.33-21.53,31.22-41.48,49.03-61.02l65.32-71.65c22.93-25.15,44.26-50.56,62.68-79.2,21.95-34.12,40.33-77.47,38.74-118.35-.05-1.25,1.64-3.76,2.8-4.08,5.27-1.45,16.85,19.29,21,29.47,6.17,15.14,9.55,30.24,11.18,46.79,6.08,61.72-12.41,122.46-52.72,171.66,25.82-6.68,50.42-12.68,76.77-16,48.11-6.06,98.34-5.09,144.25,11.03,33.61,11.81,63.46,31.1,87.01,58.12,32.74,37.57,50.1,87.66,45.79,138.7-13.14-22.47-25.3-41.3-43.32-57.32-18.72-18.02-40.02-31.48-63.71-42.27-59.71-26.59-132.13-28.95-195.71-15.72-61.1,12.71-122.02,45.17-158.7,96.1Z\"/>\n      <path class=\"cls-1\" d=\"M6.56,687.4c-3.92-12.14-7.02-23-6.5-36.03,25.83,39.01,63.46,65.6,106.14,81.84,59.13,22.5,123.5,25.37,184.59,8.79,67.2-18.24,130.03-62.41,153.23-129.68,17.56-50.91,2.93-105.64-46.71-129.54-37.32-17.97-82.18-17.12-118.58,2.86-22.02,12.08-37.81,30.77-45.7,55.14-13.34-14.17-17.48-33.71-13.73-52.52,7.29-36.56,39.24-66.37,72.22-82.71,78.85-39.06,174.86-22.79,234.97,42.31,53.67,58.12,60.86,141.46,30.51,213.11-17.63,41.61-44.96,76.78-80.15,104.98l-46.52,32.54c-22.37,15.65-45.15,29.34-66.4,46.49-18.16,14.66-34.31,30.05-48.7,48.33-20.14,25.5-33.83,53.58-41.94,86.17-12.21-25.44-15.2-52.32-12.3-79.25,4.55-30.52,16.84-57.92,36.59-82.18-54.06,12.14-105.83,13.47-158.1-3.22-61.41-19.98-112.72-64.89-132.92-127.42Z\"/>\n    </g>\n  </g>\n</g>"};
 const GLYPH = { weapon:'⚔', gweapon:'⚔', shield:'🛡', gshield:'🛡', jinx:'❂' };
@@ -350,21 +383,21 @@ function artOrToken(cid, cr, evo, tokSize) {
 }
 function galleryFace(cid, cr, evo) {
   if (evo) return `<div class="face back" style="transform:rotateY(180deg)">
-    ${artOrToken(cid, cr, true, '9dvh')}
+    ${cr.elem ? `<div class="elemIc"><svg viewBox="-34 -36 68 72">${ELEM_MINI[cr.elem]}</svg></div>` : `<div class="elemIc none">無</div>`}${artOrToken(cid, cr, true, '9dvh')}
     <div class="nm">${cr.evo}</div>
     <div class="stats"><span>ST <b>${cr.evoSt}</b></span><span>HP <i>${cr.evoHp}</i></span></div>
     <div class="fx">${cr.fx || ''}</div><div class="type">進化形</div></div>`;
   return `<div class="face front"><div class="cost">${cr.cost}G</div>
-    ${artOrToken(cid, cr, false, '9dvh')}
+    ${cr.elem ? `<div class="elemIc"><svg viewBox="-34 -36 68 72">${ELEM_MINI[cr.elem]}</svg></div>` : `<div class="elemIc none">無</div>`}${artOrToken(cid, cr, false, '9dvh')}
     <div class="nm">${cr.name}</div>
     <div class="stats"><span>ST <b>${cr.st}</b></span><span>HP <i>${cr.hp}</i></span></div>
     <div class="fx">${cr.fx || ''}</div>
     <div class="rarBadge ${cr.rarity || 'N'}">${cr.rarity || 'N'}</div>
-    <div class="type">${cr.evo ? 'クリーチャー(進化あり)' : 'クリーチャー'}</div></div>`;
+    <div class="type">クリーチャー</div></div>`;
 }
 function buildGallery() {
   const C = state.catalog.CREATURES;
-  $('gGrid').innerHTML = Object.entries(C).map(([cid, cr]) => `
+  $('gGrid').innerHTML = Object.entries(C).filter(([cid]) => !cid.endsWith('_f')).map(([cid, cr]) => `
     <div class="gCard" data-cid="${cid}">
       <div class="flip" data-evo="${cr.evo ? 1 : 0}">
         ${galleryFace(cid, cr, false)}
@@ -392,11 +425,12 @@ $('galZoom').onclick = () => $('galZoom').classList.remove('on');
 
 function bigCardHTML(c) {
   const cr = state.catalog.CREATURES[c];
-  const art = HAS_ART.has(c)
-    ? `<div class="art" style="height:60%"><img src="/assets/c_${c}.png"></div>`
+  const bid0 = c.replace(/_f$/, '');
+  const art = HAS_ART.has(bid0)
+    ? `<div class="art" style="height:60%"><img src="/assets/${bid0 !== c ? 'e_' : 'c_'}${bid0}.png"></div>`
     : `<div class="tok2" style="background:${RUNE[cr.elem] || '#6E7288'};width:20dvh;height:20dvh;font-size:3dvh">${cr.name.slice(0,4)}</div>`;
   return `<div class="face front" style="position:relative">
-    <div class="cost">${cr.cost}G</div>${art}
+    <div class="cost">${cr.cost}G</div>${cr.elem ? `<div class="elemIc"><svg viewBox="-34 -36 68 72">${ELEM_MINI[cr.elem]}</svg></div>` : `<div class="elemIc none">無</div>`}${art}
     <div class="nm" style="font-size:3dvh">${cr.name}</div>
     <div class="stats" style="font-size:2.4dvh"><span>ST <b>${cr.st}</b></span><span>HP <i>${cr.hp}</i></span></div>
     <div class="fx" style="font-size:1.7dvh">${cr.fx || ''}</div>
@@ -433,10 +467,11 @@ function cardHTML(c, i) {
   const sel = selected === i;
   let front, back = '';
   if (cr) {
-    const art = HAS_ART.has(c)
-      ? `<div class="art"><img src="/assets/c_${c}.png"></div>`
+    const bid = c.replace(/_f$/, '');
+    const art = HAS_ART.has(bid)
+      ? `<div class="art"><img src="/assets/${bid !== c ? 'e_' : 'c_'}${bid}.png"></div>`
       : `<div class="tok2" style="background:${RUNE[cr.elem] || '#6E7288'}">${cr.name.slice(0,4)}</div>`;
-    front = `<div class="cost">${cr.cost}G</div>${art}
+    front = `<div class="cost">${cr.cost}G</div>${cr.elem ? `<div class="elemIc"><svg viewBox="-34 -36 68 72">${ELEM_MINI[cr.elem]}</svg></div>` : `<div class="elemIc none">無</div>`}${art}
       <div class="nm">${cr.name}</div>
       <div class="stats"><span>ST <b>${cr.st}</b></span><span>HP <i>${cr.hp}</i></span></div>
       <div class="fx">${cr.fx || ''}</div>
@@ -447,7 +482,7 @@ function cardHTML(c, i) {
       const eart = HAS_ART.has(c)
         ? `<div class="art"><img src="/assets/e_${c}.png"></div>`
         : `<div class="tok2" style="background:${RUNE[cr.elem] || '#6E7288'}">${cr.evo.slice(0,4)}</div>`;
-      back = `<div class="face back">${eart}
+      back = `<div class="face back">${cr.elem ? `<div class="elemIc"><svg viewBox="-34 -36 68 72">${ELEM_MINI[cr.elem]}</svg></div>` : `<div class="elemIc none">無</div>`}${eart}
         <div class="nm">${cr.evo}</div>
         <div class="stats"><span>ST ${cr.st}<span class="up">→${cr.evoSt}</span></span>
           <span>HP ${cr.hp}<span class="up">→${cr.evoHp}</span></span></div>
@@ -465,23 +500,34 @@ function cardHTML(c, i) {
       <div class="stats">${sp.st ? 'ST+' + sp.st : ''}${sp.hp ? 'HP+' + sp.hp : ''}${sp.jinx ? '相手の支援を無効化' : ''}</div>
       <div class="type">支援</div>`;
   }
-  return `<div class="card ${sel ? 'sel' : ''} ${dim ? 'dim' : ''}" data-i="${i}" data-c="${c}">
+  return `<div class="card" data-i="${i}" data-c="${c}">
     <div class="flip ${flipped.has(i) ? 'flipped' : ''}"><div class="face front">${front}</div>${back}</div></div>`;
 }
 
-let handRenderKey = '';
+let handListKey = '';
 function renderHand() {
-  const key = me().hand.join(',') + '|' + selected + '|' + selectableKind() + '|' + state.phase;
-  if (key === handRenderKey) return;
-  handRenderKey = key;
-  $('hand').innerHTML = me().hand.map((c, i) => cardHTML(c, i)).join('');
-  document.querySelectorAll('.card').forEach(el => el.onclick = () => {
+  const list = me().hand.join(',');
+  if (list !== handListKey) {
+    handListKey = list;
+    $('hand').innerHTML = me().hand.map((c, i) => cardHTML(c, i)).join('');
+    bindHand();
+  }
+  // 状態(選択・押下可否)は既存DOMのクラス切替のみ(画像を再構築しない)
+  const skind = selectableKind();
+  document.querySelectorAll('#hand .card').forEach(el => {
+    const i = +el.dataset.i, c = el.dataset.c;
+    el.classList.toggle('sel', selected === i);
+    el.classList.toggle('dim', !!skind && !cardOption(c));
+  });
+}
+function bindHand() {
+  document.querySelectorAll('#hand .card').forEach(el => el.onclick = () => {
     const i = +el.dataset.i, c = el.dataset.c;
     if (!cardOption(c)) return;
     selected = selected === i ? null : i;
     render();
   });
-  document.querySelectorAll('.flipBtn').forEach(b => b.onclick = e => {
+  document.querySelectorAll('#hand .flipBtn').forEach(b => b.onclick = e => {
     e.stopPropagation();
     const i = +b.dataset.i;
     flipped.has(i) ? flipped.delete(i) : flipped.add(i);
@@ -497,6 +543,12 @@ const DICE_FACES = [1,2,3,4,5,6].map(v => `<div class="dface f${v}"><svg viewBox
 const FACE_ROT = { 1:[0,0], 2:[-90,0], 3:[0,-90], 4:[0,90], 5:[90,0], 6:[0,180] };
 let lastDiceAt = 0;
 
+function showUltConfirm() {
+  const m = me(), u = state.catalog.ULTS[m.charId];
+  $('ucName').textContent = '【' + u.name + '】';
+  $('ucDesc').textContent = u.desc;
+  $('ultConfirm').classList.add('on');
+}
 function startRoll() {
   rolling = true;
   $('action').innerHTML = `<div class="diceStage drop"><div class="dice3d" id="die3d">${DICE_FACES}</div></div>`;
@@ -531,7 +583,7 @@ function render() {
     return `<span style="color:${RUNE[e]}; display:inline-flex; align-items:center; gap:2px; opacity:${n ? 1 : .4}">
       <svg width="12" height="12" viewBox="-34 -36 68 72" style="vertical-align:middle">${ELEM_MINI[e]}</svg>${n}</span>`;
   }).join(' ');
-  const ic = n => `<img src="/assets/${n}.png" style="height:2dvh;vertical-align:-0.3dvh">`;
+  const ic = n => `<img src="/assets/${n}.png" style="height:2dvh;width:auto;vertical-align:-0.3dvh">`;
   $('myStat').innerHTML = `${m.points}/${state.target}点 ｜ ${ic('ic_gold')}${m.gold} ｜ ${ic('ic_gem')}${m.gems}<br>領地: ${elemN}`;
 
   // ダイスの出目が自分のものなら着地させる
@@ -589,11 +641,17 @@ function render() {
 
   // テレビ側の移動アニメが終わるまで、到着系UIの表示を待つ
   {
+    const pk = p ? p.type + '|' + p.prompt : '';
+    if (pk !== lastPendKey) { lastPendKey = pk; pendSince = Date.now(); }
     const ld = state.lastDice;
-    if (p && ['tile', 'upgrade', 'market', 'draft'].includes(p.type) && ld && ld.player === pid) {
+    if (p && ['tile', 'upgrade', 'market', 'draft', 'gate', 'forge'].includes(p.type) && ld && ld.player === pid) {
       const steps = ld.multi ? ld.multi.reduce((a, b) => a + b, 0) : ld.value;
       const init = ld.multi ? 2900 : 1900;
-      let doneAt = ld.at + init + steps * 250 + (ld.castle ? 1700 : 0) + 900;
+      let doneAt = ld.at + init + steps * 250 + 1300;
+      if (ld.castle && p.type !== 'draft') {
+        // 城ドラフト後の到着: テレビ側は選択後に残りを移動する(残り歩数=現在地)
+        doneAt = pendSince + 650 + m.pos * 250 + 1100;
+      }
       if (p.type === 'draft' && ld.castle) {
         // 城ドラフトはコマが城に着いた瞬間に表示する
         const from = ((m.pos - steps) % 28 + 28) % 28;
@@ -629,8 +687,10 @@ function render() {
     selected = null;
   } else if (p.type === 'roll') {
     $('msg').textContent = p.prompt;
+    const myElem = m.charId && C.CHARS[m.charId] ? C.CHARS[m.charId].elem : null;
+    const ultIc = myElem ? `<svg width="16" height="16" viewBox="-34 -36 68 72" style="vertical-align:-3px">${ELEM_MINI[myElem]}</svg> ` : '';
     const extra = p.options.filter(o => o.id !== 'roll').map(o =>
-      `<button class="${o.id === 'ult' ? 'ultBtn' : 'abtn ghost'}" onclick="choose('${o.id}')" style="font-size:1.9dvh">${o.label}</button>`).join('');
+      `<button class="${o.id === 'ult' ? 'ultBtn' : 'abtn ghost'}" onclick="${o.id === 'ult' ? 'showUltConfirm()' : `choose('${o.id}')`}" style="font-size:1.9dvh">${o.id === 'ult' ? ultIc : ''}${o.label}</button>`).join('');
     A.innerHTML = `<div style="position:relative; width:100%; height:100%">
       <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%)">
         <button class="diceImgBtn" id="diceBtn"><img src="/assets/dice_btn.png"></button></div>
@@ -667,13 +727,27 @@ function render() {
     A.innerHTML = '';
     $('shopScene').classList.add('on');
     $('shopGold').innerHTML = '<img src="/assets/ic_gold.png" style="height:2.4dvh;vertical-align:-0.4dvh"> ' + m.gold + ' G';
+    const shopDesc = id => {
+      if (id === 'draw') return '山札から3枚公開し、1枚を選んで獲得する';
+      if (id.startsWith('buys:')) {
+        const sp = C.SUPPORTS[id.slice(5)];
+        return sp.jinx ? '戦闘で相手の支援カードを無効化する'
+          : `戦闘で${sp.st ? 'ST+' + sp.st : 'HP+' + sp.hp}(秘密裏に同時出し)`;
+      }
+      if (id === 'buyi:curse') return '敵の土地のクリーチャーのHP-20(自分の次の手番まで)';
+      if (id === 'gem') return '集めて秘宝と交換できる(秘宝=勝利点+1)';
+      if (id === 'treasure') return '宝石を消費して勝利点+1を獲得!';
+      if (id === 'done') return '買い物を終えて手番を終了する';
+      return '';
+    };
     $('shopBtns').innerHTML =
-      `<button class="shopBtn ghost" onclick="inShopHand=true; render()">🂠 手札を見る</button>` +
+      `<button class="shopBtn ghost full" onclick="inShopHand=true; render()"><img src="/assets/ic_hand.png" style="height:2.4dvh;width:auto;vertical-align:-0.4dvh"> 手札を見る</button>` +
       p.options.map(o =>
-        `<button class="shopBtn ${o.id === 'done' ? 'ghost' : ''}" onclick="choose('${o.id}')">${o.label}</button>`).join('');
+        `<button class="shopBtn ${o.id === 'done' ? 'ghost full' : ''}" onclick="choose('${o.id}')">
+          <div class="sbT">${o.label}</div><div class="sbD">${shopDesc(o.id)}</div></button>`).join('');
   } else if (p.type === 'market' && inShopHand) {
     $('msg').textContent = '手札を確認中';
-    A.innerHTML = '<button class="abtn ghost" onclick="inShopHand=false; render()">🛒 店にもどる</button>';
+    A.innerHTML = '<button class="abtn ghost" onclick="inShopHand=false; render()">店にもどる</button>';
   } else {
     // tile / pick_creature / support: カード選択+ボタン
     $('msg').innerHTML = p.prompt;

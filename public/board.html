@@ -96,7 +96,7 @@
   @keyframes shake { 0%,100%{transform:none} 25%{transform:translate(12px,-7px)}
     50%{transform:translate(-10px,8px)} 75%{transform:translate(7px,4px)} }
   .bside { width:340px; text-align:center; transition:transform .35s ease-in; }
-  .bside img, .bside .tok { height:240px; margin:0 auto; filter:drop-shadow(0 8px 12px rgba(0,0,0,.6)); }
+  .bside img, .bside .tok { height:240px; width:auto !important; margin:0 auto; filter:drop-shadow(0 8px 12px rgba(0,0,0,.6)); }
   .bside .tok { width:150px; height:150px; font-size:26px; }
   .bside .bname { font-size:19px; letter-spacing:2px; margin-top:8px; }
   .bside .bnum { font-size:38px; color:var(--gold-soft); font-family:sans-serif; }
@@ -202,8 +202,8 @@
   #turnPortrait { position:fixed; right:10px; bottom:0; z-index:32; pointer-events:none;
       text-align:center; transition:opacity .4s; opacity:0; }
   #turnPortrait.show { opacity:1; }
-  #turnPortrait img { height:31vh; filter:drop-shadow(0 0 16px rgba(0,0,0,.6)); }
-  #turnPortrait .tpn { position:absolute; left:50%; bottom:2vh; transform:translateX(-50%);
+  #turnPortrait img { height:42vh; filter:drop-shadow(0 0 16px rgba(0,0,0,.6)); }
+  #turnPortrait .tpn { position:absolute; left:50%; bottom:2.6vh; font-size:2.3vh !important; transform:translateX(-50%);
       background:rgba(16,13,36,.85); border:1px solid var(--gold); border-radius:999px;
       padding:.5vh 2.4vh; font-size:1.9vh; letter-spacing:2px; color:var(--gold-soft); white-space:nowrap; }
   .plate { height:80px !important; }
@@ -214,7 +214,7 @@
   #titleOv img.tlogo { height:23vh; filter:drop-shadow(0 6px 20px rgba(0,0,0,.7)); z-index:2; }
 
   /* 実況吹き出し(手番立ち絵の横) */
-  #tpBubble { position:fixed; right:calc(10px + 15vh); bottom:20vh; z-index:33; max-width:300px;
+  #tpBubble { position:fixed; right:calc(12px + 22vh); bottom:26vh; z-index:33; max-width:300px;
       background:var(--parchment); color:#3A2B18; font-size:1.9vh; letter-spacing:1px;
       padding:1.2vh 2vh; border-radius:1.4vh; border:2px solid #8A6A1E;
       box-shadow:0 3px 10px rgba(0,0,0,.5); opacity:0; transition:opacity .3s; pointer-events:none; }
@@ -290,14 +290,16 @@
   #summonCut.on #scText { animation:scText .45s ease .32s backwards; }
   @keyframes scText { from { transform:translateY(28px); opacity:0; } }
   /* HUD拡大+属性バッジ */
-  #hud { width:280px !important; }
-  .plate { width:280px !important; height:96px !important; padding:12px 16px 10px 18px !important; }
-  .plate .face { width:52px !important; height:52px !important; left:-14px !important; top:16px !important; }
-  .plate .row1 { margin-left:34px !important; }
-  .plate .pname { font-size:15.5px !important; }
-  .plate .pts { font-size:25px !important; }
-  .plate .row2 { margin-left:44px !important; font-size:13px !important; gap:11px !important; margin-top:5px !important; }
-  .plate .row3 { margin-left:44px !important; gap:7px !important; margin-top:5px !important; }
+  #hud { width:322px !important; }
+  .plate { width:322px !important; height:112px !important; padding:14px 18px 12px 20px !important; }
+  .plate .face { width:60px !important; height:60px !important; left:-16px !important; top:20px !important; }
+  .plate .row1 { margin-left:40px !important; }
+  .plate .pname { font-size:17.5px !important; }
+  .plate .pts { font-size:28px !important; }
+  .plate .row2 { margin-left:50px !important; font-size:14.5px !important; gap:13px !important; margin-top:6px !important; }
+  .plate .row3 { margin-left:50px !important; gap:8px !important; margin-top:7px !important; }
+  .plate .ic img { width:19px !important; height:19px !important; }
+  .ebadge { min-width:44px !important; height:26px !important; font-size:14px !important; }
   .titleChip { display:inline-block; background:linear-gradient(180deg,#E8C55A,#B8901F); color:#241C05;
       border-radius:4px; font-size:11px; padding:1px 6px; margin-left:4px; vertical-align:1px; font-family:sans-serif; }
   .ebadge { min-width:38px; height:23px; border-radius:5px; display:inline-flex; align-items:center;
@@ -327,13 +329,16 @@
   <div id="connBar" style="display:none; position:fixed; top:0; left:50%; transform:translateX(-50%);
     z-index:98; background:#5A1512; color:#F5B0A5; font-size:14px; letter-spacing:2px;
     padding:6px 26px; border-radius:0 0 10px 10px; border:1px solid #E86A5A; border-top:0;">⚡ 再接続中…</div>
+  <button id="bgmBtn" style="display:none; position:fixed; left:10px; bottom:28px; z-index:20;
+    background:rgba(16,13,36,.7); border:1px solid rgba(201,162,39,.5); color:rgba(241,232,208,.8);
+    border-radius:7px; font-family:inherit; font-size:12px; padding:4px 10px; cursor:pointer;">♪ ON</button>
   <div id="verTag" style="position:fixed; left:10px; bottom:8px; z-index:20; font-size:11px; color:rgba(241,232,208,.45); letter-spacing:1px;"></div>
   <div id="world"><div id="stage"></div><div id="pawnLayer"></div><div id="spot"></div></div>
   <div id="hud"></div>
   <div id="telop"><img id="telopImg"><div id="telopSub"></div></div>
   <div id="diceFloat"></div>
   <div id="diceOv"></div>
-  <div id="ultCut"><div id="ultBg"></div><div id="ultLines"></div>
+  <div id="ultCut"><div id="ultBg"></div>
     <img id="ultArt"><div id="ultName"></div><div id="ultSub"></div></div>
   <div id="centerBanner"></div>
   <div id="tpBubble"></div>
@@ -524,7 +529,7 @@ const TW = 150, TH = 84, THICK = 16, DW = 112, DH = 56;
 const OX = 640, OY = 172;
 const proj = (gx, gy) => ({ x: OX + (gx - gy) * TW / 2, y: OY + (gx + gy) * TH / 2 });
 // アートが存在するクリーチャー(それ以外は色トークン表示)
-const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby','ludi','garble','barbaro']);
+const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby','ludi','garble','barbaro','detropas','goagoa','fugorm']);
 
 let code = null, state = null, prev = { phase: null, turn: -1, battleAt: 0, diceAt: 0 };
 const pawnAnim = {}, prevPos = {};
@@ -591,17 +596,19 @@ async function playUlt(u) {
   hideLogo(true);
   $('bflash').classList.add('go');
   $('ultBg').style.background =
-    `radial-gradient(ellipse at 30% 60%, ${ch.color}55 0%, rgba(10,8,25,.94) 62%)`;
+    `radial-gradient(ellipse at 30% 60%, ${ch.color}44 0%, rgba(10,8,25,.97) 55%)`;
   $('ultArt').src = '/assets/full_' + u.charId + '.png';
   $('ultName').textContent = u.name;
   $('ultSub').textContent = player(u.player).name + 'の固有スキル発動!';
   const art = $('ultArt');
   art.style.animation = 'none'; void art.offsetWidth; art.style.animation = '';
+  bannerUntil = Math.max(bannerUntil, Date.now() + 2700);
   $('ultCut').classList.add('on');
   setTimeout(() => $('bflash').classList.remove('go'), 500);
   await wait(2550);
   $('ultCut').classList.remove('on');
   hideLogo(false);
+  showBanner('【' + u.name + '】', state.catalog.ULTS[u.charId].desc, 2800);
 }
 const hideLogo = v => { $('logoImg').style.opacity = v ? 0 : 1; };
 function worldPos(i) { return proj(GEO[i][0], GEO[i][1]); }
@@ -655,11 +662,15 @@ function flyCoins(fromPid, toPid) {
     }, k * 70);
   }
 }
+let bannerUntil = 0;
+const bq = [];
+function queueBanner(main, sub, dur) { bq.push([main, sub, dur]); }
 function showBanner(main, sub, dur) {
   const el = $('centerBanner');
   el.innerHTML = main + (sub ? `<small>${sub}</small>` : '');
   el.classList.add('show');
   clearTimeout(bannerT);
+  bannerUntil = Date.now() + (dur || 1900);
   bannerT = setTimeout(() => el.classList.remove('show'), dur || 1900);
 }
 function showDiceMulti(arr) {
@@ -710,9 +721,37 @@ let animBusy = false, smileT = null;
 let ownersCache = '';
 
 document.getElementById('titleCreate').onclick = () => {
+  initAudio();
   document.getElementById('titleOv').classList.remove('on');
   boot();
 };
+let bgmN = null, bgmR = null, bgmMuted = false, bgmCur = null;
+function initAudio() {
+  if (bgmN) return;
+  bgmN = new Audio('/assets/bgm_normal.mp3');
+  bgmR = new Audio('/assets/bgm_reach.mp3');
+  [bgmN, bgmR].forEach(a => {
+    a.loop = true; a.volume = 0.35;
+    a.muted = true;
+    a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; })
+      .catch(() => { a.muted = false; });
+  });
+  const btn = document.getElementById('bgmBtn');
+  btn.style.display = 'block';
+  btn.onclick = () => {
+    bgmMuted = !bgmMuted;
+    btn.textContent = bgmMuted ? '♪ OFF' : '♪ ON';
+    if (bgmCur) { bgmMuted ? bgmCur.pause() : bgmCur.play().catch(() => {}); }
+  };
+}
+function setBgm(which) {
+  if (!bgmN) return;
+  const t = which === 'reach' ? bgmR : which === 'normal' ? bgmN : null;
+  if (bgmCur === t) return;
+  if (bgmCur) { bgmCur.pause(); bgmCur.currentTime = 0; }
+  bgmCur = t;
+  if (t && !bgmMuted) t.play().catch(() => {});
+}
 let es = null, lastMsgAt = 0;
 function connectBoard() {
   if (es) es.close();
@@ -762,6 +801,7 @@ addEventListener('resize', fitWorld);
       btn.textContent = '前回のルーム ' + saved + ' に戻る';
       document.getElementById('titleResumeWrap').style.display = 'flex';
       btn.onclick = () => {
+        initAudio();
         document.getElementById('titleOv').classList.remove('on');
         enterRoom(saved, d.phoneUrl);
       };
@@ -787,9 +827,11 @@ const cname = (cid, lv) => {
   return lv >= 4 && c.evo ? c.evo : c.name;
 };
 function artHTML(cid, lv, w) {
-  const evo = lv >= 4 && state.catalog.CREATURES[cid].evo;
-  if (HAS_ART.has(cid))
-    return `<img src="/assets/${evo ? 'e_' : 'c_'}${cid}.png" width="${w}" style="display:block">`;
+  const bid = cid.replace(/_f$/, '');
+  const forged = bid !== cid;
+  const evo = forged || (lv >= (state.evoLevel || 3) && state.catalog.CREATURES[bid].evo);
+  if (HAS_ART.has(bid))
+    return `<img src="/assets/${evo ? 'e_' : 'c_'}${bid}.png" width="${w}" style="display:block">`;
   const c = state.catalog.CREATURES[cid];
   return `<div class="tok" style="background:${RUNE[c.elem] || '#6E7288'};width:${w*0.8}px;height:${w*0.8}px">${c.name.slice(0,4)}</div>`;
 }
@@ -988,7 +1030,7 @@ function renderHUD() {
       hud.appendChild(el);
     }
     const rank = ranked.indexOf(p);
-    el.style.top = (rank * 104) + 'px';
+    el.style.top = (rank * 122) + 'px';
     const crowns = (state.titles.conqueror === p.id ? '<img class="titleIc" src="/assets/ic_conqueror.png" title="覇者">' : '') +
       (state.titles.pilgrim === p.id ? '<img class="titleIc" src="/assets/ic_pilgrim.png" title="大巡礼者">' : '');
     el.innerHTML = `
@@ -1007,9 +1049,8 @@ function renderHUD() {
       <div class="row3">${['fire','water','earth','wind'].map(e => {
         const n = state.owners.filter((o, i) => o && o.player === p.id && state.tiles[i].e === e).length;
         return `<span class="ebadge ${n ? '' : 'zero'}" style="--ec:${RUNE[e]}">
-          <svg width="14" height="14" viewBox="-34 -36 68 72">${ELEM[e]}</svg>${n}</span>`;
-      }).join('')}</div>
-      <div class="pbar" style="width:${Math.min(100, p.points / state.target * 100)}%"></div>`;
+          <svg width="17" height="17" viewBox="-34 -36 68 72">${ELEM[e]}</svg>${n}</span>`;
+      }).join('')}</div>`;
     el.classList.toggle('turn', state.phase === 'playing' && state.players[state.turn] === p);
   });
 }
@@ -1067,7 +1108,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.23';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.26';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -1150,10 +1191,10 @@ function render() {
   // ===== ショップ演出 =====
   const shopping = Object.entries(state.pending).find(([, x]) => x.type === 'market');
   let shopOpen = !!shopping && state.phase === 'playing' && !animBusy;
-  if (shopOpen && Date.now() - lastMoveEnd < 900) {
+  if (shopOpen && Date.now() - lastMoveEnd < 1200) {
     shopOpen = false;
     clearTimeout(shopWaitT);
-    shopWaitT = setTimeout(render, 950 - (Date.now() - lastMoveEnd));
+    shopWaitT = setTimeout(render, 1250 - (Date.now() - lastMoveEnd));
   }
   if (shopOpen) {
     const last = state.log[state.log.length - 1] || '';
@@ -1187,7 +1228,7 @@ function render() {
       if (was && now && now.level > was.level) {
         const col = player(now.player).color;
         fxAt(i, 'fxRing', col);
-        if (now.level >= 4 && state.catalog.CREATURES[now.creature].evo) {
+        if (now.level >= (state.evoLevel || 3) && state.catalog.CREATURES[now.creature.replace(/_f$/, '')].evo && now.level - 1 < (state.evoLevel || 3)) {
           fxAt(i, 'fxPillar', col, 20);
           showBanner('✨ ' + state.catalog.CREATURES[now.creature].name + 'が' +
             state.catalog.CREATURES[now.creature].evo + 'に進化!');
@@ -1203,6 +1244,7 @@ function render() {
             hideLogo(true);
             $('scCreature').innerHTML = artHTML(o.creature, 1, 200);
             $('scText').textContent = pl.name + 'が' + state.catalog.CREATURES[o.creature].name + 'を召喚!';
+            bannerUntil = Math.max(bannerUntil, Date.now() + 2400);
             $('summonCut').classList.add('on');
             setTimeout(() => { $('summonCut').classList.remove('on'); hideLogo(false); }, 2200);
           };
@@ -1230,12 +1272,23 @@ function render() {
   else if (state.phase === 'playing' && state.turn !== prev.turn) queuedTurn = state.turn;
   prev.phase = state.phase; prev.turn = state.turn;
   if (queuedTurn !== null && !animBusy && state.phase === 'playing') {
-    if (queuedTurn !== firedTurn) {
-      firedTurn = queuedTurn;
-      showTelop('turn', state.players[queuedTurn].name + 'の手番');
+    const waitMs = bannerUntil + 400 - Date.now();
+    if (waitMs > 0) {
+      clearTimeout(prev.turnT);
+      prev.turnT = setTimeout(render, waitMs + 30);
+    } else {
+      if (queuedTurn !== firedTurn) {
+        firedTurn = queuedTurn;
+        showTelop('turn', state.players[queuedTurn].name + 'の手番');
+      }
+      queuedTurn = null;
     }
-    queuedTurn = null;
   }
+  // BGM(リーチ者がいれば疾走曲へ)
+  if (state.phase === 'playing') {
+    const reach = state.players.some(p => p.points >= state.target - 2);
+    setBgm(reach ? 'reach' : 'normal');
+  } else if (state.phase === 'ended') setBgm(null);
   // 実況吹き出し(何を待っているか)
   {
     const pe = Object.entries(state.pending);
@@ -1327,12 +1380,9 @@ function render() {
   // 祠イベントの中央表示
   if (state.lastEvent && state.lastEvent.at !== prev.eventAt) {
     prev.eventAt = state.lastEvent.at;
-    if (state.lastEvent.type === 'shrine') prev.shrineQ = state.lastEvent;
-  }
-  if (prev.shrineQ && !animBusy) {
-    const ev = prev.shrineQ; prev.shrineQ = null;
-    showBanner(`祠の加護 +${ev.gold}G`,
-      player(ev.player).name + ' ─ 通算' + ev.visits + '回参拝', 2800);
+    if (state.lastEvent.type === 'shrine')
+      queueBanner(`祠の加護 +${state.lastEvent.gold}G`,
+        player(state.lastEvent.player).name + ' ─ 通算' + state.lastEvent.visits + '回参拝', 2800);
   }
   // 称号の移動・リーチ到達を中央バナーで告知
   if (state.phase === 'playing') {
@@ -1340,15 +1390,15 @@ function render() {
     if (prev.titlesKey && tk !== prev.titlesKey) {
       const before = JSON.parse(prev.titlesKey);
       if (state.titles.conqueror !== before.conqueror && state.titles.conqueror)
-        showBanner('👑 ' + player(state.titles.conqueror).name + 'が称号「覇者」を獲得!', '+2点');
+        queueBanner(player(state.titles.conqueror).name + 'が称号「覇者」を獲得!', '+2点(奪い合い)', 2600);
       if (state.titles.pilgrim !== before.pilgrim && state.titles.pilgrim)
-        showBanner('📿 ' + player(state.titles.pilgrim).name + 'が称号「大巡礼者」を獲得!', '+2点');
+        queueBanner(player(state.titles.pilgrim).name + 'が称号「大巡礼者」を獲得!', '+2点(奪い合い)', 2600);
     }
     prev.titlesKey = tk;
     state.players.forEach(p => {
       const p0 = prev['pts_' + p.id];
       if (p0 !== undefined && p0 < state.target - 2 && p.points >= state.target - 2 && p.points < state.target)
-        showBanner('⚡ ' + p.name + 'がリーチ!', 'あと' + (state.target - p.points) + '点で勝利');
+        queueBanner(p.name + 'がリーチ!', 'あと' + (state.target - p.points) + '点で勝利', 2400);
       prev['pts_' + p.id] = p.points;
     });
   }
@@ -1364,6 +1414,12 @@ function render() {
       $('turnPortrait').classList.add('show');
     }
   } else $('turnPortrait').classList.remove('show');
+  // キューされたバナーを順に表示(移動中・別バナー表示中は待つ)
+  if (bq.length && !animBusy && Date.now() > bannerUntil) {
+    const x = bq.shift();
+    showBanner(x[0], x[1], x[2]);
+  }
+  if (bq.length) { clearTimeout(prev.bqT); prev.bqT = setTimeout(render, 450); }
   // ダイス
   if (state.lastDice && state.lastDice.at !== prev.dice) {
     prev.dice = state.lastDice.at;
