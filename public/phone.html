@@ -32,19 +32,19 @@
         color:#241C05; border:1px solid #F2D062; border-radius:10px; cursor:pointer; }
   #err { color:#F09595; font-size:13px; min-height:1.2em; }
 
-  header { display:flex; align-items:center; gap:10px; height:15dvh;
+  header { display:flex; align-items:center; gap:10px; height:18dvh;
         padding:6px calc(12px + env(safe-area-inset-right)) 6px calc(12px + env(safe-area-inset-left)); }
   .me { display:flex; align-items:center; gap:8px; background:rgba(0,0,0,.35);
         border:1px solid var(--gold); border-radius:999px; padding:4px 14px 4px 5px; flex:none; }
-  .me img { width:9dvh; height:9dvh; border-radius:50%; border:2px solid var(--gold); object-fit:cover; }
-  .me .nm { font-size:13px; letter-spacing:1px; }
-  .me .st { font-size:12px; color:var(--gold-soft); font-family:sans-serif; }
+  .me img { width:12dvh; height:12dvh; border-radius:50%; border:2px solid var(--gold); object-fit:cover; }
+  .me .nm { font-size:2.4dvh; letter-spacing:1px; }
+  .me .st { font-size:2.1dvh; color:var(--gold-soft); font-family:sans-serif; }
   #msg { flex:1; text-align:center; font-size:2.5dvh; letter-spacing:2px; color:var(--gold-soft);
         text-shadow:0 1px 4px rgba(0,0,0,.6); min-width:0; }
   #fsBtn { font-family:inherit; font-size:12px; background:rgba(0,0,0,.4); color:rgba(241,232,208,.8);
         border:1px solid rgba(201,162,39,.5); border-radius:7px; padding:5px 9px; }
 
-  #action { height:29dvh; display:flex; align-items:center; justify-content:center; gap:14px;
+  #action { height:27dvh; display:flex; align-items:center; justify-content:center; gap:14px;
         padding:0 16px; overflow:hidden; }
   .abtn { font-family:inherit; font-size:2.3dvh; letter-spacing:2px; padding:1.8dvh 3.4dvh;
         background:linear-gradient(180deg,#E8C55A,#B8901F); color:#241C05;
@@ -78,7 +78,7 @@
   .f5{transform:rotateX(-90deg) translateZ(5.5dvh)} .f6{transform:rotateY(180deg) translateZ(5.5dvh)}
 
   /* 手札 */
-  #handWrap { height:56dvh; padding:0 calc(10px + env(safe-area-inset-right))
+  #handWrap { height:55dvh; padding:0 calc(10px + env(safe-area-inset-right))
         calc(6px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left)); }
   #hand { display:flex; gap:10px; height:100%; overflow-x:auto; padding:14px 6px 4px; }
   .card { flex:none; width:28dvh; height:100%; position:relative; perspective:700px; cursor:pointer;
@@ -170,13 +170,14 @@
       flex-direction:column; align-items:center; padding-top:2dvh; gap:1.4dvh; }
   #draftOv.on { display:flex; }
   #draftTitle { font-size:2.4dvh; letter-spacing:3px; color:var(--gold-soft); }
-  #draftRow { display:flex; gap:2.4vw; flex:1; padding-bottom:2dvh; }
-  .draftCard { width:27dvh; cursor:pointer; transition:transform .15s; position:relative; }
+  #draftRow { display:flex; gap:2.4vw; flex:1; align-items:center; padding-bottom:2dvh; }
+  .draftCard { width:30dvh; height:46dvh; cursor:pointer; transition:transform .15s; position:relative; }
+  .draftCard .face .art img { max-width:100%; object-fit:contain; }
   .draftCard:active { transform:scale(.96); }
   .draftCard .face { position:relative; height:100%; }
 
   /* クリーチャー一覧(図鑑) */
-  #galleryBtn { font-family:inherit; font-size:12px; background:rgba(0,0,0,.4); color:rgba(241,232,208,.85);
+  #galleryBtn { font-family:inherit; font-size:15px; padding:8px 16px !important; background:rgba(0,0,0,.4); color:rgba(241,232,208,.85);
       border:1px solid rgba(201,162,39,.5); border-radius:7px; padding:5px 9px; margin-right:6px; }
   #galleryOv { position:fixed; inset:0; display:none; z-index:57; background:rgba(10,8,25,.96);
       flex-direction:column; }
@@ -243,7 +244,7 @@
     <div class="me"><img id="myFace" src=""><div><div class="nm" id="myName"></div>
       <div class="st" id="myStat"></div></div></div>
     <div id="msg"></div>
-    <button id="galleryBtn">🃏 一覧</button>
+    <button id="galleryBtn">一覧</button>
     <button id="fsBtn">⛶ 全画面</button>
   </header>
   <div id="action" style="display:none"></div>
@@ -343,7 +344,7 @@ function artOrToken(cid, cr, evo, tokSize) {
 }
 function galleryFace(cid, cr, evo) {
   if (evo) return `<div class="face back" style="transform:rotateY(180deg)">
-    <div class="evoRibbon">LvMAX進化</div>${artOrToken(cid, cr, true, '9dvh')}
+    ${artOrToken(cid, cr, true, '9dvh')}
     <div class="nm">${cr.evo}</div>
     <div class="stats"><span>ST <b>${cr.evoSt}</b></span><span>HP <i>${cr.evoHp}</i></span></div>
     <div class="fx">${cr.fx || ''}</div><div class="type">進化形</div></div>`;
@@ -440,7 +441,7 @@ function cardHTML(c, i) {
       const eart = HAS_ART.has(c)
         ? `<div class="art"><img src="/assets/e_${c}.png"></div>`
         : `<div class="tok2" style="background:${RUNE[cr.elem] || '#6E7288'}">${cr.evo.slice(0,4)}</div>`;
-      back = `<div class="face back"><div class="evoRibbon">LvMAX進化</div>${eart}
+      back = `<div class="face back">${eart}
         <div class="nm">${cr.evo}</div>
         <div class="stats"><span>ST ${cr.st}<span class="up">→${cr.evoSt}</span></span>
           <span>HP ${cr.hp}<span class="up">→${cr.evoHp}</span></span></div>
@@ -462,7 +463,11 @@ function cardHTML(c, i) {
     <div class="flip ${flipped.has(i) ? 'flipped' : ''}"><div class="face front">${front}</div>${back}</div></div>`;
 }
 
+let handRenderKey = '';
 function renderHand() {
+  const key = me().hand.join(',') + '|' + selected + '|' + selectableKind() + '|' + state.phase;
+  if (key === handRenderKey) return;
+  handRenderKey = key;
   $('hand').innerHTML = me().hand.map((c, i) => cardHTML(c, i)).join('');
   document.querySelectorAll('.card').forEach(el => el.onclick = () => {
     const i = +el.dataset.i, c = el.dataset.c;
@@ -519,7 +524,7 @@ function render() {
     const n = state.owners ? state.owners.filter((o, i) => o && o.player === pid && state.tiles[i].e === e).length : 0;
     return `<span style="color:${RUNE[e]}">${{fire:'火',water:'水',earth:'土',wind:'風'}[e]}${n}</span>`;
   }).join(' ');
-  $('myStat').innerHTML = `★${m.points}/${state.target} ｜ ${m.gold}G ｜ 💎${m.gems}<br>領地: ${elemN}`;
+  $('myStat').innerHTML = `${m.points}/${state.target}点 ｜ ${m.gold}G ｜ 宝石${m.gems}<br>領地: ${elemN}`;
 
   // ダイスの出目が自分のものなら着地させる
   if (rolling && state.lastDice && state.lastDice.player === pid && state.lastDice.at !== lastDiceAt) {
@@ -577,7 +582,15 @@ function render() {
   {
     const ld = state.lastDice;
     if (p && ['tile', 'upgrade', 'market', 'draft'].includes(p.type) && ld && ld.player === pid) {
-      const doneAt = ld.at + 1900 + ld.value * 250 + 900;
+      const steps = ld.multi ? ld.multi.reduce((a, b) => a + b, 0) : ld.value;
+      const init = ld.multi ? 2900 : 1900;
+      let doneAt = ld.at + init + steps * 250 + (ld.castle ? 1700 : 0) + 900;
+      if (p.type === 'draft' && ld.castle) {
+        // 城ドラフトはコマが城に着いた瞬間に表示する
+        const from = ((m.pos - steps) % 28 + 28) % 28;
+        const toCastle = (28 - from) % 28 || 28;
+        doneAt = ld.at + init + toCastle * 250 + 400;
+      }
       if (Date.now() < doneAt) {
         $('msg').textContent = '移動中…';
         $('action').innerHTML = '<div class="waitDots">● ● ●</div>';
@@ -608,8 +621,13 @@ function render() {
   } else if (p.type === 'roll') {
     $('msg').textContent = p.prompt;
     const extra = p.options.filter(o => o.id !== 'roll').map(o =>
-      `<button class="${o.id === 'ult' ? 'ultBtn' : 'abtn ghost'}" onclick="choose('${o.id}')">${o.label}</button>`).join('');
-    A.innerHTML = '<button class="diceImgBtn" id="diceBtn"><img src="/assets/dice_btn.png"></button>' + extra;
+      `<button class="${o.id === 'ult' ? 'ultBtn' : 'abtn ghost'}" onclick="choose('${o.id}')" style="font-size:1.9dvh">${o.label}</button>`).join('');
+    A.innerHTML = `<div style="position:relative; width:100%; height:100%">
+      <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%)">
+        <button class="diceImgBtn" id="diceBtn"><img src="/assets/dice_btn.png"></button></div>
+      <div style="position:absolute; right:calc(2vw + env(safe-area-inset-right)); top:50%;
+        transform:translateY(-50%); display:flex; flex-direction:column; gap:1.2dvh; max-width:34vw;">${extra}</div>
+    </div>`;
     $('diceBtn').onclick = startRoll;
   } else if (p.type === 'curse_target' || p.type === 'ult_mio') {
     $('msg').textContent = p.prompt;
@@ -623,6 +641,9 @@ function render() {
     A.innerHTML = '';
     $('shopScene').classList.remove('on');
     $('draftOv').classList.add('on');
+    const dk = p.options.map(o => o.id).join(',');
+    if ($('draftRow').dataset.k === dk) { renderHand(); return; }
+    $('draftRow').dataset.k = dk;
     $('draftRow').innerHTML = p.options.map(o => {
       const cid = o.id.slice(5);
       const rr = state.catalog.CREATURES[cid].rarity || 'N';
@@ -636,7 +657,7 @@ function render() {
     $('msg').textContent = '';
     A.innerHTML = '';
     $('shopScene').classList.add('on');
-    $('shopGold').textContent = '💰 ' + m.gold + ' G';
+    $('shopGold').textContent = m.gold + ' G';
     $('shopBtns').innerHTML =
       `<button class="shopBtn ghost" onclick="inShopHand=true; render()">🂠 手札を見る</button>` +
       p.options.map(o =>

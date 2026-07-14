@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const VERSION = '0.19';
+const VERSION = '0.20';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -252,8 +252,8 @@ function resolveTile(r, p) {
     const canUp = r.owners.some((o, i) => o && o.player === p.id &&
       o.level < RULES.maxLevel && p.gold >= upCost(r, p, i));
     const opts = [];
-    if (canUp) opts.push({ id: 'g_up', label: '⛰ 領地を強化する' });
-    opts.push({ id: 'g_draft', label: '🃏 カードを引く(3枚から選択)' });
+    if (canUp) opts.push({ id: 'g_up', label: '領地を強化する' });
+    opts.push({ id: 'g_draft', label: 'カードを引く(3枚から選択)' });
     opts.push({ id: 'pass', label: '何もしない' });
     return ask(r, p.id, 'gate', '変化の門 ─ 恩恵を選べ', opts);
   }

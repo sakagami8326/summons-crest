@@ -282,6 +282,28 @@
       letter-spacing:5px; color:var(--parchment); text-shadow:0 2px 8px rgba(0,0,0,.9);
       opacity:0; animation:vpop .4s .6s forwards; }
   .dRow { display:flex; gap:2.5vh; }
+
+  #summonCut.on img.pl { animation:scArt .5s cubic-bezier(.2,.9,.3,1); }
+  @keyframes scArt { from { transform:translateX(45vw); opacity:0; } }
+  #summonCut.on #scCreature { animation:scPop .6s cubic-bezier(.3,1.5,.5,1) .18s backwards; }
+  @keyframes scPop { from { transform:scale(.15) rotate(-8deg); opacity:0; } }
+  #summonCut.on #scText { animation:scText .45s ease .32s backwards; }
+  @keyframes scText { from { transform:translateY(28px); opacity:0; } }
+  /* HUD拡大+属性バッジ */
+  #hud { width:280px !important; }
+  .plate { width:280px !important; height:96px !important; padding:12px 16px 10px 18px !important; }
+  .plate .face { width:52px !important; height:52px !important; left:-14px !important; top:16px !important; }
+  .plate .row1 { margin-left:34px !important; }
+  .plate .pname { font-size:15.5px !important; }
+  .plate .pts { font-size:25px !important; }
+  .plate .row2 { margin-left:44px !important; font-size:13px !important; gap:11px !important; margin-top:5px !important; }
+  .plate .row3 { margin-left:44px !important; gap:7px !important; margin-top:5px !important; }
+  .titleChip { display:inline-block; background:linear-gradient(180deg,#E8C55A,#B8901F); color:#241C05;
+      border-radius:4px; font-size:11px; padding:1px 6px; margin-left:4px; vertical-align:1px; font-family:sans-serif; }
+  .ebadge { min-width:36px; height:22px; border-radius:5px; display:inline-flex; align-items:center;
+      justify-content:center; gap:2px; font:700 12.5px sans-serif; color:#fff; background:var(--ec);
+      box-shadow:inset 0 -2px 3px rgba(0,0,0,.35); text-shadow:0 1px 2px rgba(0,0,0,.5); padding:0 5px; }
+  .ebadge.zero { opacity:.32; }
 </style>
 </head>
 <body>
@@ -488,6 +510,32 @@ let code = null, state = null, prev = { phase: null, turn: -1, battleAt: 0, dice
 const pawnAnim = {}, prevPos = {};
 const prevGold = {};
 let queuedTurn = null, firedTurn = -1, lastMoveEnd = 0, shopWaitT = null, lastUpKey = '';
+let hopState = null;
+function finishHop() {
+  if (!hopState) return;
+  delete pawnAnim[hopState.id];
+  prevPos[hopState.id] = hopState.to;
+  hopState = null;
+  animBusy = false;
+  lastMoveEnd = Date.now();
+  render();
+}
+function hopStep() {
+  if (!hopState || hopState.holding) return;
+  hopState.sN++;
+  const idx = (hopState.from + hopState.sN) % 28;
+  pawnAnim[hopState.id] = idx;
+  renderPawns();
+  if (idx === 0 && hopState.castleEv) {
+    showBanner(`+${hopState.castleEv.gold}G`, 'カードを1枚選んで獲得!', 2600);
+    hopState.castleEv = null;
+    hopState.holding = true;   // ドラフト完了までここで待機
+    render();
+    return;
+  }
+  if (hopState.sN < hopState.steps) setTimeout(hopStep, 250);
+  else finishHop();
+}
 const D_PIPS = { 1:[[30,30]], 2:[[16,16],[44,44]], 3:[[16,16],[30,30],[44,44]],
   4:[[16,16],[44,16],[16,44],[44,44]], 5:[[16,16],[44,16],[30,30],[16,44],[44,44]],
   6:[[16,16],[44,16],[16,30],[44,30],[16,44],[44,44]] };
@@ -587,12 +635,12 @@ function flyCoins(fromPid, toPid) {
     }, k * 70);
   }
 }
-function showBanner(main, sub) {
+function showBanner(main, sub, dur) {
   const el = $('centerBanner');
   el.innerHTML = main + (sub ? `<small>${sub}</small>` : '');
   el.classList.add('show');
   clearTimeout(bannerT);
-  bannerT = setTimeout(() => el.classList.remove('show'), 1900);
+  bannerT = setTimeout(() => el.classList.remove('show'), dur || 1900);
 }
 function showDiceMulti(arr) {
   const ov = $('diceOv');
@@ -910,20 +958,21 @@ function renderHUD() {
       hud.appendChild(el);
     }
     const rank = ranked.indexOf(p);
-    el.style.top = (rank * 84) + 'px';
-    const crowns = (state.titles.conqueror === p.id ? '👑' : '') + (state.titles.pilgrim === p.id ? '📿' : '');
+    el.style.top = (rank * 104) + 'px';
+    const crowns = (state.titles.conqueror === p.id ? '<span class="titleChip">覇者</span>' : '') +
+      (state.titles.pilgrim === p.id ? '<span class="titleChip">巡礼</span>' : '');
     el.innerHTML = `
       <img class="face" src="${p.charId ? '/assets/f_' + p.charId + '.png' : ''}">
       <div class="row1">
         <div class="rankBadge ${rank < 3 ? 'rank' + (rank+1) : ''}">${rank + 1}</div>
-        <div class="pname">${p.name} ${crowns}</div>
+        <div class="pname">${p.name}${crowns}</div>
         <div class="pts">${p.points}<small>/${state.target}</small></div>
       </div>
-      <div class="row2"><span>${p.gold}G</span><span>🂠${p.handCount}</span><span>💎${p.gems}</span><span>秘宝${p.treasures}</span>
+      <div class="row2"><span>${p.gold}G</span><span>手札${p.handCount}</span><span>宝石${p.gems}</span><span>秘宝${p.treasures}</span>
         ${p.points >= state.target - 2 ? '<span class="reach">リーチ</span>' : ''}</div>
       <div class="row3">${['fire','water','earth','wind'].map(e => {
         const n = state.owners.filter((o, i) => o && o.player === p.id && state.tiles[i].e === e).length;
-        return `<span style="color:${RUNE[e]}">${{fire:'火',water:'水',earth:'土',wind:'風'}[e]}${n}</span>`;
+        return `<span class="ebadge ${n ? '' : 'zero'}" style="--ec:${RUNE[e]}">${{fire:'火',water:'水',earth:'土',wind:'風'}[e]}${n}</span>`;
       }).join('')}</div>
       <div class="pbar" style="width:${Math.min(100, p.points / state.target * 100)}%"></div>`;
     el.classList.toggle('turn', state.phase === 'playing' && state.players[state.turn] === p);
@@ -983,7 +1032,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.19';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.20';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -1019,31 +1068,27 @@ function render() {
     }
   } else $('duelOv').classList.remove('on');
   if (state.phase === 'playing' || state.phase === 'ended') {
-    // 移動アニメーション(描画の前に開始位置を確定させる)
+    // 移動アニメーション(城でドラフト待ちの中断・再開に対応)
     state.players.forEach(p => { if (!(p.id in prevPos)) prevPos[p.id] = p.pos; });
-    const mover = state.players.find(p => prevPos[p.id] !== p.pos);
-    if (mover && !animBusy) {
-      animBusy = true;
-      const from = prevPos[mover.id], to = mover.pos;
-      const steps = (to - from + 28) % 28 || 28;
-      pawnAnim[mover.id] = from;
-      let sN = 0;
-      const castleEv = state.lastDice && state.lastDice.player === mover.id ? state.lastDice.castle : null;
-      const hop = () => {
-        sN++;
-        const idx = (from + sN) % 28;
-        pawnAnim[mover.id] = idx;
-        renderPawns();
-        let wait = 250;
-        if (idx === 0 && castleEv) {   // 城を通過: 一旦停止して収入とドローを見せる
-          showBanner(`🏰 +${castleEv.gold}G`, 'カードを選択!(3枚から1枚)');
-          wait = 1600;
-        }
-        if (sN < steps) setTimeout(hop, wait);
-        else { delete pawnAnim[mover.id]; prevPos[mover.id] = to; animBusy = false; lastMoveEnd = Date.now(); render(); }
-      };
-      const mine = state.lastDice && state.lastDice.player === mover.id;
-      setTimeout(hop, mine ? (state.lastDice.multi ? 2900 : 1900) : 250);
+    if (!hopState) {
+      const mover = state.players.find(p => prevPos[p.id] !== p.pos);
+      if (mover) {
+        animBusy = true;
+        const from = prevPos[mover.id];
+        hopState = { id: mover.id, from, to: mover.pos,
+          steps: (mover.pos - from + 28) % 28 || 28, sN: 0, holding: false,
+          castleEv: state.lastDice && state.lastDice.player === mover.id ? state.lastDice.castle : null };
+        pawnAnim[mover.id] = from;
+        const mine = state.lastDice && state.lastDice.player === mover.id;
+        setTimeout(hopStep, mine ? (state.lastDice.multi ? 2900 : 1900) : 250);
+      }
+    } else if (hopState.holding) {
+      const pd = state.pending[hopState.id];
+      if (!pd || pd.type !== 'draft') {
+        hopState.holding = false;
+        if (hopState.sN < hopState.steps) setTimeout(hopStep, 650);
+        else finishHop();
+      }
     }
     renderBoard(); renderPawns(); renderHUD();
     // お金の増減フロート + 移動が対になっていれば金貨を飛ばす
@@ -1157,10 +1202,11 @@ function render() {
   {
     const pe = Object.entries(state.pending);
     let bt = '';
-    if (state.phase === 'playing' && pe.length && !animBusy) {
+    if (state.phase === 'playing' && pe.length && (!animBusy || (hopState && hopState.holding))) {
       const cur = state.players[state.turn];
       if (pe.some(([, x]) => x.type === 'support')) bt = '両者、支援カードを秘密裏に選択中…';
-      else if (cur && state.pending[cur.id]) bt = state.pending[cur.id].prompt;
+      else if (cur && state.pending[cur.id])
+        bt = state.pending[cur.id].prompt === 'あなたの手番です' ? '' : state.pending[cur.id].prompt;
       else bt = player(pe[0][0]).name + 'が選択中…';
     }
     $('tpBubble').innerHTML = bt;
@@ -1173,7 +1219,7 @@ function render() {
     if (dKey !== prev.draftKey) {
       prev.draftKey = dKey;
       if (de && (de[1].aura === 'L'))
-        showBanner('✨ 伝説級の気配…!', player(de[0]).name + 'のドラフトに何かが眠っている');
+        showBanner('✨ 伝説級の気配…!', player(de[0]).name + 'のドラフトに何かが眠っている', 3800);
     }
   }
   // マス吹き出し(停止イベントの現地表示)
@@ -1243,9 +1289,12 @@ function render() {
   // 祠イベントの中央表示
   if (state.lastEvent && state.lastEvent.at !== prev.eventAt) {
     prev.eventAt = state.lastEvent.at;
-    if (state.lastEvent.type === 'shrine' && !animBusy)
-      showBanner(`⛩ 祠の加護 +${state.lastEvent.gold}G`,
-        player(state.lastEvent.player).name + ' ─ 通算' + state.lastEvent.visits + '回参拝');
+    if (state.lastEvent.type === 'shrine') prev.shrineQ = state.lastEvent;
+  }
+  if (prev.shrineQ && !animBusy) {
+    const ev = prev.shrineQ; prev.shrineQ = null;
+    showBanner(`祠の加護 +${ev.gold}G`,
+      player(ev.player).name + ' ─ 通算' + ev.visits + '回参拝', 2800);
   }
   // 称号の移動・リーチ到達を中央バナーで告知
   if (state.phase === 'playing') {
