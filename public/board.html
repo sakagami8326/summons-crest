@@ -725,11 +725,16 @@ document.getElementById('titleCreate').onclick = () => {
   document.getElementById('titleOv').classList.remove('on');
   boot();
 };
-let bgmN = null, bgmR = null, bgmMuted = false, bgmCur = null;
+let bgmN = null, bgmR = null, bgmMuted = false, bgmCur = null, seTelop = null;
 function initAudio() {
   if (bgmN) return;
   bgmN = new Audio('/assets/bgm_normal.mp3');
   bgmR = new Audio('/assets/bgm_reach.mp3');
+  seTelop = new Audio('/assets/se_telop.mp3');
+  seTelop.volume = 0.6;
+  seTelop.muted = true;
+  seTelop.play().then(() => { seTelop.pause(); seTelop.currentTime = 0; seTelop.muted = false; })
+    .catch(() => { seTelop.muted = false; });
   [bgmN, bgmR].forEach(a => {
     a.loop = true; a.volume = 0.35;
     a.muted = true;
@@ -1057,6 +1062,9 @@ function renderHUD() {
 
 // ===== テロップ・ダイス・戦闘 =====
 function showTelop(kind, sub) {
+  if ((kind === 'game' || kind === 'turn') && seTelop && !bgmMuted) {
+    try { seTelop.currentTime = 0; seTelop.play().catch(() => {}); } catch (e) {}
+  }
   const img = $('telopImg'), s = $('telopSub');
   img.classList.remove('play'); s.classList.remove('play');
   img.src = '/assets/telop_' + kind + '.png';
@@ -1108,7 +1116,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.26';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.27';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -1271,19 +1279,7 @@ function render() {
   if (state.phase === 'playing' && prev.phase !== 'playing') showTelop('game');
   else if (state.phase === 'playing' && state.turn !== prev.turn) queuedTurn = state.turn;
   prev.phase = state.phase; prev.turn = state.turn;
-  if (queuedTurn !== null && !animBusy && state.phase === 'playing') {
-    const waitMs = bannerUntil + 400 - Date.now();
-    if (waitMs > 0) {
-      clearTimeout(prev.turnT);
-      prev.turnT = setTimeout(render, waitMs + 30);
-    } else {
-      if (queuedTurn !== firedTurn) {
-        firedTurn = queuedTurn;
-        showTelop('turn', state.players[queuedTurn].name + 'の手番');
-      }
-      queuedTurn = null;
-    }
-  }
+  // (TURN STARTテロップはバナーキュー処理の後で判定する ─ 祠バナー等を先に消化)
   // BGM(リーチ者がいれば疾走曲へ)
   if (state.phase === 'playing') {
     const reach = state.players.some(p => p.points >= state.target - 2);
@@ -1383,6 +1379,12 @@ function render() {
     if (state.lastEvent.type === 'shrine')
       queueBanner(`祠の加護 +${state.lastEvent.gold}G`,
         player(state.lastEvent.player).name + ' ─ 通算' + state.lastEvent.visits + '回参拝', 2800);
+    else if (state.lastEvent.type === 'gate') {
+      const gl = { g_up: '🛡 領地を強化', g_draft: '🃏 カードを引く',
+                   g_forge: '⚒ 鍛錬 ─ クリーチャー進化', pass: '─ 何もしない' }[state.lastEvent.choice];
+      if (gl) queueBanner('変化の門 ─ ' + gl,
+        player(state.lastEvent.player).name + 'の選択', 2400);
+    }
   }
   // 称号の移動・リーチ到達を中央バナーで告知
   if (state.phase === 'playing') {
@@ -1420,6 +1422,20 @@ function render() {
     showBanner(x[0], x[1], x[2]);
   }
   if (bq.length) { clearTimeout(prev.bqT); prev.bqT = setTimeout(render, 450); }
+  // TURN STARTテロップ ─ 祠・称号などのバナーを全て消化してから表示
+  if (queuedTurn !== null && !animBusy && state.phase === 'playing') {
+    const waitMs = bannerUntil + 400 - Date.now();
+    if (waitMs > 0 || bq.length) {
+      clearTimeout(prev.turnT);
+      prev.turnT = setTimeout(render, Math.max(waitMs, 450) + 30);
+    } else {
+      if (queuedTurn !== firedTurn) {
+        firedTurn = queuedTurn;
+        showTelop('turn', state.players[queuedTurn].name + 'の手番');
+      }
+      queuedTurn = null;
+    }
+  }
   // ダイス
   if (state.lastDice && state.lastDice.at !== prev.dice) {
     prev.dice = state.lastDice.at;

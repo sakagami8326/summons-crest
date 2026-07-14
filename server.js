@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const VERSION = '0.26';
+const VERSION = '0.27';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -563,6 +563,7 @@ function handleChoose(r, playerId, optionId) {
   }
 
   if (pend.type === 'gate') {
+    r.lastEvent = { type: 'gate', player: p.id, choice: optionId, at: Date.now() };
     if (optionId === 'g_up') return askUpgrade(r, p, '門');
     if (optionId === 'g_draft') return startDraft(r, p, 'end');
     if (optionId === 'g_forge') return askForge(r, p);

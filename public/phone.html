@@ -38,7 +38,8 @@
         border:1px solid var(--gold); border-radius:999px; padding:4px 14px 4px 5px; flex:none; }
   .me > img { width:12dvh; height:12dvh; border-radius:50%; border:2px solid var(--gold); object-fit:cover; flex:none; }
   .me .nm { font-size:2.4dvh; letter-spacing:1px; }
-  .me .st { font-size:2.1dvh; color:var(--gold-soft); font-family:sans-serif; }
+  .me .st { font-size:2.1dvh; color:var(--gold-soft); font-family:sans-serif;
+        font-variant-numeric:tabular-nums; white-space:nowrap; }
   #msg { flex:1; text-align:center; font-size:2.5dvh; letter-spacing:2px; color:var(--gold-soft);
         text-shadow:0 1px 4px rgba(0,0,0,.6); min-width:0; }
   #fsBtn { font-family:inherit; font-size:12px; background:rgba(0,0,0,.4); color:rgba(241,232,208,.8);
@@ -165,13 +166,14 @@
   .diceImgBtn:active img { transform:scale(.93); }
 
   .face .fx { font-size:1.32dvh; color:#5C4A2E; text-align:center; padding:0 8px;
-      line-height:1.35; min-height:2.4dvh; }
+      line-height:1.35; min-height:2.4dvh; flex:0 1 auto; overflow:hidden; }
+  .gCard .fx { font-size:1.55dvh; }
   #draftOv { position:fixed; inset:0; display:none; z-index:56; background:rgba(10,8,25,.92);
       flex-direction:column; align-items:center; padding-top:2dvh; gap:1.4dvh; }
   #draftOv.on { display:flex; }
   #draftTitle { font-size:2.4dvh; letter-spacing:3px; color:var(--gold-soft); }
   #draftRow { display:flex; gap:2.4vw; flex:1; align-items:center; padding-bottom:2dvh; }
-  .draftCard { width:30dvh; height:46dvh; cursor:pointer; transition:transform .15s; position:relative; }
+  .draftCard { width:36dvh; height:56dvh; cursor:pointer; transition:transform .15s; position:relative; }
   .draftCard .face .art img { max-width:100%; object-fit:contain; }
   .draftCard:active { transform:scale(.96); }
   .draftCard .face { position:relative; height:100%; }
@@ -193,7 +195,7 @@
   #gGrid { flex:1; overflow-y:auto; display:flex; flex-wrap:wrap; gap:1.6dvh;
       padding:0 calc(14px + env(safe-area-inset-left)) 3dvh; align-content:flex-start;
       justify-content:center; }
-  .gCard { flex:none; width:19.5dvh; height:30dvh; position:relative; perspective:700px; cursor:pointer; }
+  .gCard { flex:none; width:26dvh; height:40dvh; position:relative; perspective:700px; cursor:pointer; }
   #galZoom { position:fixed; inset:0; display:none; z-index:62; align-items:center;
       justify-content:center; background:rgba(10,8,25,.88); }
   #galZoom.on { display:flex; }
@@ -433,7 +435,7 @@ function bigCardHTML(c) {
     <div class="cost">${cr.cost}G</div>${cr.elem ? `<div class="elemIc"><svg viewBox="-34 -36 68 72">${ELEM_MINI[cr.elem]}</svg></div>` : `<div class="elemIc none">無</div>`}${art}
     <div class="nm" style="font-size:3dvh">${cr.name}</div>
     <div class="stats" style="font-size:2.4dvh"><span>ST <b>${cr.st}</b></span><span>HP <i>${cr.hp}</i></span></div>
-    <div class="fx" style="font-size:1.7dvh">${cr.fx || ''}</div>
+    <div class="fx" style="font-size:2dvh">${cr.fx || ''}</div>
     <div class="rarBadge ${cr.rarity || 'N'}">${cr.rarity || 'N'}</div>
     <div class="type">クリーチャー</div></div>`;
 }
@@ -583,8 +585,12 @@ function render() {
     return `<span style="color:${RUNE[e]}; display:inline-flex; align-items:center; gap:2px; opacity:${n ? 1 : .4}">
       <svg width="12" height="12" viewBox="-34 -36 68 72" style="vertical-align:middle">${ELEM_MINI[e]}</svg>${n}</span>`;
   }).join(' ');
-  const ic = n => `<img src="/assets/${n}.png" style="height:2dvh;width:auto;vertical-align:-0.3dvh">`;
-  $('myStat').innerHTML = `${m.points}/${state.target}点 ｜ ${ic('ic_gold')}${m.gold} ｜ ${ic('ic_gem')}${m.gems}<br>領地: ${elemN}`;
+  const ic = n => `<img src="/assets/${n}.png" style="height:2dvh;width:2dvh;object-fit:contain;vertical-align:-0.3dvh">`;
+  const statHtml = `${m.points}/${state.target}点 ｜ ${ic('ic_gold')}${m.gold} ｜ ${ic('ic_gem')}${m.gems}<br>領地: ${elemN}`;
+  if ($('myStat').dataset.h !== statHtml) {
+    $('myStat').dataset.h = statHtml;
+    $('myStat').innerHTML = statHtml;
+  }
 
   // ダイスの出目が自分のものなら着地させる
   if (rolling && state.lastDice && state.lastDice.player === pid && state.lastDice.at !== lastDiceAt) {
