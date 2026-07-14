@@ -599,7 +599,7 @@ async function playUlt(u) {
     `radial-gradient(ellipse at 30% 60%, ${ch.color}44 0%, rgba(10,8,25,.97) 55%)`;
   $('ultArt').src = '/assets/full_' + u.charId + '.png';
   $('ultName').textContent = u.name;
-  $('ultSub').textContent = player(u.player).name + 'の固有スキル発動!';
+  $('ultSub').innerHTML = sic('ult') + ' ' + player(u.player).name + 'の固有スキル発動!';
   const art = $('ultArt');
   art.style.animation = 'none'; void art.offsetWidth; art.style.animation = '';
   bannerUntil = Math.max(bannerUntil, Date.now() + 2700);
@@ -608,7 +608,7 @@ async function playUlt(u) {
   await wait(2550);
   $('ultCut').classList.remove('on');
   hideLogo(false);
-  showBanner('【' + u.name + '】', state.catalog.ULTS[u.charId].desc, 2800);
+  showBanner(sic('ult') + '【' + u.name + '】', state.catalog.ULTS[u.charId].desc, 2800);
 }
 const hideLogo = v => { $('logoImg').style.opacity = v ? 0 : 1; };
 function worldPos(i) { return proj(GEO[i][0], GEO[i][1]); }
@@ -619,7 +619,7 @@ function showCallout(i, text) {
   el.className = 'callout';
   el.style.left = x + 'px';
   el.style.top = (y - (o ? (o.level - 1) * 7 : 0) - 96) + 'px';
-  el.innerHTML = text;
+  el.innerHTML = iconize(text);
   $('world').appendChild(el);
   setTimeout(() => el.remove(), 2500);
 }
@@ -662,12 +662,30 @@ function flyCoins(fromPid, toPid) {
     }, k * 70);
   }
 }
+// ===== 絵文字→アイコン変換(ULT・門・建造物など) =====
+const SIC = {
+  ult:   '<path d="M12.6 1.6 4.4 13.8h5L8 22.4 19.6 9.4h-5.4l3.2-7.8z" fill="#F2D062" stroke="#8A6A1E" stroke-width="1.1" stroke-linejoin="round"/>',
+  up:    '<path d="M12 2l8 3v6c0 5.2-3.4 9.6-8 11-4.6-1.4-8-5.8-8-11V5z" fill="#F2D062" stroke="#8A6A1E" stroke-width="1.1" stroke-linejoin="round"/>',
+  draft: '<rect x="8.5" y="3" width="11" height="15.5" rx="1.6" fill="#D8B44A" stroke="#8A6A1E"/><rect x="4.5" y="5.5" width="11" height="15.5" rx="1.6" fill="#F2D062" stroke="#8A6A1E"/>',
+  forge: '<rect x="3" y="5" width="13" height="6" rx="1.2" fill="#F2D062" stroke="#8A6A1E"/><rect x="16.4" y="6.2" width="4.6" height="3.6" rx="1" fill="#F2D062" stroke="#8A6A1E"/><rect x="8.4" y="11.4" width="3.2" height="10.6" rx="1.4" fill="#D8B44A" stroke="#8A6A1E"/>'
+};
+const sic = (k, s) => `<svg viewBox="0 0 24 24" style="width:${s || '1em'};height:${s || '1em'};vertical-align:-0.14em">${SIC[k]}</svg>`;
+const stIc = n => `<img src="/assets/struct_${n}.png" style="height:1.25em;width:1.25em;object-fit:contain;vertical-align:-0.28em">`;
+const icIc = n => `<img src="/assets/${n}.png" style="height:1.1em;width:1.1em;object-fit:contain;vertical-align:-0.18em">`;
+const ICON_SUB = [['⚡', () => sic('ult')], ['⚒', () => sic('forge')],
+  ['🏰', () => stIc('castle')], ['⛩', () => stIc('shrine')], ['🏪', () => stIc('market')],
+  ['🚪', () => stIc('gate')], ['☠', () => icIc('ic_curse')]];
+function iconize(t) {
+  let s = String(t == null ? '' : t);
+  for (const [e, f] of ICON_SUB) if (s.includes(e)) s = s.split(e).join(f());
+  return s;
+}
 let bannerUntil = 0;
 const bq = [];
 function queueBanner(main, sub, dur) { bq.push([main, sub, dur]); }
 function showBanner(main, sub, dur) {
   const el = $('centerBanner');
-  el.innerHTML = main + (sub ? `<small>${sub}</small>` : '');
+  el.innerHTML = iconize(main) + (sub ? `<small>${iconize(sub)}</small>` : '');
   el.classList.add('show');
   clearTimeout(bannerT);
   bannerUntil = Date.now() + (dur || 1900);
@@ -1116,7 +1134,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.27';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.28';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -1195,7 +1213,7 @@ function render() {
   }
   if (state.log && state.log.length)
     $('ticker').innerHTML = state.log.slice(-5).map((l, k, a) =>
-      `<div style="opacity:${0.45 + 0.55 * (k + 1) / a.length}">${l}</div>`).join('');
+      `<div style="opacity:${0.45 + 0.55 * (k + 1) / a.length}">${iconize(l)}</div>`).join('');
   // ===== ショップ演出 =====
   const shopping = Object.entries(state.pending).find(([, x]) => x.type === 'market');
   let shopOpen = !!shopping && state.phase === 'playing' && !animBusy;
@@ -1248,6 +1266,7 @@ function render() {
         if (!prev.ownersArr[i] && state.owners[i]) {
           const o = state.owners[i], pl = player(o.player);
           const img = $('scPlayer');
+          bannerUntil = Math.max(bannerUntil, Date.now() + 2600); // 立ち絵ロード待ちでもTURN STARTを先に出させない
           const show = () => {
             hideLogo(true);
             $('scCreature').innerHTML = artHTML(o.creature, 1, 200);
@@ -1296,7 +1315,7 @@ function render() {
         bt = state.pending[cur.id].prompt === 'あなたの手番です' ? '' : state.pending[cur.id].prompt;
       else bt = player(pe[0][0]).name + 'が選択中…';
     }
-    $('tpBubble').innerHTML = bt;
+    $('tpBubble').innerHTML = iconize(bt);
     $('tpBubble').classList.toggle('show', !!bt);
   }
   // ドラフトのオーラ通知(中身は見せず気配だけ)
@@ -1380,8 +1399,8 @@ function render() {
       queueBanner(`祠の加護 +${state.lastEvent.gold}G`,
         player(state.lastEvent.player).name + ' ─ 通算' + state.lastEvent.visits + '回参拝', 2800);
     else if (state.lastEvent.type === 'gate') {
-      const gl = { g_up: '🛡 領地を強化', g_draft: '🃏 カードを引く',
-                   g_forge: '⚒ 鍛錬 ─ クリーチャー進化', pass: '─ 何もしない' }[state.lastEvent.choice];
+      const gl = { g_up: sic('up') + ' 領地を強化', g_draft: sic('draft') + ' カードを引く',
+                   g_forge: sic('forge') + ' 鍛錬 ─ クリーチャー進化', pass: '─ 何もしない' }[state.lastEvent.choice];
       if (gl) queueBanner('変化の門 ─ ' + gl,
         player(state.lastEvent.player).name + 'の選択', 2400);
     }
