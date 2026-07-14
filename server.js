@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const VERSION = '0.20';
+const VERSION = '0.23';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -766,6 +766,16 @@ const server = http.createServer(async (req, res) => {
     log(r, `${pl.name}が再入場した`);
     broadcast(r);
     return json(res, { ok: true, name: pl.name, phase: r.phase });
+  }
+  if (p === '/api/close' && req.method === 'POST') {
+    const b = await readBody(req);
+    const r = rooms.get((b.room || '').toUpperCase());
+    if (r) {
+      for (const c of r.clients) { try { c.res.end(); } catch (e) {} }
+      rooms.delete(r.code);
+      console.log(`ルーム${r.code}を手動クローズ`);
+    }
+    return json(res, { ok: true });
   }
   if (p === '/api/room') {
     const r = rooms.get((url.searchParams.get('code') || '').toUpperCase());

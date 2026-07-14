@@ -300,10 +300,26 @@
   .plate .row3 { margin-left:44px !important; gap:7px !important; margin-top:5px !important; }
   .titleChip { display:inline-block; background:linear-gradient(180deg,#E8C55A,#B8901F); color:#241C05;
       border-radius:4px; font-size:11px; padding:1px 6px; margin-left:4px; vertical-align:1px; font-family:sans-serif; }
-  .ebadge { min-width:36px; height:22px; border-radius:5px; display:inline-flex; align-items:center;
-      justify-content:center; gap:2px; font:700 12.5px sans-serif; color:#fff; background:var(--ec);
-      box-shadow:inset 0 -2px 3px rgba(0,0,0,.35); text-shadow:0 1px 2px rgba(0,0,0,.5); padding:0 5px; }
+  .ebadge { min-width:38px; height:23px; border-radius:5px; display:inline-flex; align-items:center;
+      justify-content:center; gap:3px; font:700 12.5px sans-serif; color:#F1E8D0;
+      background:rgba(16,13,36,.78); border:1px solid var(--ec);
+      box-shadow:0 0 5px color-mix(in srgb, var(--ec) 55%, transparent); padding:0 6px; }
+  .ebadge svg { filter:drop-shadow(0 0 2px var(--ec)); }
   .ebadge.zero { opacity:.32; }
+
+  .selCard .scu { margin-top:8px; font-size:11.5px; line-height:1.55; color:rgba(241,232,208,.85);
+      background:rgba(0,0,0,.35); border:1px solid rgba(201,162,39,.4); border-radius:7px;
+      padding:6px 8px; min-height:56px; }
+  .selCard .scu b { color:var(--gold-soft); letter-spacing:1px; }
+  .selCard .aff { font-size:10.5px; color:rgba(241,232,208,.6); margin-top:4px; }
+  #titleResumeWrap { display:none; align-items:center; gap:8px; }
+  #resumeClose { background:transparent; border:1px solid #E86A5A; color:#F5B0A5;
+      border-radius:8px; font-size:15px; padding:8px 13px; cursor:pointer; font-family:inherit; }
+
+  .plate .ic { display:inline-flex; align-items:center; gap:3px; }
+  .plate .ic img { width:16px; height:16px; object-fit:contain; }
+  .titleIc { width:20px; height:20px; object-fit:contain; margin-left:4px; vertical-align:-4px;
+      filter:drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
 </style>
 </head>
 <body>
@@ -329,7 +345,10 @@
     <img class="cast" style="right:0vw; height:48vh" src="/assets/full_linnei.png">
     <img class="tlogo" src="/assets/logo.png">
     <button class="gbtn" id="titleCreate">ルームを作る</button>
-    <button class="gbtn" id="titleResume" style="display:none; filter:hue-rotate(-18deg)"></button>
+    <div id="titleResumeWrap">
+      <button class="gbtn" id="titleResume" style="filter:hue-rotate(-18deg)"></button>
+      <button id="resumeClose" title="このルームを閉じる">✕ 閉じる</button>
+    </div>
     <p class="hint">テレビ/大画面でこの画面を開き、スマホで参加します</p>
   </div>
   <div id="ticker" style="position:fixed; right:16px; top:80px; z-index:35; width:340px;
@@ -343,6 +362,7 @@
     <div id="qrBox" style="margin-top:4px"></div>
     <div class="joined" id="joined"></div>
     <button class="gbtn" id="startBtn" disabled>キャラ選択を開始</button>
+    <button class="gbtn" id="lobbyCancel" style="background:transparent; color:var(--gold-soft); border:1px solid var(--gold); font-size:14px; padding:9px 24px;">タイトルへ戻る(ルームを閉じる)</button>
   </div>
 
   <div class="overlay" id="selectOv">
@@ -611,7 +631,7 @@ function fxAt(i, cls, color, dy = 0) {
   el.style.setProperty('--fxc', color || '#F2D062');
   el.style.left = x + 'px';
   el.style.top = (y + dy) + 'px';
-  if (cls === 'fxBolt') el.textContent = '☠';
+  if (cls === 'fxBolt') el.innerHTML = '<img src="/assets/ic_curse.png" style="height:58px;filter:drop-shadow(0 0 16px #7A2EB8)">';
   $('world').appendChild(el);
   setTimeout(() => el.remove(), 1500);
 }
@@ -713,6 +733,11 @@ function enterRoom(c, phoneUrl) {
   $('bigcode').textContent = code;
   $('phoneUrl').textContent = phoneUrl;
   $('qrBox').innerHTML = QR.svg(phoneUrl, 5);
+  $('lobbyCancel').onclick = async () => {
+    await fetch('/api/close', { method: 'POST', body: JSON.stringify({ room: code }) });
+    try { localStorage.removeItem('sc_board'); } catch (e) {}
+    location.reload();
+  };
   $('startBtn').onclick = () =>
     fetch('/api/action', { method: 'POST', body: JSON.stringify({ room: code, type: 'start_select' }) });
   try { localStorage.setItem('sc_board', code); } catch (e) {}
@@ -735,10 +760,15 @@ addEventListener('resize', fitWorld);
     if (d.exists && d.phase !== 'ended') {
       const btn = document.getElementById('titleResume');
       btn.textContent = '前回のルーム ' + saved + ' に戻る';
-      btn.style.display = 'inline-block';
+      document.getElementById('titleResumeWrap').style.display = 'flex';
       btn.onclick = () => {
         document.getElementById('titleOv').classList.remove('on');
         enterRoom(saved, d.phoneUrl);
+      };
+      document.getElementById('resumeClose').onclick = async () => {
+        await fetch('/api/close', { method: 'POST', body: JSON.stringify({ room: saved }) });
+        try { localStorage.removeItem('sc_board'); } catch (e) {}
+        document.getElementById('titleResumeWrap').style.display = 'none';
       };
     }
   } catch (e) {}
@@ -876,7 +906,7 @@ function renderBoard() {
       cu.style.left = (x - 46) + 'px'; cu.style.top = (y - lift - 44) + 'px';
       cu.style.background = '#5A2E6E';
       cu.style.zIndex = GEO[i][0] + GEO[i][1] + 104;
-      cu.textContent = '☠ HP-' + state.curses[i].hp;
+      cu.innerHTML = '<img src="/assets/ic_curse.png" style="height:13px;vertical-align:-2px"> HP-' + state.curses[i].hp;
       st.appendChild(cu);
     }
   }
@@ -959,8 +989,8 @@ function renderHUD() {
     }
     const rank = ranked.indexOf(p);
     el.style.top = (rank * 104) + 'px';
-    const crowns = (state.titles.conqueror === p.id ? '<span class="titleChip">覇者</span>' : '') +
-      (state.titles.pilgrim === p.id ? '<span class="titleChip">巡礼</span>' : '');
+    const crowns = (state.titles.conqueror === p.id ? '<img class="titleIc" src="/assets/ic_conqueror.png" title="覇者">' : '') +
+      (state.titles.pilgrim === p.id ? '<img class="titleIc" src="/assets/ic_pilgrim.png" title="大巡礼者">' : '');
     el.innerHTML = `
       <img class="face" src="${p.charId ? '/assets/f_' + p.charId + '.png' : ''}">
       <div class="row1">
@@ -968,11 +998,16 @@ function renderHUD() {
         <div class="pname">${p.name}${crowns}</div>
         <div class="pts">${p.points}<small>/${state.target}</small></div>
       </div>
-      <div class="row2"><span>${p.gold}G</span><span>手札${p.handCount}</span><span>宝石${p.gems}</span><span>秘宝${p.treasures}</span>
+      <div class="row2">
+        <span class="ic"><img src="/assets/ic_gold.png">${p.gold}</span>
+        <span class="ic"><img src="/assets/ic_hand.png">${p.handCount}</span>
+        <span class="ic"><img src="/assets/ic_gem.png">${p.gems}</span>
+        <span class="ic"><img src="/assets/ic_treasure.png">${p.treasures}</span>
         ${p.points >= state.target - 2 ? '<span class="reach">リーチ</span>' : ''}</div>
       <div class="row3">${['fire','water','earth','wind'].map(e => {
         const n = state.owners.filter((o, i) => o && o.player === p.id && state.tiles[i].e === e).length;
-        return `<span class="ebadge ${n ? '' : 'zero'}" style="--ec:${RUNE[e]}">${{fire:'火',water:'水',earth:'土',wind:'風'}[e]}${n}</span>`;
+        return `<span class="ebadge ${n ? '' : 'zero'}" style="--ec:${RUNE[e]}">
+          <svg width="14" height="14" viewBox="-34 -36 68 72">${ELEM[e]}</svg>${n}</span>`;
       }).join('')}</div>
       <div class="pbar" style="width:${Math.min(100, p.points / state.target * 100)}%"></div>`;
     el.classList.toggle('turn', state.phase === 'playing' && state.players[state.turn] === p);
@@ -1032,7 +1067,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.20';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.23';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -1055,9 +1090,12 @@ function render() {
       return `<div class="selCard ${who.length >= 2 ? 'contested' : ''}"
         style="--cbg1:${CBG[cid][0]}; --cbg2:${CBG[cid][1]};
         border-color:${who.length ? c.color : 'rgba(201,162,39,.55)'}">
-        <img src="/assets/full_${cid}.png">
+        <img src="/assets/full_${cid}.png" style="height:38vh">
         <div class="scn">${c.name}</div>
         <div class="sce">${{redani:'火属性',linnei:'水属性',grease:'土属性',mio:'風属性'}[cid]}</div>
+        <div class="scu"><b>固有【${(state.catalog.ULTS && state.catalog.ULTS[cid]) ? state.catalog.ULTS[cid].name : ''}】</b><br>
+          ${(state.catalog.ULTS && state.catalog.ULTS[cid]) ? state.catalog.ULTS[cid].desc : ''}(1ゲーム1回)</div>
+        <div class="aff">親和: ${{redani:'火',linnei:'水',grease:'土',mio:'風'}[cid]}の土地の強化費用-20%</div>
         <div class="scp ${who.length === 1 && who[0].confirmed ? 'done' : ''}">${pill}</div>
       </div>`;
     }).join('');
