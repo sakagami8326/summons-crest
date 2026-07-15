@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const VERSION = '0.28';
+const VERSION = '0.30';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -60,7 +60,7 @@ const CREATURES = {
   harpy:   { name: 'ハーピー',         elem: 'wind',  st: 40, hp: 30, cost: 90, fx: '【略奪】侵略成功時、相手から50G奪う', rarity: 'N' },
   griffon: { name: 'グリフォン',       elem: 'wind',  st: 50, hp: 40, cost: 150, rarity: 'R' },
   mimic:   { name: 'ミミック',         elem: null,    st: 30, hp: 30, cost: 70, fx: '【擬態】戦闘時、相手の基礎ST/HPをコピー', rarity: 'N' },
-  gargoyle:{ name: 'ガーゴイル',       elem: null,    st: 20, hp: 50, cost: 90, fx: '【石像】呪いを受けない', rarity: 'N' },
+  beruf:   { name: 'ベルーフ・シェイド', evo: 'デスベルーフ', elem: null, st: 20, hp: 50, cost: 90, evoSt: 40, evoHp: 70, fx: '【死影】呪いを受けない', rarity: 'N' },
 };
 const ITEMS = {
   curse: { name: '衰弱の呪い', hp: 20, cost: 80,
@@ -89,7 +89,7 @@ for (const [cid, c] of Object.entries({ ...CREATURES }))
   if (c.evo) CREATURES[cid + '_f'] = { name: c.evo, elem: c.elem, st: c.evoSt, hp: c.evoHp,
     cost: c.cost, fx: c.fx, rarity: c.rarity, forged: true };
 
-const MARKET_POOL = ['drake','detropas','qbaby','mermaid','goagoa','kbaby','golem','fugorm','harpy','griffon','mimic','gargoyle','ludi','garble','barbaro'];
+const MARKET_POOL = ['drake','detropas','qbaby','mermaid','goagoa','kbaby','golem','fugorm','harpy','griffon','mimic','beruf','ludi','garble','barbaro'];
 const RARITY_COPIES = { L: 1, R: 2, N: 3 };
 function makeDeck() {
   const d = [];
@@ -210,7 +210,7 @@ function askRoll(r, p) {
   if (!p.ultUsed && ULTS[p.charId])
     opts.push({ id: 'ult', label: `固有スキル【${ULTS[p.charId].name}】` });
   if (p.hand.includes('curse') &&
-      r.owners.some((o, i) => o && o.player !== p.id && !r.curses[i] && baseId(o.creature) !== 'gargoyle'))
+      r.owners.some((o, i) => o && o.player !== p.id && !r.curses[i] && baseId(o.creature) !== 'beruf'))
     opts.push({ id: 'usecurse', label: '☠ 衰弱の呪いを使う' });
   ask(r, p.id, 'roll', 'あなたの手番です', opts);
 }
@@ -417,7 +417,7 @@ function resolveBattle(r) {
       queenBonus += isEvolved(no) ? 20 : 10;
   }
   if (queenBonus) notes.push(`【女王の威光】防衛HP+${queenBonus}!`);
-  const curse = (r.curses[b.tile] && baseId(o.creature) !== 'gargoyle') ? r.curses[b.tile].hp : 0;
+  const curse = (r.curses[b.tile] && baseId(o.creature) !== 'beruf') ? r.curses[b.tile].hp : 0;
   const hp = dBase.hp + terrain + queenBonus + (dEff ? dEff.hp : 0) - curse;
 
   // 支援カードは勝敗問わず消費
@@ -529,7 +529,7 @@ function handleChoose(r, playerId, optionId) {
     return resolveTile(r, p);
   }
   if (pend.type === 'roll' && optionId === 'usecurse') {
-    const opts = r.owners.map((o, i) => o && o.player !== p.id && !r.curses[i] && baseId(o.creature) !== 'gargoyle'
+    const opts = r.owners.map((o, i) => o && o.player !== p.id && !r.curses[i] && baseId(o.creature) !== 'beruf'
       ? { id: 'ct:' + i, label: `${pById(r, o.player).name}の${CREATURES[o.creature].name}(${TILES[i].e} Lv${o.level})` }
       : null).filter(Boolean);
     opts.push({ id: 'ct:cancel', label: 'やめる' });

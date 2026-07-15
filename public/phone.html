@@ -146,15 +146,17 @@
       font-size:2dvh; letter-spacing:3px; color:rgba(241,232,208,.8); }
 
   /* キャラ選択 */
-  #charSel { position:fixed; left:0; right:0; top:15dvh; bottom:0; display:none; z-index:35;
-      flex-direction:column; align-items:center; gap:1dvh; }
+  #charSel { position:fixed; inset:0; display:none; z-index:35; background:rgba(10,8,25,.96);
+      flex-direction:column; align-items:center; justify-content:center; gap:1.2dvh;
+      padding:2.5dvh 0 3dvh; }
   #charSel.on { display:flex; }
-  #csRow { display:flex; gap:1.5vw; flex:1; width:100%; justify-content:center;
+  #csRow { display:flex; gap:1.5vw; width:100%; justify-content:center; align-items:center;
+      min-height:0;
       padding-left:calc(1.5vw + env(safe-area-inset-left));
       padding-right:calc(1.5vw + env(safe-area-inset-right)); overflow-x:auto; }
   .csCard { flex:none;
       width:calc((100vw - env(safe-area-inset-left) - env(safe-area-inset-right) - 7.5vw) / 4);
-      min-width:0; border-radius:1.6dvh; border:2px solid var(--cc);
+      min-width:0; height:auto; max-height:88dvh; border-radius:1.6dvh; border:2px solid var(--cc);
       background:rgba(0,0,0,.35); display:flex; flex-direction:column; align-items:center;
       padding:1.2dvh 1dvh; cursor:pointer; transition:transform .15s; overflow:hidden; }
   .csCard:active { transform:scale(.97); }
@@ -321,7 +323,7 @@ let room = null, pid = null, state = null, selected = null, rolling = false;
 let inShopHand = false, expectDraw = false, prevHandKey = '', moveT = null;
 let lastPendKey = '', pendSince = 0;
 const flipped = new Set();
-const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby','ludi','garble','barbaro','detropas','goagoa','fugorm']);
+const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby','ludi','garble','barbaro','detropas','goagoa','fugorm','beruf']);
 const RUNE = { fire:'#FF7A45', water:'#56A8E8', earth:'#7FD35C', wind:'#5BE0D0' };
 // ===== 絵文字→アイコン変換 =====
 const SIC = {

@@ -199,6 +199,24 @@
   #diceMsg { text-align:center; font-size:3.2vh; letter-spacing:4px; color:var(--gold-soft);
       text-shadow:0 2px 8px rgba(0,0,0,.9); opacity:0; transition:opacity .25s; margin-top:1vh; }
   #diceMsg.show { opacity:1; }
+  /* TURN STARTカットイン(右からスライドイン) */
+  #turnCutin { position:fixed; top:0; right:0; bottom:0; width:56vw; z-index:58;
+      pointer-events:none; display:none; overflow:hidden; }
+  #turnCutin.on { display:block; }
+  #turnCutin .tcShade { position:absolute; inset:0;
+      background:linear-gradient(270deg, rgba(10,8,25,.86) 0%, rgba(10,8,25,.72) 45%, transparent 100%); }
+  #turnCutin .tcRim { position:absolute; top:0; bottom:0; right:0; width:100%;
+      background:linear-gradient(270deg, var(--tcc, #C9A227) 0%, transparent 26%); opacity:.34; }
+  #turnCutin img { position:absolute; right:1vw; bottom:-5vh; height:98vh;
+      filter:drop-shadow(0 0 26px rgba(0,0,0,.7)) drop-shadow(0 0 40px var(--tcc, #C9A227)); }
+  #turnCutin.on .tcShade, #turnCutin.on .tcRim { animation:tcFadeIn .4s ease both; }
+  #turnCutin.on img { animation:tcSlideIn .5s cubic-bezier(.18,.9,.28,1) both; }
+  #turnCutin.out .tcShade, #turnCutin.out .tcRim { animation:tcFadeOut .45s ease both !important; }
+  #turnCutin.out img { animation:tcSlideOut .45s ease both !important; }
+  @keyframes tcSlideIn { from { transform:translateX(48vw); opacity:0; } to { transform:none; opacity:1; } }
+  @keyframes tcSlideOut { to { transform:translateX(16vw); opacity:0; } }
+  @keyframes tcFadeIn { from { opacity:0; } }
+  @keyframes tcFadeOut { to { opacity:0; } }
   #turnPortrait { position:fixed; right:10px; bottom:0; z-index:32; pointer-events:none;
       text-align:center; transition:opacity .4s; opacity:0; }
   #turnPortrait.show { opacity:1; }
@@ -335,6 +353,7 @@
   <div id="verTag" style="position:fixed; left:10px; bottom:8px; z-index:20; font-size:11px; color:rgba(241,232,208,.45); letter-spacing:1px;"></div>
   <div id="world"><div id="stage"></div><div id="pawnLayer"></div><div id="spot"></div></div>
   <div id="hud"></div>
+  <div id="turnCutin"><div class="tcShade"></div><div class="tcRim"></div><img id="tcImg"></div>
   <div id="telop"><img id="telopImg"><div id="telopSub"></div></div>
   <div id="diceFloat"></div>
   <div id="diceOv"></div>
@@ -529,7 +548,7 @@ const TW = 150, TH = 84, THICK = 16, DW = 112, DH = 56;
 const OX = 640, OY = 172;
 const proj = (gx, gy) => ({ x: OX + (gx - gy) * TW / 2, y: OY + (gx + gy) * TH / 2 });
 // アートが存在するクリーチャー(それ以外は色トークン表示)
-const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby','ludi','garble','barbaro','detropas','goagoa','fugorm']);
+const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby','ludi','garble','barbaro','detropas','goagoa','fugorm','beruf']);
 
 let code = null, state = null, prev = { phase: null, turn: -1, battleAt: 0, diceAt: 0 };
 const pawnAnim = {}, prevPos = {};
@@ -1068,7 +1087,7 @@ function renderHUD() {
         <span class="ic"><img src="/assets/ic_hand.png">${p.handCount}</span>
         <span class="ic"><img src="/assets/ic_gem.png">${p.gems}</span>
         <span class="ic"><img src="/assets/ic_treasure.png">${p.treasures}</span>
-        ${p.points >= state.target - 2 ? '<span class="reach">リーチ</span>' : ''}</div>
+        ${p.points >= state.target - 1 ? '<span class="reach">リーチ</span>' : ''}</div>
       <div class="row3">${['fire','water','earth','wind'].map(e => {
         const n = state.owners.filter((o, i) => o && o.player === p.id && state.tiles[i].e === e).length;
         return `<span class="ebadge ${n ? '' : 'zero'}" style="--ec:${RUNE[e]}">
@@ -1079,6 +1098,19 @@ function renderHUD() {
 }
 
 // ===== テロップ・ダイス・戦闘 =====
+let tcT1 = null, tcT2 = null;
+function playTurnCutin(pl) {
+  if (!pl || !pl.charId) return;
+  const el = $('turnCutin');
+  $('tcImg').src = '/assets/full_' + pl.charId + '.png';
+  el.style.setProperty('--tcc', pl.color);
+  el.classList.remove('on', 'out'); void el.offsetWidth;
+  el.classList.add('on');
+  bannerUntil = Math.max(bannerUntil, Date.now() + 2400); // カットイン中はバナーを待たせる
+  clearTimeout(tcT1); clearTimeout(tcT2);
+  tcT1 = setTimeout(() => el.classList.add('out'), 1800);   // しばらく表示してから
+  tcT2 = setTimeout(() => el.classList.remove('on', 'out'), 2300); // すっと消える
+}
 function showTelop(kind, sub) {
   if ((kind === 'game' || kind === 'turn') && seTelop && !bgmMuted) {
     try { seTelop.currentTime = 0; seTelop.play().catch(() => {}); } catch (e) {}
@@ -1134,7 +1166,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.28';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.30';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -1301,7 +1333,7 @@ function render() {
   // (TURN STARTテロップはバナーキュー処理の後で判定する ─ 祠バナー等を先に消化)
   // BGM(リーチ者がいれば疾走曲へ)
   if (state.phase === 'playing') {
-    const reach = state.players.some(p => p.points >= state.target - 2);
+    const reach = state.players.some(p => p.points >= state.target - 1);
     setBgm(reach ? 'reach' : 'normal');
   } else if (state.phase === 'ended') setBgm(null);
   // 実況吹き出し(何を待っているか)
@@ -1418,7 +1450,7 @@ function render() {
     prev.titlesKey = tk;
     state.players.forEach(p => {
       const p0 = prev['pts_' + p.id];
-      if (p0 !== undefined && p0 < state.target - 2 && p.points >= state.target - 2 && p.points < state.target)
+      if (p0 !== undefined && p0 < state.target - 1 && p.points >= state.target - 1 && p.points < state.target)
         queueBanner(p.name + 'がリーチ!', 'あと' + (state.target - p.points) + '点で勝利', 2400);
       prev['pts_' + p.id] = p.points;
     });
@@ -1448,9 +1480,14 @@ function render() {
       clearTimeout(prev.turnT);
       prev.turnT = setTimeout(render, Math.max(waitMs, 450) + 30);
     } else {
-      if (queuedTurn !== firedTurn) {
+      // 鮮度チェック: 手番プレイヤーが既に行動を始めていたら(=pendingがroll以外)テロップは出さず破棄
+      const tp0 = state.players[queuedTurn];
+      const tpd = tp0 && state.pending[tp0.id];
+      const fresh = state.turn === queuedTurn && tpd && tpd.type === 'roll';
+      if (fresh && queuedTurn !== firedTurn) {
         firedTurn = queuedTurn;
-        showTelop('turn', state.players[queuedTurn].name + 'の手番');
+        showTelop('turn', tp0.name + 'の手番');
+        playTurnCutin(tp0);
       }
       queuedTurn = null;
     }
