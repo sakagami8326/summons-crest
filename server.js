@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const VERSION = '0.31';
+const VERSION = '0.32';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -46,9 +46,9 @@ const CREATURES = {
   gaston: { name: 'ガストン',       evo: 'ガストレイド',   elem: 'wind',  st: 20, hp: 40, cost: 50, evoSt: 40, evoHp: 60, fx: '【旋風】敗北しても消滅せず手札に戻る', rarity: 'N' },
   cleo:   { name: 'クレオ',         evo: 'クレステッド',   elem: null,    st: 30, hp: 30, cost: 40, evoSt: 50, evoHp: 45, fx: '【適応】どの属性でも地形補正を得る', rarity: 'N' },
   // マーケット
-  drake:   { name: 'ファイアドレイク', elem: 'fire',  st: 55, hp: 35, cost: 120, rarity: 'R' },
+  magado:  { name: 'マガドー', evo: 'マグナガルム', elem: 'fire', st: 55, hp: 35, cost: 120, evoSt: 75, evoHp: 55, rarity: 'R' },
   qbaby:   { name: 'クイーンベビー', evo: 'クイーン', elem: 'fire', st: 35, hp: 30, cost: 120, evoSt: 55, evoHp: 50, fx: '【女王の威光】両隣の自領地の防衛HP+10(進化+20)', rarity: 'L' },
-  mermaid: { name: 'マーメイド',       elem: 'water', st: 20, hp: 50, cost: 90, fx: '【真珠】召喚時、宝石1個を得る', rarity: 'N' },
+  cresteria:{ name: 'クレステリア',    elem: 'water', st: 20, hp: 50, cost: 90, fx: '【真珠】召喚時、宝石1個を得る', rarity: 'N' },
   kbaby:   { name: 'キングベビー', evo: 'キング', elem: 'water', st: 30, hp: 40, cost: 120, evoSt: 50, evoHp: 60, fx: '【王の徴収】通行料受取時+20G(進化+40G)', rarity: 'L' },
   ludi:    { name: 'ルディ', evo: 'シンルー', elem: 'wind', st: 25, hp: 40, cost: 120, evoSt: 45, evoHp: 60, fx: '【雲隠れ】防衛時、相手の支援を無効化', rarity: 'L' },
   garble:  { name: 'ガーブル', evo: 'ガレス・ゲイル', elem: 'wind', st: 35, hp: 25, cost: 120, evoSt: 55, evoHp: 45, fx: '【風刃】攻撃時、相手の地形補正を無視', rarity: 'R' },
@@ -57,7 +57,7 @@ const CREATURES = {
   goagoa:  { name: 'ゴアゴア', evo: 'ノーク・ゴーア', elem: 'water', st: 40, hp: 40, cost: 150, evoSt: 60, evoHp: 65, rarity: 'R' },
   fugorm:  { name: 'フーゴルム', evo: 'ゴーレムアイン', elem: 'earth', st: 35, hp: 40, cost: 100, evoSt: 55, evoHp: 60, fx: '【鍛冶】召喚時、支援「武器」を得る', rarity: 'N' },
   golem:   { name: 'ロックゴーレム',   elem: 'earth', st: 30, hp: 60, cost: 140, rarity: 'R' },
-  harpy:   { name: 'ハーピー',         elem: 'wind',  st: 40, hp: 30, cost: 90, fx: '【略奪】侵略成功時、相手から50G奪う', rarity: 'N' },
+  zati:    { name: 'ザーティー', evo: 'ザンティアー', elem: 'wind', st: 40, hp: 30, cost: 90, evoSt: 60, evoHp: 50, fx: '【略奪】侵略成功時、相手から50G奪う', rarity: 'N' },
   griffon: { name: 'グリフォン',       elem: 'wind',  st: 50, hp: 40, cost: 150, rarity: 'R' },
   mimic:   { name: 'ミミック',         elem: null,    st: 30, hp: 30, cost: 70, fx: '【擬態】戦闘時、相手の基礎ST/HPをコピー', rarity: 'N' },
   beruf:   { name: 'ベルーフ・シェイド', evo: 'デスベルーフ', elem: null, st: 20, hp: 50, cost: 90, evoSt: 40, evoHp: 70, fx: '【死影】呪いを受けない', rarity: 'N' },
@@ -89,7 +89,7 @@ for (const [cid, c] of Object.entries({ ...CREATURES }))
   if (c.evo) CREATURES[cid + '_f'] = { name: c.evo, elem: c.elem, st: c.evoSt, hp: c.evoHp,
     cost: c.cost, fx: c.fx, rarity: c.rarity, forged: true };
 
-const MARKET_POOL = ['drake','detropas','qbaby','mermaid','goagoa','kbaby','golem','fugorm','harpy','griffon','mimic','beruf','ludi','garble','barbaro'];
+const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','golem','fugorm','zati','griffon','mimic','beruf','ludi','garble','barbaro'];
 const RARITY_COPIES = { L: 1, R: 2, N: 3 };
 function makeDeck() {
   const d = [];
@@ -442,7 +442,7 @@ function resolveBattle(r) {
     r.owners[b.tile] = { player: atk.id, level: o.level, creature: b.atkCreature };
     atk.battleWins++;
     log(r, `${atk.name}の勝利! Lv${o.level}の土地を奪取した!`);
-    if (baseId(b.atkCreature) === 'harpy') {
+    if (baseId(b.atkCreature) === 'zati') {
       const got = payTo(r, def, atk, 50);
       if (got) log(r, `【略奪】ハーピーが${def.name}から${got}Gを奪った!`);
     }
@@ -602,7 +602,7 @@ function handleChoose(r, playerId, optionId) {
       p.hand.splice(p.hand.indexOf(c), 1);
       r.owners[i] = { player: p.id, level: 1, creature: c };
       log(r, `${p.name}は${CREATURES[c].name}を召喚し、土地を領地化!`);
-      if (baseId(c) === 'mermaid') { p.gems++; log(r, `【真珠】${p.name}は宝石を1個得た(所持${p.gems}個)`); }
+      if (baseId(c) === 'cresteria') { p.gems++; log(r, `【真珠】${p.name}は宝石を1個得た(所持${p.gems}個)`); }
       if (baseId(c) === 'fugorm') { p.hand.push('weapon'); log(r, `【鍛冶】${p.name}は支援「武器」を得た`); }
       updateTitles(r); if (checkVictory(r)) return; return endTurn(r);
     }
