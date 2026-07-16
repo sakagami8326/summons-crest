@@ -2,6 +2,9 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Reggae+One&display=swap" rel="stylesheet">
 <title>Summons Crest — 盤面</title>
 <style>
   :root { --ink:#141227; --ink2:#1E1B3C; --gold:#C9A227; --gold-soft:#EFD98F; --parchment:#F1E8D0; }
@@ -9,7 +12,8 @@
   body { background:url('/assets/bg.jpg') center / cover no-repeat fixed, #1E1B3C;
          min-height:100vh; overflow:hidden; font-family:"Hiragino Mincho ProN","Yu Mincho",serif;
          color:var(--parchment); }
-  #world { position:fixed; left:50%; top:0; width:1280px; height:905px; transform-origin:top center; }
+  #world { position:fixed; left:50%; top:0; width:1280px; height:905px; transform-origin:top center;
+      transition:transform .85s cubic-bezier(.25,.85,.3,1); }
   #stage { position:absolute; inset:0; }
   .sprite { position:absolute; transform:translate(-50%,-100%); pointer-events:none; }
   .shadow { position:absolute; transform:translate(-50%,-50%); width:64px; height:20px;
@@ -56,7 +60,7 @@
   #telopImg { width:min(52vw,700px); opacity:0; }
   #telopImg.play { animation:telop 2.2s ease forwards; }
   #telopSub { font-size:24px; letter-spacing:6px; color:var(--gold-soft); opacity:0;
-              text-shadow:0 2px 8px rgba(0,0,0,.8); }
+              text-shadow:0 2px 8px rgba(0,0,0,.8);  font-family:'Reggae One','Yu Mincho',serif; }
   #telopSub.play { animation:telop 2.2s ease forwards; }
   @keyframes telop { 0%{opacity:0;transform:scale(1.55);filter:blur(6px)}
     18%{opacity:1;transform:scale(1);filter:blur(0)} 78%{opacity:1} 100%{opacity:0;transform:scale(.94)} }
@@ -105,15 +109,21 @@
   .bside.dead { animation:dead .7s forwards; }
   @keyframes dead { to { opacity:0; transform:translateY(50px) rotate(-12deg); filter:brightness(3); } }
   #bmid { width:230px; text-align:center; }
-  #bcap { font-size:22px; letter-spacing:4px; color:var(--gold-soft); min-height:2em; }
+  #bresult { position:absolute; top:6vh; left:0; right:0; text-align:center; font-size:6vh;
+      letter-spacing:1.2vh; color:var(--gold-soft); font-family:serif; opacity:0; pointer-events:none;
+      text-shadow:0 2px 14px rgba(0,0,0,.95), 0 0 30px rgba(201,162,39,.5);  font-family:'Reggae One','Yu Mincho',serif; }
+  #bresult.show { animation:bres .55s cubic-bezier(.2,.9,.3,1) forwards; }
+  @keyframes bres { from { opacity:0; transform:scale(1.5); } to { opacity:1; transform:none; } }
+  #bcap { font-size:22px; letter-spacing:4px; color:var(--gold-soft); min-height:2em;  font-family:'Reggae One','Yu Mincho',serif; }
   .scardB { display:inline-block; width:74px; height:104px; margin:10px 8px; perspective:400px; }
   .sflipB { position:relative; width:100%; height:100%; transform-style:preserve-3d; transition:transform .5s; }
   .sflipB.open { transform:rotateY(180deg); }
   .sfaceB { position:absolute; inset:0; border-radius:8px; backface-visibility:hidden;
-           display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:13px; }
+           display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:13px;
+           background:url('/assets/card_bg.jpg') center / cover; color:#3A2B18; }
   .sbackB { background:linear-gradient(160deg,#2C2A4A,#1E1B3C); border:2px solid var(--gold);
            color:var(--gold); font-size:28px; }
-  .sfrontB { transform:rotateY(180deg); background:linear-gradient(170deg,#F1E8D0,#DCCFA8);
+  .sfrontB { transform:rotateY(180deg); background:url('/assets/card_bg.jpg') center / cover;
            border:2px solid #2C2A4A; color:#3A2B18; gap:4px; }
   #bflash { position:fixed; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:75; }
   #bflash.go { animation:bflash .45s; }
@@ -122,7 +132,13 @@
   /* ショップ */
   #shopOv { position:fixed; inset:0; display:none; z-index:65;
       background:url('/assets/shop_bg.jpg') center / cover; }
-  #shopOv.on { display:block; }
+  #shopOv.on { display:block; animation:shopIn .5s ease both; }
+  @keyframes shopIn { from { opacity:0; } }
+  #shopOv.on #shopKeeper { animation:keeperIn .6s .1s cubic-bezier(.2,.85,.3,1) both; }
+  @keyframes keeperIn { from { transform:translateY(10vh); opacity:0; } }
+  #shopOv.on #shopBubble { animation:bubIn .4s .45s ease both; }
+  #shopOv.on #shopWho { animation:bubIn .4s .45s ease both; }
+  @keyframes bubIn { from { opacity:0; transform:scale(.75); } }
   #shopKeeper { position:absolute; left:4vw; bottom:0; height:74vh;
       filter:drop-shadow(0 0 30px rgba(0,0,0,.6)); }
   #shopBubble { position:absolute; left:26vw; top:12vh; background:var(--parchment); color:#3A2B18;
@@ -193,7 +209,7 @@
       z-index:58; font-size:4.4vh; letter-spacing:5px; color:var(--gold-soft); text-align:center;
       text-shadow:0 2px 12px rgba(0,0,0,.9); background:rgba(16,13,36,.72);
       border:1px solid var(--gold); border-radius:1.4vh; padding:1.6vh 4.5vh;
-      opacity:0; pointer-events:none; transition:opacity .3s; }
+      opacity:0; pointer-events:none; transition:opacity .3s;  font-family:'Reggae One','Yu Mincho',serif; }
   #centerBanner.show { opacity:1; }
   #centerBanner small { display:block; font-size:2vh; color:rgba(241,232,208,.85); margin-top:.6vh; }
   #diceMsg { text-align:center; font-size:3.2vh; letter-spacing:4px; color:var(--gold-soft);
@@ -217,6 +233,33 @@
   @keyframes tcSlideOut { to { transform:translateX(16vw); opacity:0; } }
   @keyframes tcFadeIn { from { opacity:0; } }
   @keyframes tcFadeOut { to { opacity:0; } }
+  /* 停止マスの詳細ウィンドウ */
+  #tileInfo { position:fixed; right:2vw; top:13vh; width:24vw; min-width:300px; z-index:40;
+      background:linear-gradient(160deg, rgba(24,20,44,.94), rgba(12,10,26,.94));
+      border:2px solid var(--gold); border-radius:14px; padding:1.6vh 1.4vw;
+      box-shadow:0 10px 34px rgba(0,0,0,.6), 0 0 22px rgba(201,162,39,.18);
+      opacity:0; transform:translateX(3vw); pointer-events:none;
+      transition:opacity .4s ease .35s, transform .5s cubic-bezier(.2,.85,.3,1) .35s; }
+  #tileInfo.on { opacity:1; transform:none; }
+  #tileInfo .tiHead { font-size:2.6vh; letter-spacing:2px; color:var(--gold-soft);
+      border-bottom:1px solid rgba(201,162,39,.4); padding-bottom:1vh; margin-bottom:1.2vh;
+      display:flex; align-items:center; gap:.8vw;  font-family:'Reggae One','Yu Mincho',serif; }
+  #tileInfo .tiElem { display:inline-flex; align-items:center; justify-content:center;
+      width:3.4vh; height:3.4vh; border-radius:50%; font-size:1.9vh; color:#fff;
+      border:1px solid rgba(255,255,255,.5); flex:none; }
+  #tileInfo .tiBody { display:flex; gap:1vw; align-items:flex-end; }
+  #tileInfo .tiChar { height:20vh; flex:none; filter:drop-shadow(0 4px 10px rgba(0,0,0,.6)); }
+  #tileInfo .tiCre { flex:1; text-align:center; }
+  #tileInfo .tiCre img { margin:0 auto; }
+  #tileInfo .tiCreName { font-size:2vh; color:var(--parchment); margin-top:.4vh; }
+  #tileInfo .tiHp { font-size:2.2vh; color:#7FD08A; }
+  #tileInfo .tiHp small { font-size:1.4vh; color:rgba(241,232,208,.6); }
+  #tileInfo .tiCurse { color:#B77CD8; font-size:1.7vh; }
+  #tileInfo .tiFx { font-size:1.55vh; color:var(--gold-soft); margin-top:.5vh; line-height:1.5; }
+  #tileInfo .tiToll { font-size:1.9vh; color:var(--parchment); margin-top:.8vh;
+      background:rgba(0,0,0,.35); border-radius:999px; padding:.3vh 1vw; display:inline-block; }
+  #tileInfo .tiDesc { font-size:2vh; line-height:1.8; color:var(--parchment); }
+  #tileInfo .tiSub { font-size:1.5vh; color:rgba(241,232,208,.6); margin-top:1vh; }
   #turnPortrait { position:fixed; right:10px; bottom:0; z-index:32; pointer-events:none;
       text-align:center; transition:opacity .4s; opacity:0; }
   #turnPortrait.show { opacity:1; }
@@ -352,6 +395,7 @@
     border-radius:7px; font-family:inherit; font-size:12px; padding:4px 10px; cursor:pointer;">♪ ON</button>
   <div id="verTag" style="position:fixed; left:10px; bottom:8px; z-index:20; font-size:11px; color:rgba(241,232,208,.45); letter-spacing:1px;"></div>
   <div id="world"><div id="stage"></div><div id="pawnLayer"></div><div id="spot"></div></div>
+  <div id="tileInfo"></div>
   <div id="hud"></div>
   <div id="turnCutin"><div class="tcShade"></div><div class="tcRim"></div><img id="tcImg"></div>
   <div id="telop"><img id="telopImg"><div id="telopSub"></div></div>
@@ -421,6 +465,7 @@
   <div id="summonCut"><img class="pl" id="scPlayer"><div id="scCreature"></div><div id="scText"></div></div>
 
   <div id="battle">
+    <div id="bresult"></div>
     <div class="bside" id="bAtk"></div>
     <div id="bmid"><div id="bcap"></div><div id="bcards"></div><div id="bnotes" style="font-size:1.9vh; color:var(--gold-soft); line-height:1.8; min-height:6vh; text-shadow:0 1px 4px rgba(0,0,0,.8)"></div></div>
     <div class="bside" id="bDef"></div>
@@ -545,10 +590,11 @@ const ICONS = {
 const GEO = [[4,7],[3,7],[2,7],[1,7],[0,7],[0,6],[0,5],[0,4],[0,3],[0,2],[0,1],[0,0],
   [1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],[6,7],[5,7]];
 const TW = 150, TH = 84, THICK = 16, DW = 112, DH = 56;
-const OX = 640, OY = 172;
-const proj = (gx, gy) => ({ x: OX + (gx - gy) * TW / 2, y: OY + (gx + gy) * TH / 2 });
+const GS = 1.16;                          // マス間隔の倍率(タイル自体の大きさは不変)
+const OX = 640, OY = 150;
+const proj = (gx, gy) => ({ x: OX + (gx - gy) * TW * GS / 2, y: OY + (gx + gy) * TH * GS / 2 });
 // アートが存在するクリーチャー(それ以外は色トークン表示)
-const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby','ludi','garble','barbaro','detropas','goagoa','fugorm','beruf','zati','magado','cresteria']);
+const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby','ludi','garble','barbaro','detropas','goagoa','fugorm','beruf','zati','magado','cresteria','mimic','pakawata']);
 
 let code = null, state = null, prev = { phase: null, turn: -1, battleAt: 0, diceAt: 0 };
 const pawnAnim = {}, prevPos = {};
@@ -686,7 +732,8 @@ const SIC = {
   ult:   '<path d="M12.6 1.6 4.4 13.8h5L8 22.4 19.6 9.4h-5.4l3.2-7.8z" fill="#F2D062" stroke="#8A6A1E" stroke-width="1.1" stroke-linejoin="round"/>',
   up:    '<path d="M12 2l8 3v6c0 5.2-3.4 9.6-8 11-4.6-1.4-8-5.8-8-11V5z" fill="#F2D062" stroke="#8A6A1E" stroke-width="1.1" stroke-linejoin="round"/>',
   draft: '<rect x="8.5" y="3" width="11" height="15.5" rx="1.6" fill="#D8B44A" stroke="#8A6A1E"/><rect x="4.5" y="5.5" width="11" height="15.5" rx="1.6" fill="#F2D062" stroke="#8A6A1E"/>',
-  forge: '<rect x="3" y="5" width="13" height="6" rx="1.2" fill="#F2D062" stroke="#8A6A1E"/><rect x="16.4" y="6.2" width="4.6" height="3.6" rx="1" fill="#F2D062" stroke="#8A6A1E"/><rect x="8.4" y="11.4" width="3.2" height="10.6" rx="1.4" fill="#D8B44A" stroke="#8A6A1E"/>'
+  forge: '<rect x="3" y="5" width="13" height="6" rx="1.2" fill="#F2D062" stroke="#8A6A1E"/><rect x="16.4" y="6.2" width="4.6" height="3.6" rx="1" fill="#F2D062" stroke="#8A6A1E"/><rect x="8.4" y="11.4" width="3.2" height="10.6" rx="1.4" fill="#D8B44A" stroke="#8A6A1E"/>',
+  spell: '<rect x="5.5" y="3" width="13" height="18" rx="1.6" fill="#EFE2C4" stroke="#8A6A1E" stroke-width="1.1"/><circle cx="12" cy="9.5" r="3" fill="none" stroke="#7A5AA0" stroke-width="1.4"/><path d="M12 6.5v6M9 9.5h6" stroke="#7A5AA0" stroke-width="1.1"/><path d="M8 16h8M8 18.4h6" stroke="#B09A6A" stroke-width="1.1"/>'
 };
 const sic = (k, s) => `<svg viewBox="0 0 24 24" style="width:${s || '1em'};height:${s || '1em'};vertical-align:-0.14em">${SIC[k]}</svg>`;
 const stIc = n => `<img src="/assets/struct_${n}.png" style="height:1.25em;width:1.25em;object-fit:contain;vertical-align:-0.28em">`;
@@ -794,6 +841,13 @@ function setBgm(which) {
   bgmCur = t;
   if (t && !bgmMuted) t.play().catch(() => {});
 }
+// BGMが不意に止まった場合の自動復帰(3秒ごとの見張り+タブ復帰時)
+function bgmHeal() {
+  if (bgmCur && !bgmMuted && bgmCur.paused && state && state.phase === 'playing')
+    bgmCur.play().catch(() => {});
+}
+setInterval(bgmHeal, 3000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) bgmHeal(); });
 let es = null, lastMsgAt = 0;
 function connectBoard() {
   if (es) es.close();
@@ -856,10 +910,67 @@ addEventListener('resize', fitWorld);
   } catch (e) {}
 })();
 function fitWorld() {
-  const s = Math.min(innerWidth / 1300, (innerHeight - 16) / 915, 1);
-  $('world').style.transform = `translateX(-50%) scale(${s})`;
+  const s = Math.min(innerWidth / 1310, (innerHeight - 16) / 960, 1);
+  worldFit = s;
+  applyZoom();
 }
 
+// ===== 停止マスへのズームと詳細ウィンドウ =====
+let worldFit = 1, zoomTile = null;
+function applyZoom() {
+  const w = $('world');
+  if (zoomTile === null) { w.style.transform = `translateX(-50%) scale(${worldFit})`; return; }
+  const { x, y } = worldPos(zoomTile);
+  const S = worldFit * 1.5;
+  const dx = -(x - 640) * S;
+  const dy = innerHeight * 0.46 - y * S;
+  w.style.transform = `translateX(-50%) translate(${dx}px, ${dy}px) scale(${S})`;
+}
+function setZoom(ti) {
+  if (zoomTile === ti) return;
+  zoomTile = ti;
+  applyZoom();
+}
+function tileInfoHTML(i) {
+  const t = state.tiles[i], o = state.owners[i], C = state.catalog;
+  const EJA = { fire: '火', water: '水', earth: '土', wind: '風' };
+  const eBadge = t.e ? `<span class="tiElem" style="background:${RUNE[t.e]}">${EJA[t.e]}</span>` : '';
+  if (!o) {
+    return `<div class="tiHead">${eBadge}空き地</div>
+      <div class="tiBody"><div class="tiDesc">${EJA[t.e]}属性の土地。<br>クリーチャーを召喚して<br>領地にできる。</div>
+      <div class="tiSub">同属性のクリーチャーは地形補正を得る</div></div>`;
+  }
+  const pl = player(o.player);
+  const cr = C.CREATURES[o.creature];
+  const evolved = o.level >= (state.evoLevel || 3) || /_f$/.test(o.creature);
+  const hp = evolved && cr.evoHp ? cr.evoHp : cr.hp;
+  const curse = state.curses && state.curses[i];
+  const toll = o.level * chain(o.player, t.e) * 30 * (o.creature.replace(/_f$/, '') === 'orphe' ? 1.2 : 1);
+  return `<div class="tiHead">${eBadge}<span style="color:${pl.color}">${pl.name}</span>の領地 Lv${o.level}</div>
+    <div class="tiBody">
+      <img class="tiChar" src="/assets/full_${pl.charId}.png">
+      <div class="tiCre">${artHTML(o.creature, o.level, 92)}
+        <div class="tiCreName">${cname(o.creature, o.level)}</div>
+        <div class="tiHp">HP ${hp}${curse ? `<span class="tiCurse"> −呪い${curse.hp}</span>` : ''} <small>+地形補正</small></div>
+        ${cr.fx ? `<div class="tiFx">${cr.fx}</div>` : ''}
+        <div class="tiToll">通行料 ${Math.round(toll)}G</div>
+      </div>
+    </div>`;
+}
+function updateTileInfo() {
+  const el = $('tileInfo');
+  let target = null;
+  if (state.phase === 'playing' && !hopState && !animBusy && !$('battle').classList.contains('on')) {
+    const tp = state.players[state.turn];
+    const pd = tp && state.pending[tp.id];
+    if (pd && pd.type === 'tile') target = tp.pos;
+  }
+  setZoom(target);
+  if (target === null) { el.classList.remove('on'); el.dataset.k = ''; return; }
+  const k = target + ':' + JSON.stringify(state.owners[target]) + ':' + JSON.stringify(state.curses[target] || 0);
+  if (el.dataset.k !== k) { el.dataset.k = k; el.innerHTML = tileInfoHTML(target); }
+  el.classList.add('on');
+}
 function chain(pid, elem) {
   return state.owners.reduce((n, o, i) => n + (o && o.player === pid && state.tiles[i].e === elem ? 1 : 0), 0);
 }
@@ -880,7 +991,7 @@ function artHTML(cid, lv, w) {
 
 // ===== 盤面描画 =====
 function renderBoard() {
-  const key = JSON.stringify(state.owners) + JSON.stringify(state.curses || {}) + (state.barrier || '') + state.players.map(p => p.id + p.color).join('');
+  const key = JSON.stringify(state.owners) + JSON.stringify(state.curses || {}) + JSON.stringify(state.barrier || {}) + state.players.map(p => p.id + p.color).join('');
   if (key === ownersCache) return;
   ownersCache = key;
   const st = $('stage');
@@ -909,7 +1020,7 @@ function renderBoard() {
            <g transform="translate(1.2,2.4)" opacity=".45">${ELEM_DARK[t.e]}</g>
            <g opacity="${o ? .95 : .62}" style="filter:drop-shadow(0 0 4px ${RUNE[t.e]})">${ELEM[t.e]}</g></g>`
       : '';
-    const barrier = o && state.barrier === o.player;
+    const barrier = o && state.barrier && state.barrier[o.player];
     const own = o ? `
       ${barrier ? `<path d="M${DW/2} -1 L${DW-2} ${DH/2} L${DW/2} ${DH+1} L2 ${DH/2} Z" fill="none"
         stroke="#BFEFFF" stroke-width="2.5" opacity=".9"
@@ -1140,7 +1251,9 @@ async function playBattle(b) {
   $('bnotes').innerHTML = '';
   $('bcap').textContent = '支援カード ─ 同時オープン!';
   ['bAtk','bDef'].forEach(id => $(id).classList.remove('lungeL','lungeR','dead'));
+  $('bresult').classList.remove('show'); $('bresult').innerHTML = '';
   hideLogo(true);
+  bannerUntil = Math.max(bannerUntil, Date.now() + 6000); // 演出中はTURN START/バナーを待たせる
   $('battle').classList.add('on');
   await wait(900);
   document.querySelectorAll('.sflipB').forEach(f => f.classList.add('open'));
@@ -1155,7 +1268,9 @@ async function playBattle(b) {
   await wait(450);
   $('bflash').classList.remove('go'); $('battle').classList.remove('shake');
   $(b.win ? 'bDef' : 'bAtk').classList.add('dead');
-  $('bcap').textContent = b.win ? '⚔ 侵略成功! 土地を奪取!' : '🛡 防衛成功!';
+  $('bcap').textContent = '';
+  $('bresult').textContent = b.win ? '侵略成功' : '防衛成功';
+  $('bresult').classList.add('show');
   await wait(1800);
   $('battle').classList.remove('on');
   hideLogo(false);
@@ -1166,7 +1281,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.32';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.35';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -1430,6 +1545,9 @@ function render() {
     if (state.lastEvent.type === 'shrine')
       queueBanner(`祠の加護 +${state.lastEvent.gold}G`,
         player(state.lastEvent.player).name + ' ─ 通算' + state.lastEvent.visits + '回参拝', 2800);
+    else if (state.lastEvent.type === 'spell')
+      queueBanner(sic('spell') + ' 呪文「' + state.lastEvent.name + '」',
+        player(state.lastEvent.player).name + 'が唱えた', 2400);
     else if (state.lastEvent.type === 'gate') {
       const gl = { g_up: sic('up') + ' 領地を強化', g_draft: sic('draft') + ' カードを引く',
                    g_forge: sic('forge') + ' 鍛錬 ─ クリーチャー進化', pass: '─ 何もしない' }[state.lastEvent.choice];
@@ -1473,6 +1591,7 @@ function render() {
     showBanner(x[0], x[1], x[2]);
   }
   if (bq.length) { clearTimeout(prev.bqT); prev.bqT = setTimeout(render, 450); }
+  updateTileInfo();
   // TURN STARTテロップ ─ 祠・称号などのバナーを全て消化してから表示
   if (queuedTurn !== null && !animBusy && state.phase === 'playing') {
     const waitMs = bannerUntil + 400 - Date.now();

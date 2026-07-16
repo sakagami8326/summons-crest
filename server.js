@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const VERSION = '0.32';
+const VERSION = '0.35';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -58,13 +58,18 @@ const CREATURES = {
   fugorm:  { name: 'フーゴルム', evo: 'ゴーレムアイン', elem: 'earth', st: 35, hp: 40, cost: 100, evoSt: 55, evoHp: 60, fx: '【鍛冶】召喚時、支援「武器」を得る', rarity: 'N' },
   golem:   { name: 'ロックゴーレム',   elem: 'earth', st: 30, hp: 60, cost: 140, rarity: 'R' },
   zati:    { name: 'ザーティー', evo: 'ザンティアー', elem: 'wind', st: 40, hp: 30, cost: 90, evoSt: 60, evoHp: 50, fx: '【略奪】侵略成功時、相手から50G奪う', rarity: 'N' },
-  griffon: { name: 'グリフォン',       elem: 'wind',  st: 50, hp: 40, cost: 150, rarity: 'R' },
+  pakawata:{ name: 'パカワタ',         elem: 'wind',  st: 50, hp: 40, cost: 150, rarity: 'R' },
   mimic:   { name: 'ミミック',         elem: null,    st: 30, hp: 30, cost: 70, fx: '【擬態】戦闘時、相手の基礎ST/HPをコピー', rarity: 'N' },
   beruf:   { name: 'ベルーフ・シェイド', evo: 'デスベルーフ', elem: null, st: 20, hp: 50, cost: 90, evoSt: 40, evoHp: 70, fx: '【死影】呪いを受けない', rarity: 'N' },
 };
-const ITEMS = {
-  curse: { name: '衰弱の呪い', hp: 20, cost: 80,
-           desc: '敵の土地のクリーチャーのHP-20(あなたの次の手番まで)' },
+const ITEMS = {}; // v0.34: 呪いアイテムは廃止(スペル「衰弱の呪文」に移行)
+const SPELLS = {
+  sp_gold:   { name: '黄金の呪文', rarity: 'N', desc: 'ただちに120Gを得る' },
+  sp_weaken: { name: '衰弱の呪文', rarity: 'N', hp: 20,
+               desc: '敵の土地1つのクリーチャーのHP-20(あなたの次の手番まで)' },
+  sp_gale:   { name: '疾風の呪文', rarity: 'R', desc: 'このターン、サイコロを2個振って移動する' },
+  sp_quake:  { name: '地割れの呪文', rarity: 'R', desc: '敵の領地1つのレベルを1下げる(Lv1には無効)' },
+  sp_ward:   { name: '加護の呪文', rarity: 'R', desc: 'あなたの次の手番まで、自分の領地は侵略されない' },
 };
 const SUPPORTS = {
   weapon:  { name: '武器',   st: 20, hp: 0,  cost: 60 },
@@ -89,12 +94,14 @@ for (const [cid, c] of Object.entries({ ...CREATURES }))
   if (c.evo) CREATURES[cid + '_f'] = { name: c.evo, elem: c.elem, st: c.evoSt, hp: c.evoHp,
     cost: c.cost, fx: c.fx, rarity: c.rarity, forged: true };
 
-const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','golem','fugorm','zati','griffon','mimic','beruf','ludi','garble','barbaro'];
+const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','golem','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro'];
 const RARITY_COPIES = { L: 1, R: 2, N: 3 };
 function makeDeck() {
   const d = [];
   for (const c of MARKET_POOL)
     for (let i = 0; i < RARITY_COPIES[CREATURES[c].rarity]; i++) d.push(c);
+  for (const [sid, sp] of Object.entries(SPELLS))
+    for (let i = 0; i < RARITY_COPIES[sp.rarity]; i++) d.push(sid);
   return d.sort(() => Math.random() - 0.5);
 }
 
@@ -134,7 +141,7 @@ function makeRoom() {
     turn: 0, round: 1, log: [],
     pending: {},                          // playerId → { type, prompt, options }
     titles: { conqueror: null, pilgrim: null },
-    duel: null, lastBattle: null, winner: null,
+    duel: null, lastBattle: null, winner: null, barrier: {},
     treasureCost: {},                     // playerId → 次の秘宝に必要な宝石数
     curses: {},                           // tileIdx → { by, hp }
   };
@@ -209,19 +216,25 @@ function askRoll(r, p) {
   const opts = [{ id: 'roll', label: '🎲 サイコロを振る' }];
   if (!p.ultUsed && ULTS[p.charId])
     opts.push({ id: 'ult', label: `固有スキル【${ULTS[p.charId].name}】` });
-  if (p.hand.includes('curse') &&
-      r.owners.some((o, i) => o && o.player !== p.id && !r.curses[i] && baseId(o.creature) !== 'beruf'))
-    opts.push({ id: 'usecurse', label: '☠ 衰弱の呪いを使う' });
+  if (!p.spellDone)
+    for (const sid of [...new Set(p.hand.filter(c => SPELLS[c]))]) {
+      if (sid === 'sp_weaken' &&
+          !r.owners.some((o, i) => o && o.player !== p.id && !r.curses[i] && baseId(o.creature) !== 'beruf')) continue;
+      if (sid === 'sp_quake' &&
+          !r.owners.some(o => o && o.player !== p.id && o.level >= 2)) continue;
+      opts.push({ id: 'sp:' + sid, label: `呪文「${SPELLS[sid].name}」を唱える` });
+    }
   ask(r, p.id, 'roll', 'あなたの手番です', opts);
 }
 function beginTurn(r) {
   if (r.phase !== 'playing') return;
   const p = cur(r);
+  p.spellDone = false; p.gale = false;
   // この人が掛けた呪いは効果終了(「あなたの次の手番まで」)
   for (const [ti, c] of Object.entries(r.curses))
     if (c.by === p.id) { delete r.curses[ti]; log(r, `衰弱の呪い(${ti}番の土地)の効果が切れた`); }
   // この人の結界は効果終了
-  if (r.barrier === p.id) { r.barrier = null; log(r, `${p.name}の大結界が解けた`); }
+  if (r.barrier[p.id]) { delete r.barrier[p.id]; log(r, `${p.name}の結界が解けた`); }
   log(r, `▶ ${p.name}の手番(ラウンド${r.round})`);
   askRoll(r, p);
 }
@@ -248,6 +261,12 @@ function performMove(r, p, steps, meta, moveLabel) {
   resolveTile(r, p);
 }
 function doRoll(r, p) {
+  if (p.gale) {
+    p.gale = false;
+    const d = [0, 0].map(() => 1 + Math.floor(Math.random() * 6));
+    const sum = d[0] + d[1];
+    return performMove(r, p, sum, { value: d[0], multi: d }, `疾風に乗って2つのダイスで${sum}を出した!(${d.join('+')})`);
+  }
   const dice = 1 + Math.floor(Math.random() * 6);
   performMove(r, p, dice, { value: dice }, `${dice}を出した`);
 }
@@ -276,7 +295,7 @@ function resolveTile(r, p) {
   const enemy = pById(r, o.player);
   const toll = tollOf(r, i);
   const opts = [{ id: 'toll', label: `通行料を払う(−${toll}G)` }];
-  if (r.barrier === o.player) {
+  if (r.barrier[o.player]) {
     log(r, `🛡 ${enemy.name}の大結界により侵略できない!`);
   } else if (p.hand.some(c => CREATURES[c])) opts.push({ id: 'invade', label: '⚔ 侵略する' });
   ask(r, p.id, 'tile', `${enemy.name}の領地(${tile.e} Lv${o.level} / 通行料${toll}G)`, opts);
@@ -307,11 +326,14 @@ function startDraft(r, p, resume) {
   }
   const cards = r.deck.splice(0, 3);
   const ranks = { N: 0, R: 1, L: 2 };
-  const top = cards.reduce((a, c) => ranks[CREATURES[c].rarity] > ranks[a] ? CREATURES[c].rarity : a, 'N');
+  const info = c => CREATURES[c] || SPELLS[c];
+  const top = cards.reduce((a, c) => ranks[info(c).rarity] > ranks[a] ? info(c).rarity : a, 'N');
   r.draft = { player: p.id, cards, resume, aura: top };
   ask(r, p.id, 'draft', 'カードを1枚選んで獲得(残りは山札の底へ)', cards.map(c => ({
     id: 'take:' + c,
-    label: `${CREATURES[c].name}(ST${CREATURES[c].st}/HP${CREATURES[c].hp})${CREATURES[c].fx ? ' ' + CREATURES[c].fx : ''}`,
+    label: SPELLS[c]
+      ? `呪文「${SPELLS[c].name}」 ${SPELLS[c].desc}`
+      : `${CREATURES[c].name}(ST${CREATURES[c].st}/HP${CREATURES[c].hp})${CREATURES[c].fx ? ' ' + CREATURES[c].fx : ''}`,
   })));
 }
 function askGate(r, p) {
@@ -340,11 +362,9 @@ function askMarket(r, p) {
   const hm = x => half ? Math.round(x / 2) : x;
   const opts = [];
   if (p.gold >= hm(RULES.drawPrice))
-    opts.push({ id: 'draw', label: `クリーチャーの札を引く(−${hm(RULES.drawPrice)}G / 3枚から1枚選択)` });
+    opts.push({ id: 'draw', label: `カードを引く(−${hm(RULES.drawPrice)}G / 3枚から1枚選択)` });
   for (const [id, sp] of Object.entries(SUPPORTS))
     if (hm(sp.cost) <= p.gold) opts.push({ id: 'buys:' + id, label: `支援「${sp.name}」を購入(−${hm(sp.cost)}G)` });
-  if (hm(ITEMS.curse.cost) <= p.gold)
-    opts.push({ id: 'buyi:curse', label: `☠ 衰弱の呪いを購入(−${hm(ITEMS.curse.cost)}G)` });
   if (p.gold >= hm(RULES.gemPrice) && (half || (p.gemThisStop || 0) < 2))
     opts.push({ id: 'gem', label: `宝石を購入(−${hm(RULES.gemPrice)}G / 所持${p.gems}個)` });
   const need = r.treasureCost[p.id] || 5;
@@ -511,7 +531,7 @@ function handleChoose(r, playerId, optionId) {
       return askMarket(r, p);
     }
     if (p.charId === 'grease') {
-      r.barrier = p.id;
+      r.barrier[p.id] = true;
       for (const [ti] of Object.entries(r.curses))
         if (r.owners[ti] && r.owners[ti].player === p.id) delete r.curses[ti];
       log(r, `🛡 ${p.name}の全領地に大結界が張られた(次の手番まで侵略不可)`);
@@ -528,22 +548,71 @@ function handleChoose(r, playerId, optionId) {
     p.pos = i;
     return resolveTile(r, p);
   }
-  if (pend.type === 'roll' && optionId === 'usecurse') {
-    const opts = r.owners.map((o, i) => o && o.player !== p.id && !r.curses[i] && baseId(o.creature) !== 'beruf'
-      ? { id: 'ct:' + i, label: `${pById(r, o.player).name}の${CREATURES[o.creature].name}(${TILES[i].e} Lv${o.level})` }
-      : null).filter(Boolean);
-    opts.push({ id: 'ct:cancel', label: 'やめる' });
-    return ask(r, p.id, 'curse_target', '☠ どの土地に呪いを掛ける?', opts);
+  if (pend.type === 'roll' && optionId.startsWith('sp:')) {
+    const sid = optionId.slice(3);
+    if (!p.hand.includes(sid) || p.spellDone) return askRoll(r, p);
+    const castLog = () => {
+      p.hand.splice(p.hand.indexOf(sid), 1);
+      p.spellDone = true;
+      r.lastEvent = { type: 'spell', player: p.id, name: SPELLS[sid].name, at: Date.now() };
+      log(r, `📜 ${p.name}が呪文「${SPELLS[sid].name}」を唱えた!`);
+    };
+    if (sid === 'sp_gold') {
+      castLog();
+      p.gold += 120;
+      log(r, `${p.name}は120Gを得た(所持${p.gold}G)`);
+      return askRoll(r, p);
+    }
+    if (sid === 'sp_gale') {
+      castLog();
+      p.gale = true;
+      log(r, `${p.name}に追い風が吹く…(このターンはダイス2個)`);
+      return askRoll(r, p);
+    }
+    if (sid === 'sp_ward') {
+      castLog();
+      r.barrier[p.id] = true;
+      log(r, `${p.name}の全領地に結界が張られた(次の手番まで侵略不可)`);
+      return askRoll(r, p);
+    }
+    if (sid === 'sp_weaken') {
+      const opts = r.owners.map((o, i) => o && o.player !== p.id && !r.curses[i] && baseId(o.creature) !== 'beruf'
+        ? { id: 'ct:' + i, label: `${pById(r, o.player).name}の${CREATURES[o.creature].name}(${TILES[i].e} Lv${o.level})` }
+        : null).filter(Boolean);
+      opts.push({ id: 'ct:cancel', label: 'やめる' });
+      return ask(r, p.id, 'curse_target', '☠ どの土地に呪いを掛ける?', opts);
+    }
+    if (sid === 'sp_quake') {
+      const opts = r.owners.map((o, i) => o && o.player !== p.id && o.level >= 2
+        ? { id: 'qt:' + i, label: `${pById(r, o.player).name}の${CREATURES[o.creature].name}(${TILES[i].e} Lv${o.level}→${o.level - 1})` }
+        : null).filter(Boolean);
+      opts.push({ id: 'qt:cancel', label: 'やめる' });
+      return ask(r, p.id, 'quake_target', '⛰ どの領地に地割れを起こす?', opts);
+    }
   }
   if (pend.type === 'curse_target') {
     if (optionId !== 'ct:cancel') {
       const i = +optionId.slice(3);
-      p.hand.splice(p.hand.indexOf('curse'), 1);
-      r.curses[i] = { by: p.id, hp: ITEMS.curse.hp };
+      p.hand.splice(p.hand.indexOf('sp_weaken'), 1);
+      p.spellDone = true;
+      r.curses[i] = { by: p.id, hp: SPELLS.sp_weaken.hp };
+      r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_weaken.name, at: Date.now() };
       const o = r.owners[i];
-      log(r, `☠ ${p.name}が${pById(r, o.player).name}の${CREATURES[o.creature].name}に衰弱の呪いを放った!(HP-${ITEMS.curse.hp})`);
+      log(r, `☠ ${p.name}が${pById(r, o.player).name}の${CREATURES[o.creature].name}に衰弱の呪文を放った!(HP-${SPELLS.sp_weaken.hp})`);
     }
-    return beginTurn(r);
+    return askRoll(r, p);
+  }
+  if (pend.type === 'quake_target') {
+    if (optionId !== 'qt:cancel') {
+      const i = +optionId.slice(3);
+      p.hand.splice(p.hand.indexOf('sp_quake'), 1);
+      p.spellDone = true;
+      const o = r.owners[i];
+      o.level = Math.max(1, o.level - 1);
+      r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_quake.name, at: Date.now() };
+      log(r, `⛰ ${p.name}の地割れで${pById(r, o.player).name}の領地(${i}番)がLv${o.level}に崩れた!`);
+    }
+    return askRoll(r, p);
   }
 
   if (pend.type === 'draft') {
@@ -642,15 +711,12 @@ function handleChoose(r, playerId, optionId) {
     const hm = x => r.halfMarket === p.id ? Math.round(x / 2) : x;
     if (optionId === 'draw') {
       p.gold -= hm(RULES.drawPrice);
-      log(r, `${p.name}は市場でクリーチャーの札を求めた`);
+      log(r, `${p.name}は市場でカードを求めた`);
       return startDraft(r, p, 'market');
     } else if (optionId.startsWith('buys:')) {
       const s = optionId.slice(5);
       p.gold -= hm(SUPPORTS[s].cost); p.hand.push(s);
       log(r, `${p.name}は支援「${SUPPORTS[s].name}」を購入`);
-    } else if (optionId === 'buyi:curse') {
-      p.gold -= hm(ITEMS.curse.cost); p.hand.push('curse');
-      log(r, `☠ ${p.name}は衰弱の呪いを購入した`);
     } else if (optionId === 'gem') {
       p.gold -= hm(RULES.gemPrice); p.gems++; p.gemThisStop = (p.gemThisStop || 0) + 1;
       log(r, `${p.name}は宝石を購入(所持${p.gems}個)`);
@@ -718,12 +784,12 @@ function publicState(r, viewerId) {
     ver: VERSION, code: r.code, phase: r.phase, evoLevel: RULES.evoLevel, turn: r.turn, round: r.round, target: TARGET_PTS,
     tiles: TILES, owners: r.owners, market: r.market, log: r.log,
     titles: r.titles, duel: r.duel, curses: r.curses, lastEvent: r.lastEvent || null,
-    barrier: r.barrier || null, lastUlt: r.lastUlt || null, lastBattle: r.lastBattle, lastDice: r.lastDice || null,
+    barrier: r.barrier || {}, lastUlt: r.lastUlt || null, lastBattle: r.lastBattle, lastDice: r.lastDice || null,
     winner: r.winner,
     pending: Object.fromEntries(Object.entries(r.pending).map(([k, v]) =>
       [k, v.type === 'draft' && k !== viewerId
         ? { type: v.type, prompt: v.prompt, options: [], aura: r.draft ? r.draft.aura : null } : v])),
-    catalog: { CREATURES, SUPPORTS, ITEMS, CHARS, ULTS },
+    catalog: { CREATURES, SUPPORTS, ITEMS, CHARS, ULTS, SPELLS },
     players: r.players.map(p => ({
       id: p.id, name: p.name, charId: p.charId || null, confirmed: !!p.confirmed,
       color: p.color || '#888', pos: p.pos || 0, gold: p.gold ?? 0,
