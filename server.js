@@ -7,12 +7,46 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const VERSION = '0.36';
+const VERSION = '0.40';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, shrineBonus: 100, tollUnit: 30,
                 levelCost: { 2: 100, 3: 200, 4: 300 }, gemPrice: 80, drawPrice: 100, maxLevel: 4,
-                evoLevel: 3, forgeCost: 150 };
+                evoLevel: 3, forgeCost: 150,
+                drawN: 5, spellsPerTurn: 2, forgetCost: 80 };  // v0.37 デッキ構築
+// キャラ別初期デッキ12枚(初期デッキ仕様案v0.1 第12節)
+const CHAR_DECKS = {
+  redani: ['gecko', 'gecko', 'gaston', 'cleo',
+           'sp_gold', 'sp_weaken', 'sp_weaken', 'sp_gale',
+           'weapon', 'weapon', 'shield', 'jinx'],
+  linnei: ['orphe', 'orphe', 'nome', 'cleo',
+           'sp_gold', 'sp_gold', 'sp_gale', 'sp_weaken',
+           'weapon', 'shield', 'shield', 'jinx'],
+  grease: ['nome', 'nome', 'orphe', 'cleo',
+           'sp_gold', 'sp_weaken', 'sp_weaken', 'sp_ward',
+           'weapon', 'shield', 'shield', 'jinx'],
+  mio:    ['gaston', 'gaston', 'gecko', 'cleo',
+           'sp_gold', 'sp_gale', 'sp_gale', 'sp_weaken',
+           'weapon', 'weapon', 'shield', 'jinx'],
+};
+// 廃棄スペル(使用後ゲームから除外)
+const EXILE_SPELLS = new Set(['sp_quake', 'sp_ward']);
+const shuffle = a => a.sort(() => Math.random() - 0.5);
+// 山札から引く(足りなければ捨て札をシャッフルして新しい山札に)
+function drawCards(r, p, n) {
+  let got = 0;
+  while (got < n) {
+    if (p.deck.length === 0) {
+      if (p.discard.length === 0) break;
+      p.deck = shuffle(p.discard);
+      p.discard = [];
+      log(r, `${p.name}の捨て札がシャッフルされ、新しい山札になった`);
+    }
+    p.hand.push(p.deck.pop());
+    got++;
+  }
+  return got;
+}
 const baseId = c => (c || '').replace(/_f$/, '');
 const isEvolved = (o) => o.level >= RULES.evoLevel || /_f$/.test(o.creature);
 
@@ -79,10 +113,14 @@ const SUPPORTS = {
   jinx:    { name: '呪具',   st: 0,  hp: 0,  cost: 100, jinx: true },
 };
 const CHARS = {
-  redani: { name: 'レダーニ', color: '#D85A30', elem: 'fire' },
-  linnei: { name: 'リンネイ', color: '#378ADD', elem: 'water' },
-  grease: { name: 'グリース', color: '#639922', elem: 'earth' },
-  mio:    { name: 'ミオ',     color: '#4FA69C', elem: 'wind' },
+  redani: { name: 'レダーニ', color: '#D85A30', elem: 'fire',
+            style: '侵略・攻撃', deckNote: 'ゲッコー2+武器2 ─ 衰弱で崩して攻める' },
+  linnei: { name: 'リンネイ', color: '#378ADD', elem: 'water',
+            style: '経済・通行料', deckNote: 'オルフェ2+黄金2 ─ 資金と収入を伸ばす' },
+  grease: { name: 'グリース', color: '#639922', elem: 'earth',
+            style: '防衛・領地育成', deckNote: 'ノーム2+盾2+加護 ─ 守って育てる' },
+  mio:    { name: 'ミオ',     color: '#4FA69C', elem: 'wind',
+            style: '移動・機動侵略', deckNote: 'ガストン2+疾風2 ─ 動き回って仕掛ける' },
 };
 const ULTS = {
   redani: { name: '烈火の進軍', desc: 'サイコロを3個振って移動する' },
@@ -216,7 +254,7 @@ function askRoll(r, p) {
   const opts = [{ id: 'roll', label: '🎲 サイコロを振る' }];
   if (!p.ultUsed && ULTS[p.charId])
     opts.push({ id: 'ult', label: `固有スキル【${ULTS[p.charId].name}】` });
-  if (!p.spellDone)
+  if ((p.spellsUsed || 0) < RULES.spellsPerTurn)
     for (const sid of [...new Set(p.hand.filter(c => SPELLS[c]))]) {
       if (sid === 'sp_weaken' &&
           !r.owners.some((o, i) => o && o.player !== p.id && !r.curses[i] && baseId(o.creature) !== 'beruf')) continue;
@@ -229,7 +267,10 @@ function askRoll(r, p) {
 function beginTurn(r) {
   if (r.phase !== 'playing') return;
   const p = cur(r);
-  p.spellDone = false; p.gale = false;
+  // 前の手番の残り手札を捨て札へ(防衛用に手番間は保持し、ここで一括処分=持ち越し不可)
+  if (p.hand.length) { p.discard.push(...p.hand); p.hand = []; }
+  drawCards(r, p, RULES.drawN);
+  p.spellsUsed = 0; p.gale = false;
   // この人が掛けた呪いは効果終了(「あなたの次の手番まで」)
   for (const [ti, c] of Object.entries(r.curses))
     if (c.by === p.id) { delete r.curses[ti]; log(r, `衰弱の呪い(${ti}番の土地)の効果が切れた`); }
@@ -369,6 +410,8 @@ function askMarket(r, p) {
     opts.push({ id: 'gem', label: `宝石を購入(−${hm(RULES.gemPrice)}G / 所持${p.gems}個)` });
   const need = r.treasureCost[p.id] || 5;
   if (p.gems >= need) opts.push({ id: 'treasure', label: `💎 秘宝と交換(宝石${need}個 → +1点)` });
+  if (p.gold >= RULES.forgetCost && !p.forgetThisStop && (p.hand.length + p.discard.length) > 0)
+    opts.push({ id: 'forget', label: `忘却 ─ カードを1枚廃棄(−${RULES.forgetCost}G / この来店で1回)` });
   opts.push({ id: 'done', label: '市場を出る' });
   ask(r, p.id, 'market', half ? '💧 水鏡の市場 ─ 全品半額セール!' : '市場に到着 ─ 買い物ができます', opts);
 }
@@ -442,7 +485,7 @@ function resolveBattle(r) {
 
   // 支援カードは勝敗問わず消費
   for (const [pid, sc] of Object.entries(b.supports))
-    if (sc !== 'none') { const pl = pById(r, pid); pl.hand.splice(pl.hand.indexOf(sc), 1); }
+    if (sc !== 'none') { const pl = pById(r, pid); pl.hand.splice(pl.hand.indexOf(sc), 1); pl.discard.push(sc); }
 
   const win = st >= hp;
   r.lastBattle = { tile: b.tile, attacker: atk.id, defender: def.id,
@@ -458,6 +501,8 @@ function resolveBattle(r) {
     if (baseId(o.creature) === 'gaston') {
       def.hand.push(o.creature);
       log(r, `【旋風】${def.name}のガストンは風に乗って帰還した`);
+    } else {
+      def.discard.push(o.creature);  // 失った土地のクリーチャーは持ち主の捨て札へ
     }
     r.owners[b.tile] = { player: atk.id, level: o.level, creature: b.atkCreature };
     atk.battleWins++;
@@ -471,6 +516,7 @@ function resolveBattle(r) {
       log(r, `【旋風】${atk.name}のガストンは風に乗って帰還した`);
     } else {
       atk.hand.splice(atk.hand.indexOf(b.atkCreature), 1);
+      atk.discard.push(b.atkCreature);  // 消滅ではなく捨て札へ
     }
     const toll = tollOf(r, b.tile);
     payTo(r, atk, def, toll);
@@ -550,12 +596,14 @@ function handleChoose(r, playerId, optionId) {
   }
   if (pend.type === 'roll' && optionId.startsWith('sp:')) {
     const sid = optionId.slice(3);
-    if (!p.hand.includes(sid) || p.spellDone) return askRoll(r, p);
+    if (!p.hand.includes(sid) || (p.spellsUsed || 0) >= RULES.spellsPerTurn) return askRoll(r, p);
     const castLog = () => {
       p.hand.splice(p.hand.indexOf(sid), 1);
-      p.spellDone = true;
+      if (EXILE_SPELLS.has(sid)) { p.exile.push(sid); }
+      else p.discard.push(sid);
+      p.spellsUsed = (p.spellsUsed || 0) + 1;
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS[sid].name, at: Date.now() };
-      log(r, `📜 ${p.name}が呪文「${SPELLS[sid].name}」を唱えた!`);
+      log(r, `📜 ${p.name}が呪文「${SPELLS[sid].name}」を唱えた!${EXILE_SPELLS.has(sid) ? '(廃棄)' : ''}`);
     };
     if (sid === 'sp_gold') {
       castLog();
@@ -594,7 +642,8 @@ function handleChoose(r, playerId, optionId) {
     if (optionId !== 'ct:cancel') {
       const i = +optionId.slice(3);
       p.hand.splice(p.hand.indexOf('sp_weaken'), 1);
-      p.spellDone = true;
+      p.discard.push('sp_weaken');
+      p.spellsUsed = (p.spellsUsed || 0) + 1;
       r.curses[i] = { by: p.id, hp: SPELLS.sp_weaken.hp };
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_weaken.name, at: Date.now() };
       const o = r.owners[i];
@@ -602,11 +651,27 @@ function handleChoose(r, playerId, optionId) {
     }
     return askRoll(r, p);
   }
+  if (pend.type === 'forget') {
+    if (optionId !== 'fg:cancel') {
+      const zone = optionId[1] === 'h' ? p.hand : p.discard;
+      const i = +optionId.slice(3);
+      if (i < zone.length && p.gold >= RULES.forgetCost) {
+        const c = zone.splice(i, 1)[0];
+        p.exile.push(c);
+        p.gold -= RULES.forgetCost;
+        p.forgetThisStop = 1;
+        const nameOf = x => (CREATURES[x] || SPELLS[x] || SUPPORTS[x] || { name: x }).name;
+        log(r, `${p.name}は「${nameOf(c)}」を忘却した(ゲームから廃棄)`);
+      }
+    }
+    return askMarket(r, p);
+  }
   if (pend.type === 'quake_target') {
     if (optionId !== 'qt:cancel') {
       const i = +optionId.slice(3);
       p.hand.splice(p.hand.indexOf('sp_quake'), 1);
-      p.spellDone = true;
+      p.exile.push('sp_quake');
+      p.spellsUsed = (p.spellsUsed || 0) + 1;
       const o = r.owners[i];
       o.level = Math.max(1, o.level - 1);
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_quake.name, at: Date.now() };
@@ -622,8 +687,8 @@ function handleChoose(r, playerId, optionId) {
     const idx = r.draft.cards.indexOf(c);
     r.draft.cards.splice(idx, 1);
     r.deck.push(...r.draft.cards);
-    p.hand.push(c);
-    log(r, `${p.name}はカードを1枚獲得した(中身は非公開)`);
+    p.discard.push(c);
+    log(r, `${p.name}はカードを1枚獲得し、捨て札に加えた(中身は非公開)`);
     const resume = r.draft.resume;
     r.draft = null;
     if (resume === 'tile') return resolveTile(r, p);
@@ -672,7 +737,7 @@ function handleChoose(r, playerId, optionId) {
       r.owners[i] = { player: p.id, level: 1, creature: c };
       log(r, `${p.name}は${CREATURES[c].name}を召喚し、土地を領地化!`);
       if (baseId(c) === 'cresteria') { p.gems++; log(r, `【真珠】${p.name}は宝石を1個得た(所持${p.gems}個)`); }
-      if (baseId(c) === 'fugorm') { p.hand.push('weapon'); log(r, `【鍛冶】${p.name}は支援「武器」を得た`); }
+      if (baseId(c) === 'fugorm') { p.discard.push('weapon'); log(r, `【鍛冶】${p.name}は支援「武器」を捨て札に得た`); }
       updateTitles(r); if (checkVictory(r)) return; return endTurn(r);
     }
     if (optionId === 'toll') {
@@ -715,7 +780,7 @@ function handleChoose(r, playerId, optionId) {
       return startDraft(r, p, 'market');
     } else if (optionId.startsWith('buys:')) {
       const s = optionId.slice(5);
-      p.gold -= hm(SUPPORTS[s].cost); p.hand.push(s);
+      p.gold -= hm(SUPPORTS[s].cost); p.discard.push(s);
       log(r, `${p.name}は支援「${SUPPORTS[s].name}」を購入`);
     } else if (optionId === 'gem') {
       p.gold -= hm(RULES.gemPrice); p.gems++; p.gemThisStop = (p.gemThisStop || 0) + 1;
@@ -726,7 +791,14 @@ function handleChoose(r, playerId, optionId) {
       r.treasureCost[p.id] = need + 2;
       log(r, `💎 ${p.name}は秘宝を手に入れた!(+1点)`);
       if (checkVictory(r)) return;
-    } else { p.gemThisStop = 0; if (r.halfMarket === p.id) r.halfMarket = null; return endTurn(r); }
+    } else if (optionId === 'forget') {
+      const nameOf = c => (CREATURES[c] || SPELLS[c] || SUPPORTS[c] || { name: c }).name;
+      const opts = [];
+      p.hand.forEach((c, i) => opts.push({ id: 'fh:' + i, label: `[手札] ${nameOf(c)}` }));
+      p.discard.forEach((c, i) => opts.push({ id: 'fd:' + i, label: `[捨て札] ${nameOf(c)}` }));
+      opts.push({ id: 'fg:cancel', label: 'やめる' });
+      return ask(r, p.id, 'forget', `忘却 ─ どのカードを廃棄する?(−${RULES.forgetCost}G)`, opts);
+    } else { p.gemThisStop = 0; p.forgetThisStop = 0; if (r.halfMarket === p.id) r.halfMarket = null; return endTurn(r); }
     return askMarket(r, p);
   }
 }
@@ -770,10 +842,12 @@ function startGame(r) {
   r.players = order;
   for (const p of r.players) {
     p.pos = 0; p.gold = RULES.startGold;
-    p.hand = ['gecko', 'orphe', 'nome', 'gaston', 'cleo', 'weapon', 'shield'];
+    p.deck = shuffle(CHAR_DECKS[p.charId].slice());
+    p.discard = []; p.exile = []; p.hand = [];
     p.gems = 0; p.treasures = 0; p.battleWins = 0; p.shrineVisits = 0; p.ultUsed = false;
     p.color = CHARS[p.charId].color;
   }
+  for (const p of r.players.slice(1)) drawCards(r, p, RULES.drawN);  // 初手番前でも防衛できるように配る(先頭は手番開始時に引く)
   log(r, `全員のキャラが確定! ゲーム開始(手番順: ${r.players.map(p => p.name).join(' → ')})`);
   beginTurn(r);
 }
@@ -797,6 +871,9 @@ function publicState(r, viewerId) {
       battleWins: p.battleWins || 0, shrineVisits: p.shrineVisits || 0, ultUsed: !!p.ultUsed,
       hand: p.id === viewerId ? (p.hand || []) : [],
       handCount: (p.hand || []).length,
+      deckCount: (p.deck || []).length,
+      discardCount: (p.discard || []).length,
+      exileCount: (p.exile || []).length,
       points: r.phase === 'playing' || r.phase === 'ended' ? points(r, p) : 0,
     })),
   };

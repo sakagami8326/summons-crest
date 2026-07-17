@@ -39,7 +39,8 @@
         padding:6px calc(12px + env(safe-area-inset-right)) 6px calc(12px + env(safe-area-inset-left)); }
   .me { display:flex; align-items:center; gap:8px; background:rgba(0,0,0,.35);
         border:1px solid var(--gold); border-radius:999px; padding:4px 14px 4px 5px; flex:none; }
-  .me > img { width:12dvh; height:12dvh; border-radius:50%; border:2px solid var(--gold); object-fit:cover; flex:none; }
+  .me > img { width:12dvh; height:12dvh; border-radius:1.6dvh; object-fit:contain; flex:none;
+        filter:drop-shadow(0 2px 5px rgba(0,0,0,.45)); }
   .me .nm { font-size:2.4dvh; letter-spacing:1px; }
   .me .st { font-size:2.1dvh; color:var(--gold-soft); font-family:sans-serif;
         font-variant-numeric:tabular-nums; white-space:nowrap; }
@@ -161,8 +162,8 @@
       font-size:2.6dvh; min-width:64dvh; }
   .resRow.win { border-color:var(--gold); background:rgba(201,162,39,.18); }
   .resRow.mine { outline:2px solid rgba(241,232,208,.55); }
-  .resRow img { height:5.6dvh; width:5.6dvh; border-radius:50%; object-fit:cover;
-      border:2px solid var(--cc,#888); flex:none; }
+  .resRow img { height:5.6dvh; width:5.6dvh; border-radius:1dvh; object-fit:contain;
+      border:2px solid var(--cc,#888); background:rgba(0,0,0,.25); flex:none; }
   .resRank { width:7dvh; font-size:3dvh; color:var(--gold-soft); flex:none; }
   .resWin { color:var(--gold-soft); font-size:2dvh; letter-spacing:.3dvh; margin-left:1dvh; }
   .resPts { margin-left:auto; font-size:3.2dvh; color:var(--gold-soft); font-variant-numeric:tabular-nums; }
@@ -490,7 +491,7 @@ $('galZoom').onclick = () => $('galZoom').classList.remove('on');
 function bigCardHTML(c) {
   const spl = state.catalog.SPELLS && state.catalog.SPELLS[c];
   if (spl) return `<div class="face front" style="position:relative">
-    <div class="glyph" style="margin-top:9dvh">${sic('spell', '17dvh')}</div>
+    <div class="art" style="height:55%"><img src="/assets/c_${c}.png"></div>
     <div class="nm" style="font-size:3dvh">${spl.name}</div>
     <div class="fx" style="font-size:2.1dvh; padding:0 12px">${spl.desc}</div>
     <div class="rarBadge ${spl.rarity || 'N'}">${spl.rarity || 'N'}</div>
@@ -563,7 +564,7 @@ function cardHTML(c, i) {
     }
   } else if (C.SPELLS && C.SPELLS[c]) {
     const spl = C.SPELLS[c];
-    front = `<div class="glyph" style="margin-top:5dvh">${sic('spell', '9dvh')}</div>
+    front = `<div class="art"><img src="/assets/c_${c}.png"></div>
       <div class="nm">${spl.name}</div>
       <div class="stats" style="font-size:1.4dvh; text-align:center; padding:0 6px; line-height:1.4">${spl.desc}</div>
       <div class="rarBadge ${spl.rarity || 'N'}">${spl.rarity || 'N'}</div>
@@ -662,7 +663,7 @@ function render() {
       <svg width="12" height="12" viewBox="-34 -36 68 72" style="vertical-align:middle">${ELEM_MINI[e]}</svg>${n}</span>`;
   }).join(' ');
   const ic = n => `<img src="/assets/${n}.png" style="height:2dvh;width:2dvh;object-fit:contain;vertical-align:-0.3dvh">`;
-  const statHtml = `${m.points}/${state.target}点 ｜ ${ic('ic_gold')}${m.gold} ｜ ${ic('ic_gem')}${m.gems}<br>領地: ${elemN}`;
+  const statHtml = `${m.points}/${state.target}点 ｜ ${ic('ic_gold')}${m.gold} ｜ ${ic('ic_gem')}${m.gems}<br>領地: ${elemN} ｜ 山札${m.deckCount ?? 0} 捨${m.discardCount ?? 0}`;
   if ($('myStat').dataset.h !== statHtml) {
     $('myStat').dataset.h = statHtml;
     $('myStat').innerHTML = statHtml;
@@ -692,7 +693,7 @@ function render() {
         style="--cc:${c.color}" data-id="${id}">
         <img src="/assets/full_${id}.png">
         <div class="csName">${c.name}</div>
-        <div class="csUlt"><b>${sic('ult', '2dvh')}【${(C.ULTS && C.ULTS[id]) ? C.ULTS[id].name : ''}】</b>${(C.ULTS && C.ULTS[id]) ? C.ULTS[id].desc : ''}<span class="csAff"><svg viewBox="-34 -36 68 72" style="width:1.9dvh;height:1.9dvh;vertical-align:-0.3dvh">${ELEM_MINI[c.elem]}</svg> 親和:${ { fire: '火', water: '水', earth: '土', wind: '風' }[c.elem] } ─ 同属性の土地の強化費-20%</span></div>
+        <div class="csUlt"><b>${sic('ult', '2dvh')}【${(C.ULTS && C.ULTS[id]) ? C.ULTS[id].name : ''}】</b>${(C.ULTS && C.ULTS[id]) ? C.ULTS[id].desc : ''}<span class="csAff"><svg viewBox="-34 -36 68 72" style="width:1.9dvh;height:1.9dvh;vertical-align:-0.3dvh">${ELEM_MINI[c.elem]}</svg> 親和:${ { fire: '火', water: '水', earth: '土', wind: '風' }[c.elem] } ─ 同属性の土地の強化費-20%</span><span class="csAff">${c.style || ''} ─ ${c.deckNote || ''}</span></div>
         <div class="csState">${mine ? 'あなた' : taken ? taken.name + 'が使用' : ''}</div></div>`;
     }).join('');
     document.querySelectorAll('.csCard').forEach(el => el.onclick = () => {
@@ -780,7 +781,7 @@ function render() {
         transform:translateY(-50%); display:flex; flex-direction:column; gap:1.2dvh; max-width:34vw;">${extra}</div>
     </div>`;
     $('diceBtn').onclick = startRoll;
-  } else if (p.type === 'curse_target' || p.type === 'quake_target' || p.type === 'ult_mio') {
+  } else if (p.type === 'curse_target' || p.type === 'quake_target' || p.type === 'ult_mio' || p.type === 'forget') {
     $('msg').innerHTML = iconize(p.prompt);
     A.innerHTML = '<div class="btnCol">' + p.options.map(o =>
       `<button class="abtn ${/:cancel$/.test(o.id) ? 'ghost' : ''}" onclick="choose('${o.id}')">${iconize(o.label)}</button>`).join('') + '</div>';
