@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const VERSION = '0.40';
+const VERSION = '0.41';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -375,7 +375,7 @@ function startDraft(r, p, resume) {
     label: SPELLS[c]
       ? `呪文「${SPELLS[c].name}」 ${SPELLS[c].desc}`
       : `${CREATURES[c].name}(ST${CREATURES[c].st}/HP${CREATURES[c].hp})${CREATURES[c].fx ? ' ' + CREATURES[c].fx : ''}`,
-  })));
+  })).concat([{ id: 'skip', label: 'カードを加えない(3枚とも山札の底へ)' }]));
 }
 function askGate(r, p) {
   const canUp = r.owners.some((o, i) => o && o.player === p.id &&
@@ -485,7 +485,7 @@ function resolveBattle(r) {
 
   // 支援カードは勝敗問わず消費
   for (const [pid, sc] of Object.entries(b.supports))
-    if (sc !== 'none') { const pl = pById(r, pid); pl.hand.splice(pl.hand.indexOf(sc), 1); pl.discard.push(sc); }
+    if (sc !== 'none') { const pl = pById(r, pid); pl.hand.splice(pl.hand.indexOf(sc), 1); pl.exile.push(sc); }  // 支援は使い切り(廃棄)
 
   const win = st >= hp;
   r.lastBattle = { tile: b.tile, attacker: atk.id, defender: def.id,
@@ -681,6 +681,15 @@ function handleChoose(r, playerId, optionId) {
   }
 
   if (pend.type === 'draft') {
+    if (optionId === 'skip') {
+      r.deck.push(...r.draft.cards);
+      log(r, `${p.name}はカードを加えなかった`);
+      const resume0 = r.draft.resume;
+      r.draft = null;
+      if (resume0 === 'tile') return resolveTile(r, p);
+      if (resume0 === 'market') return askMarket(r, p);
+      return endTurn(r);
+    }
     const c = optionId.slice(5);
     const rest = r.draft.cards.filter(x => x !== c);
     // 選ばれなかった2枚は山札の底へ(同じカードが複数枚ある場合も1枚だけ取る)
@@ -794,8 +803,8 @@ function handleChoose(r, playerId, optionId) {
     } else if (optionId === 'forget') {
       const nameOf = c => (CREATURES[c] || SPELLS[c] || SUPPORTS[c] || { name: c }).name;
       const opts = [];
-      p.hand.forEach((c, i) => opts.push({ id: 'fh:' + i, label: `[手札] ${nameOf(c)}` }));
-      p.discard.forEach((c, i) => opts.push({ id: 'fd:' + i, label: `[捨て札] ${nameOf(c)}` }));
+      p.hand.forEach((c, i) => opts.push({ id: 'fh:' + i, label: `[手札] ${nameOf(c)}`, card: c, zone: 'h' }));
+      p.discard.forEach((c, i) => opts.push({ id: 'fd:' + i, label: `[捨て札] ${nameOf(c)}`, card: c, zone: 'd' }));
       opts.push({ id: 'fg:cancel', label: 'やめる' });
       return ask(r, p.id, 'forget', `忘却 ─ どのカードを廃棄する?(−${RULES.forgetCost}G)`, opts);
     } else { p.gemThisStop = 0; p.forgetThisStop = 0; if (r.halfMarket === p.id) r.halfMarket = null; return endTurn(r); }
@@ -862,7 +871,8 @@ function publicState(r, viewerId) {
     winner: r.winner,
     pending: Object.fromEntries(Object.entries(r.pending).map(([k, v]) =>
       [k, v.type === 'draft' && k !== viewerId
-        ? { type: v.type, prompt: v.prompt, options: [], aura: r.draft ? r.draft.aura : null } : v])),
+        ? { type: v.type, prompt: v.prompt, options: [], aura: r.draft ? r.draft.aura : null,
+            resume: r.draft ? r.draft.resume : null } : v])),
     catalog: { CREATURES, SUPPORTS, ITEMS, CHARS, ULTS, SPELLS },
     players: r.players.map(p => ({
       id: p.id, name: p.name, charId: p.charId || null, confirmed: !!p.confirmed,
@@ -870,6 +880,9 @@ function publicState(r, viewerId) {
       gems: p.gems || 0, treasures: p.treasures || 0,
       battleWins: p.battleWins || 0, shrineVisits: p.shrineVisits || 0, ultUsed: !!p.ultUsed,
       hand: p.id === viewerId ? (p.hand || []) : [],
+      deckList: p.id === viewerId ? [...(p.deck || [])].sort() : undefined,
+      discardList: p.id === viewerId ? [...(p.discard || [])].sort() : undefined,
+      exileList: p.id === viewerId ? [...(p.exile || [])].sort() : undefined,
       handCount: (p.hand || []).length,
       deckCount: (p.deck || []).length,
       discardCount: (p.discard || []).length,

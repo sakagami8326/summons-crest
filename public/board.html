@@ -1282,7 +1282,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.40';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.41';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -1364,7 +1364,9 @@ function render() {
     $('ticker').innerHTML = state.log.slice(-5).map((l, k, a) =>
       `<div style="opacity:${0.45 + 0.55 * (k + 1) / a.length}">${iconize(l)}</div>`).join('');
   // ===== ショップ演出 =====
-  const shopping = Object.entries(state.pending).find(([, x]) => x.type === 'market');
+  const shopping = Object.entries(state.pending).find(([, x]) =>
+    x.type === 'market' || (x.type === 'draft' && x.resume === 'market') ||
+    (x.type === 'forget'));
   let shopOpen = !!shopping && state.phase === 'playing' && !animBusy;
   if (shopOpen && Date.now() - lastMoveEnd < 1200) {
     shopOpen = false;
@@ -1403,7 +1405,8 @@ function render() {
       if (was && now && now.level > was.level) {
         const col = player(now.player).color;
         fxAt(i, 'fxRing', col);
-        if (now.level >= (state.evoLevel || 3) && state.catalog.CREATURES[now.creature.replace(/_f$/, '')].evo && now.level - 1 < (state.evoLevel || 3)) {
+        if (now.level >= (state.evoLevel || 3) && !/_f$/.test(now.creature) &&
+            state.catalog.CREATURES[now.creature].evo && now.level - 1 < (state.evoLevel || 3)) {
           fxAt(i, 'fxPillar', col, 20);
           showBanner('✨ ' + state.catalog.CREATURES[now.creature].name + 'が' +
             state.catalog.CREATURES[now.creature].evo + 'に進化!');
