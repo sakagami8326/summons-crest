@@ -26,7 +26,7 @@
   /* 参加フォーム(縦横どちらでも) */
   #join { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center;
         padding-top:6dvh; gap:12px; z-index:50; background:var(--ink); }
-  #join img { height:16dvh; }
+  #join img { height:auto; max-height:16dvh; max-width:86vw; object-fit:contain; }
   #join input { font-family:inherit; font-size:17px; text-align:center; letter-spacing:3px;
         background:var(--ink2); color:var(--parchment); border:1px solid var(--gold);
         border-radius:10px; padding:11px; width:min(70vw, 300px); }
@@ -42,16 +42,17 @@
   .me > img { width:12dvh; height:12dvh; border-radius:1.6dvh; object-fit:contain; flex:none;
         filter:drop-shadow(0 2px 5px rgba(0,0,0,.45)); }
   .me .nm { font-size:2.4dvh; letter-spacing:1px; }
-  .me .st { font-size:2.1dvh; color:var(--gold-soft); font-family:sans-serif;
+  .me .st { font-size:2.4dvh; color:var(--gold-soft); font-family:sans-serif;
         font-variant-numeric:tabular-nums; white-space:nowrap; }
-  #msg { flex:1; text-align:center; font-size:2.5dvh; letter-spacing:2px; color:var(--gold-soft);
+  #msg.big { font-size:4dvh; }
+  #msg { flex:1; text-align:center; font-size:2.9dvh; letter-spacing:2px; color:var(--gold-soft);
         text-shadow:0 1px 4px rgba(0,0,0,.6); min-width:0;  font-family:'Reggae One','Yu Mincho',serif; }
   #fsBtn { font-family:inherit; font-size:12px; background:rgba(0,0,0,.4); color:rgba(241,232,208,.8);
         border:1px solid rgba(201,162,39,.5); border-radius:7px; padding:5px 9px; }
 
   #action { height:27dvh; display:flex; align-items:center; justify-content:center; gap:14px;
         padding:0 16px; overflow:hidden; }
-  .abtn { font-family:inherit; font-size:2.3dvh; letter-spacing:2px; padding:1.8dvh 3.4dvh;
+  .abtn { font-family:inherit; font-size:2.7dvh; letter-spacing:2px; padding:1.8dvh 3.4dvh;
         background:linear-gradient(180deg,#E8C55A,#B8901F); color:#241C05;
         border:2px solid #F2D062; border-radius:12px; cursor:pointer;
         box-shadow:0 4px 14px rgba(0,0,0,.5); }
@@ -60,7 +61,7 @@
   .abtn.ghost { background:transparent; color:var(--gold-soft); border:1px solid var(--gold); box-shadow:none; }
   .abtn.danger { background:linear-gradient(180deg,#D96A50,#A3402B); border-color:#F0937B; color:#2A0B05; }
   .btnCol { display:flex; flex-direction:column; gap:8px; max-height:27dvh; overflow-y:auto; padding:4px; }
-  .btnCol .abtn { font-size:1.9dvh; padding:1.2dvh 2.4dvh; text-align:left; }
+  .btnCol .abtn { font-size:2.3dvh; padding:1.2dvh 2.4dvh; text-align:left; }
   .waitDots { font-size:4dvh; color:var(--gold); letter-spacing:6px; animation:blink 1.2s infinite; }
   @keyframes blink { 50% { opacity:.3; } }
 
@@ -116,8 +117,8 @@
         display:flex; align-items:center; justify-content:center; font-size:2dvh; border:3px solid #2C2A4A; }
   .face .glyph { height:54%; display:flex; align-items:center; justify-content:center;
         font-size:8.5dvh; margin-top:3dvh; color:#2C2A4A; }
-  .face .nm { font-size:1.9dvh; letter-spacing:1px; margin-top:.6dvh; }
-  .face .stats { display:flex; gap:8px; font-family:sans-serif; font-size:1.6dvh; margin-top:.4dvh; }
+  .face .nm { font-size:2.2dvh; letter-spacing:1px; margin-top:.6dvh; }
+  .face .stats { display:flex; gap:8px; font-family:sans-serif; font-size:1.9dvh; margin-top:.4dvh; }
   .face .stats b { color:#A3402B; } .face .stats i { color:#2E5E4E; font-style:normal; }
   .face .stats .up { color:#8A6A1E; font-weight:700; }
   .face .type { position:absolute; bottom:5px; right:9px; font-size:1.3dvh; color:rgba(58,43,24,.6); }
@@ -136,7 +137,7 @@
       border-radius:1.6dvh; border:2px solid #8A6A1E; max-width:36vw; }
   #shopBtns { position:absolute; right:calc(2vw + env(safe-area-inset-right)); top:4dvh; bottom:3dvh;
       width:52vw; display:flex; flex-direction:column; gap:1.6dvh; overflow-y:auto; padding:4px; }
-  .shopBtn { font-family:inherit; font-size:2.5dvh; letter-spacing:1px; padding:2.2dvh 2.6dvh;
+  .shopBtn { font-family:inherit; font-size:2.8dvh; letter-spacing:1px; padding:2.2dvh 2.6dvh;
       background:linear-gradient(180deg,#E8C55A,#B8901F); color:#241C05; text-align:left;
       border:2px solid #F2D062; border-radius:1.6dvh; cursor:pointer; flex:none;
       box-shadow:0 3px 10px rgba(0,0,0,.5); }
@@ -161,6 +162,18 @@
   .dkSec { font-size:2.3dvh; color:var(--gold-soft); border-bottom:1px solid rgba(201,162,39,.35);
       padding-bottom:.4dvh; margin-top:.6dvh; }
   .dkGrid { display:flex; flex-wrap:wrap; gap:1dvh; }
+  .dkCard { position:relative; flex:none;
+      width:calc((100vw - env(safe-area-inset-left) - env(safe-area-inset-right) - 28px - 6.4dvh) / 5);
+      aspect-ratio:300/470; }
+  .dkCard.pick { cursor:pointer; }
+  .dkCard.pick:active { transform:scale(.96); }
+  .dkCard.pick .face { box-shadow:0 0 0 2px var(--gold), 0 4px 12px rgba(0,0,0,.5); }
+  .dkN { position:absolute; top:-.8dvh; right:-.8dvh; z-index:3; background:var(--gold);
+      color:#241C05; font-size:2.2dvh; font-weight:700; border-radius:999px; padding:.2dvh 1.3dvh;
+      box-shadow:0 2px 6px rgba(0,0,0,.5); font-variant-numeric:tabular-nums; }
+  .dkZoneTag { position:absolute; top:-.8dvh; left:-.4dvh; z-index:3; background:rgba(20,18,39,.92);
+      color:var(--gold-soft); font-size:1.7dvh; border:1px solid var(--gold); border-radius:999px;
+      padding:.2dvh 1.4dvh; }
   .dkRow { display:flex; align-items:center; gap:1.4dvh; background:rgba(0,0,0,.35);
       border:1px solid rgba(201,162,39,.3); border-radius:1.2dvh; padding:.7dvh 1.4dvh;
       min-width:38dvh; font-size:2dvh; color:var(--parchment); }
@@ -217,9 +230,9 @@
   .diceImgBtn img { height:23dvh; filter:drop-shadow(0 5px 14px rgba(0,0,0,.55)); transition:transform .12s; }
   .diceImgBtn:active img { transform:scale(.93); }
 
-  .face .fx { font-size:1.32dvh; color:#5C4A2E; text-align:center; padding:0 8px;
+  .face .fx { font-size:1.55dvh; color:#5C4A2E; text-align:center; padding:0 8px;
       line-height:1.35; min-height:2.4dvh; flex:0 1 auto; overflow:hidden; }
-  .gCard .fx { font-size:1.55dvh; }
+  .gCard .fx { font-size:1.75dvh; }
   #draftOv { position:fixed; inset:0; display:none; z-index:56; background:rgba(10,8,25,.92);
       flex-direction:column; align-items:center; padding-top:2dvh; gap:1.4dvh; }
   #draftOv.on { display:flex; }
@@ -247,7 +260,9 @@
   #gGrid { flex:1; overflow-y:auto; display:flex; flex-wrap:wrap; gap:1.6dvh;
       padding:0 calc(14px + env(safe-area-inset-left)) 3dvh; align-content:flex-start;
       justify-content:center; }
-  .gCard { flex:none; width:26dvh; height:40dvh; position:relative; perspective:700px; cursor:pointer; }
+  .gCard { flex:none;
+      width:calc((100vw - env(safe-area-inset-left) - env(safe-area-inset-right) - 28px - 6.4dvh) / 5);
+      aspect-ratio:300/470; height:auto; position:relative; perspective:700px; cursor:pointer; }
   #galZoom { position:fixed; inset:0; display:none; z-index:62; align-items:center;
       justify-content:center; background:rgba(10,8,25,.88); }
   #galZoom.on { display:flex; }
@@ -451,7 +466,13 @@ $('fsBtn').onclick = async () => {
     try { await screen.orientation.lock('landscape'); } catch (e) {}
   } else document.exitFullscreen();
 };
-// ===== デッキビューア =====
+// ===== デッキビューア(カード表示) =====
+function dkCard(c, n, pickId, zone) {
+  return `<div class="dkCard ${pickId ? 'pick' : ''}" ${pickId ? `onclick="choose('${pickId}')"` : ''}>
+    ${bigCardHTML(c)}
+    ${n > 1 ? `<div class="dkN">×${n}</div>` : ''}
+    ${zone ? `<div class="dkZoneTag">${zone}</div>` : ''}</div>`;
+}
 function dkThumb(c) {
   const C = state.catalog;
   if (C.CREATURES[c]) {
@@ -487,7 +508,7 @@ function dkSection(title, cards) {
   const cnt = {};
   cards.forEach(c => cnt[c] = (cnt[c] || 0) + 1);
   return `<div class="dkSec">${title}(${cards.length}枚)</div><div class="dkGrid">` +
-    Object.entries(cnt).map(([c, n]) => dkRow(c, n)).join('') + '</div>';
+    Object.entries(cnt).map(([c, n]) => dkCard(c, n)).join('') + '</div>';
 }
 function buildDeckOv() {
   const m = me();
@@ -566,6 +587,17 @@ $('galleryEvoChk').onchange = e => { galleryEvo = e.target.checked; applyGallery
 $('galZoom').onclick = () => $('galZoom').classList.remove('on');
 
 function bigCardHTML(c) {
+  const sup0 = state.catalog.SUPPORTS && state.catalog.SUPPORTS[c];
+  if (sup0) {
+    const ic = c === 'jinx' ? `<img src="/assets/ic_curse.png" style="height:12dvh;object-fit:contain">`
+      : /shield/.test(c) ? sic('up', '12dvh') : sic('sword', '12dvh');
+    const eff = sup0.jinx ? '相手の支援カードを無効化' : `${sup0.st ? 'ST+' + sup0.st : ''}${sup0.hp ? 'HP+' + sup0.hp : ''}`;
+    return `<div class="face front" style="position:relative">
+      <div class="glyph" style="margin-top:8dvh">${ic}</div>
+      <div class="nm" style="font-size:3dvh">${sup0.name}</div>
+      <div class="fx" style="font-size:2dvh; padding:0 12px">${eff}<br>戦闘時に使用(使い切り)</div>
+      <div class="type">支援</div></div>`;
+  }
   const spl = state.catalog.SPELLS && state.catalog.SPELLS[c];
   if (spl) return `<div class="face front" style="position:relative">
     <div class="art" style="height:55%"><img src="/assets/c_${c}.png"></div>
@@ -745,6 +777,11 @@ function settleDice(n) {
 function render() {
   if (!state) return;
   const m = me(), C = state.catalog, p = pend();
+  const showGui = !!m.charId && (state.phase === 'playing' || state.phase === 'ended');
+  document.querySelector('.me').style.display = showGui ? '' : 'none';
+  $('galleryBtn').style.display = showGui ? '' : 'none';
+  $('deckBtn').style.display = showGui ? '' : 'none';
+  $('msg').classList.toggle('big', !showGui);
   $('myFace').src = m.charId ? '/assets/f_' + m.charId + '.png' : '';
   $('myName').textContent = m.name + (m.charId ? '(' + C.CHARS[m.charId].name + ')' : '');
   const elemN = ['fire','water','earth','wind'].map(e => {
@@ -877,11 +914,11 @@ function render() {
     $('diceBtn').onclick = startRoll;
   } else if (p.type === 'forget') {
     $('msg').innerHTML = iconize(p.prompt);
-    A.innerHTML = `<div style="height:100%; overflow-y:auto; padding:1dvh 2vw; display:flex; flex-direction:column; gap:1dvh">
+    A.innerHTML = `<div style="height:100%; overflow-y:auto; padding:1dvh 2vw; display:flex; flex-direction:column; gap:1.2dvh">
       <div class="dkGrid">` +
       p.options.filter(o => o.card).map(o =>
-        dkRow(o.card, 1, `<span class="dkZone">${o.zone === 'h' ? '手札' : '捨て札'}</span>`, o.id)).join('') +
-      `</div><button class="abtn ghost" style="align-self:center" onclick="choose('fg:cancel')">やめる</button></div>`;
+        dkCard(o.card, 1, o.id, o.zone === 'h' ? '手札' : '捨て札')).join('') +
+      `</div><button class="abtn ghost" style="align-self:center; flex:none" onclick="choose('fg:cancel')">やめる</button></div>`;
   } else if (p.type === 'curse_target' || p.type === 'quake_target' || p.type === 'ult_mio') {
     $('msg').innerHTML = iconize(p.prompt);
     A.innerHTML = '<div class="btnCol">' + p.options.map(o =>
@@ -897,13 +934,16 @@ function render() {
     const dk = p.options.map(o => o.id).join(',');
     if ($('draftRow').dataset.k === dk) { renderHand(); return; }
     $('draftRow').dataset.k = dk;
-    $('draftRow').innerHTML = p.options.map(o => {
+    $('draftRow').innerHTML = p.options.filter(o => o.id.startsWith('take:')).map(o => {
       const cid = o.id.slice(5);
       const rr = (state.catalog.CREATURES[cid] || state.catalog.SPELLS[cid] || {}).rarity || 'N';
       return `<div class="draftCard rar-${rr}" data-o="${o.id}">${bigCardHTML(cid)}</div>`;
-    }).join('');
+    }).join('') + (p.options.some(o => o.id === 'skip')
+      ? `<div style="display:flex; align-items:center"><button class="abtn ghost" id="draftSkipBtn" style="writing-mode:vertical-rl; padding:2.4dvh 1.4dvh; letter-spacing:.5dvh">加えない</button></div>` : '');
     document.querySelectorAll('.draftCard').forEach(el =>
       el.onclick = () => { choose(el.dataset.o); $('draftOv').classList.remove('on'); });
+    const sk = $('draftSkipBtn');
+    if (sk) sk.onclick = () => { choose('skip'); $('draftOv').classList.remove('on'); };
     renderHand();
     return;
   } else if (p.type === 'market' && !inShopHand) {
