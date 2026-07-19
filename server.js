@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const VERSION = '0.49';
+const VERSION = '0.52';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -15,19 +15,20 @@ const RULES = { startGold: 300, castleBonus: 200, shrineBonus: 100, tollUnit: 30
                 evoLevel: 3, forgeCost: 150,
                 startHand: 5, forgetCost: 80 };  // v0.44: 初期5枚+毎ターン1枚ドロー
 // キャラ別初期デッキ12枚(初期デッキ仕様案v0.1 第12節)
+// v0.50: クリーチャー比率アップ(6クリーチャー/3スペル/3支援)
 const CHAR_DECKS = {
-  redani: ['gecko', 'gecko', 'gaston', 'cleo',
-           'sp_gold', 'sp_weaken', 'sp_weaken', 'sp_gale',
-           'weapon', 'weapon', 'shield', 'jinx'],
-  linnei: ['orphe', 'orphe', 'nome', 'cleo',
-           'sp_gold', 'sp_gold', 'sp_gale', 'sp_weaken',
-           'weapon', 'shield', 'shield', 'jinx'],
-  grease: ['nome', 'nome', 'orphe', 'cleo',
-           'sp_gold', 'sp_weaken', 'sp_weaken', 'sp_ward',
-           'weapon', 'shield', 'shield', 'jinx'],
-  mio:    ['gaston', 'gaston', 'gecko', 'cleo',
-           'sp_gold', 'sp_gale', 'sp_gale', 'sp_weaken',
-           'weapon', 'weapon', 'shield', 'jinx'],
+  redani: ['gecko', 'gecko', 'gecko', 'gaston', 'gaston', 'cleo',
+           'sp_gold', 'sp_weaken', 'sp_gale',
+           'weapon', 'weapon', 'jinx'],
+  linnei: ['orphe', 'orphe', 'orphe', 'nome', 'nome', 'cleo',
+           'sp_gold', 'sp_gold', 'sp_gale',
+           'shield', 'shield', 'jinx'],
+  grease: ['nome', 'nome', 'nome', 'orphe', 'orphe', 'cleo',
+           'sp_gold', 'sp_weaken', 'sp_ward',
+           'shield', 'shield', 'jinx'],
+  mio:    ['gaston', 'gaston', 'gaston', 'gecko', 'gecko', 'cleo',
+           'sp_gold', 'sp_gale', 'sp_gale',
+           'weapon', 'weapon', 'jinx'],
 };
 // 廃棄スペル(使用後ゲームから除外)
 const EXILE_SPELLS = new Set(['sp_quake', 'sp_ward']);
@@ -199,10 +200,10 @@ function makeRoom() {
 }
 
 function payTo(r, payer, receiver, amount) {
-  const paid = Math.min(payer.gold, amount);
-  payer.gold -= paid;
-  if (receiver) receiver.gold += paid;
-  return paid;
+  // v0.51: 全額を支払う(所持金はマイナスになり得る→強制売却・破産へ)
+  payer.gold -= amount;
+  if (receiver) receiver.gold += amount;
+  return amount;
 }
 const log = (r, m) => { r.log.push(m); if (r.log.length > 60) r.log.shift(); };
 const cur = r => r.players[r.turn];
@@ -214,7 +215,7 @@ function chainCount(r, playerId, elem) {
 }
 function tollOf(r, i) {
   const o = r.owners[i];
-  const base = o.level * chainCount(r, o.player, TILES[i].e) * RULES.tollUnit;
+  const base = Math.round(landValue(r, i) * 0.25);
   return baseId(o.creature) === 'orphe' ? Math.round(base * 1.2) : base;
 }
 function kingBonus(r, receiver) {
@@ -229,10 +230,21 @@ function kingBonus(r, receiver) {
   }
   return bonus;
 }
+// ===== v0.51 資産経済 =====
+const LV_MUL = { 1: 1, 2: 2.5, 3: 5, 4: 8 };
+const CHAIN_MUL = [0, 1.0, 1.4, 1.8, 2.2, 2.6];  // 同属性所有数→倍率(5以上は2.6)
+const ASSET_GOAL = 8000, ASSET_REACH = 7000;
+function landValue(r, i) {
+  const o = r.owners[i];
+  if (!o) return 0;
+  const chain = Math.min(5, chainCount(r, o.player, TILES[i].e));
+  return Math.round(100 * LV_MUL[o.level] * CHAIN_MUL[chain]);
+}
+// 総資産 = 所持金+地価合計+秘宝600G+称号500G
 function points(r, p) {
-  const land = r.owners.reduce((n, o) => n + (o && o.player === p.id ? o.level : 0), 0);
-  const titles = (r.titles.conqueror === p.id ? 2 : 0) + (r.titles.pilgrim === p.id ? 2 : 0);
-  return land + titles + p.treasures;
+  const lands = r.owners.reduce((n, o, i) => n + (o && o.player === p.id ? landValue(r, i) : 0), 0);
+  const titles = (r.titles.conqueror === p.id ? 500 : 0) + (r.titles.pilgrim === p.id ? 500 : 0);
+  return p.gold + lands + titles + p.treasures * 600;
 }
 function updateTitles(r) {
   for (const [key, field, min] of [['conqueror', 'battleWins', 3], ['pilgrim', 'shrineVisits', 4]]) {
@@ -246,14 +258,11 @@ function updateTitles(r) {
   }
 }
 function checkVictory(r) {
-  for (const p of r.players) {
-    if (points(r, p) >= TARGET_PTS) {
-      r.phase = 'ended'; r.winner = p.id; r.pending = {};
-      log(r, `🏆 ${p.name}が${TARGET_PTS}点に到達! 勝利!`);
-      return true;
-    }
-  }
-  return false;
+  return false;  // v0.51: 勝利判定は「城通過時に総資産8000G以上」のみ(performMove内)
+}
+function declareWin(r, p, why) {
+  r.phase = 'ended'; r.winner = p.id; r.pending = {};
+  log(r, `🏆 ${p.name}が${why} 勝利!`);
 }
 
 // ===== 手番進行 =====
@@ -293,26 +302,88 @@ function beginTurn(r) {
   log(r, `▶ ${p.name}の手番(ラウンド${r.round})`);
   askRoll(r, p);
 }
+// 所持金がマイナスの人がいれば強制売却→それでも負なら破産。全員0以上ならendTurnへ
+function settleAll(r) {
+  if (r.phase !== 'playing') return;
+  const debtor = r.players.find(q => !q.bankrupt && q.gold < 0);
+  if (!debtor) return endTurn(r);
+  const lands = [];
+  r.owners.forEach((o, i) => { if (o && o.player === debtor.id) lands.push(i); });
+  if (!lands.length) return bankrupt(r, debtor);
+  const opts = lands.map(i => ({
+    id: 'sl:' + i,
+    label: `${TILES[i].e} Lv${r.owners[i].level} ${CREATURES[r.owners[i].creature].name}の土地を売却(+${Math.round(landValue(r, i) * 0.7)}G)`,
+  }));
+  ask(r, debtor.id, 'sell',
+    `所持金${debtor.gold}G ─ 0以上になるまで領地を売却する(売却額=地価の70%)`, opts);
+}
+function bankrupt(r, p) {
+  p.bankrupt = true;
+  p.gold = 0;
+  r.lastEvent = { type: 'bankrupt', player: p.id, at: Date.now() };
+  log(r, `💥 ${p.name}は破産した! ゲームから脱落…`);
+  delete r.pending[p.id];
+  const alive = r.players.filter(q => !q.bankrupt);
+  if (alive.length === 1) return declareWin(r, alive[0], '最後の生き残りとなった!');
+  return endTurn(r);
+}
+const HAND_LIMIT = 7;
 function endTurn(r) {
+  // 手札上限: 8枚以上なら7枚になるまで捨てさせてから手番を渡す
+  const p = cur(r);
+  if (p && p.hand && p.hand.length > HAND_LIMIT) {
+    const opts = [...new Set(p.hand)].map(c => ({
+      id: 'ov:' + c,
+      label: (CREATURES[c] || SPELLS[c] || SUPPORTS[c] || { name: c }).name,
+      card: c,
+    }));
+    return ask(r, p.id, 'overflow',
+      `手札が${p.hand.length}枚 ─ ${HAND_LIMIT}枚になるまで捨てるカードを選ぶ`, opts);
+  }
   r.pending = {};
   updateTitles(r);
   if (checkVictory(r)) return;
-  r.turn = (r.turn + 1) % r.players.length;
-  if (r.turn === 0) r.round++;
+  do {
+    r.turn = (r.turn + 1) % r.players.length;
+    if (r.turn === 0) r.round++;
+  } while (r.players[r.turn].bankrupt);
   beginTurn(r);
 }
 
+const GATE_TILE = TILES.findIndex(t => t.t === 'gate');
 function performMove(r, p, steps, meta, moveLabel) {
   r.lastDice = Object.assign({ player: p.id, at: Date.now() }, meta);
-  let bonus = 0;
+  const dir = p.dir || 1;
+  let bonus = 0, gotSeal = false, noSeal = false;
   for (let s2 = 0; s2 < steps; s2++) {
-    p.pos = (p.pos + 1) % TILES.length;
-    if (p.pos === 0) bonus += RULES.castleBonus;
+    p.pos = (p.pos + dir + TILES.length) % TILES.length;
+    if (p.pos === GATE_TILE && !p.seal) { p.seal = true; gotSeal = true; }
+    if (p.pos === 0) {
+      if (p.seal) { bonus += RULES.castleBonus; p.seal = false; }
+      else noSeal = true;
+    }
   }
-  if (bonus) p.gold += bonus;
-  r.lastDice.castle = bonus ? { gold: bonus, drew: 1 } : null;
-  log(r, `${p.name}は${moveLabel}${bonus ? `(城通過 +${bonus}G、カードを選択!)` : ''}`);
-  if (bonus) return startDraft(r, p, 'tile');
+  if (gotSeal) log(r, `❖ ${p.name}は門の刻印を得た(城通過時に一周ボーナス)`);
+  if (bonus) {
+    // 領地ボーナス: 所有地価合計の10%
+    const lands = r.owners.reduce((n, o, i) => n + (o && o.player === p.id ? landValue(r, i) : 0), 0);
+    const lb = Math.round(lands * 0.1);
+    p.gold += bonus + lb;
+    r.lastDice.castle = { gold: bonus, landBonus: lb, drew: 1 };
+    log(r, `${p.name}は${moveLabel}(城通過 +${bonus}G${lb ? `+領地ボーナス${lb}G` : ''}、カードを選択!)`);
+    // 勝利判定: ボーナス込みで総資産8000G以上
+    if (points(r, p) >= ASSET_GOAL) {
+      return declareWin(r, p, `総資産${points(r, p)}Gで城に凱旋!`);
+    }
+    return startDraft(r, p, 'tile');
+  }
+  r.lastDice.castle = null;
+  if (noSeal) {
+    log(r, `${p.name}は${moveLabel} ─ 刻印がないため一周ボーナスなし…`);
+    if (points(r, p) >= ASSET_GOAL) return declareWin(r, p, `総資産${points(r, p)}Gで城に凱旋!`);
+  } else {
+    log(r, `${p.name}は${moveLabel}`);
+  }
   resolveTile(r, p);
 }
 function doRoll(r, p) {
@@ -362,18 +433,29 @@ function upCost(r, p, i) {
   const base = RULES.levelCost[r.owners[i].level + 1];
   return TILES[i].e === CHARS[p.charId].elem ? Math.round(base * 0.8) : base;
 }
+// Lv l→l+1 単段の費用(親和込み)
+function upCostTo(r, p, i, lv) {
+  const base = RULES.levelCost[lv];
+  return TILES[i].e === CHARS[p.charId].elem ? Math.round(base * 0.8) : base;
+}
+// cur+1..target までの累計費用
+function upCostRange(r, p, i, target) {
+  let sum = 0;
+  for (let l = r.owners[i].level + 1; l <= target; l++) sum += upCostTo(r, p, i, l);
+  return sum;
+}
 function askUpgrade(r, p, where) {
   const opts = [];
   r.owners.forEach((o, i) => {
-    if (o && o.player === p.id && o.level < RULES.maxLevel && p.gold >= upCost(r, p, i)) {
+    if (o && o.player === p.id && o.level < RULES.maxLevel && p.gold >= upCostRange(r, p, i, o.level + 1)) {
       const aff = TILES[i].e === CHARS[p.charId].elem;
       opts.push({ id: 'up:' + i, label:
-        `${TILES[i].e} Lv${o.level}→${o.level + 1}: ${CREATURES[o.creature].name}の土地(−${upCost(r, p, i)}G${aff ? ' 親和-20%' : ''})` });
+        `${TILES[i].e} Lv${o.level}: ${CREATURES[o.creature].name}の土地${aff ? '(親和-20%)' : ''}`, tile: i });
     }
   });
   if (!opts.length) { log(r, `${p.name}は${where}で休息した(強化できる領地なし)`); return endTurn(r); }
   opts.push({ id: 'pass', label: '強化しない' });
-  ask(r, p.id, 'upgrade', `${where}に到着 ─ 好きな領地を強化できる`, opts);
+  ask(r, p.id, 'upgrade', `${where}に到着 ─ 強化する領地を選ぶ`, opts);
 }
 function startDraft(r, p, resume) {
   refillDeck(r);
@@ -573,7 +655,7 @@ function resolveBattle(r) {
     }
   }
   r.battle = null;
-  endTurn(r);
+  settleAll(r);
 }
 
 // ===== アクションハンドラ =====
@@ -785,6 +867,37 @@ function handleChoose(r, playerId, optionId) {
     p.swapI = null;
     return askRoll(r, p);
   }
+  if (pend.type === 'direction') {
+    p.dir = optionId === 'dir:-1' ? -1 : 1;
+    delete r.pending[p.id];
+    log(r, `${p.name}は${p.dir === 1 ? '時計回り' : '反時計回り'}に進む`);
+    if (r.players.every(q => q.dir)) beginTurn(r);
+    return;
+  }
+  if (pend.type === 'sell') {
+    if (optionId.startsWith('sl:')) {
+      const i = +optionId.slice(3);
+      const o = r.owners[i];
+      if (o && o.player === p.id) {
+        const got = Math.round(landValue(r, i) * 0.7);
+        p.gold += got;
+        p.discard.push(o.creature);
+        r.owners[i] = null;
+        r.curses[i] && delete r.curses[i];
+        log(r, `${p.name}は${TILES[i].e}の土地を${got}Gで売却した(所持金${p.gold}G)`);
+      }
+    }
+    return settleAll(r);
+  }
+  if (pend.type === 'overflow') {
+    const c = optionId.slice(3);
+    if (p.hand.includes(c)) {
+      p.hand.splice(p.hand.indexOf(c), 1);
+      p.discard.push(c);
+      log(r, `${p.name}は手札上限のため「${(CREATURES[c] || SPELLS[c] || SUPPORTS[c] || { name: c }).name}」を捨てた`);
+    }
+    return endTurn(r);  // 7枚以下になるまで繰り返し
+  }
   if (pend.type === 'quake_target') {
     if (optionId !== 'qt:cancel') {
       const i = +optionId.slice(3);
@@ -847,11 +960,32 @@ function handleChoose(r, playerId, optionId) {
     if (optionId.startsWith('up:')) {
       const i = +optionId.slice(3);
       const o = r.owners[i];
-      p.gold -= upCost(r, p, i); o.level++;
-      log(r, `${p.name}は${CREATURES[o.creature].name}の土地をLv${o.level}に育てた` +
-        (o.level === RULES.evoLevel && CREATURES[o.creature].evo
-          ? ` ─ ${CREATURES[o.creature].name}が${CREATURES[o.creature].evo}に進化!` : ''));
-      if (checkVictory(r)) return;
+      // 目標レベルの選択(1段ずつでも一気でも)
+      const opts = [];
+      for (let t = o.level + 1; t <= RULES.maxLevel; t++) {
+        const c = upCostRange(r, p, i, t);
+        if (c <= p.gold) opts.push({ id: 'ul:' + i + ':' + t, label: `Lv${o.level}→Lv${t} に強化(−${c}G)` });
+      }
+      opts.push({ id: 'ul:cancel', label: 'やめる' });
+      return ask(r, p.id, 'upgrade_lv', `${TILES[i].e}の土地(${CREATURES[o.creature].name}) ─ どのレベルまで上げる?`, opts);
+    }
+    return endTurn(r);
+  }
+  if (pend.type === 'upgrade_lv') {
+    if (optionId !== 'ul:cancel') {
+      const [, iS, tS] = optionId.split(':');
+      const i = +iS, target = +tS;
+      const o = r.owners[i];
+      const cost = upCostRange(r, p, i, target);
+      if (o && o.player === p.id && target > o.level && target <= RULES.maxLevel && cost <= p.gold) {
+        const wasBelow = o.level < RULES.evoLevel;
+        p.gold -= cost;
+        o.level = target;
+        log(r, `${p.name}は${CREATURES[o.creature].name}の土地をLv${target}に育てた(−${cost}G)` +
+          (wasBelow && target >= RULES.evoLevel && CREATURES[o.creature].evo && !/_f$/.test(o.creature)
+            ? ` ─ ${CREATURES[o.creature].name}が${CREATURES[o.creature].evo}に進化!` : ''));
+        if (checkVictory(r)) return;
+      }
     }
     return endTurn(r);
   }
@@ -872,9 +1006,11 @@ function handleChoose(r, playerId, optionId) {
       const enemy = pById(r, o.player);
       const toll = tollOf(r, i);
       const paid = payTo(r, p, enemy, toll);
-      log(r, `${p.name}は通行料${paid}Gを支払った${paid < toll ? '(所持金不足のため全額)' : ''}`);
       kingBonus(r, enemy);
-      return endTurn(r);
+      r.lastEvent = { type: 'toll', from: p.id, to: enemy.id, amount: paid,
+                      fromGold: p.gold, toGold: enemy.gold, at: Date.now() };
+      log(r, `${p.name}は通行料${paid}Gを支払った`);
+      return settleAll(r);
     }
     if (optionId === 'invade') return startBattle(r, p, i);
     return endTurn(r); // pass
@@ -977,13 +1113,20 @@ function startGame(r) {
   }
   for (const p of r.players) drawCards(r, p, RULES.startHand);  // 全員に初期手札を配る
   log(r, `全員のキャラが確定! ゲーム開始(手番順: ${r.players.map(p => p.name).join(' → ')})`);
-  beginTurn(r);
+  // 進行方向の選択(全員同時)
+  for (const p of r.players) {
+    p.dir = 0;
+    ask(r, p.id, 'direction', 'どちら回りで進む?(ゲーム中は変更できない)', [
+      { id: 'dir:1', label: '時計回り ─ 門(強化/ドラフト/鍛錬)が近い' },
+      { id: 'dir:-1', label: '反時計回り ─ 祠と市場が近い' },
+    ]);
+  }
 }
 
 // ===== 公開状態とHTTP =====
 function publicState(r, viewerId) {
   return {
-    ver: VERSION, code: r.code, phase: r.phase, evoLevel: RULES.evoLevel, turn: r.turn, round: r.round, target: TARGET_PTS,
+    ver: VERSION, code: r.code, phase: r.phase, evoLevel: RULES.evoLevel, turn: r.turn, round: r.round, target: ASSET_GOAL, reachAt: ASSET_REACH,
     tiles: TILES, owners: r.owners, market: r.market, log: r.log,
     titles: r.titles, duel: r.duel, curses: r.curses, lastEvent: r.lastEvent || null,
     barrier: r.barrier || {}, lastUlt: r.lastUlt || null, lastBattle: r.lastBattle, lastDice: r.lastDice || null,
@@ -1007,6 +1150,9 @@ function publicState(r, viewerId) {
       discardCount: (p.discard || []).length,
       exileCount: (p.exile || []).length,
       points: r.phase === 'playing' || r.phase === 'ended' ? points(r, p) : 0,
+      bankrupt: !!p.bankrupt,
+      dir: p.dir || 1,
+      seal: !!p.seal,
     })),
   };
 }

@@ -48,6 +48,10 @@
   .plate .pts { font-size:20px; color:#5A3B10; line-height:1; font-weight:600; }
   .plate .pts small { font-size:11px; color:#7D6844; font-weight:400; }
   .plate .row2 { display:flex; gap:9px; margin:3px 0 0 58px; font-size:11px; color:#5C4A2E; }
+  .sealIc { color:rgba(241,232,208,.28); border:1px solid rgba(241,232,208,.22); border-radius:4px;
+      padding:0 4px; font-size:11px; font-family:'Reggae One','Yu Mincho',serif; }
+  .sealIc.has { color:#F2D062; border-color:#C9A227; text-shadow:0 0 8px rgba(242,208,98,.7);
+      background:rgba(201,162,39,.15); }
   .reach { margin-left:auto; font-size:10px; color:#9E2B25; border:1px solid #9E2B25; border-radius:3px;
            padding:0 4px; letter-spacing:1px; animation:blink 1.1s infinite; }
   @keyframes blink { 50% { opacity:.3; } }
@@ -109,6 +113,17 @@
   .bside.dead { animation:dead .7s forwards; }
   @keyframes dead { to { opacity:0; transform:translateY(50px) rotate(-12deg); filter:brightness(3); } }
   #bmid { width:230px; text-align:center; }
+  #bankruptCut { position:fixed; inset:0; z-index:88; display:none; align-items:center; justify-content:center;
+      background:rgba(8,4,10,.82); }
+  #bankruptCut.on { display:flex; animation:bkIn .4s ease; }
+  #bankruptCut .bkTxt { font-family:'Reggae One','Yu Mincho',serif; font-size:24vh; letter-spacing:4vw;
+      color:#E23A2E; text-shadow:0 0 40px rgba(226,58,46,.7), 0 6px 24px rgba(0,0,0,.9);
+      transform:rotate(-6deg); animation:bkStamp .5s cubic-bezier(.2,1.6,.4,1) both; }
+  #bankruptCut .bkSub { position:absolute; bottom:16vh; font-size:4vh; color:var(--parchment);
+      font-family:'Reggae One','Yu Mincho',serif; letter-spacing:1vw; }
+  @keyframes bkIn { from { opacity:0; } }
+  @keyframes bkStamp { 0% { transform:rotate(-6deg) scale(3); opacity:0; }
+      60% { transform:rotate(-6deg) scale(.95); opacity:1; } 100% { transform:rotate(-6deg) scale(1); } }
   .dmgPop { position:absolute; top:26%; left:50%; transform:translateX(-50%); z-index:5;
       font-size:5.6vh; font-family:'Reggae One','Yu Mincho',serif; color:#FF6A4D;
       text-shadow:0 2px 8px rgba(0,0,0,.9), 0 0 18px rgba(255,90,60,.5); pointer-events:none;
@@ -231,6 +246,17 @@
       background:linear-gradient(270deg, rgba(10,8,25,.86) 0%, rgba(10,8,25,.72) 45%, transparent 100%); }
   #turnCutin .tcRim { position:absolute; top:0; bottom:0; right:0; width:100%;
       background:linear-gradient(270deg, var(--tcc, #C9A227) 0%, transparent 26%); opacity:.34; }
+  #tcMsg { position:absolute; left:4%; bottom:14vh; z-index:3; min-width:20vw;
+      background:linear-gradient(160deg, rgba(24,20,44,.95), rgba(12,10,26,.95));
+      border:2px solid var(--gold); border-radius:12px; padding:1.6vh 1.6vw; display:none;
+      font-family:'Reggae One','Yu Mincho',serif; text-align:center;
+      box-shadow:0 8px 26px rgba(0,0,0,.6); }
+  #tcMsg.on { display:block; animation:bubIn .35s .15s ease both; }
+  #tcMsg .tcWho { font-size:2.4vh; color:var(--parchment); letter-spacing:2px; }
+  #tcMsg .tcAmt { font-size:5vh; letter-spacing:4px; }
+  #tcMsg .tcAmt.minus { color:#FF6A4D; text-shadow:0 0 16px rgba(255,90,60,.45); }
+  #tcMsg .tcAmt.plus { color:#8FE08A; text-shadow:0 0 16px rgba(90,220,120,.45); }
+  #tcMsg .tcGold { font-size:2.2vh; color:rgba(241,232,208,.85); font-variant-numeric:tabular-nums; }
   #turnCutin img { position:absolute; right:1vw; bottom:-5vh; height:98vh;
       filter:drop-shadow(0 0 26px rgba(0,0,0,.7)) drop-shadow(0 0 40px var(--tcc, #C9A227)); }
   #turnCutin.on .tcShade, #turnCutin.on .tcRim { animation:tcFadeIn .4s ease both; }
@@ -405,7 +431,8 @@
   <div id="world"><div id="stage"></div><div id="pawnLayer"></div><div id="spot"></div></div>
   <div id="tileInfo"></div>
   <div id="hud"></div>
-  <div id="turnCutin"><div class="tcShade"></div><div class="tcRim"></div><img id="tcImg"></div>
+  <div id="bankruptCut"><div class="bkTxt">破産</div><div class="bkSub" id="bkSub"></div></div>
+  <div id="turnCutin"><div class="tcShade"></div><div class="tcRim"></div><img id="tcImg"><div id="tcMsg"></div></div>
   <div id="telop"><img id="telopImg"><div id="telopSub"></div></div>
   <div id="diceFloat"></div>
   <div id="diceOv"></div>
@@ -621,11 +648,13 @@ function finishHop() {
 function hopStep() {
   if (!hopState || hopState.holding) return;
   hopState.sN++;
-  const idx = (hopState.from + hopState.sN) % 28;
+  const idx = (hopState.from + hopState.sN * (hopState.dir || 1) + 28 * 40) % 28;
   pawnAnim[hopState.id] = idx;
   renderPawns();
   if (idx === 0 && hopState.castleEv) {
-    showBanner(`+${hopState.castleEv.gold}G`, 'カードを1枚選んで獲得!', 2600);
+    showBanner(`+${hopState.castleEv.gold}G${hopState.castleEv.landBonus ? ` +領地ボーナス${hopState.castleEv.landBonus}G` : ''}`,
+      '刻印を使用' + ((hopState.castleEv.healed || []).length ? ' ｜ ⛨ 領地のクリーチャー回復(負傷-10)' : '') + ' ─ カードを1枚選んで獲得!', 2800);
+    for (const hi of (hopState.castleEv.healed || [])) fxAt(hi, 'fxRing', '#8FE08A');
     hopState.castleEv = null;
     hopState.holding = true;   // ドラフト完了までここで待機
     render();
@@ -1200,15 +1229,16 @@ function renderHUD() {
       <div class="row1">
         <div class="rankBadge ${rank < 3 ? 'rank' + (rank+1) : ''}">${rank + 1}</div>
         <div class="pname">${p.name}${crowns}</div>
-        <div class="pts">${p.points}<small>/${state.target}</small></div>
+        <div class="pts">${p.points}<small>G/${state.target}</small></div>
       </div>
       <div class="row2">
         <span class="ic"><img src="/assets/ic_gold.png">${p.gold}</span>
         <span class="ic"><img src="/assets/ic_hand.png">${p.handCount}</span>
         <span class="ic" title="山札/捨て札">${sic('draft')}${p.deckCount ?? 0}<small style="opacity:.65">/${p.discardCount ?? 0}</small></span>
+        <span class="ic sealIc ${p.seal ? 'has' : ''}" title="門の刻印">刻</span>
         <span class="ic"><img src="/assets/ic_gem.png">${p.gems}</span>
         <span class="ic"><img src="/assets/ic_treasure.png">${p.treasures}</span>
-        ${p.points >= state.target - 1 ? '<span class="reach">リーチ</span>' : ''}</div>
+        ${p.points >= (state.reachAt || state.target - 1) ? '<span class="reach">ラストスパート</span>' : ''}</div>
       <div class="row3">${['fire','water','earth','wind'].map(e => {
         const n = state.owners.filter((o, i) => o && o.player === p.id && state.tiles[i].e === e).length;
         return `<span class="ebadge ${n ? '' : 'zero'}" style="--ec:${RUNE[e]}">
@@ -1225,12 +1255,38 @@ function playTurnCutin(pl) {
   const el = $('turnCutin');
   $('tcImg').src = '/assets/full_' + pl.charId + '.png';
   el.style.setProperty('--tcc', pl.color);
+  $('tcMsg').classList.remove('on');
   el.classList.remove('on', 'out'); void el.offsetWidth;
   el.classList.add('on');
   bannerUntil = Math.max(bannerUntil, Date.now() + 2400); // カットイン中はバナーを待たせる
   clearTimeout(tcT1); clearTimeout(tcT2);
   tcT1 = setTimeout(() => el.classList.add('out'), 1800);   // しばらく表示してから
   tcT2 = setTimeout(() => el.classList.remove('on', 'out'), 2300); // すっと消える
+}
+function sideCut(pl, msgHtml, dur) {
+  const el = $('turnCutin');
+  $('tcImg').src = '/assets/full_' + pl.charId + '.png';
+  el.style.setProperty('--tcc', pl.color);
+  $('tcMsg').innerHTML = msgHtml;
+  el.classList.remove('on', 'out'); void el.offsetWidth;
+  el.classList.add('on');
+  $('tcMsg').classList.add('on');
+  clearTimeout(tcT1); clearTimeout(tcT2);
+  tcT1 = setTimeout(() => el.classList.add('out'), dur - 450);
+  tcT2 = setTimeout(() => { el.classList.remove('on', 'out'); $('tcMsg').classList.remove('on'); }, dur);
+}
+function playTollCutin(ev) {
+  const fromP = player(ev.from), toP = player(ev.to);
+  if (!fromP || !toP) return;
+  bannerUntil = Math.max(bannerUntil, Date.now() + 4300);
+  sideCut(fromP, `<div class="tcWho">${fromP.name} ─ 通行料の支払い</div>
+    <div class="tcAmt minus">−${ev.amount}G</div>
+    <div class="tcGold">所持金 ${ev.fromGold + ev.amount}G → ${ev.fromGold}G</div>`, 2000);
+  setTimeout(() => {
+    sideCut(toP, `<div class="tcWho">${toP.name} ─ 通行料を受け取った</div>
+      <div class="tcAmt plus">+${ev.amount}G</div>
+      <div class="tcGold">所持金 ${ev.toGold - ev.amount}G → ${ev.toGold}G</div>`, 2000);
+  }, 2100);
 }
 function showTelop(kind, sub) {
   if ((kind === 'game' || kind === 'turn') && seTelop && !bgmMuted) {
@@ -1334,7 +1390,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.49';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.53';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -1381,8 +1437,10 @@ function render() {
       if (mover) {
         animBusy = true;
         const from = prevPos[mover.id];
-        hopState = { id: mover.id, from, to: mover.pos,
-          steps: (mover.pos - from + 28) % 28 || 28, sN: 0, holding: false,
+        const mdir = (state.players.find(q => q.id === mover.id) || {}).dir || 1;
+        hopState = { id: mover.id, from, to: mover.pos, dir: mdir,
+          steps: mdir === 1 ? ((mover.pos - from + 28) % 28 || 28) : ((from - mover.pos + 28) % 28 || 28),
+          sN: 0, holding: false,
           castleEv: state.lastDice && state.lastDice.player === mover.id ? state.lastDice.castle : null };
         pawnAnim[mover.id] = from;
         const mine = state.lastDice && state.lastDice.player === mover.id;
@@ -1505,7 +1563,7 @@ function render() {
   // (TURN STARTテロップはバナーキュー処理の後で判定する ─ 祠バナー等を先に消化)
   // BGM(リーチ者がいれば疾走曲へ)
   if (state.phase === 'playing') {
-    const reach = state.players.some(p => p.points >= state.target - 1);
+    const reach = state.players.some(p => !p.bankrupt && p.points >= (state.reachAt || state.target - 1));
     setBgm(reach ? 'reach' : 'normal');
   } else if (state.phase === 'ended') setBgm(null);
   // 実況吹き出し(何を待っているか)
@@ -1602,6 +1660,15 @@ function render() {
     if (state.lastEvent.type === 'shrine')
       queueBanner(`祠の加護 +${state.lastEvent.gold}G`,
         player(state.lastEvent.player).name + ' ─ 通算' + state.lastEvent.visits + '回参拝', 2800);
+    else if (state.lastEvent.type === 'toll')
+      playTollCutin(state.lastEvent);
+    else if (state.lastEvent.type === 'bankrupt') {
+      const bp = player(state.lastEvent.player);
+      $('bkSub').textContent = bp ? bp.name + ' ─ 脱落' : '';
+      $('bankruptCut').classList.add('on');
+      bannerUntil = Math.max(bannerUntil, Date.now() + 4200);
+      setTimeout(() => $('bankruptCut').classList.remove('on'), 4000);
+    }
     else if (state.lastEvent.type === 'spell')
       queueBanner(sic('spell') + ' 呪文「' + state.lastEvent.name + '」',
         player(state.lastEvent.player).name + 'が唱えた', 2400);
@@ -1618,15 +1685,15 @@ function render() {
     if (prev.titlesKey && tk !== prev.titlesKey) {
       const before = JSON.parse(prev.titlesKey);
       if (state.titles.conqueror !== before.conqueror && state.titles.conqueror)
-        queueBanner(player(state.titles.conqueror).name + 'が称号「覇者」を獲得!', '+2点(奪い合い)', 2600);
+        queueBanner(player(state.titles.conqueror).name + 'が称号「覇者」を獲得!', '資産+500G(奪い合い)', 2600);
       if (state.titles.pilgrim !== before.pilgrim && state.titles.pilgrim)
-        queueBanner(player(state.titles.pilgrim).name + 'が称号「大巡礼者」を獲得!', '+2点(奪い合い)', 2600);
+        queueBanner(player(state.titles.pilgrim).name + 'が称号「大巡礼者」を獲得!', '資産+500G(奪い合い)', 2600);
     }
     prev.titlesKey = tk;
     state.players.forEach(p => {
       const p0 = prev['pts_' + p.id];
-      if (p0 !== undefined && p0 < state.target - 1 && p.points >= state.target - 1 && p.points < state.target)
-        queueBanner(p.name + 'がリーチ!', 'あと' + (state.target - p.points) + '点で勝利', 2400);
+      if (p0 !== undefined && p0 < (state.reachAt || state.target - 1) && p.points >= (state.reachAt || state.target - 1) && p.points < state.target)
+        queueBanner(p.name + 'がラストスパート!', '総資産' + p.points + 'G ─ 8000Gで城を通過すれば勝利!', 2800);
       prev['pts_' + p.id] = p.points;
     });
   }
@@ -1684,7 +1751,7 @@ function render() {
   if (state.phase === 'ended' && state.winner) {
     const w = player(state.winner);
     $('winArt').src = '/assets/full_' + w.charId + '.png';
-    $('winText').textContent = `${w.name}(${state.catalog.CHARS[w.charId].name}) ─ ${w.points}点で勝利!`;
+    $('winText').textContent = `${w.name}(${state.catalog.CHARS[w.charId].name}) ─ 総資産${w.points}Gで勝利!`;
   }
 }
 fitWorld(); addEventListener('resize', fitWorld);
