@@ -491,11 +491,11 @@ function dkThumb(c) {
 function dkInfo(c) {
   const C = state.catalog;
   const cr = C.CREATURES[c];
-  if (cr) return { nm: cr.name, sub: `ST${cr.st}/HP${cr.hp}${cr.fx ? ' ' + cr.fx : ''}` };
+  if (cr) return { nm: cr.name, sub: `AT${cr.st}/HP${cr.hp}${cr.fx ? ' ' + cr.fx : ''}` };
   const spl = C.SPELLS && C.SPELLS[c];
   if (spl) return { nm: `呪文「${spl.name}」`, sub: spl.desc };
   const sp = C.SUPPORTS && C.SUPPORTS[c];
-  if (sp) return { nm: `支援「${sp.name}」`, sub: sp.jinx ? '相手の支援を無効化(使い切り)' : `${sp.st ? 'ST+' + sp.st : ''}${sp.hp ? 'HP+' + sp.hp : ''}(使い切り)` };
+  if (sp) return { nm: `支援「${sp.name}」`, sub: sp.jinx ? '相手の支援を無効化(使い切り)' : `${sp.st ? 'AT+' + sp.st : ''}${sp.hp ? 'DF+' + sp.hp : ''}(使い切り)` };
   return { nm: c, sub: '' };
 }
 function dkRow(c, n, tail, pickId) {
@@ -549,12 +549,12 @@ function galleryFace(cid, cr, evo) {
   if (evo) return `<div class="face back" style="transform:rotateY(180deg)">
     ${cr.elem ? `<div class="elemIc"><svg viewBox="-34 -36 68 72">${ELEM_MINI[cr.elem]}</svg></div>` : `<div class="elemIc none">無</div>`}${artOrToken(cid, cr, true, '9dvh')}
     <div class="nm">${cr.evo}</div>
-    <div class="stats"><span>ST <b>${cr.evoSt}</b></span><span>HP <i>${cr.evoHp}</i></span></div>
+    <div class="stats"><span>AT <b>${cr.evoSt}</b></span><span>HP <i>${cr.evoHp}</i></span></div>
     <div class="fx">${cr.fx || ''}</div><div class="type">進化形</div></div>`;
   return `<div class="face front"><div class="cost">${cr.cost}G</div>
     ${cr.elem ? `<div class="elemIc"><svg viewBox="-34 -36 68 72">${ELEM_MINI[cr.elem]}</svg></div>` : `<div class="elemIc none">無</div>`}${artOrToken(cid, cr, false, '9dvh')}
     <div class="nm">${cr.name}</div>
-    <div class="stats"><span>ST <b>${cr.st}</b></span><span>HP <i>${cr.hp}</i></span></div>
+    <div class="stats"><span>AT <b>${cr.st}</b></span><span>HP <i>${cr.hp}</i></span></div>
     <div class="fx">${cr.fx || ''}</div>
     <div class="rarBadge ${cr.rarity || 'N'}">${cr.rarity || 'N'}</div>
     <div class="type">クリーチャー</div></div>`;
@@ -592,7 +592,7 @@ function bigCardHTML(c) {
   if (sup0) {
     const ic = c === 'jinx' ? `<img src="/assets/ic_curse.png" style="height:12dvh;object-fit:contain">`
       : /shield/.test(c) ? sic('up', '12dvh') : sic('sword', '12dvh');
-    const eff = sup0.jinx ? '相手の支援カードを無効化' : `${sup0.st ? 'ST+' + sup0.st : ''}${sup0.hp ? 'HP+' + sup0.hp : ''}`;
+    const eff = sup0.jinx ? '相手の支援カードを無効化' : `${sup0.st ? 'AT+' + sup0.st : ''}${sup0.hp ? 'DF+' + sup0.hp : ''}`;
     return `<div class="face front">
       <div class="glyph" style="margin-top:8dvh">${ic}</div>
       <div class="nm" style="font-size:3dvh">${sup0.name}</div>
@@ -601,6 +601,7 @@ function bigCardHTML(c) {
   }
   const spl = state.catalog.SPELLS && state.catalog.SPELLS[c];
   if (spl) return `<div class="face front">
+    <div class="cost">${spl.cost || 0}G</div>
     <div class="art" style="height:55%"><img src="/assets/c_${c}.png"></div>
     <div class="nm" style="font-size:3dvh">${spl.name}</div>
     <div class="fx" style="font-size:2.1dvh; padding:0 12px">${spl.desc}</div>
@@ -614,7 +615,7 @@ function bigCardHTML(c) {
   return `<div class="face front">
     <div class="cost">${cr.cost}G</div>${cr.elem ? `<div class="elemIc"><svg viewBox="-34 -36 68 72">${ELEM_MINI[cr.elem]}</svg></div>` : `<div class="elemIc none">無</div>`}${art}
     <div class="nm" style="font-size:3dvh">${cr.name}</div>
-    <div class="stats" style="font-size:2.4dvh"><span>ST <b>${cr.st}</b></span><span>HP <i>${cr.hp}</i></span></div>
+    <div class="stats" style="font-size:2.4dvh"><span>AT <b>${cr.st}</b></span><span>HP <i>${cr.hp}</i></span></div>
     <div class="fx" style="font-size:2dvh">${cr.fx || ''}</div>
     <div class="rarBadge ${cr.rarity || 'N'}">${cr.rarity || 'N'}</div>
     <div class="type">クリーチャー</div></div>`;
@@ -666,7 +667,7 @@ function cardHTML(c, i) {
       : `<div class="tok2" style="background:${RUNE[cr.elem] || '#6E7288'}">${cr.name.slice(0,4)}</div>`;
     front = `<div class="cost">${cr.cost}G</div>${cr.elem ? `<div class="elemIc"><svg viewBox="-34 -36 68 72">${ELEM_MINI[cr.elem]}</svg></div>` : `<div class="elemIc none">無</div>`}${art}
       <div class="nm">${cr.name}</div>
-      <div class="stats"><span>ST <b>${cr.st}</b></span><span>HP <i>${cr.hp}</i></span></div>
+      <div class="stats"><span>AT <b>${cr.st}</b></span><span>HP <i>${cr.hp}</i></span></div>
       <div class="fx">${cr.fx || ''}</div>
       <div class="rarBadge ${cr.rarity || 'N'}">${cr.rarity || 'N'}</div>
       <div class="type">クリーチャー</div>
@@ -677,7 +678,7 @@ function cardHTML(c, i) {
         : `<div class="tok2" style="background:${RUNE[cr.elem] || '#6E7288'}">${cr.evo.slice(0,4)}</div>`;
       back = `<div class="face back">${cr.elem ? `<div class="elemIc"><svg viewBox="-34 -36 68 72">${ELEM_MINI[cr.elem]}</svg></div>` : `<div class="elemIc none">無</div>`}${eart}
         <div class="nm">${cr.evo}</div>
-        <div class="stats"><span>ST ${cr.st}<span class="up">→${cr.evoSt}</span></span>
+        <div class="stats"><span>AT ${cr.st}<span class="up">→${cr.evoSt}</span></span>
           <span>HP ${cr.hp}<span class="up">→${cr.evoHp}</span></span></div>
         <div class="fx">${cr.fx || ''}</div>
         <div class="type">進化形</div>
@@ -685,7 +686,7 @@ function cardHTML(c, i) {
     }
   } else if (C.SPELLS && C.SPELLS[c]) {
     const spl = C.SPELLS[c];
-    front = `<div class="art"><img src="/assets/c_${c}.png"></div>
+    front = `<div class="cost">${spl.cost || 0}G</div><div class="art"><img src="/assets/c_${c}.png"></div>
       <div class="nm">${spl.name}</div>
       <div class="stats" style="font-size:1.4dvh; text-align:center; padding:0 6px; line-height:1.4">${spl.desc}</div>
       <div class="rarBadge ${spl.rarity || 'N'}">${spl.rarity || 'N'}</div>
@@ -697,7 +698,7 @@ function cardHTML(c, i) {
       <div class="type">妨害</div>`;
   } else {
     front = `<div class="glyph">${GLYPH[c] || '❖'}</div><div class="nm">${sp.name}</div>
-      <div class="stats">${sp.st ? 'ST+' + sp.st : ''}${sp.hp ? 'HP+' + sp.hp : ''}${sp.jinx ? '相手の支援を無効化' : ''}</div>
+      <div class="stats">${sp.st ? 'AT+' + sp.st : ''}${sp.hp ? 'DF+' + sp.hp : ''}${sp.jinx ? '相手の支援を無効化' : ''}</div>
       <div class="type">支援</div>`;
   }
   return `<div class="card" data-i="${i}" data-c="${c}">
@@ -920,7 +921,8 @@ function render() {
       p.options.filter(o => o.card).map(o =>
         dkCard(o.card, 1, o.id, o.zone === 'h' ? '手札' : '捨て札')).join('') +
       `</div><button class="abtn ghost" style="align-self:center; flex:none" onclick="choose('fg:cancel')">やめる</button></div>`;
-  } else if (p.type === 'curse_target' || p.type === 'quake_target' || p.type === 'ult_mio') {
+  } else if (p.type === 'curse_target' || p.type === 'quake_target' || p.type === 'ult_mio' ||
+             p.type === 'move_a' || p.type === 'move_b' || p.type === 'swap_land' || p.type === 'swap_pick') {
     $('msg').innerHTML = iconize(p.prompt);
     A.innerHTML = '<div class="btnCol">' + p.options.map(o =>
       `<button class="abtn ${/:cancel$/.test(o.id) ? 'ghost' : ''}" onclick="choose('${o.id}')">${iconize(o.label)}</button>`).join('') + '</div>';
@@ -958,7 +960,7 @@ function render() {
       if (id.startsWith('buys:')) {
         const sp = C.SUPPORTS[id.slice(5)];
         return sp.jinx ? '戦闘で相手の支援カードを無効化する'
-          : `戦闘で${sp.st ? 'ST+' + sp.st : 'HP+' + sp.hp}(秘密裏に同時出し)`;
+          : `戦闘で${sp.st ? 'AT+' + sp.st : 'DF+' + sp.hp}(秘密裏に同時出し)`;
       }
       if (id === 'buyi:curse') return '敵の土地のクリーチャーのHP-20(自分の次の手番まで)';
       if (id === 'gem') return '集めて秘宝と交換できる(秘宝=勝利点+1)';

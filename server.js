@@ -7,13 +7,13 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const VERSION = '0.43';
+const VERSION = '0.49';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, shrineBonus: 100, tollUnit: 30,
                 levelCost: { 2: 100, 3: 200, 4: 300 }, gemPrice: 80, drawPrice: 100, maxLevel: 4,
                 evoLevel: 3, forgeCost: 150,
-                drawN: 5, spellsPerTurn: 2, forgetCost: 80 };  // v0.37 デッキ構築
+                startHand: 5, forgetCost: 80 };  // v0.44: 初期5枚+毎ターン1枚ドロー
 // キャラ別初期デッキ12枚(初期デッキ仕様案v0.1 第12節)
 const CHAR_DECKS = {
   redani: ['gecko', 'gecko', 'gaston', 'cleo',
@@ -74,36 +74,46 @@ const TILES = [
 // ===== カードカタログ =====
 const CREATURES = {
   // スターター(基本形 → LvMAXで進化)
-  gecko:  { name: 'バーンゲッコー', evo: 'サラマンダー',   elem: 'fire',  st: 40, hp: 20, cost: 50, evoSt: 60, evoHp: 35, fx: '【猛攻】攻撃時ST+10', rarity: 'N' },
+  gecko:  { name: 'バーンゲッコー', evo: 'サラマンダー',   elem: 'fire',  st: 40, hp: 20, cost: 50, evoSt: 60, evoHp: 35, fx: '【猛攻】攻撃時AT+10', rarity: 'N' },
   orphe:  { name: 'オルフェ',       evo: 'ウンディーネ',   elem: 'water', st: 30, hp: 30, cost: 50, evoSt: 45, evoHp: 50, fx: '【清流】この土地の通行料+20%', rarity: 'N' },
   nome:   { name: 'ノーム',         evo: 'アースゴーレム', elem: 'earth', st: 10, hp: 50, cost: 50, evoSt: 30, evoHp: 75, fx: '【岩壁】防衛時、地形補正2倍', rarity: 'N' },
   gaston: { name: 'ガストン',       evo: 'ガストレイド',   elem: 'wind',  st: 20, hp: 40, cost: 50, evoSt: 40, evoHp: 60, fx: '【旋風】敗北しても消滅せず手札に戻る', rarity: 'N' },
   cleo:   { name: 'クレオ',         evo: 'クレステッド',   elem: null,    st: 30, hp: 30, cost: 40, evoSt: 50, evoHp: 45, fx: '【適応】どの属性でも地形補正を得る', rarity: 'N' },
   // マーケット
   magado:  { name: 'マガドー', evo: 'マグナガルム', elem: 'fire', st: 55, hp: 35, cost: 120, evoSt: 75, evoHp: 55, rarity: 'R' },
-  qbaby:   { name: 'クイーンベビー', evo: 'クイーン', elem: 'fire', st: 35, hp: 30, cost: 120, evoSt: 55, evoHp: 50, fx: '【女王の威光】両隣の自領地の防衛HP+10(進化+20)', rarity: 'L' },
+  qbaby:   { name: 'クイーンベビー', evo: 'クイーン', elem: 'fire', st: 35, hp: 30, cost: 120, evoSt: 55, evoHp: 50, fx: '【女王の威光】両隣の自領地の防衛DF+10(進化+20)', rarity: 'L' },
   cresteria:{ name: 'クレステリア',    elem: 'water', st: 20, hp: 50, cost: 90, fx: '【真珠】召喚時、宝石1個を得る', rarity: 'N' },
   kbaby:   { name: 'キングベビー', evo: 'キング', elem: 'water', st: 30, hp: 40, cost: 120, evoSt: 50, evoHp: 60, fx: '【王の徴収】通行料受取時+20G(進化+40G)', rarity: 'L' },
   ludi:    { name: 'ルディ', evo: 'シンルー', elem: 'wind', st: 25, hp: 40, cost: 120, evoSt: 45, evoHp: 60, fx: '【雲隠れ】防衛時、相手の支援を無効化', rarity: 'L' },
   garble:  { name: 'ガーブル', evo: 'ガレス・ゲイル', elem: 'wind', st: 35, hp: 25, cost: 120, evoSt: 55, evoHp: 45, fx: '【風刃】攻撃時、相手の地形補正を無視', rarity: 'R' },
   barbaro: { name: 'バルバロ', evo: 'バーグランダ', elem: 'earth', st: 30, hp: 45, cost: 120, evoSt: 50, evoHp: 65, fx: '【逆鱗】防衛成功時、相手から20G奪う(進化40G)', rarity: 'R' },
-  detropas:{ name: 'デトロパス', evo: 'クラーケンイービル', elem: 'fire', st: 30, hp: 25, cost: 90, evoSt: 50, evoHp: 45, fx: '【群れ】攻撃時、自分の火の土地×ST+5', rarity: 'N' },
+  detropas:{ name: 'デトロパス', evo: 'クラーケンイービル', elem: 'fire', st: 30, hp: 25, cost: 90, evoSt: 50, evoHp: 45, fx: '【群れ】攻撃時、自分の火の土地×AT+5', rarity: 'N' },
   goagoa:  { name: 'ゴアゴア', evo: 'ノーク・ゴーア', elem: 'water', st: 40, hp: 40, cost: 150, evoSt: 60, evoHp: 65, rarity: 'R' },
   fugorm:  { name: 'フーゴルム', evo: 'ゴーレムアイン', elem: 'earth', st: 35, hp: 40, cost: 100, evoSt: 55, evoHp: 60, fx: '【鍛冶】召喚時、支援「武器」を得る', rarity: 'N' },
   bedebero:{ name: 'ベデベロ',         elem: 'earth', st: 30, hp: 60, cost: 140, rarity: 'R' },
   zati:    { name: 'ザーティー', evo: 'ザンティアー', elem: 'wind', st: 40, hp: 30, cost: 90, evoSt: 60, evoHp: 50, fx: '【略奪】侵略成功時、相手から50G奪う', rarity: 'N' },
   pakawata:{ name: 'パカワタ',         elem: 'wind',  st: 50, hp: 40, cost: 150, rarity: 'R' },
-  mimic:   { name: 'ミミック',         elem: null,    st: 30, hp: 30, cost: 70, fx: '【擬態】戦闘時、相手の基礎ST/HPをコピー', rarity: 'N' },
+  mimic:   { name: 'ミミック',         elem: null,    st: 30, hp: 30, cost: 70, fx: '【擬態】戦闘時、相手の基礎AT/HPをコピー', rarity: 'N' },
   beruf:   { name: 'ベルーフ・シェイド', evo: 'デスベルーフ', elem: null, st: 20, hp: 50, cost: 90, evoSt: 40, evoHp: 70, fx: '【死影】呪いを受けない', rarity: 'N' },
 };
 const ITEMS = {}; // v0.34: 呪いアイテムは廃止(スペル「衰弱の呪文」に移行)
 const SPELLS = {
-  sp_gold:   { name: '黄金の呪文', rarity: 'N', desc: 'ただちに120Gを得る' },
-  sp_weaken: { name: '衰弱の呪文', rarity: 'N', hp: 20,
+  sp_gold:   { name: '黄金の呪文', rarity: 'N', cost: 0,
+               desc: 'ただちに120Gを得る' },
+  sp_weaken: { name: '衰弱の呪文', rarity: 'N', cost: 40, hp: 20,
                desc: '敵の土地1つのクリーチャーのHP-20(あなたの次の手番まで)' },
-  sp_gale:   { name: '疾風の呪文', rarity: 'R', desc: 'このターン、サイコロを2個振って移動する' },
-  sp_quake:  { name: '地割れの呪文', rarity: 'R', desc: '敵の領地1つのレベルを1下げる(Lv1には無効)' },
-  sp_ward:   { name: '加護の呪文', rarity: 'R', desc: 'あなたの次の手番まで、自分の領地は侵略されない' },
+  sp_gale:   { name: '疾風の呪文', rarity: 'R', cost: 30,
+               desc: 'このターン、サイコロを2個振って移動する' },
+  sp_quake:  { name: '地割れの呪文', rarity: 'R', cost: 100,
+               desc: '敵の領地1つのレベルを1下げる(Lv1には無効)' },
+  sp_ward:   { name: '加護の呪文', rarity: 'R', cost: 80,
+               desc: 'あなたの次の手番まで、自分の領地は侵略されない' },
+  sp_move:   { name: '転移の呪文', rarity: 'R', cost: 40,
+               desc: '自分の領地2つのクリーチャーを入れ替える(負傷も一緒に移動)' },
+  sp_insight:{ name: 'ひらめきの呪文', rarity: 'N', cost: 30,
+               desc: 'カードを2枚引く' },
+  sp_swap:   { name: '交代の呪文', rarity: 'R', cost: 30,
+               desc: '自分の領地のクリーチャーを手札のクリーチャーと交代する(召喚コスト別途。元のクリーチャーは捨て札へ・負傷は回復)' },
 };
 const SUPPORTS = {
   weapon:  { name: '武器',   st: 20, hp: 0,  cost: 60 },
@@ -254,23 +264,27 @@ function askRoll(r, p) {
   const opts = [{ id: 'roll', label: '🎲 サイコロを振る' }];
   if (!p.ultUsed && ULTS[p.charId])
     opts.push({ id: 'ult', label: `固有スキル【${ULTS[p.charId].name}】` });
-  if ((p.spellsUsed || 0) < RULES.spellsPerTurn)
-    for (const sid of [...new Set(p.hand.filter(c => SPELLS[c]))]) {
-      if (sid === 'sp_weaken' &&
-          !r.owners.some((o, i) => o && o.player !== p.id && !r.curses[i] && baseId(o.creature) !== 'beruf')) continue;
-      if (sid === 'sp_quake' &&
-          !r.owners.some(o => o && o.player !== p.id && o.level >= 2)) continue;
-      opts.push({ id: 'sp:' + sid, label: `呪文「${SPELLS[sid].name}」を唱える` });
-    }
+  for (const sid of [...new Set(p.hand.filter(c => SPELLS[c]))]) {
+    if (SPELLS[sid].cost > p.gold) continue;
+    if (sid === 'sp_weaken' &&
+        !r.owners.some((o, i) => o && o.player !== p.id && !r.curses[i] && baseId(o.creature) !== 'beruf')) continue;
+    if (sid === 'sp_quake' &&
+        !r.owners.some(o => o && o.player !== p.id && o.level >= 2)) continue;
+    if (sid === 'sp_move' &&
+        r.owners.filter(o => o && o.player === p.id).length < 2) continue;
+    if (sid === 'sp_swap' &&
+        (!r.owners.some(o => o && o.player === p.id) ||
+         !p.hand.some(c => CREATURES[c] && CREATURES[c].cost + SPELLS.sp_swap.cost <= p.gold))) continue;
+    opts.push({ id: 'sp:' + sid,
+      label: `呪文「${SPELLS[sid].name}」を唱える${SPELLS[sid].cost ? `(−${SPELLS[sid].cost}G)` : ''}` });
+  }
   ask(r, p.id, 'roll', 'あなたの手番です', opts);
 }
 function beginTurn(r) {
   if (r.phase !== 'playing') return;
   const p = cur(r);
-  // 前の手番の残り手札を捨て札へ(防衛用に手番間は保持し、ここで一括処分=持ち越し不可)
-  if (p.hand.length) { p.discard.push(...p.hand); p.hand = []; }
-  drawCards(r, p, RULES.drawN);
-  p.spellsUsed = 0; p.gale = false;
+  drawCards(r, p, 1);  // v0.44: 毎ターン1枚ドロー(手札は持ち越し)
+  p.gale = false;
   // この人が掛けた呪いは効果終了(「あなたの次の手番まで」)
   for (const [ti, c] of Object.entries(r.curses))
     if (c.by === p.id) { delete r.curses[ti]; log(r, `衰弱の呪い(${ti}番の土地)の効果が切れた`); }
@@ -317,6 +331,8 @@ function resolveTile(r, p) {
   if (tile.t === 'gate') { log(r, `${p.name}は門に到着`); return askGate(r, p); }
   if (tile.t === 'shrine') {
     p.gold += RULES.shrineBonus; p.shrineVisits++;
+    const got = drawCards(r, p, 1);
+    if (got) log(r, `⛩ 祠の導きで${p.name}はカードを1枚引いた`);
     r.lastEvent = { type: 'shrine', player: p.id, gold: RULES.shrineBonus,
                     visits: p.shrineVisits, at: Date.now() };
     log(r, `${p.name}は祠に参拝(+${RULES.shrineBonus}G / 通算${p.shrineVisits}回)`);
@@ -374,7 +390,7 @@ function startDraft(r, p, resume) {
     id: 'take:' + c,
     label: SPELLS[c]
       ? `呪文「${SPELLS[c].name}」 ${SPELLS[c].desc}`
-      : `${CREATURES[c].name}(ST${CREATURES[c].st}/HP${CREATURES[c].hp})${CREATURES[c].fx ? ' ' + CREATURES[c].fx : ''}`,
+      : `${CREATURES[c].name}(AT${CREATURES[c].st}/HP${CREATURES[c].hp})${CREATURES[c].fx ? ' ' + CREATURES[c].fx : ''}`,
   })).concat([{ id: 'skip', label: 'カードを加えない(3枚とも山札の底へ)' }]));
 }
 function askGate(r, p) {
@@ -393,7 +409,7 @@ function askForge(r, p) {
   const opts = [];
   p.hand.forEach((c, i) => {
     if (CREATURES[c] && CREATURES[c].evo)
-      opts.push({ id: 'fg:' + i, label: `${CREATURES[c].name} → ${CREATURES[c].evo}(ST${CREATURES[c].evoSt}/HP${CREATURES[c].evoHp})` });
+      opts.push({ id: 'fg:' + i, label: `${CREATURES[c].name} → ${CREATURES[c].evo}(AT${CREATURES[c].evoSt}/HP${CREATURES[c].evoHp})` });
   });
   opts.push({ id: 'back', label: 'やめる(門にもどる)' });
   ask(r, p.id, 'forge', `鍛錬 ─ 進化させるクリーチャーを選べ(−${RULES.forgeCost}G)`, opts);
@@ -419,7 +435,7 @@ function askMarket(r, p) {
 // ===== 侵略戦闘 =====
 function startBattle(r, attacker, tileIdx) {
   const opts = attacker.hand.filter(c => CREATURES[c])
-    .map(c => ({ id: 'atk:' + c, label: `${CREATURES[c].name}(ST${CREATURES[c].st})で攻める` }));
+    .map(c => ({ id: 'atk:' + c, label: `${CREATURES[c].name}(AT${CREATURES[c].st})で攻める` }));
   opts.push({ id: 'cancel', label: 'やめて通行料を払う' });
   r.battle = { tile: tileIdx, attacker: attacker.id, defender: r.owners[tileIdx].player,
                atkCreature: null, supports: {} };
@@ -459,12 +475,12 @@ function resolveBattle(r) {
   if (baseId(b.atkCreature) === 'mimic') { aBase = { st: dc.st, hp: dc.hp }; notes.push('【擬態】ミミックが' + dc.name + 'をコピー!'); }
   if (baseId(o.creature) === 'mimic') { dBase = { st: ac.st, hp: ac.hp }; notes.push('【擬態】ミミックが' + ac.name + 'をコピー!'); }
 
-  // --- 攻撃側ST ---
+  // --- 攻撃側AT ---
   let st = aBase.st + (aEff ? aEff.st : 0);
-  if (baseId(b.atkCreature) === 'gecko') { st += 10; notes.push('【猛攻】ST+10!'); }
+  if (baseId(b.atkCreature) === 'gecko') { st += 10; notes.push('【猛攻】AT+10!'); }
   if (baseId(b.atkCreature) === 'detropas') {
     const fires = r.owners.reduce((n, oo, i) => n + (oo && oo.player === atk.id && TILES[i].e === 'fire' ? 1 : 0), 0);
-    if (fires) { st += fires * 5; notes.push(`【群れ】火の領地${fires}つでST+${fires * 5}!`); }
+    if (fires) { st += fires * 5; notes.push(`【群れ】火の領地${fires}つでAT+${fires * 5}!`); }
   }
 
   // --- 防衛側HP(地形・女王・呪い) ---
@@ -479,7 +495,7 @@ function resolveBattle(r) {
     if (no && no.player === def.id && baseId(no.creature) === 'qbaby')
       queenBonus += isEvolved(no) ? 20 : 10;
   }
-  if (queenBonus) notes.push(`【女王の威光】防衛HP+${queenBonus}!`);
+  if (queenBonus) notes.push(`【女王の威光】防衛DF+${queenBonus}!`);
   const curse = (r.curses[b.tile] && baseId(o.creature) !== 'beruf') ? r.curses[b.tile].hp : 0;
   const hp = dBase.hp + terrain + queenBonus + (dEff ? dEff.hp : 0) - curse;
 
@@ -487,42 +503,70 @@ function resolveBattle(r) {
   for (const [pid, sc] of Object.entries(b.supports))
     if (sc !== 'none') { const pl = pById(r, pid); pl.hand.splice(pl.hand.indexOf(sc), 1); pl.exile.push(sc); }  // 支援は使い切り(廃棄)
 
-  const win = st >= hp;
+  // ===== v0.47 戦闘: AT / HP / DF モデル =====
+  // DF(防御) = 地形補正+女王+支援HP。ダメージ = AT − DF(最低0)。負傷は軽減後の実ダメージだけ蓄積
+  const carried = o.dmg || 0;
+  if (carried) notes.push(`負傷を引き継いでいる(−${carried})`);
+  const defDF = terrain + queenBonus + (dEff ? dEff.hp : 0);
+  const effHp = Math.max(1, dBase.hp - curse - carried);   // 現在HP(呪いは一時的な減少)
+  const atkDmg = st;                                        // AT = 基礎AT+支援+効果
+  const dealt = Math.max(0, atkDmg - defDF);                // DFで軽減した実ダメージ
+  const win = dealt >= effHp;
+
+  // 反撃(防衛側が生き残った場合のみ): 防衛AT vs 攻撃側HP+DF(支援)
+  const counterSt = win ? 0 : dBase.st + (dEff ? dEff.st : 0);
+  const atkDF = aEff ? aEff.hp : 0;
+  const counterDealt = win ? 0 : Math.max(0, counterSt - atkDF);
+  const atkSurvived = win ? true : counterDealt < aBase.hp;
+
   r.lastBattle = { tile: b.tile, attacker: atk.id, defender: def.id,
     atkCreature: b.atkCreature, defCreature: o.creature,
     atkSupport: b.supports[atk.id], defSupport: b.supports[def.id],
-    st, hp, terrain, curse, notes, win, at: Date.now() };
-  log(r, `⚔ ${atk.name}の${ac.name}(ST${st}) vs ${def.name}の${dc.name}(HP${hp})`);
+    st: atkDmg, hp: effHp, df: defDF, dealt,
+    atkHp: aBase.hp, atkDf: atkDF, counterSt, counterDealt, atkSurvived,
+    remainHp: win ? 0 : effHp - dealt,
+    terrain, curse, notes, win, at: Date.now() };
+  log(r, `⚔ ${atk.name}の${ac.name}(AT${atkDmg}) vs ${def.name}の${dc.name}(HP${effHp}/DF${defDF}) → 実ダメージ${dealt}`);
   for (const n of notes) log(r, n);
 
   if (win) {
+    // 一撃で削り切った → 侵略成功
     atk.hand.splice(atk.hand.indexOf(b.atkCreature), 1);
-    // 旋風: 敗北した防衛側ガストンは手札に帰還
     if (baseId(o.creature) === 'gaston') {
       def.hand.push(o.creature);
       log(r, `【旋風】${def.name}のガストンは風に乗って帰還した`);
     } else {
-      def.discard.push(o.creature);  // 失った土地のクリーチャーは持ち主の捨て札へ
+      def.discard.push(o.creature);
     }
-    r.owners[b.tile] = { player: atk.id, level: o.level, creature: b.atkCreature };
+    r.owners[b.tile] = { player: atk.id, level: o.level, creature: b.atkCreature };  // 占領クリーチャーは全快
     atk.battleWins++;
-    log(r, `${atk.name}の勝利! Lv${o.level}の土地を奪取した!`);
+    log(r, `${ac.name}の一撃(実ダメージ${dealt})が${dc.name}を討ち取った! Lv${o.level}の土地を奪取!`);
+    if (drawCards(r, atk, 1)) log(r, `戦勝の報酬 ─ ${atk.name}はカードを1枚引いた`);
     if (baseId(b.atkCreature) === 'zati') {
       const got = payTo(r, def, atk, 50);
-      if (got) log(r, `【略奪】ハーピーが${def.name}から${got}Gを奪った!`);
+      if (got) log(r, `【略奪】ザーティーが${def.name}から${got}Gを奪った!`);
     }
   } else {
-    if (baseId(b.atkCreature) === 'gaston') {
-      log(r, `【旋風】${atk.name}のガストンは風に乗って帰還した`);
+    // 防衛成功(削られたHPは土地に引き継ぐ)+反撃
+    o.dmg = carried + dealt;
+    log(r, `${dc.name}は${dealt}のダメージに耐えた!(残HP${effHp - dealt})${atkDmg > dealt ? ` ─ DFが${atkDmg - dealt}軽減` : ''}`);
+    if (!atkSurvived) {
+      if (baseId(b.atkCreature) === 'gaston') {
+        log(r, `【旋風】反撃を受けたガストンは風に乗って帰還した`);
+      } else {
+        atk.hand.splice(atk.hand.indexOf(b.atkCreature), 1);
+        atk.discard.push(b.atkCreature);
+        log(r, `${dc.name}の反撃(実ダメージ${counterDealt})が${ac.name}を討ち取った!`);
+      }
     } else {
-      atk.hand.splice(atk.hand.indexOf(b.atkCreature), 1);
-      atk.discard.push(b.atkCreature);  // 消滅ではなく捨て札へ
+      log(r, `${ac.name}は反撃(実ダメージ${counterDealt})を耐えて帰還した(HPは全快する)`);
     }
     const toll = tollOf(r, b.tile);
     payTo(r, atk, def, toll);
     kingBonus(r, def);
     def.battleWins++;
     log(r, `${def.name}が防衛成功! 通行料${toll}Gも支払わせた`);
+    if (drawCards(r, def, 1)) log(r, `防衛の報酬 ─ ${def.name}はカードを1枚引いた`);
     if (baseId(o.creature) === 'barbaro') {
       const extra = payTo(r, atk, def, defEvolved ? 40 : 20);
       if (extra) log(r, `【逆鱗】バーグランダの怒りで追加${extra}Gを支払った!`);
@@ -596,19 +640,25 @@ function handleChoose(r, playerId, optionId) {
   }
   if (pend.type === 'roll' && optionId.startsWith('sp:')) {
     const sid = optionId.slice(3);
-    if (!p.hand.includes(sid) || (p.spellsUsed || 0) >= RULES.spellsPerTurn) return askRoll(r, p);
+    if (!p.hand.includes(sid) || SPELLS[sid].cost > p.gold) return askRoll(r, p);
     const castLog = () => {
       p.hand.splice(p.hand.indexOf(sid), 1);
       if (EXILE_SPELLS.has(sid)) { p.exile.push(sid); }
       else p.discard.push(sid);
-      p.spellsUsed = (p.spellsUsed || 0) + 1;
+      if (SPELLS[sid].cost) p.gold -= SPELLS[sid].cost;
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS[sid].name, at: Date.now() };
-      log(r, `📜 ${p.name}が呪文「${SPELLS[sid].name}」を唱えた!${EXILE_SPELLS.has(sid) ? '(廃棄)' : ''}`);
+      log(r, `📜 ${p.name}が呪文「${SPELLS[sid].name}」を唱えた!${SPELLS[sid].cost ? `(−${SPELLS[sid].cost}G)` : ''}${EXILE_SPELLS.has(sid) ? '(廃棄)' : ''}`);
     };
     if (sid === 'sp_gold') {
       castLog();
       p.gold += 120;
       log(r, `${p.name}は120Gを得た(所持${p.gold}G)`);
+      return askRoll(r, p);
+    }
+    if (sid === 'sp_insight') {
+      castLog();
+      const got = drawCards(r, p, 2);
+      log(r, `${p.name}はカードを${got}枚引いた`);
       return askRoll(r, p);
     }
     if (sid === 'sp_gale') {
@@ -630,6 +680,20 @@ function handleChoose(r, playerId, optionId) {
       opts.push({ id: 'ct:cancel', label: 'やめる' });
       return ask(r, p.id, 'curse_target', '☠ どの土地に呪いを掛ける?', opts);
     }
+    if (sid === 'sp_move') {
+      const opts = r.owners.map((o, i) => o && o.player === p.id
+        ? { id: 'mv:' + i, label: `${CREATURES[o.creature].name}(${TILES[i].e} Lv${o.level}${o.dmg ? ' 負傷' + o.dmg : ''})` }
+        : null).filter(Boolean);
+      opts.push({ id: 'mv:cancel', label: 'やめる' });
+      return ask(r, p.id, 'move_a', '転移 ─ 1体目のクリーチャーを選ぶ', opts);
+    }
+    if (sid === 'sp_swap') {
+      const opts = r.owners.map((o, i) => o && o.player === p.id
+        ? { id: 'sw:' + i, label: `${CREATURES[o.creature].name}(${TILES[i].e} Lv${o.level}${o.dmg ? ' 負傷' + o.dmg : ''})` }
+        : null).filter(Boolean);
+      opts.push({ id: 'sw:cancel', label: 'やめる' });
+      return ask(r, p.id, 'swap_land', '交代 ─ どの領地のクリーチャーを入れ替える?', opts);
+    }
     if (sid === 'sp_quake') {
       const opts = r.owners.map((o, i) => o && o.player !== p.id && o.level >= 2
         ? { id: 'qt:' + i, label: `${pById(r, o.player).name}の${CREATURES[o.creature].name}(${TILES[i].e} Lv${o.level}→${o.level - 1})` }
@@ -643,7 +707,7 @@ function handleChoose(r, playerId, optionId) {
       const i = +optionId.slice(3);
       p.hand.splice(p.hand.indexOf('sp_weaken'), 1);
       p.discard.push('sp_weaken');
-      p.spellsUsed = (p.spellsUsed || 0) + 1;
+      if (SPELLS.sp_weaken.cost) p.gold -= SPELLS.sp_weaken.cost;
       r.curses[i] = { by: p.id, hp: SPELLS.sp_weaken.hp };
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_weaken.name, at: Date.now() };
       const o = r.owners[i];
@@ -666,12 +730,67 @@ function handleChoose(r, playerId, optionId) {
     }
     return askMarket(r, p);
   }
+  if (pend.type === 'move_a') {
+    if (optionId === 'mv:cancel') return askRoll(r, p);
+    p.moveA = +optionId.slice(3);
+    const opts = r.owners.map((o, i) => o && o.player === p.id && i !== p.moveA
+      ? { id: 'mb:' + i, label: `${CREATURES[o.creature].name}(${TILES[i].e} Lv${o.level}${o.dmg ? ' 負傷' + o.dmg : ''})` }
+      : null).filter(Boolean);
+    opts.push({ id: 'mb:cancel', label: 'やめる' });
+    return ask(r, p.id, 'move_b', '転移 ─ 入れ替える相手のクリーチャーを選ぶ', opts);
+  }
+  if (pend.type === 'move_b') {
+    if (optionId !== 'mb:cancel' && p.hand.includes('sp_move')) {
+      const a = p.moveA, bI = +optionId.slice(3);
+      const oa = r.owners[a], ob = r.owners[bI];
+      if (oa && ob && oa.player === p.id && ob.player === p.id) {
+        [oa.creature, ob.creature] = [ob.creature, oa.creature];
+        [oa.dmg, ob.dmg] = [ob.dmg || 0, oa.dmg || 0];
+        p.hand.splice(p.hand.indexOf('sp_move'), 1);
+        p.discard.push('sp_move');
+        p.gold -= SPELLS.sp_move.cost;
+        r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_move.name, at: Date.now() };
+        log(r, `📜 ${p.name}が転移の呪文! ${CREATURES[ob.creature].name}と${CREATURES[oa.creature].name}が入れ替わった(−${SPELLS.sp_move.cost}G)`);
+      }
+    }
+    p.moveA = null;
+    return askRoll(r, p);
+  }
+  if (pend.type === 'swap_land') {
+    if (optionId === 'sw:cancel') return askRoll(r, p);
+    p.swapI = +optionId.slice(3);
+    const budget = p.gold - SPELLS.sp_swap.cost;
+    const opts = [...new Set(p.hand.filter(c => CREATURES[c] && CREATURES[c].cost <= budget))].map(c =>
+      ({ id: 'sp2:' + c, label: `${CREATURES[c].name}(AT${CREATURES[c].st}/HP${CREATURES[c].hp} −${CREATURES[c].cost}G)` }));
+    opts.push({ id: 'sp2:cancel', label: 'やめる' });
+    return ask(r, p.id, 'swap_pick', '交代 ─ 手札のどのクリーチャーを配置する?', opts);
+  }
+  if (pend.type === 'swap_pick') {
+    if (optionId !== 'sp2:cancel' && p.hand.includes('sp_swap')) {
+      const c = optionId.slice(4);
+      const o = r.owners[p.swapI];
+      if (o && o.player === p.id && p.hand.includes(c) &&
+          CREATURES[c].cost + SPELLS.sp_swap.cost <= p.gold) {
+        const oldC = o.creature;
+        p.discard.push(oldC);                 // 元のクリーチャーは捨て札へ
+        p.hand.splice(p.hand.indexOf(c), 1);
+        o.creature = c; o.dmg = 0;            // 新クリーチャーは全快で配置
+        p.hand.splice(p.hand.indexOf('sp_swap'), 1);
+        p.discard.push('sp_swap');
+        p.gold -= SPELLS.sp_swap.cost + CREATURES[c].cost;
+        r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_swap.name, at: Date.now() };
+        log(r, `📜 ${p.name}が交代の呪文! ${CREATURES[oldC].name}に代わり${CREATURES[c].name}が領地に立った(−${SPELLS.sp_swap.cost + CREATURES[c].cost}G)`);
+      }
+    }
+    p.swapI = null;
+    return askRoll(r, p);
+  }
   if (pend.type === 'quake_target') {
     if (optionId !== 'qt:cancel') {
       const i = +optionId.slice(3);
       p.hand.splice(p.hand.indexOf('sp_quake'), 1);
       p.exile.push('sp_quake');
-      p.spellsUsed = (p.spellsUsed || 0) + 1;
+      if (SPELLS.sp_quake.cost) p.gold -= SPELLS.sp_quake.cost;
       const o = r.owners[i];
       o.level = Math.max(1, o.level - 1);
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_quake.name, at: Date.now() };
@@ -856,7 +975,7 @@ function startGame(r) {
     p.gems = 0; p.treasures = 0; p.battleWins = 0; p.shrineVisits = 0; p.ultUsed = false;
     p.color = CHARS[p.charId].color;
   }
-  for (const p of r.players.slice(1)) drawCards(r, p, RULES.drawN);  // 初手番前でも防衛できるように配る(先頭は手番開始時に引く)
+  for (const p of r.players) drawCards(r, p, RULES.startHand);  // 全員に初期手札を配る
   log(r, `全員のキャラが確定! ゲーム開始(手番順: ${r.players.map(p => p.name).join(' → ')})`);
   beginTurn(r);
 }

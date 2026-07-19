@@ -109,6 +109,14 @@
   .bside.dead { animation:dead .7s forwards; }
   @keyframes dead { to { opacity:0; transform:translateY(50px) rotate(-12deg); filter:brightness(3); } }
   #bmid { width:230px; text-align:center; }
+  .dmgPop { position:absolute; top:26%; left:50%; transform:translateX(-50%); z-index:5;
+      font-size:5.6vh; font-family:'Reggae One','Yu Mincho',serif; color:#FF6A4D;
+      text-shadow:0 2px 8px rgba(0,0,0,.9), 0 0 18px rgba(255,90,60,.5); pointer-events:none;
+      animation:dmgPop 1.1s ease forwards; }
+  .dmgPop.heal { color:#8FE08A; text-shadow:0 2px 8px rgba(0,0,0,.9), 0 0 18px rgba(90,220,120,.5); }
+  @keyframes dmgPop { 0% { opacity:0; transform:translate(-50%,1.5vh) scale(1.4); }
+      18% { opacity:1; transform:translate(-50%,0) scale(1); }
+      80% { opacity:1; } 100% { opacity:0; transform:translate(-50%,-4vh); } }
   #bresult { position:absolute; top:6vh; left:0; right:0; text-align:center; font-size:6vh;
       letter-spacing:1.2vh; color:var(--gold-soft); font-family:serif; opacity:0; pointer-events:none;
       text-shadow:0 2px 14px rgba(0,0,0,.95), 0 0 30px rgba(201,162,39,.5);  font-family:'Reggae One','Yu Mincho',serif; }
@@ -945,13 +953,14 @@ function tileInfoHTML(i) {
   const evolved = o.level >= (state.evoLevel || 3) || /_f$/.test(o.creature);
   const hp = evolved && cr.evoHp ? cr.evoHp : cr.hp;
   const curse = state.curses && state.curses[i];
+  const dmg = o.dmg || 0;
   const toll = o.level * chain(o.player, t.e) * 30 * (o.creature.replace(/_f$/, '') === 'orphe' ? 1.2 : 1);
   return `<div class="tiHead">${eBadge}<span style="color:${pl.color}">${pl.name}</span>の領地 Lv${o.level}</div>
     <div class="tiBody">
       <img class="tiChar" src="/assets/full_${pl.charId}.png">
       <div class="tiCre">${artHTML(o.creature, o.level, 92)}
         <div class="tiCreName">${cname(o.creature, o.level)}</div>
-        <div class="tiHp">HP ${hp}${curse ? `<span class="tiCurse"> −呪い${curse.hp}</span>` : ''} <small>+地形補正</small></div>
+        <div class="tiHp">HP ${hp}${dmg ? `<span class="tiCurse"> −負傷${dmg}</span>` : ''}${curse ? `<span class="tiCurse"> −呪い${curse.hp}</span>` : ''} <small>+地形補正</small></div>
         ${cr.fx ? `<div class="tiFx">${cr.fx}</div>` : ''}
         <div class="tiToll">通行料 ${Math.round(toll)}G</div>
       </div>
@@ -1240,10 +1249,13 @@ async function playBattle(b) {
   const dLv = state.owners[b.tile] ? state.owners[b.tile].level : 1;
   $('bAtk').innerHTML = `${artHTML(b.atkCreature, 1, 220)}
     <div class="bname" style="color:${atk.color}">${atk.name} ─ ${C.CREATURES[b.atkCreature].name}</div>
-    <div class="bnum">ST ${b.st}</div><div class="bsub">基礎${C.CREATURES[b.atkCreature].st}${b.atkSupport !== 'none' ? ' + ' + C.SUPPORTS[b.atkSupport].name : ''}</div>`;
+    <div class="bnum">AT ${b.st} <span style="font-size:2.4vh;opacity:.85">/ HP ${b.atkHp}${b.atkDf ? ' / DF ' + b.atkDf : ''}</span></div>
+    <div class="bsub">${b.atkSupport !== 'none' ? '+ ' + C.SUPPORTS[b.atkSupport].name : '&nbsp;'}</div>
+    <div class="bhpA" style="position:relative"></div>`;
   $('bDef').innerHTML = `${artHTML(b.defCreature, dLv, 220)}
     <div class="bname" style="color:${def.color}">${def.name} ─ ${cname(b.defCreature, dLv)}</div>
-    <div class="bnum">HP ${b.hp}</div><div class="bsub">基礎${C.CREATURES[b.defCreature].hp} + 地形${b.terrain}${b.curse ? ' − 呪い' + b.curse : ''}${b.defSupport !== 'none' ? ' + ' + C.SUPPORTS[b.defSupport].name : ''}</div>`;
+    <div class="bnum">HP <span id="bDefHp">${b.hp}</span> <span style="font-size:2.4vh;opacity:.85">/ DF ${b.df} / AT ${C.CREATURES[b.defCreature].st}</span></div>
+    <div class="bsub">DF内訳: 地形${b.terrain}${b.defSupport !== 'none' ? ' + ' + C.SUPPORTS[b.defSupport].name : ''}${b.curse ? ' ｜ 呪い−' + b.curse : ''}</div>`;
   const card = (sup) => `<div class="scardB"><div class="sflipB">
     <div class="sfaceB sbackB">❖</div>
     <div class="sfaceB sfrontB">${sup === 'none' ? '<div>─</div><div>支援なし</div>' : '<div style="font-size:24px">⚔</div><div>' + C.SUPPORTS[sup].name + '</div>'}</div>
@@ -1254,35 +1266,75 @@ async function playBattle(b) {
   ['bAtk','bDef'].forEach(id => $(id).classList.remove('lungeL','lungeR','dead'));
   $('bresult').classList.remove('show'); $('bresult').innerHTML = '';
   hideLogo(true);
-  bannerUntil = Math.max(bannerUntil, Date.now() + 6000); // 演出中はTURN START/バナーを待たせる
+  bannerUntil = Math.max(bannerUntil, Date.now() + 8500); // 演出中はTURN START/バナーを待たせる
   $('battle').classList.add('on');
   await wait(900);
   document.querySelectorAll('.sflipB').forEach(f => f.classList.add('open'));
   await wait(1000);
   if (b.notes && b.notes.length)
     $('bnotes').innerHTML = b.notes.map(n => '✦ ' + n).join('<br>');
-  $('bcap').textContent = `ST ${b.st} ${b.win ? '≧' : '<'} HP ${b.hp}`;
+  $('bcap').textContent = '';
   await wait(900);
-  $('bAtk').classList.add('lungeL'); $('bDef').classList.add('lungeR');
-  await wait(300);
+  const pop = (sideId, text, heal) => {
+    const el = document.createElement('div');
+    el.className = 'dmgPop' + (heal ? ' heal' : '');
+    el.textContent = text;
+    $(sideId).appendChild(el);
+    setTimeout(() => el.remove(), 1200);
+  };
+  // --- 先攻: 攻撃側の一撃 ---
+  $('bcap').textContent = '攻撃側の一撃!';
+  $('bAtk').classList.add('lungeL');
+  await wait(320);
   $('bflash').classList.add('go'); $('battle').classList.add('shake');
+  pop('bDef', '−' + b.dealt + (b.st > b.dealt ? '(DF−' + (b.st - b.dealt) + ')' : ''));
   await wait(450);
   $('bflash').classList.remove('go'); $('battle').classList.remove('shake');
-  $(b.win ? 'bDef' : 'bAtk').classList.add('dead');
-  $('bcap').textContent = '';
-  $('bresult').textContent = b.win ? '侵略成功' : '防衛成功';
-  $('bresult').classList.add('show');
-  await wait(1800);
+  $('bAtk').classList.remove('lungeL');
+  if (b.win) {
+    $('bDef').classList.add('dead');
+    $('bcap').textContent = '';
+    await wait(600);
+    $('bresult').textContent = '侵略成功';
+    $('bresult').classList.add('show');
+    await wait(1800);
+  } else {
+    // 耐えた → 残HP表示と反撃
+    const hpEl = $('bDefHp');
+    if (hpEl) hpEl.textContent = b.remainHp;
+    $('bcap').textContent = `耐えた! 残りHP ${b.remainHp}(負傷は引き継ぐ)`;
+    await wait(1100);
+    $('bcap').textContent = '防衛側の反撃!';
+    $('bDef').classList.add('lungeR');
+    await wait(320);
+    $('bflash').classList.add('go'); $('battle').classList.add('shake');
+    pop('bAtk', '−' + b.counterDealt + (b.counterSt > b.counterDealt ? '(DF−' + (b.counterSt - b.counterDealt) + ')' : ''));
+    await wait(450);
+    $('bflash').classList.remove('go'); $('battle').classList.remove('shake');
+    $('bDef').classList.remove('lungeR');
+    if (!b.atkSurvived) {
+      $('bAtk').classList.add('dead');
+      $('bcap').textContent = '';
+    } else {
+      pop('bAtk', '帰還(全快)', true);
+      $('bcap').textContent = C.CREATURES[b.atkCreature].name + 'は耐えて手札に帰還';
+    }
+    await wait(900);
+    $('bresult').textContent = '防衛成功';
+    $('bresult').classList.add('show');
+    await wait(1700);
+  }
   $('battle').classList.remove('on');
   hideLogo(false);
   showBanner(b.win ? '⚔ 侵略成功!' : '🛡 防衛成功!',
-    b.win ? atk.name + 'が' + def.name + 'の土地を奪取!' : def.name + 'が攻撃を退けた');
+    b.win ? atk.name + 'が' + def.name + 'の土地を奪取!'
+          : def.name + 'が耐え抜いた(残HP' + b.remainHp + ')');
 }
 
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.43';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.49';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
