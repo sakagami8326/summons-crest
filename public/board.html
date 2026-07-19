@@ -45,7 +45,7 @@
   .rank1 { background:#B8901F; color:#2A1F08; } .rank2 { background:#9CA1AC; color:#23262C; }
   .rank3 { background:#9A6832; color:#241505; }
   .plate .pname { font-size:13.5px; letter-spacing:1px; flex:1; white-space:nowrap; overflow:hidden; }
-  .plate .pts { font-size:20px; color:#5A3B10; line-height:1; font-weight:600; }
+  .plate .pts { font-size:18px; color:#5A3B10; line-height:1; font-weight:600; white-space:nowrap; }
   .plate .pts small { font-size:11px; color:#7D6844; font-weight:400; }
   .plate .row2 { display:flex; gap:9px; margin:3px 0 0 58px; font-size:11px; color:#5C4A2E; }
   .sealIc { color:rgba(241,232,208,.28); border:1px solid rgba(241,232,208,.22); border-radius:4px;
@@ -390,7 +390,7 @@
   .plate .face { width:60px !important; height:60px !important; left:-16px !important; top:20px !important; }
   .plate .row1 { margin-left:40px !important; }
   .plate .pname { font-size:17.5px !important; }
-  .plate .pts { font-size:28px !important; }
+  .plate .pts { font-size:23px !important; letter-spacing:0; white-space:nowrap; }
   .plate .row2 { margin-left:50px !important; font-size:14.5px !important; gap:13px !important; margin-top:6px !important; }
   .plate .row3 { margin-left:50px !important; gap:8px !important; margin-top:7px !important; }
   .plate .ic img { width:19px !important; height:19px !important; }
@@ -1263,6 +1263,33 @@ function playTurnCutin(pl) {
   tcT1 = setTimeout(() => el.classList.add('out'), 1800);   // しばらく表示してから
   tcT2 = setTimeout(() => el.classList.remove('on', 'out'), 2300); // すっと消える
 }
+let dirCutOn = false;
+function updateDirCut() {
+  const tp = state.players[state.turn];
+  const dp = tp && state.pending[tp.id];
+  const active = dp && dp.type === 'direction';
+  if (active && !dirCutOn) {
+    dirCutOn = true;
+    clearTimeout(tcT1); clearTimeout(tcT2);
+    const el = $('turnCutin');
+    $('tcImg').src = '/assets/full_' + tp.charId + '.png';
+    el.style.setProperty('--tcc', tp.color);
+    $('tcMsg').innerHTML = `<div class="tcWho">${tp.name} ─ どちらの方向へ進む?</div>
+      <div style="display:flex; gap:3vw; justify-content:center; margin-top:1vh">
+        <svg viewBox="0 0 24 24" width="9vh" height="9vh" style="color:#F2D062"><path d="M15.5 4 8 12l7.5 8" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg viewBox="0 0 24 24" width="9vh" height="9vh" style="color:#F2D062"><path d="M8.5 4 16 12l-7.5 8" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="tcGold" style="margin-top:.6vh">スマホの矢印をタップ ─ 選ぶと移動開始(以後変更不可)</div>`;
+    el.classList.remove('out'); el.classList.add('on');
+    $('tcMsg').classList.add('on');
+    bannerUntil = Math.max(bannerUntil, Date.now() + 1200);
+  } else if (!active && dirCutOn) {
+    dirCutOn = false;
+    const el = $('turnCutin');
+    el.classList.add('out');
+    setTimeout(() => { if (!dirCutOn) { el.classList.remove('on', 'out'); $('tcMsg').classList.remove('on'); } }, 450);
+  }
+}
 function sideCut(pl, msgHtml, dur) {
   const el = $('turnCutin');
   $('tcImg').src = '/assets/full_' + pl.charId + '.png';
@@ -1390,7 +1417,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.53';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.54';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -1716,6 +1743,7 @@ function render() {
   }
   if (bq.length) { clearTimeout(prev.bqT); prev.bqT = setTimeout(render, 450); }
   updateTileInfo();
+  updateDirCut();
   // TURN STARTテロップ ─ 祠・称号などのバナーを全て消化してから表示
   if (queuedTurn !== null && !animBusy && state.phase === 'playing') {
     const waitMs = bannerUntil + 400 - Date.now();

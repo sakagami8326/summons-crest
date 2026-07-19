@@ -38,7 +38,12 @@
   header { display:flex; align-items:center; gap:10px; height:18dvh;
         padding:6px calc(12px + env(safe-area-inset-right)) 6px calc(12px + env(safe-area-inset-left)); }
   .me { display:flex; align-items:center; gap:8px; background:rgba(0,0,0,.35);
-        border:1px solid var(--gold); border-radius:999px; padding:4px 14px 4px 5px; flex:none; }
+        border:1px solid var(--gold); border-radius:10px; padding:4px 14px 4px 5px; flex:none; }
+  .dirBtn { font-family:'Reggae One','Yu Mincho',serif; display:flex; flex-direction:column;
+        align-items:center; gap:.6dvh; background:linear-gradient(170deg,#2E2A52,#1B1838);
+        color:var(--gold-soft); border:2px solid var(--gold); border-radius:2.4dvh;
+        padding:2.2dvh 5vw; font-size:max(2.6dvh, 15px); letter-spacing:.4dvh; cursor:pointer; }
+  .dirBtn:active { transform:scale(.94); background:rgba(201,162,39,.25); }
   .me > img { width:12dvh; height:12dvh; border-radius:1.6dvh; object-fit:contain; flex:none;
         filter:drop-shadow(0 2px 5px rgba(0,0,0,.45)); }
   .me .nm { font-size:2.4dvh; letter-spacing:1px; }
@@ -88,7 +93,11 @@
         calc(6px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left)); }
   #hand .card { animation:dealIn .45s cubic-bezier(.2,.85,.3,1) backwards; }
   @keyframes dealIn { from { transform:translateX(16dvh) translateY(2dvh) rotate(6deg); opacity:0; } }
-  #hand { display:flex; gap:10px; height:100%; overflow-x:auto; padding:14px 6px 4px; }
+  #hand { display:flex; gap:10px; height:100%; overflow-x:auto; padding:14px 6px 4px;
+        align-items:flex-end; -webkit-overflow-scrolling:touch; }
+  #hand[data-n="6"] .card { height:84%; }
+  #hand[data-n="7"] .card { height:74%; }
+  #hand[data-n="8"] .card, #hand[data-n="9"] .card, #hand[data-n="10"] .card { height:65%; }
   .card { flex:none; height:100%; aspect-ratio:300/470; width:auto; position:relative;
         perspective:700px; cursor:pointer; transition:transform .15s; }
   .card.sel { transform:translateY(-12px); }
@@ -118,7 +127,8 @@
   .face .glyph { height:54%; display:flex; align-items:center; justify-content:center;
         font-size:8.5dvh; margin-top:3dvh; color:#2C2A4A; }
   .face .nm { font-size:max(2.2dvh, 13px); letter-spacing:1px; margin-top:.6dvh; }
-  .face .stats { display:flex; gap:8px; font-family:sans-serif; font-size:max(1.9dvh, 12px); margin-top:.4dvh; }
+  .face .stats { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; row-gap:0;
+      font-family:sans-serif; font-size:max(1.9dvh, 12px); margin-top:.4dvh; }
   .face .stats b { color:#A3402B; } .face .stats i { color:#2E5E4E; font-style:normal; }
   .face .stats .up { color:#8A6A1E; font-weight:700; }
   .face .type { position:absolute; bottom:5px; right:9px; font-size:1.3dvh; color:rgba(58,43,24,.6); }
@@ -249,7 +259,8 @@
   .diceImgBtn:active img { transform:scale(.93); }
 
   .face .fx { font-size:max(1.55dvh, 10px); color:#5C4A2E; text-align:center; padding:0 8px;
-      line-height:1.35; min-height:2.4dvh; flex:0 1 auto; overflow:hidden; }
+      margin-top:.3dvh; line-height:1.3; min-height:2.4dvh; flex:0 1 auto; overflow:hidden; }
+  .face .stats .up { font-size:.8em; }
   .gCard .fx { font-size:max(1.75dvh, 11px); }
   #draftOv { position:fixed; inset:0; display:none; z-index:56; background:rgba(10,8,25,.92);
       flex-direction:column; align-items:center; padding-top:2dvh; gap:1.4dvh; }
@@ -605,7 +616,7 @@ function renderMiniMap(p) {
       ${targets[i] ? `onclick="mmTap(${i})"` : ''}>${glyph}${own}${meHere}</div>`);
   });
   const selOpt = mmSel !== null && targets[mmSel];
-  $('actions').innerHTML = `<div id="mmWrap"><div style="flex:1; overflow:auto; display:flex; align-items:center"><div id="miniMap">${cells.join('')}</div></div>
+  $('action').innerHTML = `<div id="mmWrap"><div style="flex:1; overflow:auto; display:flex; align-items:center"><div id="miniMap">${cells.join('')}</div></div>
     <div id="mmBtns">${selOpt ? `<button class="abtn" onclick="choose('${selOpt}'); mmSel=null;">ここに決定</button>` : ''}
     ${cancel ? `<button class="abtn ghost" onclick="choose('${cancel.id}'); mmSel=null;">${cancel.label}</button>` : ''}</div></div>`;
 }
@@ -798,6 +809,7 @@ function cardHTML(c, i) {
 let handListKey = '';
 function renderHand() {
   const list = me().hand.join(',');
+  $('hand').dataset.n = me().hand.length;
   if (list !== handListKey) {
     handListKey = list;
     $('hand').innerHTML = me().hand.map((c, i) => cardHTML(c, i)).join('');
@@ -1031,7 +1043,17 @@ function render() {
              p.type === 'move_a' || p.type === 'move_b' || p.type === 'swap_land' || p.type === 'upgrade' ||
              p.type === 'sell' || p.type === 'step_a' || p.type === 'step_b') {
     renderMiniMap(p);
-  } else if (p.type === 'direction' || p.type === 'swap_pick') {
+  } else if (p.type === 'direction') {
+    $('msg').innerHTML = iconize(p.prompt);
+    A.innerHTML = `<div style="display:flex; height:100%; align-items:center; justify-content:center; gap:12vw">
+      <button class="dirBtn" onclick="choose('dir:1')">
+        <svg viewBox="0 0 24 24" width="9dvh" height="9dvh"><path d="M15.5 4 8 12l7.5 8" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>左回り</span></button>
+      <button class="dirBtn" onclick="choose('dir:-1')">
+        <svg viewBox="0 0 24 24" width="9dvh" height="9dvh"><path d="M8.5 4 16 12l-7.5 8" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>右回り</span></button>
+    </div>`;
+  } else if (p.type === 'swap_pick') {
     $('msg').innerHTML = iconize(p.prompt);
     A.innerHTML = '<div class="btnCol">' + p.options.map(o =>
       `<button class="abtn ${/:cancel$/.test(o.id) ? 'ghost' : ''}" onclick="choose('${o.id}')">${iconize(o.label)}</button>`).join('') + '</div>';

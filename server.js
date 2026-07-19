@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const VERSION = '0.52';
+const VERSION = '0.54';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -15,19 +15,19 @@ const RULES = { startGold: 300, castleBonus: 200, shrineBonus: 100, tollUnit: 30
                 evoLevel: 3, forgeCost: 150,
                 startHand: 5, forgetCost: 80 };  // v0.44: 初期5枚+毎ターン1枚ドロー
 // キャラ別初期デッキ12枚(初期デッキ仕様案v0.1 第12節)
-// v0.50: クリーチャー比率アップ(6クリーチャー/3スペル/3支援)
+// v0.53: 黄金・ひらめきを全員1枚、衰弱=レダーニ/交代=リンネイ・グリース/移動=ミオ
 const CHAR_DECKS = {
   redani: ['gecko', 'gecko', 'gecko', 'gaston', 'gaston', 'cleo',
-           'sp_gold', 'sp_weaken', 'sp_gale',
+           'sp_gold', 'sp_insight', 'sp_weaken',
            'weapon', 'weapon', 'jinx'],
   linnei: ['orphe', 'orphe', 'orphe', 'nome', 'nome', 'cleo',
-           'sp_gold', 'sp_gold', 'sp_gale',
+           'sp_gold', 'sp_insight', 'sp_swap',
            'shield', 'shield', 'jinx'],
   grease: ['nome', 'nome', 'nome', 'orphe', 'orphe', 'cleo',
-           'sp_gold', 'sp_weaken', 'sp_ward',
+           'sp_gold', 'sp_insight', 'sp_swap',
            'shield', 'shield', 'jinx'],
   mio:    ['gaston', 'gaston', 'gaston', 'gecko', 'gecko', 'cleo',
-           'sp_gold', 'sp_gale', 'sp_gale',
+           'sp_gold', 'sp_insight', 'sp_step',
            'weapon', 'weapon', 'jinx'],
 };
 // 廃棄スペル(使用後ゲームから除外)
@@ -95,23 +95,25 @@ const CREATURES = {
   zati:    { name: 'ザーティー', evo: 'ザンティアー', elem: 'wind', st: 40, hp: 30, cost: 90, evoSt: 60, evoHp: 50, fx: '【略奪】侵略成功時、相手から50G奪う', rarity: 'N' },
   pakawata:{ name: 'パカワタ',         elem: 'wind',  st: 50, hp: 40, cost: 150, rarity: 'R' },
   mimic:   { name: 'ミミック',         elem: null,    st: 30, hp: 30, cost: 70, fx: '【擬態】戦闘時、相手の基礎AT/HPをコピー', rarity: 'N' },
-  beruf:   { name: 'ベルーフ・シェイド', evo: 'デスベルーフ', elem: null, st: 20, hp: 50, cost: 90, evoSt: 40, evoHp: 70, fx: '【死影】呪いを受けない', rarity: 'N' },
+  beruf:   { name: 'ベルーフ・シェイド', evo: 'デスベルーフ', elem: null, st: 20, hp: 50, cost: 90, evoSt: 40, evoHp: 70, rarity: 'N' },
 };
 const ITEMS = {}; // v0.34: 呪いアイテムは廃止(スペル「衰弱の呪文」に移行)
 const SPELLS = {
   sp_gold:   { name: '黄金の呪文', rarity: 'N', cost: 0,
-               desc: 'ただちに120Gを得る' },
+               desc: '現在の周回数×100Gを得る' },
   sp_weaken: { name: '衰弱の呪文', rarity: 'N', cost: 40, hp: 20,
-               desc: '敵の土地1つのクリーチャーのHP-20(あなたの次の手番まで)' },
+               desc: '敵領地を1つ選び、そのクリーチャーに20ダメージ(回復しない)。HPが0以下になると滅び、土地は空き地になる' },
   sp_gale:   { name: '疾風の呪文', rarity: 'R', cost: 30,
                desc: 'このターン、サイコロを2個振って移動する' },
   sp_quake:  { name: '地割れの呪文', rarity: 'R', cost: 100,
                desc: '敵の領地1つのレベルを1下げる(Lv1には無効)' },
+  sp_step:   { name: '移動の呪文', rarity: 'R', cost: 40,
+               desc: '自分の領地のクリーチャー1体を隣のマスへ移動。空き地なら新たな領地(Lv1)に、敵領地ならそのまま侵略(通行料なし)' },
   sp_ward:   { name: '加護の呪文', rarity: 'R', cost: 80,
                desc: 'あなたの次の手番まで、自分の領地は侵略されない' },
   sp_move:   { name: '転移の呪文', rarity: 'R', cost: 40,
                desc: '自分の領地2つのクリーチャーを入れ替える(負傷も一緒に移動)' },
-  sp_insight:{ name: 'ひらめきの呪文', rarity: 'N', cost: 30,
+  sp_insight:{ name: 'ひらめきの呪文', rarity: 'N', cost: 40,
                desc: 'カードを2枚引く' },
   sp_swap:   { name: '交代の呪文', rarity: 'R', cost: 30,
                desc: '自分の領地のクリーチャーを手札のクリーチャーと交代する(召喚コスト別途。元のクリーチャーは捨て札へ・負傷は回復)' },
@@ -136,7 +138,7 @@ const CHARS = {
 const ULTS = {
   redani: { name: '烈火の進軍', desc: 'サイコロを3個振って移動する' },
   linnei: { name: '水鏡の大商談', desc: '市場へ瞬間移動し、全品半額で買い物' },
-  grease: { name: '大地の大結界', desc: '次の手番まで全領地が侵略不可+呪い解除' },
+  grease: { name: '大地の大結界', desc: '次の自分の手番まで、すべての自分の領地が侵略されなくなる' },
   mio:    { name: '追い風の導き', desc: '好きなマスへ移動して止まる' },
 };
 for (const [cid, c] of Object.entries({ ...CREATURES }))
@@ -276,11 +278,12 @@ function askRoll(r, p) {
   for (const sid of [...new Set(p.hand.filter(c => SPELLS[c]))]) {
     if (SPELLS[sid].cost > p.gold) continue;
     if (sid === 'sp_weaken' &&
-        !r.owners.some((o, i) => o && o.player !== p.id && !r.curses[i] && baseId(o.creature) !== 'beruf')) continue;
+        !r.owners.some(o => o && o.player !== p.id)) continue;
     if (sid === 'sp_quake' &&
         !r.owners.some(o => o && o.player !== p.id && o.level >= 2)) continue;
     if (sid === 'sp_move' &&
         r.owners.filter(o => o && o.player === p.id).length < 2) continue;
+    if (sid === 'sp_step' && !stepSources(r, p).length) continue;
     if (sid === 'sp_swap' &&
         (!r.owners.some(o => o && o.player === p.id) ||
          !p.hand.some(c => CREATURES[c] && CREATURES[c].cost + SPELLS.sp_swap.cost <= p.gold))) continue;
@@ -352,6 +355,14 @@ function endTurn(r) {
 
 const GATE_TILE = TILES.findIndex(t => t.t === 'gate');
 function performMove(r, p, steps, meta, moveLabel) {
+  // 初回の移動時: ダイスの後に進行方向を選ぶ(矢印UI)
+  if (!p.dir) {
+    r.dirPend = { steps, meta, moveLabel };
+    return ask(r, p.id, 'direction', `${steps}が出た! どちらの方向へ進む?`, [
+      { id: 'dir:1', label: '⬅ 左回りに進む' },
+      { id: 'dir:-1', label: '右回りに進む ➡' },
+    ]);
+  }
   r.lastDice = Object.assign({ player: p.id, at: Date.now() }, meta);
   const dir = p.dir || 1;
   let bonus = 0, gotSeal = false, noSeal = false;
@@ -359,6 +370,7 @@ function performMove(r, p, steps, meta, moveLabel) {
     p.pos = (p.pos + dir + TILES.length) % TILES.length;
     if (p.pos === GATE_TILE && !p.seal) { p.seal = true; gotSeal = true; }
     if (p.pos === 0) {
+      p.lap = (p.lap || 1) + 1;  // 刻印の有無に関わらず周回は進む
       if (p.seal) { bonus += RULES.castleBonus; p.seal = false; }
       else noSeal = true;
     }
@@ -369,7 +381,16 @@ function performMove(r, p, steps, meta, moveLabel) {
     const lands = r.owners.reduce((n, o, i) => n + (o && o.player === p.id ? landValue(r, i) : 0), 0);
     const lb = Math.round(lands * 0.1);
     p.gold += bonus + lb;
-    r.lastDice.castle = { gold: bonus, landBonus: lb, drew: 1 };
+    // 帰還の癒し: 自領地のクリーチャーの負傷を10回復(最大値は超えない)
+    const healed = [];
+    r.owners.forEach((o, i) => {
+      if (o && o.player === p.id && o.dmg > 0) {
+        o.dmg = Math.max(0, o.dmg - 10);
+        healed.push(i);
+      }
+    });
+    if (healed.length) log(r, `⛨ 帰還の癒し ─ ${p.name}の領地のクリーチャーが回復した(負傷-10 × ${healed.length}体)`);
+    r.lastDice.castle = { gold: bonus, landBonus: lb, drew: 1, healed };
     log(r, `${p.name}は${moveLabel}(城通過 +${bonus}G${lb ? `+領地ボーナス${lb}G` : ''}、カードを選択!)`);
     // 勝利判定: ボーナス込みで総資産8000G以上
     if (points(r, p) >= ASSET_GOAL) {
@@ -432,6 +453,26 @@ function resolveTile(r, p) {
 function upCost(r, p, i) {
   const base = RULES.levelCost[r.owners[i].level + 1];
   return TILES[i].e === CHARS[p.charId].elem ? Math.round(base * 0.8) : base;
+}
+// 移動の呪文: マスiの隣で移動可能な行き先(空き属性地 or 結界のない敵属性地)
+function stepDests(r, p, i) {
+  const dests = [];
+  for (const d of [-1, 1]) {
+    const j = (i + d + TILES.length) % TILES.length;
+    const t = TILES[j];
+    if (t.t !== 'land') continue;
+    const o = r.owners[j];
+    if (!o) dests.push(j);
+    else if (o.player !== p.id && !r.barrier[o.player]) dests.push(j);
+  }
+  return dests;
+}
+function stepSources(r, p) {
+  const src = [];
+  r.owners.forEach((o, i) => {
+    if (o && o.player === p.id && stepDests(r, p, i).length) src.push(i);
+  });
+  return src;
 }
 // Lv l→l+1 単段の費用(親和込み)
 function upCostTo(r, p, i, lv) {
@@ -552,10 +593,15 @@ function resolveBattle(r) {
   }
   const aEff = aJinxed ? null : aSup, dEff = dJinxed ? null : dSup;
 
+  // --- 進化ステータスの適用(Lv3以上の防衛側/移動の呪文で進出した攻撃側) ---
+  const mvSrc = b.moveFrom !== undefined ? r.owners[b.moveFrom] : null;
+  const dEvoS = defEvolved && dc.evo ? { st: dc.evoSt, hp: dc.evoHp } : { st: dc.st, hp: dc.hp };
+  const aEvo = mvSrc ? isEvolved(mvSrc) : false;
+  const aEvoS = aEvo && ac.evo ? { st: ac.evoSt, hp: ac.evoHp } : { st: ac.st, hp: ac.hp };
   // --- 擬態(基礎値のコピー) ---
-  let aBase = { st: ac.st, hp: ac.hp }, dBase = { st: dc.st, hp: dc.hp };
-  if (baseId(b.atkCreature) === 'mimic') { aBase = { st: dc.st, hp: dc.hp }; notes.push('【擬態】ミミックが' + dc.name + 'をコピー!'); }
-  if (baseId(o.creature) === 'mimic') { dBase = { st: ac.st, hp: ac.hp }; notes.push('【擬態】ミミックが' + ac.name + 'をコピー!'); }
+  let aBase = { st: aEvoS.st, hp: aEvoS.hp }, dBase = { st: dEvoS.st, hp: dEvoS.hp };
+  if (baseId(b.atkCreature) === 'mimic') { aBase = { st: dEvoS.st, hp: dEvoS.hp }; notes.push('【擬態】ミミックが' + dc.name + 'をコピー!'); }
+  if (baseId(o.creature) === 'mimic') { dBase = { st: aEvoS.st, hp: aEvoS.hp }; notes.push('【擬態】ミミックが' + ac.name + 'をコピー!'); }
 
   // --- 攻撃側AT ---
   let st = aBase.st + (aEff ? aEff.st : 0);
@@ -598,14 +644,17 @@ function resolveBattle(r) {
   // 反撃(防衛側が生き残った場合のみ): 防衛AT vs 攻撃側HP+DF(支援)
   const counterSt = win ? 0 : dBase.st + (dEff ? dEff.st : 0);
   const atkDF = aEff ? aEff.hp : 0;
+  const atkCarried = mvSrc ? (mvSrc.dmg || 0) : 0;
+  const atkEffHp = Math.max(1, aBase.hp - atkCarried);
   const counterDealt = win ? 0 : Math.max(0, counterSt - atkDF);
-  const atkSurvived = win ? true : counterDealt < aBase.hp;
+  const atkSurvived = win ? true : counterDealt < atkEffHp;
 
   r.lastBattle = { tile: b.tile, attacker: atk.id, defender: def.id,
     atkCreature: b.atkCreature, defCreature: o.creature,
     atkSupport: b.supports[atk.id], defSupport: b.supports[def.id],
     st: atkDmg, hp: effHp, df: defDF, dealt,
-    atkHp: aBase.hp, atkDf: atkDF, counterSt, counterDealt, atkSurvived,
+    atkHp: atkEffHp, atkDf: atkDF, counterSt, counterDealt, atkSurvived,
+    moveFrom: b.moveFrom,
     remainHp: win ? 0 : effHp - dealt,
     terrain, curse, notes, win, at: Date.now() };
   log(r, `⚔ ${atk.name}の${ac.name}(AT${atkDmg}) vs ${def.name}の${dc.name}(HP${effHp}/DF${defDF}) → 実ダメージ${dealt}`);
@@ -613,14 +662,20 @@ function resolveBattle(r) {
 
   if (win) {
     // 一撃で削り切った → 侵略成功
-    atk.hand.splice(atk.hand.indexOf(b.atkCreature), 1);
+    if (mvSrc) {
+      r.owners[b.moveFrom] = null;  // 元の土地は空き地に(クリーチャーは移動)
+    } else {
+      atk.hand.splice(atk.hand.indexOf(b.atkCreature), 1);
+    }
     if (baseId(o.creature) === 'gaston') {
       def.hand.push(o.creature);
       log(r, `【旋風】${def.name}のガストンは風に乗って帰還した`);
     } else {
       def.discard.push(o.creature);
     }
-    r.owners[b.tile] = { player: atk.id, level: o.level, creature: b.atkCreature };  // 占領クリーチャーは全快
+    r.owners[b.tile] = mvSrc
+      ? { player: atk.id, level: o.level, creature: b.atkCreature, dmg: atkCarried }  // 移動侵略は負傷維持
+      : { player: atk.id, level: o.level, creature: b.atkCreature };  // 手札からの占領は全快
     atk.battleWins++;
     log(r, `${ac.name}の一撃(実ダメージ${dealt})が${dc.name}を討ち取った! Lv${o.level}の土地を奪取!`);
     if (drawCards(r, atk, 1)) log(r, `戦勝の報酬 ─ ${atk.name}はカードを1枚引いた`);
@@ -634,20 +689,34 @@ function resolveBattle(r) {
     log(r, `${dc.name}は${dealt}のダメージに耐えた!(残HP${effHp - dealt})${atkDmg > dealt ? ` ─ DFが${atkDmg - dealt}軽減` : ''}`);
     if (!atkSurvived) {
       if (baseId(b.atkCreature) === 'gaston') {
-        log(r, `【旋風】反撃を受けたガストンは風に乗って帰還した`);
+        if (mvSrc) r.owners[b.moveFrom] = null;
+        atk.hand.push(b.atkCreature);
+        if (!mvSrc) atk.hand.splice(atk.hand.lastIndexOf(b.atkCreature), 1);  // 手札発ならそのまま残す(重複防止)
+        log(r, `【旋風】反撃を受けたガストンは風に乗って手札へ帰還した`);
+      } else if (mvSrc) {
+        r.owners[b.moveFrom] = null;  // 移動侵略で討たれた: 元の土地ごと失う
+        atk.discard.push(b.atkCreature);
+        log(r, `${dc.name}の反撃(実ダメージ${counterDealt})が${ac.name}を討ち取った! 元の土地も空き地に…`);
       } else {
         atk.hand.splice(atk.hand.indexOf(b.atkCreature), 1);
         atk.discard.push(b.atkCreature);
         log(r, `${dc.name}の反撃(実ダメージ${counterDealt})が${ac.name}を討ち取った!`);
       }
+    } else if (mvSrc) {
+      mvSrc.dmg = atkCarried + counterDealt;  // 削られた状態で元のマスへ戻る
+      log(r, `${ac.name}は反撃(実ダメージ${counterDealt})を受けつつ元の土地へ戻った(負傷${mvSrc.dmg})`);
     } else {
       log(r, `${ac.name}は反撃(実ダメージ${counterDealt})を耐えて帰還した(HPは全快する)`);
     }
-    const toll = tollOf(r, b.tile);
-    payTo(r, atk, def, toll);
-    kingBonus(r, def);
+    if (!mvSrc) {
+      const toll = tollOf(r, b.tile);
+      payTo(r, atk, def, toll);
+      log(r, `${def.name}が防衛成功! 通行料${toll}Gも支払わせた`);
+      kingBonus(r, def);
+    } else {
+      log(r, `${def.name}が防衛成功!(移動の呪文による侵略のため通行料なし)`);
+    }
     def.battleWins++;
-    log(r, `${def.name}が防衛成功! 通行料${toll}Gも支払わせた`);
     if (drawCards(r, def, 1)) log(r, `防衛の報酬 ─ ${def.name}はカードを1枚引いた`);
     if (baseId(o.creature) === 'barbaro') {
       const extra = payTo(r, atk, def, defEvolved ? 40 : 20);
@@ -667,7 +736,10 @@ function handleChoose(r, playerId, optionId) {
 
   // --- キャラ選択 ---
   if (pend.type === 'select_char') {
+    if (optionId === 'unpick') { p.charId = null; p.confirmed = false; return askSelect(r, p); }
     p.charId = optionId; p.confirmed = true;
+    if (!r.players.every(q => q.confirmed))
+      ask(r, p.id, 'select_wait', '他のプレイヤーを待っています…', [{ id: 'unpick', label: 'キャラを選び直す' }]);
     log(r, `${p.name}は${CHARS[optionId].name}を選択`);
     return trySelectResolve(r);
   }
@@ -733,8 +805,9 @@ function handleChoose(r, playerId, optionId) {
     };
     if (sid === 'sp_gold') {
       castLog();
-      p.gold += 120;
-      log(r, `${p.name}は120Gを得た(所持${p.gold}G)`);
+      const gain = (p.lap || 1) * 100;
+      p.gold += gain;
+      log(r, `第${p.lap || 1}周 ─ ${p.name}は${gain}Gを得た(所持${p.gold}G)`);
       return askRoll(r, p);
     }
     if (sid === 'sp_insight') {
@@ -756,11 +829,11 @@ function handleChoose(r, playerId, optionId) {
       return askRoll(r, p);
     }
     if (sid === 'sp_weaken') {
-      const opts = r.owners.map((o, i) => o && o.player !== p.id && !r.curses[i] && baseId(o.creature) !== 'beruf'
-        ? { id: 'ct:' + i, label: `${pById(r, o.player).name}の${CREATURES[o.creature].name}(${TILES[i].e} Lv${o.level})` }
+      const opts = r.owners.map((o, i) => o && o.player !== p.id
+        ? { id: 'ct:' + i, label: `${pById(r, o.player).name}の${CREATURES[o.creature].name}(${TILES[i].e} Lv${o.level}${o.dmg ? ' 負傷' + o.dmg : ''})` }
         : null).filter(Boolean);
       opts.push({ id: 'ct:cancel', label: 'やめる' });
-      return ask(r, p.id, 'curse_target', '☠ どの土地に呪いを掛ける?', opts);
+      return ask(r, p.id, 'curse_target', '☠ どの土地に衰弱を放つ?(20ダメージ)', opts);
     }
     if (sid === 'sp_move') {
       const opts = r.owners.map((o, i) => o && o.player === p.id
@@ -776,6 +849,14 @@ function handleChoose(r, playerId, optionId) {
       opts.push({ id: 'sw:cancel', label: 'やめる' });
       return ask(r, p.id, 'swap_land', '交代 ─ どの領地のクリーチャーを入れ替える?', opts);
     }
+    if (sid === 'sp_step') {
+      const opts = stepSources(r, p).map(i => ({
+        id: 'st:' + i,
+        label: `${CREATURES[r.owners[i].creature].name}(${TILES[i].e} Lv${r.owners[i].level}${r.owners[i].dmg ? ' 負傷' + r.owners[i].dmg : ''})`,
+      }));
+      opts.push({ id: 'st:cancel', label: 'やめる' });
+      return ask(r, p.id, 'step_a', '移動 ─ どのクリーチャーを動かす?', opts);
+    }
     if (sid === 'sp_quake') {
       const opts = r.owners.map((o, i) => o && o.player !== p.id && o.level >= 2
         ? { id: 'qt:' + i, label: `${pById(r, o.player).name}の${CREATURES[o.creature].name}(${TILES[i].e} Lv${o.level}→${o.level - 1})` }
@@ -787,13 +868,24 @@ function handleChoose(r, playerId, optionId) {
   if (pend.type === 'curse_target') {
     if (optionId !== 'ct:cancel') {
       const i = +optionId.slice(3);
-      p.hand.splice(p.hand.indexOf('sp_weaken'), 1);
-      p.discard.push('sp_weaken');
-      if (SPELLS.sp_weaken.cost) p.gold -= SPELLS.sp_weaken.cost;
-      r.curses[i] = { by: p.id, hp: SPELLS.sp_weaken.hp };
-      r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_weaken.name, at: Date.now() };
       const o = r.owners[i];
-      log(r, `☠ ${p.name}が${pById(r, o.player).name}の${CREATURES[o.creature].name}に衰弱の呪文を放った!(HP-${SPELLS.sp_weaken.hp})`);
+      if (o && o.player !== p.id) {
+        p.hand.splice(p.hand.indexOf('sp_weaken'), 1);
+        p.discard.push('sp_weaken');
+        if (SPELLS.sp_weaken.cost) p.gold -= SPELLS.sp_weaken.cost;
+        o.dmg = (o.dmg || 0) + SPELLS.sp_weaken.hp;
+        r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_weaken.name, at: Date.now() };
+        const owner = pById(r, o.player);
+        const cE = CREATURES[o.creature];
+        const baseHp = isEvolved(o) && cE.evo ? cE.evoHp : cE.hp;
+        log(r, `☠ ${p.name}が${owner.name}の${cE.name}に衰弱の呪文!(20ダメージ・累計${o.dmg})`);
+        if (baseHp - o.dmg <= 0) {
+          // 滅び: クリーチャーは持ち主の捨て札へ・土地は空き地に(獲得・戦勝数・ドローなし)
+          owner.discard.push(o.creature);
+          r.owners[i] = null;
+          log(r, `${cE.name}は衰弱に蝕まれて滅びた… 土地は空き地になった`);
+        }
+      }
     }
     return askRoll(r, p);
   }
@@ -811,6 +903,48 @@ function handleChoose(r, playerId, optionId) {
       }
     }
     return askMarket(r, p);
+  }
+  if (pend.type === 'step_a') {
+    if (optionId === 'st:cancel') return askRoll(r, p);
+    const i = +optionId.slice(3);
+    if (!r.owners[i] || r.owners[i].player !== p.id) return askRoll(r, p);
+    p.stepI = i;
+    const opts = stepDests(r, p, i).map(j => {
+      const o = r.owners[j];
+      return { id: 'sd:' + j, label: o
+        ? `${pById(r, o.player).name}の${CREATURES[o.creature].name}(${TILES[j].e} Lv${o.level})へ侵略!`
+        : `空き地(${TILES[j].e})へ移動して取得` };
+    });
+    opts.push({ id: 'sd:cancel', label: 'やめる' });
+    return ask(r, p.id, 'step_b', '移動 ─ どちらのマスへ?', opts);
+  }
+  if (pend.type === 'step_b') {
+    if (optionId === 'sd:cancel') { p.stepI = null; return askRoll(r, p); }
+    const i = p.stepI, j = +optionId.slice(3);
+    const src = r.owners[i];
+    if (src && src.player === p.id && p.hand.includes('sp_step') &&
+        stepDests(r, p, i).includes(j) && SPELLS.sp_step.cost <= p.gold) {
+      p.hand.splice(p.hand.indexOf('sp_step'), 1);
+      p.discard.push('sp_step');
+      p.gold -= SPELLS.sp_step.cost;
+      r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_step.name, at: Date.now() };
+      p.stepI = null;
+      const dest = r.owners[j];
+      if (!dest) {
+        // 空き地へ移動: Lv1で取得・負傷維持・元は空き地に
+        r.owners[j] = { player: p.id, level: 1, creature: src.creature, dmg: src.dmg || 0 };
+        r.owners[i] = null;
+        log(r, `📜 ${p.name}の移動の呪文! ${CREATURES[r.owners[j].creature].name}が隣の空き地(${TILES[j].e})へ進出し、Lv1の領地とした`);
+        return askRoll(r, p);
+      }
+      // 敵領地へ: そのまま侵略(通行料なし)。攻撃クリーチャーは土地から出撃
+      log(r, `📜 ${p.name}の移動の呪文! ${CREATURES[src.creature].name}が隣の${pById(r, dest.player).name}の領地へ攻め込む!(通行料なし)`);
+      r.battle = { tile: j, attacker: p.id, defender: dest.player,
+                   atkCreature: src.creature, moveFrom: i, supports: {} };
+      return askSupports(r);
+    }
+    p.stepI = null;
+    return askRoll(r, p);
   }
   if (pend.type === 'move_a') {
     if (optionId === 'mv:cancel') return askRoll(r, p);
@@ -869,9 +1003,14 @@ function handleChoose(r, playerId, optionId) {
   }
   if (pend.type === 'direction') {
     p.dir = optionId === 'dir:-1' ? -1 : 1;
-    delete r.pending[p.id];
-    log(r, `${p.name}は${p.dir === 1 ? '時計回り' : '反時計回り'}に進む`);
-    if (r.players.every(q => q.dir)) beginTurn(r);
+    log(r, `${p.name}は${p.dir === 1 ? '左回り' : '右回り'}に進むことにした(以後変更不可)`);
+    const dp = r.dirPend;
+    r.dirPend = null;
+    if (dp) return performMove(r, p, dp.steps, dp.meta, dp.moveLabel);
+    return askRoll(r, p);
+  }
+  if (pend.type === 'select_wait') {
+    if (optionId === 'unpick') { p.charId = null; p.confirmed = false; return askSelect(r, p); }
     return;
   }
   if (pend.type === 'sell') {
@@ -1102,10 +1241,11 @@ function trySelectResolve(r) {
 }
 function startGame(r) {
   r.phase = 'playing';
+  r.pending = {};
   const order = r.players.slice().sort(() => Math.random() - 0.5);
   r.players = order;
   for (const p of r.players) {
-    p.pos = 0; p.gold = RULES.startGold;
+    p.pos = 0; p.gold = RULES.startGold; p.lap = 1;
     p.deck = shuffle(CHAR_DECKS[p.charId].slice());
     p.discard = []; p.exile = []; p.hand = [];
     p.gems = 0; p.treasures = 0; p.battleWins = 0; p.shrineVisits = 0; p.ultUsed = false;
@@ -1113,14 +1253,8 @@ function startGame(r) {
   }
   for (const p of r.players) drawCards(r, p, RULES.startHand);  // 全員に初期手札を配る
   log(r, `全員のキャラが確定! ゲーム開始(手番順: ${r.players.map(p => p.name).join(' → ')})`);
-  // 進行方向の選択(全員同時)
-  for (const p of r.players) {
-    p.dir = 0;
-    ask(r, p.id, 'direction', 'どちら回りで進む?(ゲーム中は変更できない)', [
-      { id: 'dir:1', label: '時計回り ─ 門(強化/ドラフト/鍛錬)が近い' },
-      { id: 'dir:-1', label: '反時計回り ─ 祠と市場が近い' },
-    ]);
-  }
+  for (const p of r.players) p.dir = 0;  // 方向は初回のダイス後に選ぶ
+  beginTurn(r);
 }
 
 // ===== 公開状態とHTTP =====
@@ -1153,6 +1287,7 @@ function publicState(r, viewerId) {
       bankrupt: !!p.bankrupt,
       dir: p.dir || 1,
       seal: !!p.seal,
+      lap: p.lap || 1,
     })),
   };
 }
