@@ -229,7 +229,14 @@
       border:3px solid var(--gold); }
   .duelist2.win .die2 { box-shadow:0 0 24px rgba(242,208,98,.85); }
 
-  /* マス変化のクローズアップ用メッセージ(中央下 ─ スポットしたマスと被らない位置) */
+  /* 戦闘HPゲージ */
+  .hpBarWrap { position:relative; width:76%; height:2.8vh; margin:.8vh auto 0; background:rgba(0,0,0,.55);
+      border:1px solid var(--gold); border-radius:1.5vh; overflow:hidden; }
+  .hpBar { height:100%; width:100%; background:linear-gradient(90deg,#7FD08A,#4E9E5C); }
+  .hpNum { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      font-size:2vh; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.9); font-family:sans-serif;
+      font-variant-numeric:tabular-nums; letter-spacing:1px; }
+  /* マス変化のクローズアップ用メッセージ(中央下 ─ ズームしたマスと被らない位置) */
   #tileMsg { position:fixed; left:50%; bottom:5vh; transform:translateX(-50%); z-index:59;
       background:rgba(16,13,36,.9); border:1px solid var(--gold); border-radius:1.2vh;
       padding:1.4vh 3.6vh; font-size:2.8vh; letter-spacing:2px; color:var(--parchment);
@@ -640,7 +647,7 @@ const GS = 1.16;                          // マス間隔の倍率(タイル自�
 const OX = 640, OY = 150;
 const proj = (gx, gy) => ({ x: OX + (gx - gy) * TW * GS / 2, y: OY + (gx + gy) * TH * GS / 2 });
 // アートが存在するクリーチャー(それ以外は色トークン表示)
-const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby','ludi','garble','barbaro','detropas','goagoa','fugorm','beruf','zati','magado','cresteria','mimic','pakawata','bedebero']);
+const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby','ludi','garble','barbaro','detropas','goagoa','fugorm','beruf','zati','magado','cresteria','mimic','pakawata','bedebero','avalanche']);
 
 let code = null, state = null, prev = { phase: null, turn: -1, battleAt: 0, diceAt: 0 };
 const pawnAnim = {}, prevPos = {};
@@ -705,6 +712,8 @@ async function playDuel(d) {
 }
 let bannerT = null, spotT = null, lastCalloutKey = '';
 async function playUlt(u) {
+  cutBusy++;
+  try {
   const ch = state.catalog.CHARS[u.charId];
   hideLogo(true);
   $('bflash').classList.add('go');
@@ -722,6 +731,7 @@ async function playUlt(u) {
   $('ultCut').classList.remove('on');
   hideLogo(false);
   showBanner(sic('ult') + '【' + u.name + '】', state.catalog.ULTS[u.charId].desc, 2800);
+  } finally { cutBusy = Math.max(0, cutBusy - 1); }
 }
 const hideLogo = v => { $('logoImg').style.opacity = v ? 0 : 1; };
 function worldPos(i) { return proj(GEO[i][0], GEO[i][1]); }
@@ -744,15 +754,20 @@ function showSpot(i, ms = 1600) {
   clearTimeout(spotT);
   spotT = setTimeout(() => $('spot').classList.remove('show'), ms);
 }
-// マス変化のクローズアップ: スポットライト+中央下メッセージ(設計思想: マスに変化があれば必ず見せる)
-let tileMsgT = null;
+// マス変化のクローズアップ: カメラズーム+中央下メッセージ(設計思想: マスに変化があれば必ず見せる)
+let tileMsgT = null, closeupTile = null;
 function tileCloseup(i, html, dur = 2800) {
-  showSpot(i, dur);
+  closeupTile = i;          // updateTileInfoがこのマスへのズームを維持する
+  setZoom(i);
   const el = $('tileMsg');
   el.innerHTML = iconize(html);
   el.classList.add('show');
   clearTimeout(tileMsgT);
-  tileMsgT = setTimeout(() => el.classList.remove('show'), dur);
+  tileMsgT = setTimeout(() => {
+    el.classList.remove('show');
+    closeupTile = null;
+    render();               // ズームを通常状態に戻す
+  }, dur);
   bannerUntil = Math.max(bannerUntil, Date.now() + dur + 200);
 }
 function fxAt(i, cls, color, dy = 0) {
@@ -809,6 +824,7 @@ function iconize(t) {
   return s.replace(EMOJI_RE, '').replace(/ {2,}/g, ' ');
 }
 let bannerUntil = 0;
+let cutBusy = 0;  // 進行中のカットイン/戦闘演出の数。>0の間は次の演出(バナー・TURN START)を発火しない
 const bq = [];
 function queueBanner(main, sub, dur) { bq.push([main, sub, dur]); }
 function showBanner(main, sub, dur) {
@@ -998,9 +1014,10 @@ function tileInfoHTML(i) {
   const EJA = { fire: '火', water: '水', earth: '土', wind: '風' };
   const eBadge = t.e ? `<span class="tiElem" style="background:${RUNE[t.e]}">${EJA[t.e]}</span>` : '';
   if (!o) {
+    // 1カラムで自然に折り返す(2カラムだと細切れになって読みにくい)
     return `<div class="tiHead">${eBadge}空き地</div>
-      <div class="tiBody"><div class="tiDesc">${EJA[t.e]}属性の土地。<br>クリーチャーを召喚して<br>領地にできる。</div>
-      <div class="tiSub">同属性のクリーチャーは地形補正を得る</div></div>`;
+      <div class="tiDesc">${EJA[t.e]}属性の土地。クリーチャーを召喚して領地にできる。</div>
+      <div class="tiSub">同属性のクリーチャーは地形補正を得る</div>`;
   }
   const pl = player(o.player);
   const cr = C.CREATURES[o.creature];
@@ -1029,6 +1046,11 @@ function tileInfoHTML(i) {
 }
 function updateTileInfo() {
   const el = $('tileInfo');
+  if (closeupTile !== null) {  // クローズアップ演出中はそのマスへのズームを優先
+    setZoom(closeupTile);
+    el.classList.remove('on'); el.dataset.k = '';
+    return;
+  }
   let target = null;
   if (state.phase === 'playing' && !hopState && !animBusy && !$('battle').classList.contains('on')) {
     const tp = state.players[state.turn];
@@ -1322,6 +1344,8 @@ function updateDirCut() {
   }
 }
 function sideCut(pl, msgHtml, dur) {
+  cutBusy++;
+  setTimeout(() => { cutBusy = Math.max(0, cutBusy - 1); }, dur + 100);
   const el = $('turnCutin');
   $('tcImg').src = '/assets/full_' + pl.charId + '.png';
   el.style.setProperty('--tcc', pl.color);
@@ -1358,17 +1382,21 @@ function showTelop(kind, sub) {
   img.classList.add('play'); s.classList.add('play');
 }
 async function playBattle(b) {
+  cutBusy++;
+  try {
   const C = state.catalog;
   const atk = player(b.attacker), def = player(b.defender);
   const dLv = state.owners[b.tile] ? state.owners[b.tile].level : 1;
   $('bAtk').innerHTML = `${artHTML(b.atkCreature, 1, 220)}
     <div class="bname" style="color:${atk.color}">${atk.name} ─ ${C.CREATURES[b.atkCreature].name}</div>
-    <div class="bnum">AT ${b.st} <span style="font-size:2.4vh;opacity:.85">/ HP ${b.atkHp}${b.atkDf ? ' / DF ' + b.atkDf : ''}</span></div>
+    <div class="bnum">AT ${b.st}${b.atkDf ? ' <span style="font-size:2.4vh;opacity:.85">/ DF ' + b.atkDf + '</span>' : ''}</div>
+    <div class="hpBarWrap"><div class="hpBar" id="hpBarA"></div><div class="hpNum" id="hpNumA">HP ${b.atkHp}</div></div>
     <div class="bsub">${b.atkSupport !== 'none' ? '+ ' + C.SUPPORTS[b.atkSupport].name : '&nbsp;'}</div>
     <div class="bhpA" style="position:relative"></div>`;
   $('bDef').innerHTML = `${artHTML(b.defCreature, dLv, 220)}
     <div class="bname" style="color:${def.color}">${def.name} ─ ${cname(b.defCreature, dLv)}</div>
-    <div class="bnum">HP <span id="bDefHp">${b.hp}</span> <span style="font-size:2.4vh;opacity:.85">/ DF ${b.df} / AT ${C.CREATURES[b.defCreature].st}</span></div>
+    <div class="bnum">AT ${C.CREATURES[b.defCreature].st} <span style="font-size:2.4vh;opacity:.85">/ DF ${b.df}</span></div>
+    <div class="hpBarWrap"><div class="hpBar" id="hpBarD"></div><div class="hpNum" id="hpNumD">HP ${b.hp}</div></div>
     <div class="bsub">DF内訳: 地形${b.terrain}${b.defSupport !== 'none' ? ' + ' + C.SUPPORTS[b.defSupport].name : ''}${b.curse ? ' ｜ 呪い−' + b.curse : ''}</div>`;
   const card = (sup) => `<div class="scardB"><div class="sflipB">
     <div class="sfaceB sbackB">❖</div>
@@ -1396,12 +1424,33 @@ async function playBattle(b) {
     $(sideId).appendChild(el);
     setTimeout(() => el.remove(), 1200);
   };
+  // HPゲージ+カウントダウン(数字だけでは減少量が分かりにくい)
+  const animateHp = (barId, numId, from, to, max, ms = 900) => {
+    const bar = $(barId), num = $(numId);
+    const t0 = performance.now();
+    const step = now => {
+      const k = Math.min(1, (now - t0) / ms);
+      const v = Math.round(from + (to - from) * k);
+      const pct = Math.max(0, v / max * 100);
+      if (bar) {
+        bar.style.width = pct + '%';
+        bar.style.background = pct > 50 ? 'linear-gradient(90deg,#7FD08A,#4E9E5C)'
+          : pct > 25 ? 'linear-gradient(90deg,#E8C55A,#B8901F)' : 'linear-gradient(90deg,#D96A50,#A3402B)';
+      }
+      if (num) num.textContent = 'HP ' + Math.max(0, v);
+      if (k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  };
+  animateHp('hpBarA', 'hpNumA', b.atkHp, b.atkHp, b.atkHp, 1);  // 初期表示(満タン)
+  animateHp('hpBarD', 'hpNumD', b.hp, b.hp, b.hp, 1);
   // --- 先攻: 攻撃側の一撃 ---
   $('bcap').textContent = '攻撃側の一撃!';
   $('bAtk').classList.add('lungeL');
   await wait(320);
   $('bflash').classList.add('go'); $('battle').classList.add('shake');
   pop('bDef', '−' + b.dealt + (b.st > b.dealt ? '(DF−' + (b.st - b.dealt) + ')' : ''));
+  animateHp('hpBarD', 'hpNumD', b.hp, b.win ? 0 : b.remainHp, b.hp);
   await wait(450);
   $('bflash').classList.remove('go'); $('battle').classList.remove('shake');
   $('bAtk').classList.remove('lungeL');
@@ -1414,8 +1463,6 @@ async function playBattle(b) {
     await wait(1800);
   } else {
     // 耐えた → 残HP表示と反撃
-    const hpEl = $('bDefHp');
-    if (hpEl) hpEl.textContent = b.remainHp;
     $('bcap').textContent = `耐えた! 残りHP ${b.remainHp}(負傷は引き継ぐ)`;
     await wait(1100);
     $('bcap').textContent = '防衛側の反撃!';
@@ -1423,6 +1470,7 @@ async function playBattle(b) {
     await wait(320);
     $('bflash').classList.add('go'); $('battle').classList.add('shake');
     pop('bAtk', '−' + b.counterDealt + (b.counterSt > b.counterDealt ? '(DF−' + (b.counterSt - b.counterDealt) + ')' : ''));
+    animateHp('hpBarA', 'hpNumA', b.atkHp, b.atkSurvived ? Math.max(0, b.atkHp - b.counterDealt) : 0, b.atkHp);
     await wait(450);
     $('bflash').classList.remove('go'); $('battle').classList.remove('shake');
     $('bDef').classList.remove('lungeR');
@@ -1443,12 +1491,13 @@ async function playBattle(b) {
   showBanner(b.win ? '侵略成功!' : sic('up') + ' 防衛成功!',
     b.win ? atk.name + 'が' + def.name + 'の土地を奪取!'
           : def.name + 'が耐え抜いた(残HP' + b.remainHp + ')');
+  } finally { cutBusy = Math.max(0, cutBusy - 1); }
 }
 
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.59';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.60';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -1768,6 +1817,30 @@ function render() {
         queueBanner(player(state.titles.pilgrim).name + 'が称号「大巡礼者」を獲得!', '資産+500G(奪い合い)', 2600);
     }
     prev.titlesKey = tk;
+    // 連鎖数の変動を告知(同属性2マス以上に関わる増減で地価倍率を表示)
+    {
+      const EJA2 = { fire: '火', water: '水', earth: '土', wind: '風' };
+      const CHAIN_MUL2 = [0, 1.0, 1.4, 1.8, 2.2, 2.6];
+      const ck2 = {};
+      state.players.forEach(p => ['fire', 'water', 'earth', 'wind'].forEach(e => {
+        ck2[p.id + ':' + e] = state.owners.filter((o, i) => o && o.player === p.id && state.tiles[i].e === e).length;
+      }));
+      if (prev.chainsKey) {
+        const before = JSON.parse(prev.chainsKey);
+        for (const [k, n] of Object.entries(ck2)) {
+          const b0 = before[k] || 0;
+          if (n === b0 || Math.max(n, b0) < 2) continue;
+          const [pid2, e] = k.split(':');
+          const pl2 = player(pid2);
+          if (!pl2) continue;
+          const mul = CHAIN_MUL2[Math.min(5, Math.max(1, n))];
+          queueBanner(
+            n > b0 ? `${EJA2[e]}の連鎖 ×${n}!` : `${EJA2[e]}の連鎖が ×${n} に減少…`,
+            `${pl2.name}の${EJA2[e]}属性領地${n}つ ─ 地価倍率${mul}倍`, 2600);
+        }
+      }
+      prev.chainsKey = JSON.stringify(ck2);
+    }
     state.players.forEach(p => {
       const p0 = prev['pts_' + p.id];
       if (p0 !== undefined && p0 < (state.reachAt || state.target - 1) && p.points >= (state.reachAt || state.target - 1) && p.points < state.target)
@@ -1788,7 +1861,7 @@ function render() {
     }
   } else $('turnPortrait').classList.remove('show');
   // キューされたバナーを順に表示(移動中・別バナー表示中は待つ)
-  if (bq.length && !animBusy && Date.now() > bannerUntil) {
+  if (bq.length && !animBusy && !cutBusy && Date.now() > bannerUntil) {
     const x = bq.shift();
     if (typeof x === 'function') x();  // 関数キュー: カットイン・クローズアップ等
     else showBanner(x[0], x[1], x[2]);
@@ -1799,7 +1872,7 @@ function render() {
   // TURN STARTテロップ ─ 祠・称号などのバナーを全て消化してから表示
   if (queuedTurn !== null && !animBusy && state.phase === 'playing') {
     const waitMs = bannerUntil + 400 - Date.now();
-    if (waitMs > 0 || bq.length) {
+    if (waitMs > 0 || bq.length || cutBusy) {  // 前の演出が完全に終わるまでTURN STARTを出さない(基本設計思想)
       clearTimeout(prev.turnT);
       prev.turnT = setTimeout(render, Math.max(waitMs, 450) + 30);
     } else {

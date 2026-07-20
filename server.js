@@ -7,11 +7,11 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const VERSION = '0.59';
+const VERSION = '0.60';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
-                levelCost: { 2: 100, 3: 200, 4: 300 }, gemPrice: 80, drawPrice: 100, maxLevel: 4,
+                levelCost: { 2: 100, 3: 450, 4: 950 }, gemPrice: 80, drawPrice: 100, maxLevel: 4,  // v0.60: Lv3/Lv4強化を大型投資に
                 evoLevel: 3, forgeCost: 150,
                 startHand: 5, forgetCost: 80 };  // v0.44: 初期5枚+毎ターン1枚ドロー
 // キャラ別初期デッキ12枚(初期デッキ仕様案v0.1 第12節)
@@ -301,7 +301,7 @@ function kingBonus(r, receiver, tileIdx) {
   return bonus;
 }
 // ===== v0.51 資産経済 =====
-const LV_MUL = { 1: 1, 2: 2.5, 3: 5, 4: 8 };
+const LV_MUL = { 1: 1, 2: 2.5, 3: 10, 4: 36 };  // v0.60: Lv3=10倍(通行料250G)/Lv4=36倍(通行料900G)
 const CHAIN_MUL = [0, 1.0, 1.4, 1.8, 2.2, 2.6];  // 同属性所有数→倍率(5以上は2.6)
 const ASSET_GOAL = 8000, ASSET_REACH = 7000;
 function landValue(r, i) {
@@ -343,7 +343,8 @@ function askRoll(r, p) {
   const opts = [{ id: 'roll', label: '🎲 サイコロを振る' }];
   if (!p.ultUsed && ULTS[p.charId])
     opts.push({ id: 'ult', label: `固有スキル【${ULTS[p.charId].name}】` });
-  for (const sid of [...new Set(p.hand.filter(c => SPELLS[c]))]) {
+  // v0.60: 呪文は1ターンに1回まで(黄金+ひらめきの無限ループ対策)
+  for (const sid of p.spellCast ? [] : [...new Set(p.hand.filter(c => SPELLS[c]))]) {
     if (SPELLS[sid].cost > p.gold) continue;
     if (sid === 'sp_weaken' &&
         !r.owners.some(o => o && o.player !== p.id)) continue;
@@ -376,6 +377,7 @@ function beginTurn(r) {
   if (r.phase !== 'playing') return;
   const p = cur(r);
   drawCards(r, p, 1);  // v0.44: 毎ターン1枚ドロー(手札は持ち越し)
+  p.spellCast = false;  // 呪文は1ターンに1回まで
   p.gale = false;
   p.blade = false;  // 血染めの刃: 次の手番開始まで侵略しなければ解除
   for (const fx of Object.values(r.tileFx))
@@ -950,6 +952,7 @@ function handleChoose(r, playerId, optionId) {
       if (EXILE_SPELLS.has(sid)) { p.exile.push(sid); }
       else p.discard.push(sid);
       if (SPELLS[sid].cost) p.gold -= SPELLS[sid].cost;
+      p.spellCast = true;
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS[sid].name, desc: SPELLS[sid].desc, at: stamp(r) };
       log(r, `📜 ${p.name}が呪文「${SPELLS[sid].name}」を唱えた!${SPELLS[sid].cost ? `(−${SPELLS[sid].cost}G)` : ''}${EXILE_SPELLS.has(sid) ? '(廃棄)' : ''}`);
     };
@@ -1068,6 +1071,7 @@ function handleChoose(r, playerId, optionId) {
         p.hand.splice(p.hand.indexOf('sp_weaken'), 1);
         p.discard.push('sp_weaken');
         if (SPELLS.sp_weaken.cost) p.gold -= SPELLS.sp_weaken.cost;
+        p.spellCast = true;
         r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_weaken.name,
           desc: `${pById(r, o.player).name}の${CREATURES[o.creature].name}に20ダメージ!`, at: stamp(r) };
         log(r, `☠ ${p.name}が${pById(r, o.player).name}の${CREATURES[o.creature].name}に衰弱の呪文!(20ダメージ)`);
@@ -1105,6 +1109,7 @@ function handleChoose(r, playerId, optionId) {
       p.hand.splice(p.hand.indexOf(sid), 1);
       if (EXILE_SPELLS.has(sid)) p.exile.push(sid); else p.discard.push(sid);
       if (SPELLS[sid].cost) p.gold -= SPELLS[sid].cost;
+      p.spellCast = true;
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS[sid].name, desc: SPELLS[sid].desc, at: stamp(r) };
     };
     const fx = () => (r.tileFx[i] = r.tileFx[i] || {});
@@ -1178,6 +1183,7 @@ function handleChoose(r, playerId, optionId) {
       p.hand.splice(p.hand.indexOf('sp_wind_corridor'), 1);
       p.discard.push('sp_wind_corridor');
       p.gold -= SPELLS.sp_wind_corridor.cost;
+      p.spellCast = true;
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_wind_corridor.name,
         desc: r.owners[j] ? `${CREATURES[src.creature].name}が隣の敵領地へ侵略開始!(通行料なし)`
                           : `${CREATURES[src.creature].name}が隣の空き地へ渡り、Lv1の領地に`, at: stamp(r) };
@@ -1226,6 +1232,7 @@ function handleChoose(r, playerId, optionId) {
       p.hand.splice(p.hand.indexOf('sp_step'), 1);
       p.discard.push('sp_step');
       p.gold -= SPELLS.sp_step.cost;
+      p.spellCast = true;
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_step.name,
         desc: r.owners[j] ? `${CREATURES[src.creature].name}が隣の敵領地へ侵略!(通行料なし)`
                           : `${CREATURES[src.creature].name}が隣の空き地へ進出し、Lv1の領地に`, at: stamp(r) };
@@ -1266,6 +1273,7 @@ function handleChoose(r, playerId, optionId) {
         p.hand.splice(p.hand.indexOf('sp_move'), 1);
         p.discard.push('sp_move');
         p.gold -= SPELLS.sp_move.cost;
+        p.spellCast = true;
         r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_move.name,
           desc: `${CREATURES[ob.creature].name}と${CREATURES[oa.creature].name}が入れ替わった`, at: stamp(r) };
         log(r, `📜 ${p.name}が転移の呪文! ${CREATURES[ob.creature].name}と${CREATURES[oa.creature].name}が入れ替わった(−${SPELLS.sp_move.cost}G)`);
@@ -1298,6 +1306,7 @@ function handleChoose(r, playerId, optionId) {
         p.hand.splice(p.hand.indexOf('sp_swap'), 1);
         p.discard.push('sp_swap');
         p.gold -= SPELLS.sp_swap.cost + CREATURES[c].cost;
+        p.spellCast = true;
         r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_swap.name,
           desc: `${CREATURES[oldC].name}に代わり${CREATURES[c].name}が領地に立った`, at: stamp(r) };
         log(r, `📜 ${p.name}が交代の呪文! ${CREATURES[oldC].name}に代わり${CREATURES[c].name}が領地に立った(−${SPELLS.sp_swap.cost + CREATURES[c].cost}G)`);
@@ -1348,6 +1357,7 @@ function handleChoose(r, playerId, optionId) {
       p.hand.splice(p.hand.indexOf('sp_quake'), 1);
       p.exile.push('sp_quake');
       if (SPELLS.sp_quake.cost) p.gold -= SPELLS.sp_quake.cost;
+      p.spellCast = true;
       const o = r.owners[i];
       o.level = Math.max(1, o.level - 1);
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_quake.name,

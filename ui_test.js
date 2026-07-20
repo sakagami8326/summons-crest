@@ -17,6 +17,29 @@ const html = fs.readFileSync('public/phone.html', 'utf8');
 const knownIds = new Set([...html.matchAll(/id="([^"]+)"/g)].map(m => m[1]));
 const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n');
 
+// ===== レイアウト不変条件 =====
+// HUD(header)・メッセージ・アクション・手札は「フロー配置」でなければならない。
+// position:fixedで帯を重ねると、小さい画面でHUDとメッセージが重なる/はみ出す(v0.59で実際に発生)。
+{
+  const css = (html.match(/<style>([\s\S]*?)<\/style>/) || ['', ''])[1];
+  const ruleOf = sel => {
+    const m = css.match(new RegExp('(?:^|[\\s}])' + sel.replace(/#/g, '\\#') + '\\s*\\{([^}]*)\\}'));
+    return m ? m[1] : null;
+  };
+  const bodyRule = ruleOf('body');
+  if (!bodyRule || !/flex-direction:\s*column/.test(bodyRule))
+    throw new Error('レイアウト検査: bodyがflex縦積みでない(帯の重なり防止が壊れている)');
+  for (const sel of ['header', '#midRow', '#msg', '#action', '#handWrap']) {
+    const rule = ruleOf(sel);
+    if (rule === null) throw new Error(`レイアウト検査: ${sel} のCSSルールが見つからない`);
+    if (/position:\s*fixed/.test(rule))
+      throw new Error(`レイアウト検査: ${sel} がposition:fixed ─ フロー配置に戻すこと(HUDと重なる)`);
+  }
+  if (!/<div id="midRow"><div id="msg"[\s\S]{0,200}?<div id="action"/.test(html))
+    throw new Error('レイアウト検査: #msgと#actionが#midRow内に並んでいない');
+  console.log('レイアウト不変条件 ✓ (HUD/メッセージ/手札はフロー配置)');
+}
+
 let qEls, qsaCalls;
 function makeEl(id) {
   const cls = new Set();
