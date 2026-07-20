@@ -47,18 +47,28 @@
   .me > img { width:10dvh; height:10dvh; border-radius:1.6dvh; object-fit:contain; flex:none;
         filter:drop-shadow(0 2px 5px rgba(0,0,0,.45)); }
   .me .nm { font-size:max(2.4dvh, 13px); letter-spacing:1px; }
-  .me .st { font-size:max(2.4dvh, 13px); color:var(--gold-soft); font-family:sans-serif;
-        font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .me .st { font-size:max(2dvh, 12px); color:var(--gold-soft); font-family:sans-serif;
+        font-variant-numeric:tabular-nums; white-space:nowrap; line-height:1.45; }
+  .me .st .assetBig { font-size:max(3.1dvh, 17px); font-weight:700; color:#F2D062;
+        text-shadow:0 0 8px rgba(242,208,98,.45); letter-spacing:.5px; }
+  .me .st .assetBig small { font-size:.55em; font-weight:400; opacity:.8; }
   #msg.big { font-size:max(4dvh, 20px); }
-  #msg { flex:1; text-align:center; font-size:max(2.4dvh, 14px); letter-spacing:1px; color:var(--gold-soft);
-        text-shadow:0 1px 4px rgba(0,0,0,.6); min-width:0;  font-family:'Reggae One','Yu Mincho',serif;
-        line-height:1.35; max-height:100%; overflow:hidden;
-        display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; }
+  /* 行動メッセージ: HUD(ヘッダー)と手札の間、画面左側に常設 */
+  #msg { position:fixed; left:calc(12px + env(safe-area-inset-left)); top:15dvh; height:25dvh; width:26vw;
+        z-index:5; display:flex; align-items:center; justify-content:center; text-align:center;
+        font-size:max(2.2dvh, 13px); letter-spacing:1px; color:var(--gold-soft); line-height:1.4;
+        text-shadow:0 1px 4px rgba(0,0,0,.6); font-family:'Reggae One','Yu Mincho',serif;
+        overflow:hidden; background:rgba(0,0,0,.28); border:1px solid rgba(201,162,39,.35);
+        border-radius:1.2dvh; padding:.6dvh 1dvh; }
+  #msg:empty { opacity:0; }
+  #mapBtn { font-family:inherit; font-size:13px; padding:6px 10px; margin-left:auto;
+        background:rgba(201,162,39,.18); color:var(--gold-soft);
+        border:1px solid var(--gold); border-radius:7px; margin-right:6px; }
   #fsBtn { font-family:inherit; font-size:12px; background:rgba(0,0,0,.4); color:rgba(241,232,208,.8);
         border:1px solid rgba(201,162,39,.5); border-radius:7px; padding:5px 9px; }
 
   #action { height:25dvh; display:flex; align-items:center; justify-content:center; gap:14px;
-        padding:0 16px; overflow:hidden; }
+        padding:0 16px 0 calc(27vw + 18px); overflow:hidden; }
   .abtn { font-family:inherit; font-size:max(2.7dvh, 15px); letter-spacing:2px; padding:1.8dvh 3.4dvh;
         background:linear-gradient(180deg,#E8C55A,#B8901F); color:#241C05;
         border:2px solid #F2D062; border-radius:12px; cursor:pointer;
@@ -375,13 +385,36 @@
   .shopBtn .sbD { font-size:max(1.5dvh, 11px); color:rgba(36,28,5,.75); margin-top:.5dvh; line-height:1.4; }
   .shopBtn.ghost .sbD { color:rgba(241,232,208,.6); }
   .shopBtn.full { grid-column:1 / -1; text-align:center; }
+  /* 門の選択肢(等幅・タイトル+説明) */
+  .gateBtns { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:1.2dvh;
+      width:min(92%, 100dvh); align-content:center; }
+  .gateBtn { font-family:inherit; text-align:left; padding:1.6dvh 2dvh; cursor:pointer;
+      background:linear-gradient(180deg,#E8C55A,#B8901F); color:#241C05;
+      border:2px solid #F2D062; border-radius:1.4dvh; box-shadow:0 3px 10px rgba(0,0,0,.5); }
+  .gateBtn:active { transform:scale(.97); }
+  .gateBtn.ghost { background:rgba(20,18,39,.75); color:var(--gold-soft); border:1px solid var(--gold); }
+  .gateBtn .gbT { font-size:max(2.5dvh, 15px); letter-spacing:1px; }
+  .gateBtn .gbT .gbC { font-size:max(1.7dvh, 11px); opacity:.8; font-family:sans-serif; }
+  .gateBtn .gbD { font-size:max(1.6dvh, 11px); color:rgba(36,28,5,.75); margin-top:.4dvh; line-height:1.4; }
+  .gateBtn.ghost .gbD { color:rgba(241,232,208,.6); }
+  /* マス詳細パネル */
+  .tdRow { display:flex; align-items:center; gap:1.2dvh; }
+  .tdFace { width:5dvh; height:5dvh; border-radius:1dvh; object-fit:contain; flex:none;
+      border:2px solid var(--tdc, #888); background:rgba(0,0,0,.3); }
+  .tdArt { width:11dvh; height:11dvh; object-fit:contain; flex:none;
+      filter:drop-shadow(0 2px 5px rgba(0,0,0,.5)); }
+  .tdTok { width:9dvh; height:9dvh; border-radius:50%; flex:none; display:flex; align-items:center;
+      justify-content:center; color:#F6EFDD; font-size:1.9dvh; border:3px solid #2C2A4A; }
+  .tdSub { font-size:max(1.8dvh, 11px); color:rgba(241,232,208,.75); }
+  .tdStat { font-family:sans-serif; font-size:max(2dvh, 13px); font-variant-numeric:tabular-nums; }
+  .tdStat b { color:#F09B7B; font-weight:600; } .tdStat i { color:#8FD8A8; font-style:normal; }
 </style>
 </head>
 <body>
   <div id="connBar" style="display:none; position:fixed; top:0; left:50%; transform:translateX(-50%);
     z-index:98; background:#5A1512; color:#F5B0A5; font-size:1.8dvh; letter-spacing:2px;
-    padding:.8dvh 3dvh; border-radius:0 0 1.2dvh 1.2dvh; border:1px solid #E86A5A; border-top:0;">⚡ 再接続中…</div>
-  <div id="rotate"><div class="ic">📱</div>スマホを横向きにしてください</div>
+    padding:.8dvh 3dvh; border-radius:0 0 1.2dvh 1.2dvh; border:1px solid #E86A5A; border-top:0;">再接続中…</div>
+  <div id="rotate"><div class="ic"><svg viewBox="0 0 24 24" width="52" height="52" fill="none" stroke="#C9A227" stroke-width="1.6"><rect x="7" y="2.5" width="10" height="19" rx="2.2"/><circle cx="12" cy="18.4" r="1" fill="#C9A227" stroke="none"/></svg></div>スマホを横向きにしてください</div>
 
   <div id="join">
     <img src="/assets/logo.png">
@@ -394,11 +427,12 @@
   <header style="display:none" id="hdr">
     <div class="me"><img id="myFace" src=""><div><div class="nm" id="myName"></div>
       <div class="st" id="myStat"></div></div></div>
-    <div id="msg"></div>
+    <button id="mapBtn">領地を見る</button>
     <button id="galleryBtn">クリーチャー一覧</button>
     <button id="deckBtn" style="font-family:inherit; font-size:13px; padding:6px 10px; background:rgba(0,0,0,.4); color:rgba(241,232,208,.85); border:1px solid rgba(201,162,39,.5); border-radius:8px;">デッキ</button>
     <button id="fsBtn">⛶ 全画面</button>
   </header>
+  <div id="msg" style="display:none"></div>
   <div id="action" style="display:none"></div>
   <div id="handWrap" style="display:none"><div id="hand"></div><div id="lpHint">カードを長押しで拡大</div></div>
 
@@ -462,14 +496,19 @@ const stIc = n => `<img src="/assets/struct_${n}.png" style="height:1.25em;width
 const icIc = n => `<img src="/assets/${n}.png" style="height:1.1em;width:1.1em;object-fit:contain;vertical-align:-0.18em">`;
 const ICON_SUB = [['⚡', () => sic('ult')], ['⚒', () => sic('forge')],
   ['🏰', () => stIc('castle')], ['⛩', () => stIc('shrine')], ['🏪', () => stIc('market')],
-  ['🚪', () => stIc('gate')], ['☠', () => icIc('ic_curse')]];
+  ['🚪', () => stIc('gate')], ['☠', () => icIc('ic_curse')],
+  ['🎲', () => icIc('ic_dice')], ['💎', () => icIc('ic_gem')]];
+// 設計思想: UIに絵文字を出さない。ICON_SUBでアイコン画像化されなかった絵文字は除去する
+const EMOJI_RE = /[\u{1F000}-\u{1FBFF}\u{2728}\u{26F0}\u{26E8}\u{2B05}\u{27A1}\u{FE0F}]/gu;
 function iconize(t) {
   let s = String(t == null ? '' : t);
   for (const [e, f] of ICON_SUB) if (s.includes(e)) s = s.split(e).join(f());
-  return s;
+  return s.replace(EMOJI_RE, '').replace(/ {2,}/g, ' ');
 }
 const ELEM_MINI = {"fire": "<g transform=\"scale(0.0636) translate(-364.2,-542.7)\" fill=\"#FF7A45\">\n  \n  <g id=\"_レイヤー_1-2\" data-name=\"レイヤー 1\">\n    <g>\n      <path class=\"cls-1\" d=\"M502.96,875.18c20.7,1.95,39.15,7.09,58.74,14.54-43.77,9.03-79.6,29.35-112.36,60.41-39.53,38.23-65.33,84-86.12,135.36-35.43-90.99-97.53-174.86-198.25-195.78,18.26-7.38,37.21-12.26,57.75-14.52-2.88-27.94-29.1-44.35-54.23-53.16-16.27-5.71-31.56-11.33-46.99-19.1C42.5,763.12-1.91,686.81.06,598.13c.87-39.27,12.06-76.51,33.38-109.32l-1.27,35.33c.55,23.13,7.03,45.18,20.01,64.07,13.05,18.98,36.27,37.2,58.34,29.97,10.94-3.58,18.09-13.55,20.1-24.81,3.74-20.99-6.85-39.2-17.8-56.7-9.63-15.39-17.32-31.41-20.64-49.46-11.95-65.01,22.27-137.39,67.09-184.91-8.39,43.48-9.38,86.8,14.2,123.64,8.42,13.16,18.97,24.19,33,30.91,5.43,2.6,12.52,3.31,17.47-.2,10.73-7.62,9.28-27.96,2.85-41.97-20.05-43.72-14.79-88.55,4.15-132.01,11.3-25.94,26.38-48.84,44.03-70.93l39.07-48.91c13.62-17.05,24.01-35.47,32.29-55.67,15.07-36.76,15.18-68.74,5.01-107.14,38.76,43.25,60.82,98.08,51.01,156.05-2.06,12.18-5.43,23.43-8.89,35.18l-10.01,33.97c-5.3,22.07-3.06,45.01,8.04,64.73,4.83,8.58,11.47,15.6,20.23,19.61,14.59,6.68,30.43-.19,36.21-15.03,8.22-21.08-3.31-42.01,4.98-70.96,5.72-19.96,17.2-36.54,33.3-50.1l.82,1.13c-13.25,28.33-11.54,54.43,5.95,79.96,6.64,9.69,13.54,18.57,18.55,29.36,10.94,23.53,13.31,49.4,8.45,74.97-3.67,19.31-11.35,36.65-21.72,53.17-6.19,9.86-9.16,21.21-6.55,32.59,2.17,9.46,10.12,15.09,19.71,14.54,6.76-.39,13-2.65,18.68-6.36,30.5-19.89,45.21-58.61,46.55-94.7.73-19.8-1.96-38.21-4.52-58.79,47.94,52.05,84.36,136.93,61,204.61-10.73,31.09-33.56,49.27-35.62,78.1-.89,12.39,2.84,24.63,12.84,32.17,19.68,14.85,46.62-1.72,61.85-21.33,14.05-18.09,21.53-39.63,23.54-62.52l-.52-41.69c32.87,50.66,40.44,113.71,26.34,171.7-15.11,62.14-56.63,112.8-113.4,141.68-17.61,8.96-35.5,15.28-54.29,21.66-22.7,7.7-48.02,25.07-50.9,51.49ZM363.33,955.02c13.81-61.5,38.41-114.16,89.31-151.63,17.65-13,35.81-23.58,55.15-33.79,11.38-6.01,22.1-12.01,32.23-19.79,20.67-15.87,33.46-38.35,28.29-64.62-5.4-27.39-22.52-51.29-42.71-70.31-4.9,31.51-21.04,59.29-52.4,66.97-10.97,2.14-21.79,1.24-31.33-4.17-14.37-8.15-20.35-24.21-14.61-39.8,2.96-8.05,7.99-14.86,12.94-21.92l19.79-28.19c6.21-10.43,11.43-21.3,12.51-33.68s-3.73-23.7-11.66-32.47l-28.03-30.98c-35.2-38.9-64.75-87.38-79.07-138.71-15.65,48.77-41.16,95.25-70.71,137.78l-18.94,29.12c-6.18,9.49-9.8,20.71-9.46,32.29.76,25.72,21.35,50.54,35.99,71.67,4.72,6.82,8.4,14.13,9.59,22.24,2.03,13.78-4.31,26.02-16.36,32.67-9.49,5.24-20.47,6.37-31.43,4.22-31.23-6.11-49.22-35.78-53.42-66.98-19.88,18.05-37.09,42.46-42.82,68.87-4.17,19.23,1.3,37.7,14.16,52.49,9.28,10.67,20.75,18.63,33.3,25.56l44.47,24.55c19.28,10.64,35.8,24.02,51.5,39.48,35.09,36.95,52.32,79.43,63.72,129.14Z\"/>\n      <path class=\"cls-1\" d=\"M363.05,847.33c-16.83-45.53-44.66-91.38-92.3-110.16,36.86-13.23,56.29-41.76,70.59-76.15,9.14-21.99,15.8-44.44,21.78-67.18,5.91,22.93,12.33,44.22,20.74,65.69,14.73,35.11,33.5,64.13,71.34,77.59-47.87,19.57-74.15,63.27-92.15,110.21Z\"/>\n    </g>\n  </g>\n</g>", "water": "<g transform=\"scale(0.0906) translate(-257.0,-380.9)\" fill=\"#56A8E8\">\n  \n  <g id=\"_レイヤー_1-2\" data-name=\"レイヤー 1\">\n    <g>\n      <path class=\"cls-1\" d=\"M19.05,562.68c-11.22-21.93-17.99-44.02-19.05-68.72,13.15,26.51,30.6,49.14,53.23,68.12,58.5,49.04,139.18,69.99,213.08,47.73,62.24-18.75,112.53-70.62,113.37-137.33.35-27.99-9.48-54.29-28.75-74.11-27.57-28.35-69.6-37.97-105.93-22.99-24.04,10.23-40.73,29.34-46.61,55.61-11.57-40.42,14.37-84.41,49.59-106.41,59.46-37.13,135.42-24,186.46,22.28,33.2,30.11,53.1,72.37,55.31,117.58,2.16,43.96-11.88,86.39-36.36,122.52-27.43,40.49-68.5,71.26-111.93,93.16l-47.23,23.81c-23.27,12.98-46.71,29.38-49.61,57.93-22.02-25.43-11.47-59.44,10.34-83.41-93.01,8.43-190.79-31.36-235.93-115.76Z\"/>\n      <path class=\"cls-1\" d=\"M125.83,409.61c6.28,54.11,50.15,95.1,105.96,92.42,19.84-.95,37.87-7.97,51.93-21.62,13.65-13.47,18.88-30.72,17.04-50.94,11.08,16.53,12.57,36.55,7.61,55.47-5.68,21.7-20.06,39.13-38.79,51.31-16.04,9.55-33.05,15.18-51.89,17.25-39.58,4.34-78.36-5.84-111.75-27.17-36.11-23.06-62.21-57.76-74.25-98.97-7.4-25.33-9.54-51.14-5.39-77.29,4.33-27.26,13.34-52.47,26.55-76.64,13.36-24.46,29.29-46.34,47.85-67.1l45.76-51.21c12.95-14.49,23.91-29.5,33.82-46.13,10.54-18.83,17.65-38.38,19.8-59.89,1.66-16.66-1.02-32.23-4.69-49.12,12.97,10.38,21.7,23.15,28.14,37.74,20.14,45.67,11.1,99.33-9.05,144.19-7.3,16.25-15.93,30.81-24.51,46.33,26.46-30.98,63.42-61.88,105.37-60.6,25.67.78,47.65,14.98,57.96,38.4,6.31,16.18,7.3,33.5,1.09,51.03-12.08-29.59-45.94-37.43-76.65-34.33-19.44,2.11-37.34,7.78-54.63,17.21-43.82,23.9-76.62,64.15-91.57,111.85-5.97,19.05-7.99,38.13-5.71,57.81Z\"/>\n      <circle class=\"cls-1\" cx=\"451.74\" cy=\"228.23\" r=\"29.57\"/>\n      <circle class=\"cls-1\" cx=\"496.55\" cy=\"316.35\" r=\"17.43\"/>\n    </g>\n  </g>\n</g>", "earth": "<g transform=\"scale(0.0906) translate(-288.8,-380.6)\" fill=\"#7FD35C\">\n  \n  <g id=\"_レイヤー_1-2\" data-name=\"レイヤー 1\">\n    <g>\n      <polygon class=\"cls-1\" points=\"352.8 488.32 289.43 571.63 176.59 422.15 289.31 273.16 334.44 331.7 402.31 422.02 352.8 488.32\"/>\n      <polygon class=\"cls-1\" points=\"350.15 303.53 289.43 222.91 228.57 303.43 211.93 262.28 190.53 234.85 289.49 0 349.12 140.82 388.54 234.79 366.88 262.01 350.15 303.53\"/>\n      <polygon class=\"cls-1\" points=\"119.04 541.65 67.79 510.21 0 467.42 18.32 433.28 67.47 343.02 162.25 391.41 141.41 422.24 204.2 509.31 119.04 541.65\"/>\n      <polygon class=\"cls-1\" points=\"459.42 541.65 375.34 509.51 440.05 422.27 417.45 390.53 510.49 343.1 534.2 386.87 577.6 467.49 554.13 482.31 459.42 541.65\"/>\n      <polygon class=\"cls-1\" points=\"198.78 668.62 151.35 632.63 82.57 579.08 151.62 552.64 216.45 528.24 262.09 588.9 242.75 612.84 198.78 668.62\"/>\n      <polygon class=\"cls-1\" points=\"476.79 593.97 380.16 668.64 316.69 588.82 362.67 528.24 496.25 579.04 476.79 593.97\"/>\n      <polygon class=\"cls-1\" points=\"199.66 333.79 174.23 371.48 103.81 317.22 90.34 206.22 175.14 261.71 199.66 333.79\"/>\n      <polygon class=\"cls-1\" points=\"404.48 371.32 378.84 333.97 403.48 261.64 487.98 206.1 479.02 278.07 474.37 317.29 404.48 371.32\"/>\n      <polygon class=\"cls-1\" points=\"289.38 761.18 245.51 648.62 289.23 597.38 333.14 648.4 289.38 761.18\"/>\n      <polygon class=\"cls-1\" points=\"378.21 724.35 334.35 697.53 343.37 658.8 358.06 676.09 378.21 724.35\"/>\n      <polygon class=\"cls-1\" points=\"244.25 697.61 199.98 724.71 221.07 676.13 235.37 658.6 244.25 697.61\"/>\n    </g>\n  </g>\n</g>", "wind": "<g transform=\"scale(0.0704) translate(-308.9,-489.7)\" fill=\"#5BE0D0\">\n  \n  <g id=\"_レイヤー_1-2\" data-name=\"レイヤー 1\">\n    <g>\n      <path class=\"cls-1\" d=\"M155.69,420.63c-33.71,46.8-40.32,106.48,5.67,145.45,19.26,16.33,42.38,25.85,67.55,28.52,54.45,5.79,105.18-22,130.17-71.49,3.3,12.52,3.52,23.9,2.1,36.22-7.35,63.37-57.02,106.94-118.32,119.63-105.77,21.89-215.06-47.34-232.99-154.48-11.27-67.3,16.7-135.76,55.4-190.12,15.33-21.53,31.22-41.48,49.03-61.02l65.32-71.65c22.93-25.15,44.26-50.56,62.68-79.2,21.95-34.12,40.33-77.47,38.74-118.35-.05-1.25,1.64-3.76,2.8-4.08,5.27-1.45,16.85,19.29,21,29.47,6.17,15.14,9.55,30.24,11.18,46.79,6.08,61.72-12.41,122.46-52.72,171.66,25.82-6.68,50.42-12.68,76.77-16,48.11-6.06,98.34-5.09,144.25,11.03,33.61,11.81,63.46,31.1,87.01,58.12,32.74,37.57,50.1,87.66,45.79,138.7-13.14-22.47-25.3-41.3-43.32-57.32-18.72-18.02-40.02-31.48-63.71-42.27-59.71-26.59-132.13-28.95-195.71-15.72-61.1,12.71-122.02,45.17-158.7,96.1Z\"/>\n      <path class=\"cls-1\" d=\"M6.56,687.4c-3.92-12.14-7.02-23-6.5-36.03,25.83,39.01,63.46,65.6,106.14,81.84,59.13,22.5,123.5,25.37,184.59,8.79,67.2-18.24,130.03-62.41,153.23-129.68,17.56-50.91,2.93-105.64-46.71-129.54-37.32-17.97-82.18-17.12-118.58,2.86-22.02,12.08-37.81,30.77-45.7,55.14-13.34-14.17-17.48-33.71-13.73-52.52,7.29-36.56,39.24-66.37,72.22-82.71,78.85-39.06,174.86-22.79,234.97,42.31,53.67,58.12,60.86,141.46,30.51,213.11-17.63,41.61-44.96,76.78-80.15,104.98l-46.52,32.54c-22.37,15.65-45.15,29.34-66.4,46.49-18.16,14.66-34.31,30.05-48.7,48.33-20.14,25.5-33.83,53.58-41.94,86.17-12.21-25.44-15.2-52.32-12.3-79.25,4.55-30.52,16.84-57.92,36.59-82.18-54.06,12.14-105.83,13.47-158.1-3.22-61.41-19.98-112.72-64.89-132.92-127.42Z\"/>\n    </g>\n  </g>\n</g>"};
-const GLYPH = { weapon:'⚔', gweapon:'⚔', shield:'🛡', gshield:'🛡', jinx:'❂' };
+// 支援カードのグリフ(アート未着の代用)。絵文字ではなくSVGアイコンを使う
+const GLYPH = { weapon: () => sic('sword', '7.5dvh'), gweapon: () => sic('sword', '7.5dvh'),
+  shield: () => sic('up', '7.5dvh'), gshield: () => sic('up', '7.5dvh'), jinx: () => '❂' };
 // アートが存在するスペル(無いものは呪文アイコンで代用)
 const SPELL_ART = new Set(['sp_gold','sp_weaken','sp_gale','sp_quake','sp_volcanic_core','sp_abyssal_pearl',
   'sp_earth_mother_stone','sp_sky_crystal','sp_flame_vortex','sp_bloodstained_blade','sp_high_tide',
@@ -492,7 +531,7 @@ function connect() {
 }
 function enterGame() {
   $('join').style.display = 'none';
-  ['hdr','action','handWrap'].forEach(id => $(id).style.display = '');
+  ['hdr','msg','action','handWrap'].forEach(id => $(id).style.display = '');
   document.body.classList.add('ingame');
   connect();
 }
@@ -596,10 +635,12 @@ function buildPickOv(title, sections, cancelId) {
   ov.querySelector('h2').textContent = title;
   $('deckScroll').innerHTML = sections.map(sec => {
     if (!sec.entries.length) return '';
-    return `<div class="dkSec">${sec.name}(${sec.entries.length}枚)</div><div class="dkGrid">` +
+    const total = sec.entries.reduce((a, e) => a + (e.n || 1), 0);
+    return `<div class="dkSec">${sec.name}(${total}枚)</div><div class="dkGrid">` +
       sec.entries.map(e =>
         `<div class="dkCard ${e.pickId ? 'pick' : 'dis'}" ${e.pickId ? `onclick="pickOvChoose('${e.pickId}')"` : ''}>
-          ${bigCardHTML(e.card)}${e.zone ? `<div class="dkZoneTag">${e.zone}</div>` : ''}</div>`).join('') + '</div>';
+          ${bigCardHTML(e.card)}${e.n > 1 ? `<div class="dkN">×${e.n}</div>` : ''}
+          ${e.zone ? `<div class="dkZoneTag">${e.zone}</div>` : ''}</div>`).join('') + '</div>';
   }).join('');
   $('deckClose').textContent = cancelId ? 'やめる' : '';
   $('deckClose').style.display = cancelId ? '' : 'none';
@@ -656,12 +697,76 @@ function renderMiniMap(p) {
   const selLabel = selOpt ? ((p.options.find(o => o.id === selOpt) || {}).label || '') : '';
   $('mapOvTitle').innerHTML = iconize(p.prompt) + ' <span style="opacity:.75">─ 光っているマスをタップ</span>';
   $('mapOvMap').innerHTML = `<div id="miniMap">${cells.join('')}</div>`;
-  $('mapOvSide').innerHTML = `<div id="mapOvSel">${selOpt ? iconize(selLabel) : 'マスを選ぶと詳細が表示されます'}</div>
+  $('mapOvSide').innerHTML = `<div id="mapOvSel">${selOpt
+      ? tileDetailHTML(mmSel) + `<div class="tdSub" style="margin-top:.6dvh">${iconize(selLabel)}</div>`
+      : '光っているマスを選ぶと詳細が表示されます'}</div>
     ${selOpt ? `<button class="abtn" onclick="mmSel=null; hideMapOv(); choose('${selOpt}')">ここに決定</button>` : ''}
     ${cancel ? `<button class="abtn ghost" onclick="mmSel=null; hideMapOv(); choose('${cancel.id}')">${cancel.label}</button>` : ''}`;
   $('mapOv').classList.add('on');
 }
 function mmTap(i) { mmSel = i; render(); }
+
+// ===== マス詳細パネル(選択UI・閲覧モード共通) =====
+const ELEM_JA = { fire: '火', water: '水', earth: '土', wind: '風' };
+const elemJaIc = e => e
+  ? `<svg viewBox="-34 -36 68 72" style="width:2.2dvh;height:2.2dvh;vertical-align:-0.4dvh">${ELEM_MINI[e]}</svg> ${ELEM_JA[e]}属性`
+  : '無属性';
+function tileDetailHTML(i) {
+  if (i === null || i === undefined) return 'マスをタップすると詳細が表示されます';
+  const t = state.tiles[i], o = state.owners[i];
+  const st2 = { castle: ['🏰 城', '総資産8000G以上で通過すると勝利。刻印があれば一周ボーナス'],
+    shrine: ['⛩ 祠', '止まると+100Gとカード1枚。参拝4回で称号「大巡礼者」'],
+    market: ['🏪 市場', 'カード・支援・宝石を購入できる'],
+    gate: ['🚪 変化の門', '通過で刻印を取得。止まると恩恵を選べる'] }[t.t];
+  if (st2) return `<div class="tdRow"><b style="font-size:max(2.4dvh,15px)">${iconize(st2[0])}</b></div>
+    <div class="tdSub">${st2[1]}</div>`;
+  if (!o) return `<div class="tdRow"><b style="font-size:max(2.4dvh,15px)">空き地</b></div>
+    <div class="tdSub">${elemJaIc(t.e)} ─ 止まるとクリーチャーを配置できる</div>`;
+  const pl = state.players.find(q => q.id === o.player) || {};
+  const cr = state.catalog.CREATURES[o.creature];
+  const bid = o.creature.replace(/_f$/, '');
+  const evo = /_f$/.test(o.creature) || (o.level >= (state.evoLevel || 3) && !!cr.evo);
+  const nm = evo && cr.evo ? cr.evo : cr.name;
+  const at = evo && cr.evo ? cr.evoSt : cr.st;
+  const maxHp = evo && cr.evo ? cr.evoHp : cr.hp;
+  const curHp = maxHp - (o.dmg || 0);
+  const art = HAS_ART.has(bid)
+    ? `<img class="tdArt" src="/assets/${evo && HAS_ART.has(bid) ? 'e_' : 'c_'}${bid}.png">`
+    : `<div class="tdTok" style="background:${RUNE[cr.elem] || '#6E7288'}">${nm.slice(0, 4)}</div>`;
+  const fx = state.tileFx && state.tileFx[i];
+  const fxLine = fx ? [fx.vortex && '炎の渦', fx.tide && '満ち潮', fx.uplift && '岩盤隆起', fx.roots && '根の牢獄']
+    .filter(Boolean).join('・') : '';
+  const curse = state.curses && state.curses[i];
+  return `<div class="tdRow"><img class="tdFace" style="--tdc:${pl.color || '#888'}" src="/assets/f_${pl.charId}.png">
+      <div><b style="font-size:max(2.3dvh,14px)">${pl.name || '?'}の領地</b>
+      <span class="tdSub" style="display:block">Lv${o.level} ｜ 通行料 ${state.tolls ? state.tolls[i] : '?'}G</span></div></div>
+    <div class="tdRow">${art}<div><b style="font-size:max(2.2dvh,13px)">${nm}</b>${evo ? '<span class="tdSub">(進化)</span>' : ''}
+      <span class="tdStat" style="display:block">AT <b>${at}</b> ／ HP <i>${curHp}</i>/${maxHp}${o.shade ? ` ｜ 死影${o.shade}` : ''}</span>
+      <span class="tdSub" style="display:block">${elemJaIc(t.e)}</span></div></div>
+    ${fxLine ? `<div class="tdSub">継続効果: ${fxLine}</div>` : ''}
+    ${curse ? `<div class="tdSub">☠ 衰弱の呪い(HP−${curse.hp})</div>` : ''}`;
+}
+// ===== 領地閲覧モード(「領地を見る」ボタン) =====
+let mapView = false, viewSel = null;
+function renderMapView() {
+  const cells = [];
+  MM_GEO.forEach(([gx, gy], i) => {
+    const t = state.tiles[i], o = state.owners[i];
+    const bg = t.e ? MM_COL[t.e] : '#3A3554';
+    const glyph = t.t === 'castle' ? '城' : t.t === 'shrine' ? '祠' : t.t === 'market' ? '市' : t.t === 'gate' ? '門' : (o ? 'L' + o.level : '');
+    const own = o ? `<div class="mmOwn" style="background:${(state.players.find(q => q.id === o.player) || {}).color || '#888'}"></div>` : '';
+    const meHere = state.players.some(q => q.pos === i && q.id === pid) ? `<div class="mmMe" style="background:${(me() || {}).color || '#fff'}"></div>` : '';
+    cells.push(`<div class="mmT ${viewSel === i ? 'sel' : ''}" style="grid-column:${gx + 1}; grid-row:${gy + 1}; background:${bg}"
+      onclick="viewTap(${i})">${glyph}${own}${meHere}</div>`);
+  });
+  $('mapOvTitle').textContent = '領地マップ ─ マスをタップで詳細';
+  $('mapOvMap').innerHTML = `<div id="miniMap">${cells.join('')}</div>`;
+  $('mapOvSide').innerHTML = `<div id="mapOvSel">${tileDetailHTML(viewSel)}</div>
+    <button class="abtn ghost" onclick="mapView=false; hideMapOv()">閉じる</button>`;
+  $('mapOv').classList.add('on');
+}
+function viewTap(i) { viewSel = i; renderMapView(); }
+$('mapBtn').onclick = () => { if (!state || state.phase !== 'playing') return; mapView = true; viewSel = null; renderMapView(); };
 
 function renderResult() {
   const ps = [...state.players].sort((a, b) => b.points - a.points || b.gold - a.gold);
@@ -857,7 +962,7 @@ function cardHTML(c, i) {
       <div class="stats" style="font-size:1.3dvh; text-align:center; padding:0 4px">${it.desc}</div>
       <div class="type">妨害</div>`;
   } else {
-    front = `<div class="glyph">${GLYPH[c] || '❖'}</div><div class="nm">${sp.name}</div>
+    front = `<div class="glyph">${GLYPH[c] ? GLYPH[c]() : '❖'}</div><div class="nm">${sp.name}</div>
       <div class="stats">${sp.st ? 'AT+' + sp.st : ''}${sp.hp ? 'DF+' + sp.hp : ''}${sp.jinx ? '相手の支援を無効化' : ''}</div>
       <div class="type">支援</div>`;
   }
@@ -953,6 +1058,7 @@ function render() {
   document.querySelector('.me').style.display = showGui ? '' : 'none';
   $('galleryBtn').style.display = showGui ? '' : 'none';
   $('deckBtn').style.display = showGui ? '' : 'none';
+  $('mapBtn').style.display = showGui ? '' : 'none';
   $('msg').classList.toggle('big', !showGui);
   $('myFace').src = m.charId ? '/assets/f_' + m.charId + '.png' : '';
   $('myName').textContent = m.name + (m.charId ? '(' + C.CHARS[m.charId].name + ')' : '');
@@ -962,7 +1068,7 @@ function render() {
       <svg width="12" height="12" viewBox="-34 -36 68 72" style="vertical-align:middle">${ELEM_MINI[e]}</svg>${n}</span>`;
   }).join(' ');
   const ic = n => `<img src="/assets/${n}.png" style="height:2dvh;width:2dvh;object-fit:contain;vertical-align:-0.3dvh">`;
-  const statHtml = `資産${m.points}<small>/${state.target}G</small> ｜ ${ic('ic_gold')}${m.gold} ｜ ${ic('ic_gem')}${m.gems}<br>第${m.lap ?? 1}周 ｜ 領地: ${elemN} ｜ 山札${m.deckCount ?? 0} 捨${m.discardCount ?? 0} ｜ <span style="color:${m.seal ? '#F2D062' : 'rgba(241,232,208,.35)'}">刻印${m.seal ? '❖' : 'なし'}</span>`;
+  const statHtml = `<span class="assetBig">資産 ${m.points}<small>/${state.target}G</small></span><br>${ic('ic_gold')}${m.gold} ｜ ${ic('ic_gem')}${m.gems} ｜ 第${m.lap ?? 1}周 ｜ <span style="color:${m.seal ? '#F2D062' : 'rgba(241,232,208,.35)'}">刻印${m.seal ? '❖' : 'なし'}</span><br>領地: ${elemN} ｜ 山札${m.deckCount ?? 0} 捨${m.discardCount ?? 0}`;
   if ($('myStat').dataset.h !== statHtml) {
     $('myStat').dataset.h = statHtml;
     $('myStat').innerHTML = statHtml;
@@ -1005,7 +1111,8 @@ function render() {
   if (!p || p.type !== 'draft') $('draftOv').classList.remove('on');
   const MAP_TYPES = ['curse_target','quake_target','ult_mio','move_a','move_b','swap_land','upgrade',
     'sell','step_a','step_b','spell_target','wc_a','wc_b'];
-  if (!p || !MAP_TYPES.includes(p.type)) hideMapOv();
+  if (!mapView && (!p || !MAP_TYPES.includes(p.type))) hideMapOv();
+  if (mapView) renderMapView();  // 閲覧モード中は最新stateで再描画
   // ショップシーンの開閉
   const inMarket = pend() && pend().type === 'market';
   if (!inMarket) { $('shopScene').classList.remove('on'); inShopHand = false; }
@@ -1029,7 +1136,10 @@ function render() {
   // テレビ側の移動アニメが終わるまで、到着系UIの表示を待つ
   {
     const pk = p ? p.type + '|' + p.prompt : '';
-    if (pk !== lastPendKey) { lastPendKey = pk; pendSince = Date.now(); }
+    if (pk !== lastPendKey) {
+      lastPendKey = pk; pendSince = Date.now();
+      if (mapView && p) { mapView = false; hideMapOv(); }  // 新しい選択が来たら閲覧モードを閉じる
+    }
     const ld = state.lastDice;
     if (p && ['tile', 'upgrade', 'market', 'draft', 'gate', 'forge'].includes(p.type) && ld && ld.player === pid) {
       const steps = ld.multi ? ld.multi.reduce((a, b) => a + b, 0) : ld.value;
@@ -1045,6 +1155,8 @@ function render() {
         const toCastle = (28 - from) % 28 || 28;
         doneAt = ld.at + init + toCastle * 250 + 400;
       }
+      // サーバーとの時計ズレで「移動中…」から抜けなくなるのを防ぐ(最大8秒で強制解除)
+      doneAt = Math.min(doneAt, pendSince + 8000);
       if (Date.now() < doneAt) {
         $('msg').textContent = '移動中…';
         $('action').innerHTML = '<div class="waitDots">● ● ●</div>';
@@ -1060,9 +1172,9 @@ function render() {
   const sel = selected !== null ? m.hand[selected] : null;
 
   const pnow = pend();
-  if (!pnow || (pnow.type !== 'forget' && pnow.type !== 'overflow')) closePickOv();
+  if (!pnow || !['forget', 'overflow', 'forge', 'swap_pick'].includes(pnow.type)) closePickOv();
   if (m.bankrupt) {
-    $('msg').innerHTML = '💥 破産 ─ 脱落しました(観戦中)';
+    $('msg').innerHTML = '破産 ─ 脱落しました(観戦中)';
     A.innerHTML = '';
     renderHand();
     return;
@@ -1088,7 +1200,7 @@ function render() {
     const selC = selected !== null && me().hand[selected];
     const castOpt = selC && cardOption(selC);
     const extra = p.options.filter(o => o.id !== 'roll' && !o.id.startsWith('sp:')).map(o =>
-      `<button class="${o.id === 'ult' ? 'ultBtn' : 'abtn ghost'}" onclick="${o.id === 'ult' ? 'showUltConfirm()' : `choose('${o.id}')`}" style="font-size:1.9dvh">${o.id === 'ult' ? ultIc : ''}${o.label}</button>`).join('')
+      `<button class="${o.id === 'ult' ? 'ultBtn' : 'abtn ghost'}" onclick="${o.id === 'ult' ? 'showUltConfirm()' : `choose('${o.id}')`}" style="font-size:1.9dvh">${o.id === 'ult' ? ultIc : ''}${iconize(o.label)}</button>`).join('')
       + (castOpt ? `<button class="abtn" onclick="choose('${castOpt}'); selected=null;" style="font-size:2dvh">${sic('spell', '2.2dvh')} 「${state.catalog.SPELLS[selC].name}」を唱える</button>` : '');
     A.innerHTML = `<div style="position:relative; width:100%; height:100%">
       <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%)">
@@ -1109,8 +1221,11 @@ function render() {
   } else if (p.type === 'overflow') {
     $('msg').innerHTML = iconize(p.prompt);
     A.innerHTML = '';
-    buildPickOv('手札上限 ─ 捨てるカードをタップ', [
-      { name: '手札', entries: p.options.map(o => ({ card: o.card, pickId: o.id })) },
+    // 同名カードはまとめて表示し、×N で枚数を示す(全カードを漏れなく見せる)
+    const ovCnt = {};
+    (m.hand || []).forEach(c => ovCnt[c] = (ovCnt[c] || 0) + 1);
+    buildPickOv(`手札上限 ─ 捨てるカードをタップ(現在${m.hand.length}枚 → 7枚まで)`, [
+      { name: '手札', entries: p.options.map(o => ({ card: o.card, pickId: o.id, n: ovCnt[o.card] || 1 })) },
     ], null);
   } else if (p.type === 'curse_target' || p.type === 'quake_target' || p.type === 'ult_mio' ||
              p.type === 'move_a' || p.type === 'move_b' || p.type === 'swap_land' || p.type === 'upgrade' ||
@@ -1128,9 +1243,38 @@ function render() {
         <span>右回り</span></button>
     </div>`;
   } else if (p.type === 'swap_pick') {
+    // 交代: 配置するクリーチャーをカードタップで選ぶ(直接タップの設計思想)
     $('msg').innerHTML = iconize(p.prompt);
-    A.innerHTML = '<div class="btnCol">' + p.options.map(o =>
-      `<button class="abtn ${/:cancel$/.test(o.id) ? 'ghost' : ''}" onclick="choose('${o.id}')">${iconize(o.label)}</button>`).join('') + '</div>';
+    A.innerHTML = '';
+    buildPickOv('交代 ─ 配置するクリーチャーをタップ(召喚コスト別途)', [
+      { name: '手札のクリーチャー', entries: p.options.filter(o => o.id.startsWith('sp2:') && o.id !== 'sp2:cancel')
+        .map(o => ({ card: o.id.slice(4), pickId: o.id })) },
+    ], 'sp2:cancel');
+  } else if (p.type === 'forge') {
+    // 鍛錬: 進化させるクリーチャーをカードタップで選ぶ
+    $('msg').innerHTML = iconize(p.prompt);
+    A.innerHTML = '';
+    buildPickOv(iconize(p.prompt).replace(/選べ/, 'タップ'), [
+      { name: '進化できるクリーチャー', entries: p.options.filter(o => o.id.startsWith('fg:'))
+        .map(o => { const c = m.hand[+o.id.slice(3)]; const cr2 = C.CREATURES[c] || {};
+          return { card: c, pickId: o.id, zone: `→ ${cr2.evo || '進化'}` }; }) },
+    ], 'back');
+  } else if (p.type === 'gate') {
+    // 門: 等幅ボタン(タイトル+説明)で選ぶ
+    $('msg').innerHTML = iconize(p.prompt);
+    const GATE_META = {
+      g_up:    { t: '領地強化', d: '自分の領地1つのレベルを上げる(費用は通常どおり)', ic: 'up' },
+      g_draft: { t: 'カードを引く', d: '山札から3枚公開し、1枚を選んで獲得する', ic: 'draft' },
+      g_forge: { t: '鍛錬', d: '手札のクリーチャーを進化させる', ic: 'forge' },
+      pass:    { t: '何もしない', d: '恩恵を受けずに手番を終える' },
+    };
+    A.innerHTML = '<div class="gateBtns">' + p.options.map(o => {
+      const mt = GATE_META[o.id] || { t: iconize(o.label), d: '' };
+      const cost = (o.label.match(/−\d+G/) || [''])[0];
+      return `<button class="gateBtn ${o.id === 'pass' ? 'ghost' : ''}" onclick="choose('${o.id}')">
+        <div class="gbT">${mt.ic ? sic(mt.ic, '2.4dvh') + ' ' : ''}${mt.t}${cost ? ` <span class="gbC">${cost}</span>` : ''}</div>
+        <div class="gbD">${mt.d}</div></button>`;
+    }).join('') + '</div>';
   } else if (p.type === 'select_char') {
     $('msg').textContent = '';
     A.innerHTML = '';
@@ -1177,7 +1321,7 @@ function render() {
       `<button class="shopBtn ghost full" onclick="inShopHand=true; render()"><img src="/assets/ic_hand.png" style="height:2.4dvh;width:auto;vertical-align:-0.4dvh"> 手札を見る</button>` +
       p.options.map(o =>
         `<button class="shopBtn ${o.id === 'done' ? 'ghost full' : ''}" onclick="choose('${o.id}')">
-          <div class="sbT">${o.label}</div><div class="sbD">${shopDesc(o.id)}</div></button>`).join('');
+          <div class="sbT">${iconize(o.label)}</div><div class="sbD">${shopDesc(o.id)}</div></button>`).join('');
   } else if (p.type === 'market' && inShopHand) {
     $('msg').textContent = '手札を確認中';
     A.innerHTML = '<button class="abtn ghost" onclick="inShopHand=false; render()">店にもどる</button>';
@@ -1188,8 +1332,6 @@ function render() {
     if (sel && cardOption(sel)) {
       const opt = p.options.find(o => o.id === cardOption(sel));
       btns.push(`<button class="abtn" onclick="choose('${opt.id}')">${opt.label}</button>`);
-    } else if (selectableKind()) {
-      btns.push(`<button class="abtn" disabled>カードを選んでください</button>`);
     }
     const NUM = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
     let upN = 0;

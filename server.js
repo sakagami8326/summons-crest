@@ -7,10 +7,10 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const VERSION = '0.58';
+const VERSION = '0.59';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
-const RULES = { startGold: 300, castleBonus: 200, shrineBonus: 100, tollUnit: 30,
+const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
                 levelCost: { 2: 100, 3: 200, 4: 300 }, gemPrice: 80, drawPrice: 100, maxLevel: 4,
                 evoLevel: 3, forgeCost: 150,
                 startHand: 5, forgetCost: 80 };  // v0.44: 初期5枚+毎ターン1枚ドロー
@@ -274,6 +274,7 @@ function spellDamage(r, i, raw, srcName) {
   if (baseHp - (o.dmg || 0) <= 0) {
     pById(r, o.player).discard.push(o.creature);  // スペルによる撃破は旋風も発動しない(捨て札)
     r.owners[i] = null;
+    r.lastRuin = { tile: i, creature: o.creature, player: o.player, src: srcName, at: stamp(r) };
     log(r, `${cE.name}は${srcName}に蝕まれて滅びた… 土地は空き地になった`);
     return true;
   }
@@ -463,7 +464,12 @@ function performMove(r, p, steps, meta, moveLabel) {
       else noSeal = true;
     }
   }
-  if (gotSeal) log(r, `❖ ${p.name}は門の刻印を得た(城通過時に一周ボーナス)`);
+  if (gotSeal) {
+    // v0.59: 門通過で+200Gと刻印を入手(オーナー指示)
+    p.gold += RULES.gateBonus;
+    r.lastSeal = { player: p.id, gold: RULES.gateBonus, at: stamp(r) };
+    log(r, `❖ ${p.name}は門を通過 ─ +${RULES.gateBonus}Gと刻印を得た(城まで持ち帰ると一周ボーナス)`);
+  }
   if (bonus) {
     // 領地ボーナス: 所有地価合計の10%
     const lands = r.owners.reduce((n, o, i) => n + (o && o.player === p.id ? landValue(r, i) : 0), 0);
@@ -1569,6 +1575,7 @@ function publicState(r, viewerId) {
     owners: r.owners, market: r.market, log: r.log,
     titles: r.titles, duel: r.duel, curses: r.curses, lastEvent: r.lastEvent || null,
     barrier: r.barrier || {}, lastUlt: r.lastUlt || null, lastBattle: r.lastBattle, lastDice: r.lastDice || null,
+    lastSeal: r.lastSeal || null, lastRuin: r.lastRuin || null,
     winner: r.winner,
     pending: Object.fromEntries(Object.entries(r.pending).map(([k, v]) =>
       [k, v.type === 'draft' && k !== viewerId

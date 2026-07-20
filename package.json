@@ -1,6 +1,6 @@
 {
   "name": "summons-crest",
-  "version": "0.58.0",
+  "version": "0.59.0",
   "private": true,
   "scripts": {
     "start": "node server.js",

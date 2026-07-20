@@ -45,7 +45,8 @@
   .rank1 { background:#B8901F; color:#2A1F08; } .rank2 { background:#9CA1AC; color:#23262C; }
   .rank3 { background:#9A6832; color:#241505; }
   .plate .pname { font-size:13.5px; letter-spacing:1px; flex:1; white-space:nowrap; overflow:hidden; }
-  .plate .pts { font-size:18px; color:#5A3B10; line-height:1; font-weight:600; white-space:nowrap; }
+  .plate .pts { font-size:22px; color:#7A4E00; line-height:1; font-weight:800; white-space:nowrap;
+           text-shadow:0 0 6px rgba(242,208,98,.55); }
   .plate .pts small { font-size:11px; color:#7D6844; font-weight:400; }
   .plate .row2 { display:flex; gap:9px; margin:3px 0 0 58px; font-size:11px; color:#5C4A2E; }
   .sealIc { color:rgba(241,232,208,.28); border:1px solid rgba(241,232,208,.22); border-radius:4px;
@@ -228,6 +229,13 @@
       border:3px solid var(--gold); }
   .duelist2.win .die2 { box-shadow:0 0 24px rgba(242,208,98,.85); }
 
+  /* マス変化のクローズアップ用メッセージ(中央下 ─ スポットしたマスと被らない位置) */
+  #tileMsg { position:fixed; left:50%; bottom:5vh; transform:translateX(-50%); z-index:59;
+      background:rgba(16,13,36,.9); border:1px solid var(--gold); border-radius:1.2vh;
+      padding:1.4vh 3.6vh; font-size:2.8vh; letter-spacing:2px; color:var(--parchment);
+      text-align:center; text-shadow:0 2px 8px rgba(0,0,0,.8); max-width:76vw; line-height:1.5;
+      opacity:0; pointer-events:none; transition:opacity .25s; font-family:'Reggae One','Yu Mincho',serif; }
+  #tileMsg.show { opacity:1; }
   #centerBanner { position:fixed; left:50%; top:40%; transform:translate(-50%,-50%);
       z-index:58; font-size:4.4vh; letter-spacing:5px; color:var(--gold-soft); text-align:center;
       text-shadow:0 2px 12px rgba(0,0,0,.9); background:rgba(16,13,36,.72);
@@ -391,7 +399,7 @@
   .plate .face { width:60px !important; height:60px !important; left:-16px !important; top:20px !important; }
   .plate .row1 { margin-left:40px !important; }
   .plate .pname { font-size:17.5px !important; }
-  .plate .pts { font-size:23px !important; letter-spacing:0; white-space:nowrap; }
+  .plate .pts { font-size:29px !important; letter-spacing:0; white-space:nowrap; }
   .plate .row2 { margin-left:46px !important; font-size:12.5px !important; gap:8px !important; margin-top:6px !important;
       white-space:nowrap; overflow:hidden; }
   .plate .row3 { margin-left:50px !important; gap:8px !important; margin-top:7px !important; }
@@ -425,7 +433,7 @@
   <img id="logoImg" src="/assets/logo.png">
   <div id="connBar" style="display:none; position:fixed; top:0; left:50%; transform:translateX(-50%);
     z-index:98; background:#5A1512; color:#F5B0A5; font-size:14px; letter-spacing:2px;
-    padding:6px 26px; border-radius:0 0 10px 10px; border:1px solid #E86A5A; border-top:0;">⚡ 再接続中…</div>
+    padding:6px 26px; border-radius:0 0 10px 10px; border:1px solid #E86A5A; border-top:0;">再接続中…</div>
   <button id="bgmBtn" style="display:none; position:fixed; left:10px; bottom:28px; z-index:20;
     background:rgba(16,13,36,.7); border:1px solid rgba(201,162,39,.5); color:rgba(241,232,208,.8);
     border-radius:7px; font-family:inherit; font-size:12px; padding:4px 10px; cursor:pointer;">♪ ON</button>
@@ -441,6 +449,7 @@
   <div id="ultCut"><div id="ultBg"></div>
     <img id="ultArt"><div id="ultName"></div><div id="ultSub"></div></div>
   <div id="centerBanner"></div>
+  <div id="tileMsg"></div>
   <div id="tpBubble"></div>
   <div id="turnPortrait"><img id="tpImg"><div class="tpn" id="tpName"></div></div>
   <div class="overlay on" id="titleOv">
@@ -655,7 +664,7 @@ function hopStep() {
   renderPawns();
   if (idx === 0 && hopState.castleEv) {
     showBanner(`+${hopState.castleEv.gold}G${hopState.castleEv.landBonus ? ` +領地ボーナス${hopState.castleEv.landBonus}G` : ''}`,
-      '刻印を使用' + ((hopState.castleEv.healed || []).length ? ' ｜ ⛨ 領地のクリーチャー回復(負傷-10)' : '') + ' ─ カードを1枚選んで獲得!', 2800);
+      '刻印を使用' + ((hopState.castleEv.healed || []).length ? ' ｜ 領地のクリーチャー回復(負傷-10)' : '') + ' ─ カードを1枚選んで獲得!', 2800);
     for (const hi of (hopState.castleEv.healed || [])) fxAt(hi, 'fxRing', '#8FE08A');
     hopState.castleEv = null;
     hopState.holding = true;   // ドラフト完了までここで待機
@@ -735,6 +744,17 @@ function showSpot(i, ms = 1600) {
   clearTimeout(spotT);
   spotT = setTimeout(() => $('spot').classList.remove('show'), ms);
 }
+// マス変化のクローズアップ: スポットライト+中央下メッセージ(設計思想: マスに変化があれば必ず見せる)
+let tileMsgT = null;
+function tileCloseup(i, html, dur = 2800) {
+  showSpot(i, dur);
+  const el = $('tileMsg');
+  el.innerHTML = iconize(html);
+  el.classList.add('show');
+  clearTimeout(tileMsgT);
+  tileMsgT = setTimeout(() => el.classList.remove('show'), dur);
+  bannerUntil = Math.max(bannerUntil, Date.now() + dur + 200);
+}
 function fxAt(i, cls, color, dy = 0) {
   const { x, y } = worldPos(i);
   const el = document.createElement('div');
@@ -779,11 +799,14 @@ const stIc = n => `<img src="/assets/struct_${n}.png" style="height:1.25em;width
 const icIc = n => `<img src="/assets/${n}.png" style="height:1.1em;width:1.1em;object-fit:contain;vertical-align:-0.18em">`;
 const ICON_SUB = [['⚡', () => sic('ult')], ['⚒', () => sic('forge')],
   ['🏰', () => stIc('castle')], ['⛩', () => stIc('shrine')], ['🏪', () => stIc('market')],
-  ['🚪', () => stIc('gate')], ['☠', () => icIc('ic_curse')]];
+  ['🚪', () => stIc('gate')], ['☠', () => icIc('ic_curse')],
+  ['🎲', () => icIc('ic_dice')], ['💎', () => icIc('ic_gem')]];
+// 設計思想: UIに絵文字を出さない。ICON_SUBでアイコン画像化されなかった絵文字は除去する
+const EMOJI_RE = /[\u{1F000}-\u{1FBFF}\u{2728}\u{26F0}\u{26E8}\u{2B05}\u{27A1}\u{FE0F}]/gu;
 function iconize(t) {
   let s = String(t == null ? '' : t);
   for (const [e, f] of ICON_SUB) if (s.includes(e)) s = s.split(e).join(f());
-  return s;
+  return s.replace(EMOJI_RE, '').replace(/ {2,}/g, ' ');
 }
 let bannerUntil = 0;
 const bq = [];
@@ -994,10 +1017,10 @@ function tileInfoHTML(i) {
         <div class="tiHp">HP ${hp}${dmg ? `<span class="tiCurse"> −負傷${dmg}</span>` : ''}${curse ? `<span class="tiCurse"> −呪い${curse.hp}</span>` : ''} <small>+地形補正</small></div>
         ${(() => { const fx = (state.tileFx || {})[i]; if (!fx) return '';
           const b2 = [];
-          if (fx.vortex) b2.push('🔥炎の渦(侵略者AT+10)');
-          if (fx.roots) b2.push('🌿根の牢獄(侵略者AT-20)');
-          if (fx.uplift) b2.push('⛰岩盤隆起(防衛DF+10)');
-          if (fx.tide) b2.push('🌊満ち潮(通行料+50%)');
+          if (fx.vortex) b2.push('炎の渦(侵略者AT+10)');
+          if (fx.roots) b2.push('根の牢獄(侵略者AT-20)');
+          if (fx.uplift) b2.push('岩盤隆起(防衛DF+10)');
+          if (fx.tide) b2.push('満ち潮(通行料+50%)');
           return b2.length ? `<div class="tiSub" style="color:#F2D062">${b2.join(' / ')}</div>` : ''; })()}
         ${cr.fx ? `<div class="tiFx">${cr.fx}</div>` : ''}
         <div class="tiToll">通行料 ${Math.round(toll)}G</div>
@@ -1417,7 +1440,7 @@ async function playBattle(b) {
   }
   $('battle').classList.remove('on');
   hideLogo(false);
-  showBanner(b.win ? '⚔ 侵略成功!' : '🛡 防衛成功!',
+  showBanner(b.win ? '侵略成功!' : sic('up') + ' 防衛成功!',
     b.win ? atk.name + 'が' + def.name + 'の土地を奪取!'
           : def.name + 'が耐え抜いた(残HP' + b.remainHp + ')');
 }
@@ -1425,7 +1448,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.58';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.59';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -1528,7 +1551,7 @@ function render() {
       prev.shopLog = last;
     } else if (prev.shopLog !== last) {
       prev.shopLog = last;
-      $('shopAction').textContent = last;
+      $('shopAction').innerHTML = iconize(last);
       if (/購入|引いた|秘宝/.test(last)) {
         $('shopKeeper').src = '/assets/keeper_smile.png';
         $('shopBubble').textContent = 'まいど!';
@@ -1553,8 +1576,9 @@ function render() {
         if (now.level >= (state.evoLevel || 3) && !/_f$/.test(now.creature) &&
             state.catalog.CREATURES[now.creature].evo && now.level - 1 < (state.evoLevel || 3)) {
           fxAt(i, 'fxPillar', col, 20);
-          showBanner('✨ ' + state.catalog.CREATURES[now.creature].name + 'が' +
-            state.catalog.CREATURES[now.creature].evo + 'に進化!');
+          // 進化はマスにクローズアップして告知(設計思想: マス変化は必ず見せる)
+          const ei = i, cr0 = state.catalog.CREATURES[now.creature];
+          bq.push(() => tileCloseup(ei, `${cr0.name}が<b style="color:#F2D062">${cr0.evo}</b>に進化!`));
         }
       }
     }
@@ -1622,7 +1646,7 @@ function render() {
     if (dKey !== prev.draftKey) {
       prev.draftKey = dKey;
       if (de && (de[1].aura === 'L'))
-        showBanner('✨ 伝説級の気配…!', player(de[0]).name + 'のドラフトに何かが眠っている', 3800);
+        showBanner('伝説級の気配…!', player(de[0]).name + 'のドラフトに何かが眠っている', 3800);
     }
   }
   // マス吹き出し(停止イベントの現地表示)
@@ -1714,6 +1738,25 @@ function render() {
         player(state.lastEvent.player).name + 'の選択', 2400);
     }
   }
+  // 門通過 ─ 刻印取得のキャラカットイン
+  if (state.lastSeal && state.lastSeal.at !== prev.sealAt) {
+    prev.sealAt = state.lastSeal.at;
+    const sp = player(state.lastSeal.player), sg = state.lastSeal.gold || 0;
+    if (sp) bq.push(() => {
+      bannerUntil = Math.max(bannerUntil, Date.now() + 2600);
+      sideCut(sp, `<div class="tcWho">${sp.name} ─ 変化の門を通過</div>
+        <div class="tcAmt plus">❖ 刻印を取得!${sg ? ` +${sg}G` : ''}</div>
+        <div class="tcGold">城まで持ち帰ると一周ボーナス</div>`, 2400);
+    });
+  }
+  // クリーチャー退場(スペル等でHP0) ─ マスにクローズアップ
+  if (state.lastRuin && state.lastRuin.at !== prev.ruinAt) {
+    prev.ruinAt = state.lastRuin.at;
+    const ru = state.lastRuin;
+    const rp = player(ru.player);
+    bq.push(() => tileCloseup(ru.tile,
+      `${rp ? rp.name + 'の' : ''}${state.catalog.CREATURES[ru.creature].name}は${ru.src}に蝕まれ力尽きた…<br>土地は空き地になった`));
+  }
   // 称号の移動・リーチ到達を中央バナーで告知
   if (state.phase === 'playing') {
     const tk = JSON.stringify(state.titles);
@@ -1747,7 +1790,8 @@ function render() {
   // キューされたバナーを順に表示(移動中・別バナー表示中は待つ)
   if (bq.length && !animBusy && Date.now() > bannerUntil) {
     const x = bq.shift();
-    showBanner(x[0], x[1], x[2]);
+    if (typeof x === 'function') x();  // 関数キュー: カットイン・クローズアップ等
+    else showBanner(x[0], x[1], x[2]);
   }
   if (bq.length) { clearTimeout(prev.bqT); prev.bqT = setTimeout(render, 450); }
   updateTileInfo();
