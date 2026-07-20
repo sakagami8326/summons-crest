@@ -34,11 +34,11 @@ function runGame(seed) {
       seen.add(pend.type);
       if (!pend.options || pend.options.length === 0)
         throw new Error('本人視点でoptionsが空: type=' + pend.type);
-      // 他人視点でドラフトが秘匿されているか
-      if (pend.type === 'draft') {
+      // 他人視点でドラフト/選択ドローが秘匿されているか
+      if (pend.type === 'draft' || pend.type === 'pick_draw') {
         const other = pids.find(x => x !== pid);
         const spy = G.publicState(r, other).pending[pid];
-        if (spy && spy.options.length !== 0) throw new Error('ドラフト秘匿が破れている');
+        if (spy && spy.options.length !== 0) throw new Error(pend.type + 'の秘匿が破れている');
       }
       let opt = pend.options[Math.floor(Math.random() * pend.options.length)];
       // 「キャラを選び直す」は稀にだけ選ぶ(ランダムBOTのライブロック回避。実プレイヤーは任意)
@@ -56,7 +56,8 @@ function runGame(seed) {
           // 風の回廊: 解決時点で移動元が空き地になるため、戦闘確定までのクリーチャーは「戦闘中ゾーン」として数える
           const inBattle = r.battle && r.battle.corridor && r.battle.attacker === q.id ? 1 : 0;
           const total = (q.deck || []).length + (q.hand || []).length +
-                        (q.discard || []).length + (q.exile || []).length + board + inBattle;
+                        (q.discard || []).length + (q.exile || []).length + board + inBattle +
+                        (q.pickCards || []).length;  // v0.61: 選択ドロー中の候補もカードとして数える
           if (totals[q.id] !== undefined && total < totals[q.id])
             throw new Error(`カード消滅検出: ${q.name} ${totals[q.id]}→${total} (直前の選択: ${opt.id})`);
           totals[q.id] = total;

@@ -1497,7 +1497,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.60';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.61';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -1682,7 +1682,8 @@ function render() {
       const cur = state.players[state.turn];
       if (pe.some(([, x]) => x.type === 'support')) bt = '両者、支援カードを秘密裏に選択中…';
       else if (cur && state.pending[cur.id])
-        bt = state.pending[cur.id].prompt === 'あなたの手番です' ? '' : state.pending[cur.id].prompt;
+        bt = state.pending[cur.id].type === 'pick_draw' ? cur.name + 'がカードを選んでいます…'  // 候補は非公開
+           : state.pending[cur.id].prompt === 'あなたの手番です' ? '' : state.pending[cur.id].prompt;
       else bt = player(pe[0][0]).name + 'が選択中…';
     }
     $('tpBubble').innerHTML = iconize(bt);

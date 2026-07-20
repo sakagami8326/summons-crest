@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const VERSION = '0.60';
+const VERSION = '0.61';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -50,6 +50,12 @@ function drawCards(r, p, n) {
 }
 const baseId = c => (c || '').replace(/_f$/, '');
 const isEvolved = (o) => o.level >= RULES.evoLevel || /_f$/.test(o.creature);
+// v0.61: 新規獲得カードは捨て札ではなく現在の山札へ加えてシャッフルする(位置は非公開)
+function gainToDeck(r, p, cards) {
+  p.deck.push(...cards);
+  shuffle(p.deck);
+  r.lastGain = { player: p.id, n: cards.length, at: stamp(r) };
+}
 
 // ===== 盤面(28マス周回) =====
 const TILES = [
@@ -373,10 +379,61 @@ function askRoll(r, p) {
   }
   ask(r, p.id, 'roll', 'あなたの手番です', opts);
 }
+// ===== v0.61 選択ドロー: 手番開始時、山札から2枚見て1枚を手札へ・1枚を捨て札へ =====
+function startPickDraw(r, p) {
+  const cards = [];
+  for (let k = 0; k < 2; k++) {
+    if (!p.deck.length && p.discard.length) {
+      p.deck = shuffle(p.discard);
+      p.discard = [];
+      log(r, `${p.name}の捨て札がシャッフルされ、新しい山札になった`);
+    }
+    if (p.deck.length) cards.push(p.deck.pop());
+  }
+  if (cards.length <= 1) {
+    // 山札+捨て札の合計が1枚以下: 選択画面を出さず自動処理(進行を止めない)
+    if (cards.length === 1) {
+      p.hand.push(cards[0]);
+      r.lastDraw = { player: p.id, n: 1, reason: 'pick', at: stamp(r) };
+      log(r, `${p.name}がカードを1枚引いた`);
+    }
+    return askRoll(r, p);
+  }
+  p.pickCards = cards;  // 選択中カード(山札・手札・捨て札のどれにも属さない)
+  ask(r, p.id, 'pick_draw', '手札に加えるカードを選んでください(選ばなかった1枚は捨て札へ)',
+    cards.map((c, i) => ({ id: 'pd:' + i, card: c,
+      label: (CREATURES[c] || SPELLS[c] || SUPPORTS[c] || { name: c }).name })));
+  r.pending[p.id].until = Date.now() + 10000;  // 時間切れ10秒で自動選択
+  clearTimeout(r.pickTimer);
+  r.pickTimer = setTimeout(() => autoPickDraw(r, p.id), 10200);
+  if (r.pickTimer.unref) r.pickTimer.unref();
+}
+function resolvePickDraw(r, p, idx) {
+  const cards = p.pickCards;
+  clearTimeout(r.pickTimer);
+  if (!cards || !cards.length) return askRoll(r, p);
+  const take = cards[idx] !== undefined ? idx : 0;
+  p.hand.push(cards[take]);
+  p.discard.push(...cards.filter((c, i) => i !== take));
+  p.pickCards = null;
+  r.lastDraw = { player: p.id, n: 1, reason: 'pick', at: stamp(r) };
+  log(r, `${p.name}がカードを1枚引いた(もう1枚は捨て札へ)`);  // カード名は共有ログに出さない
+  return askRoll(r, p);
+}
+function autoPickDraw(r, pid) {
+  if (r.phase !== 'playing') return;
+  const pend = r.pending[pid];
+  if (!pend || pend.type !== 'pick_draw') return;
+  const p = pById(r, pid);
+  if (!p || !p.pickCards) return;
+  delete r.pending[pid];
+  log(r, `時間切れ ─ ${p.name}のカードは自動で選ばれた`);
+  resolvePickDraw(r, p, Math.floor(Math.random() * p.pickCards.length));
+  broadcast(r);
+}
 function beginTurn(r) {
   if (r.phase !== 'playing') return;
   const p = cur(r);
-  drawCards(r, p, 1);  // v0.44: 毎ターン1枚ドロー(手札は持ち越し)
   p.spellCast = false;  // 呪文は1ターンに1回まで
   p.gale = false;
   p.blade = false;  // 血染めの刃: 次の手番開始まで侵略しなければ解除
@@ -388,7 +445,7 @@ function beginTurn(r) {
   // この人の結界は効果終了
   if (r.barrier[p.id]) { delete r.barrier[p.id]; log(r, `${p.name}の結界が解けた`); }
   log(r, `▶ ${p.name}の手番(ラウンド${r.round})`);
-  askRoll(r, p);
+  startPickDraw(r, p);  // v0.61: 選択ドロー(完了後にaskRollへ)
 }
 // 所持金がマイナスの人がいれば強制売却→それでも負なら破産。全員0以上ならendTurnへ
 function settleAll(r) {
@@ -520,7 +577,10 @@ function resolveTile(r, p) {
   if (tile.t === 'shrine') {
     p.gold += RULES.shrineBonus; p.shrineVisits++;
     const got = drawCards(r, p, 1);
-    if (got) log(r, `⛩ 祠の導きで${p.name}はカードを1枚引いた`);
+    if (got) {
+      r.lastDraw = { player: p.id, n: got, reason: 'shrine', at: stamp(r) };
+      log(r, `⛩ 祠の導きで${p.name}はカードを1枚引いた`);
+    }
     r.lastEvent = { type: 'shrine', player: p.id, gold: RULES.shrineBonus,
                     visits: p.shrineVisits, at: stamp(r) };
     log(r, `${p.name}は祠に参拝(+${RULES.shrineBonus}G / 通算${p.shrineVisits}回)`);
@@ -812,7 +872,10 @@ function resolveBattle(r) {
       : { player: atk.id, level: o.level, creature: b.atkCreature };  // 手札からの占領は全快
     atk.battleWins++;
     log(r, `${ac.name}の${hitsDone === 2 ? '連撃' : '一撃'}(実ダメージ${dealt})が${dc.name}を討ち取った! Lv${o.level}の土地を奪取!`);
-    if (drawCards(r, atk, 1)) log(r, `戦勝の報酬 ─ ${atk.name}はカードを1枚引いた`);
+    if (drawCards(r, atk, 1)) {
+      r.lastDraw = { player: atk.id, n: 1, reason: 'battle', at: stamp(r) };
+      log(r, `戦勝の報酬 ─ ${atk.name}はカードを1枚引いた`);
+    }
     if (baseId(b.atkCreature) === 'zati') {
       const got = payTo(r, def, atk, 50);
       if (got) log(r, `【略奪】ザーティーが${def.name}から${got}Gを奪った!`);
@@ -861,7 +924,10 @@ function resolveBattle(r) {
       log(r, `${def.name}が防衛成功!(移動系スペルによる侵略のため通行料なし)`);
     }
     def.battleWins++;
-    if (drawCards(r, def, 1)) log(r, `防衛の報酬 ─ ${def.name}はカードを1枚引いた`);
+    if (drawCards(r, def, 1)) {
+      r.lastDraw = { player: def.id, n: 1, reason: 'battle', at: stamp(r) };
+      log(r, `防衛の報酬 ─ ${def.name}はカードを1枚引いた`);
+    }
     if (baseId(o.creature) === 'barbaro') {
       const extra = payTo(r, atk, def, defEvolved ? 50 : 30);
       if (extra) log(r, `【逆鱗】バーグランダの怒りで追加${extra}Gを支払った!`);
@@ -885,6 +951,11 @@ function handleChoose(r, playerId, optionId) {
   const pend = r.pending[playerId];
   if (!p || !pend || !pend.options.some(o => o.id === optionId)) return;
   delete r.pending[playerId];
+
+  // --- 選択ドロー(v0.61) ---
+  if (pend.type === 'pick_draw') {
+    return resolvePickDraw(r, p, +optionId.slice(3));  // optionIdはpd:0/pd:1のみ(冒頭で検証済み)
+  }
 
   // --- キャラ選択 ---
   if (pend.type === 'select_char') {
@@ -967,6 +1038,7 @@ function handleChoose(r, playerId, optionId) {
     if (sid === 'sp_insight') {
       castLog();
       const got = drawCards(r, p, 2);
+      if (got) r.lastDraw = { player: p.id, n: got, reason: 'insight', at: stamp(r) };
       log(r, `${p.name}はカードを${got}枚引いた`);
       return askRoll(r, p);
     }
@@ -1302,7 +1374,7 @@ function handleChoose(r, playerId, optionId) {
         p.hand.splice(p.hand.indexOf(c), 1);
         o.creature = c; o.dmg = 0; o.shade = 0;  // 新クリーチャーは全快で配置(死影は解除)
         if (baseId(c) === 'cresteria') { p.gems++; log(r, `【真珠】${p.name}は宝石を1個得た(所持${p.gems}個)`); }
-        if (baseId(c) === 'fugorm') { p.discard.push('weapon'); log(r, `【鍛冶】${p.name}は支援「武器」を捨て札に得た`); }
+        if (baseId(c) === 'fugorm') { gainToDeck(r, p, ['weapon']); log(r, `【鍛冶】${p.name}は支援「武器」を山札に得た`); }
         p.hand.splice(p.hand.indexOf('sp_swap'), 1);
         p.discard.push('sp_swap');
         p.gold -= SPELLS.sp_swap.cost + CREATURES[c].cost;
@@ -1383,8 +1455,8 @@ function handleChoose(r, playerId, optionId) {
     const idx = r.draft.cards.indexOf(c);
     r.draft.cards.splice(idx, 1);
     r.deck.push(...r.draft.cards);
-    p.discard.push(c);
-    log(r, `${p.name}はカードを1枚獲得し、捨て札に加えた(中身は非公開)`);
+    gainToDeck(r, p, [c]);  // v0.61: 獲得カードは山札へ(シャッフル)
+    log(r, `${p.name}はカードを1枚獲得し、山札に加えた(中身は非公開)`);
     const resume = r.draft.resume;
     r.draft = null;
     if (resume === 'tile') return resolveTile(r, p);
@@ -1454,7 +1526,7 @@ function handleChoose(r, playerId, optionId) {
       r.owners[i] = { player: p.id, level: 1, creature: c };
       log(r, `${p.name}は${CREATURES[c].name}を召喚し、土地を領地化!`);
       if (baseId(c) === 'cresteria') { p.gems++; log(r, `【真珠】${p.name}は宝石を1個得た(所持${p.gems}個)`); }
-      if (baseId(c) === 'fugorm') { p.discard.push('weapon'); log(r, `【鍛冶】${p.name}は支援「武器」を捨て札に得た`); }
+      if (baseId(c) === 'fugorm') { gainToDeck(r, p, ['weapon']); log(r, `【鍛冶】${p.name}は支援「武器」を山札に得た`); }
       updateTitles(r); if (checkVictory(r)) return; return endTurn(r);
     }
     if (optionId === 'toll') {
@@ -1501,8 +1573,9 @@ function handleChoose(r, playerId, optionId) {
       return startDraft(r, p, 'market');
     } else if (optionId.startsWith('buys:')) {
       const s = optionId.slice(5);
-      p.gold -= hm(SUPPORTS[s].cost); p.discard.push(s);
-      log(r, `${p.name}は支援「${SUPPORTS[s].name}」を購入`);
+      p.gold -= hm(SUPPORTS[s].cost);
+      gainToDeck(r, p, [s]);  // v0.61: 購入品は山札へ
+      log(r, `${p.name}は支援「${SUPPORTS[s].name}」を購入(山札へ)`);
     } else if (optionId === 'gem') {
       p.gold -= hm(RULES.gemPrice); p.gems++; p.gemThisStop = (p.gemThisStop || 0) + 1;
       log(r, `${p.name}は宝石を購入(所持${p.gems}個)`);
@@ -1588,9 +1661,13 @@ function publicState(r, viewerId) {
     lastSeal: r.lastSeal || null, lastRuin: r.lastRuin || null,
     winner: r.winner,
     pending: Object.fromEntries(Object.entries(r.pending).map(([k, v]) =>
-      [k, v.type === 'draft' && k !== viewerId
-        ? { type: v.type, prompt: v.prompt, options: [], aura: r.draft ? r.draft.aura : null,
-            resume: r.draft ? r.draft.resume : null } : v])),
+      v.type === 'draft' && k !== viewerId
+        ? [k, { type: v.type, prompt: v.prompt, options: [], aura: r.draft ? r.draft.aura : null,
+            resume: r.draft ? r.draft.resume : null }]
+        : v.type === 'pick_draw' && k !== viewerId
+          ? [k, { type: v.type, prompt: v.prompt, options: [], until: v.until }]  // 候補カードは本人だけに見せる
+          : [k, v])),
+    lastDraw: r.lastDraw || null, lastGain: r.lastGain || null,
     catalog: { CREATURES, SUPPORTS, ITEMS, CHARS, ULTS, SPELLS },
     players: r.players.map(p => ({
       id: p.id, name: p.name, charId: p.charId || null, confirmed: !!p.confirmed,

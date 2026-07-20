@@ -170,7 +170,6 @@
   #drawModal { position:fixed; inset:0; display:none; z-index:60; align-items:center;
       justify-content:center; background:rgba(10,8,25,.85); }
   #drawModal.on { display:flex; }
-  #drawCard { width:38dvh; height:58dvh; animation:drawIn .55s cubic-bezier(.2,1.2,.4,1); }
   @keyframes drawIn { from { transform:scale(.3) rotateY(180deg); opacity:0; } }
   #drawModal .tap { position:absolute; bottom:6dvh; width:100%; text-align:center;
       font-size:2dvh; letter-spacing:3px; color:rgba(241,232,208,.8); }
@@ -286,6 +285,30 @@
       margin-top:.3dvh; line-height:1.3; min-height:2.4dvh; flex:0 1 auto; overflow:hidden; }
   .face .stats .up { font-size:.8em; }
   .gCard .fx { font-size:max(1.75dvh, 11px); }
+  /* 選択ドロー(v0.61): 2枚から1枚を選んで手札へ */
+  #pickOv { position:fixed; inset:0; display:none; z-index:56; background:rgba(10,8,25,.94);
+      flex-direction:column; align-items:center; padding-top:2dvh; gap:1.4dvh; }
+  #pickOv.on { display:flex; }
+  #pickTitle { font-size:max(2.4dvh, 14px); letter-spacing:3px; color:var(--gold-soft);
+      font-family:'Reggae One','Yu Mincho',serif; }
+  #pickRow { display:flex; gap:6vw; flex:1; align-items:center; }
+  #pickHint { font-size:max(1.8dvh, 11px); color:rgba(241,232,208,.7); padding-bottom:2dvh;
+      font-variant-numeric:tabular-nums; }
+  .pdSel { transform:scale(1.08); transition:transform .25s; z-index:2; }
+  .pdSel .face { border-color:#F2D062; box-shadow:0 0 0 3px #F2D062, 0 0 26px rgba(242,208,98,.75); }
+  .pdSel.pdToHand { transform:translate(0, 40dvh) scale(.5); opacity:.1; transition:all .55s ease; }
+  .pdAway { opacity:.22; transform:translate(-9vw, 22dvh) scale(.68) rotate(-9deg);
+      transition:all .6s ease .12s; pointer-events:none; }
+  /* 直接ドローの開帳・山札追加トースト */
+  #drawCard { display:flex; gap:3vw; height:58dvh; }
+  #drawCard .dcOne { position:relative; height:100%; aspect-ratio:300/470; animation:drawIn .55s cubic-bezier(.2,1.2,.4,1); }
+  #gainToast { position:fixed; top:2dvh; left:50%; transform:translateX(-50%) translateY(-9dvh); z-index:70;
+      background:rgba(16,13,36,.92); border:1px solid var(--gold); border-radius:999px; color:var(--gold-soft);
+      font-size:max(2dvh, 12px); letter-spacing:1px; padding:1dvh 2.8dvh; opacity:0; pointer-events:none;
+      transition:transform .35s, opacity .35s; }
+  #gainToast.on { transform:translateX(-50%) translateY(0); opacity:1; }
+  .card.fresh .face { animation:freshGlow 1.2s ease; }
+  @keyframes freshGlow { 0%, 55% { box-shadow:0 0 0 3px #F2D062, 0 0 22px rgba(242,208,98,.85); border-color:#F2D062; } }
   #draftOv { position:fixed; inset:0; display:none; z-index:56; background:rgba(10,8,25,.92);
       flex-direction:column; align-items:center; padding-top:2dvh; gap:1.4dvh; }
   #draftOv.on { display:flex; }
@@ -457,6 +480,9 @@
     <button class="abtn" id="resultBtn" style="margin-top:1.4dvh">タイトルへ戻る</button></div>
   <div id="charSel"><div id="csMsg" style="font-size:2.2dvh;color:var(--gold-soft);letter-spacing:2px"></div><div id="csRow"></div></div>
   <div id="draftOv"><div id="draftTitle">カードを1枚選んで獲得</div><div id="draftRow"></div><div id="draftFoot"></div></div>
+  <div id="pickOv"><div id="pickTitle">手札に加えるカードを選んでください</div>
+    <div id="pickRow"></div><div id="pickHint"></div></div>
+  <div id="gainToast"></div>
   <div id="galleryOv">
     <div class="gTop">
       <div class="ttl">クリーチャー一覧</div>
@@ -480,7 +506,10 @@
 <script>
 const $ = id => document.getElementById(id);
 let room = null, pid = null, state = null, selected = null, rolling = false;
-let inShopHand = false, expectDraw = false, prevHandKey = '', moveT = null;
+let inShopHand = false, prevHandKey = '', moveT = null;
+// v0.61 選択ドロー・カード追加演出
+let pdLock = false, pickAnimUntil = 0, pickTickT = null;
+let lastDrawSeen = 0, lastGainSeen = 0, drawModalT = null, gainT = null;
 let lastPendKey = '', pendSince = 0;
 const flipped = new Set();
 const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby','ludi','garble','barbaro','detropas','goagoa','fugorm','beruf','zati','magado','cresteria','mimic','pakawata','bedebero','avalanche']);
@@ -680,6 +709,30 @@ function tileTargets(p) {
   return m;
 }
 function hideMapOv() { $('mapOv').classList.remove('on'); }
+
+// ===== 選択ドロー(v0.61): タップ即決定+手札へ飛ぶ演出 =====
+function pdChoose(oid) {
+  if (pdLock) return;
+  pdLock = true;
+  const idx = +oid.slice(3);
+  document.querySelectorAll('#pickRow .draftCard').forEach((el, i) => {
+    el.onclick = null;
+    el.classList.add(i === idx ? 'pdSel' : 'pdAway');
+  });
+  const selEl = document.querySelector('#pickRow .pdSel');
+  setTimeout(() => { if (selEl) selEl.classList.add('pdToHand'); }, 300);
+  pickAnimUntil = Date.now() + 1000;  // 演出が終わるまでオーバーレイを保持(操作ロック)
+  choose(oid);
+  clearTimeout(pickTickT);
+  pickTickT = setTimeout(render, 1050);
+}
+function showGainToast(n) {
+  const el = $('gainToast');
+  el.innerHTML = `${sic('draft', '2.2dvh')} 山札に追加 +${n}枚(シャッフル)`;
+  el.classList.add('on');
+  clearTimeout(gainT);
+  gainT = setTimeout(() => el.classList.remove('on'), 2000);
+}
 function renderMiniMap(p) {
   const targets = tileTargets(p);
   const cancel = p.options.find(o => /cancel$|^pass$/.test(o.id));
@@ -978,10 +1031,19 @@ function renderHand() {
   const list = me().hand.join(',');
   $('hand').dataset.n = me().hand.length;
   if (list !== handListKey) {
+    const oldArr = handListKey ? handListKey.split(',') : [];
     handListKey = list;
     $('hand').innerHTML = me().hand.map((c, i) => cardHTML(c, i)).join('');
     document.querySelectorAll('#hand .card').forEach((el, i) => {
       el.style.animationDelay = (i * 80) + 'ms';  // ドローアニメの時間差
+    });
+    // 新しく手札へ入ったカードを強調(枚数差分で検出)
+    const cnt = {};
+    oldArr.forEach(c => cnt[c] = (cnt[c] || 0) + 1);
+    me().hand.forEach((c, i) => {
+      if (cnt[c]) { cnt[c]--; return; }
+      const el = document.querySelector(`#hand .card[data-i="${i}"]`);
+      if (el && el.classList) el.classList.add('fresh');
     });
     bindHand();
   }
@@ -1112,6 +1174,11 @@ function render() {
     });
   } else $('charSel').classList.remove('on');
   if (!p || p.type !== 'draft') $('draftOv').classList.remove('on');
+  // 選択ドロー: 選択後の飛翔演出が終わるまでは閉じない(操作ロック)
+  if ((!p || p.type !== 'pick_draw') && Date.now() > pickAnimUntil) {
+    const pov = $('pickOv');
+    if (pov.classList.contains('on')) { pov.classList.remove('on'); pov.dataset.k = ''; }
+  }
   const MAP_TYPES = ['curse_target','quake_target','ult_mio','move_a','move_b','swap_land','upgrade',
     'sell','step_a','step_b','spell_target','wc_a','wc_b'];
   if (!mapView && (!p || !MAP_TYPES.includes(p.type))) hideMapOv();
@@ -1120,19 +1187,25 @@ function render() {
   const inMarket = pend() && pend().type === 'market';
   if (!inMarket) { $('shopScene').classList.remove('on'); inShopHand = false; }
   else if (inShopHand) $('shopScene').classList.remove('on');
-  // ランダムドローの開帳(手札が増えた瞬間を検出)
+  // 直接ドロー(祠・戦闘勝利・ひらめき)の開帳: 引いたカードを本人にだけ見せる
   const handKey = (m.hand || []).join(',');
-  if (expectDraw && prevHandKey && handKey.length > prevHandKey.length) {
-    const prevArr = prevHandKey.split(','), nowArr = m.hand.slice();
-    for (const c of prevArr) { const k = nowArr.indexOf(c); if (k >= 0) nowArr.splice(k, 1); }
-    if (nowArr[0]) {
-      $('drawCard').innerHTML = bigCardHTML(nowArr[0]);
-      $('drawModal').classList.add('on');
-      $('pKeeper').src = '/assets/keeper_smile.png';
-      $('pBubble').textContent = 'まいど! 良い引きだ';
-      setTimeout(() => { $('pKeeper').src = '/assets/keeper.png'; }, 1800);
+  if (state.lastDraw && state.lastDraw.player === pid && state.lastDraw.at !== lastDrawSeen) {
+    lastDrawSeen = state.lastDraw.at;
+    if (state.lastDraw.reason !== 'pick' && prevHandKey) {  // 選択ドローは選択画面自体で確認済み
+      const prevArr = prevHandKey.split(','), nowArr = m.hand.slice();
+      for (const c of prevArr) { const k = nowArr.indexOf(c); if (k >= 0) nowArr.splice(k, 1); }
+      if (nowArr.length) {
+        $('drawCard').innerHTML = nowArr.slice(0, 2).map(c => `<div class="dcOne">${bigCardHTML(c)}</div>`).join('');
+        $('drawModal').classList.add('on');
+        clearTimeout(drawModalT);
+        drawModalT = setTimeout(() => $('drawModal').classList.remove('on'), nowArr.length > 1 ? 2400 : 1700);
+      }
     }
-    expectDraw = false;
+  }
+  // 獲得カードの山札追加トースト(ドラフト・購入・鍛冶)
+  if (state.lastGain && state.lastGain.player === pid && state.lastGain.at !== lastGainSeen) {
+    lastGainSeen = state.lastGain.at;
+    showGainToast(state.lastGain.n);
   }
   prevHandKey = handKey;
 
@@ -1196,6 +1269,31 @@ function render() {
       : (t ? t.name + 'の手番です' : '…');
     A.innerHTML = '<div class="waitDots">● ● ●</div>';
     selected = null;
+  } else if (p.type === 'pick_draw') {
+    // v0.61 選択ドロー: 2枚を横並びで大きく表示、カードタップで即決定
+    $('msg').textContent = '';
+    A.innerHTML = '';
+    const pkey = p.options.map(o => o.id + ':' + o.card).join(',');
+    const pov = $('pickOv');
+    if (pov.dataset.k !== pkey) {
+      pov.dataset.k = pkey;
+      pdLock = false;
+      $('pickRow').innerHTML = p.options.map(o => {
+        const rr = (C.CREATURES[o.card] || C.SPELLS[o.card] || {}).rarity || 'N';
+        return `<div class="draftCard rar-${rr}" data-pd="${o.id}" onclick="pdChoose('${o.id}')">${bigCardHTML(o.card)}</div>`;
+      }).join('');
+      document.querySelectorAll('#pickRow .draftCard').forEach((el, i) => {
+        const o = p.options[i];
+        if (o) armLongPress(el, () => openCardZoom(o.card));  // 長押しで拡大は選択中も使える
+      });
+    }
+    const remain = p.until ? Math.max(0, Math.ceil((p.until - Date.now()) / 1000)) : null;
+    $('pickHint').textContent = '選ばなかった1枚は捨て札へ' +
+      (remain !== null ? ` ｜ 残り${remain}秒で自動選択` : '');
+    if (remain !== null && remain > 0 && !pdLock) { clearTimeout(pickTickT); pickTickT = setTimeout(render, 1000); }
+    pov.classList.add('on');
+    renderHand();
+    return;
   } else if (p.type === 'roll') {
     const hasSp = p.options.some(o => o.id.startsWith('sp:'));
     $('msg').innerHTML = iconize(p.prompt) + (hasSp ? ` <span style="opacity:.75">─ ${sic('spell','2dvh')} 呪文カードをタップで使用</span>` : '');
