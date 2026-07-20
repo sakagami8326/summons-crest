@@ -391,9 +391,10 @@
   .plate .row1 { margin-left:40px !important; }
   .plate .pname { font-size:17.5px !important; }
   .plate .pts { font-size:23px !important; letter-spacing:0; white-space:nowrap; }
-  .plate .row2 { margin-left:50px !important; font-size:14.5px !important; gap:13px !important; margin-top:6px !important; }
+  .plate .row2 { margin-left:46px !important; font-size:12.5px !important; gap:8px !important; margin-top:6px !important;
+      white-space:nowrap; overflow:hidden; }
   .plate .row3 { margin-left:50px !important; gap:8px !important; margin-top:7px !important; }
-  .plate .ic img { width:19px !important; height:19px !important; }
+  .plate .ic img { width:17px !important; height:17px !important; }
   .ebadge { min-width:44px !important; height:26px !important; font-size:14px !important; }
   .titleChip { display:inline-block; background:linear-gradient(180deg,#E8C55A,#B8901F); color:#241C05;
       border-radius:4px; font-size:11px; padding:1px 6px; margin-left:4px; vertical-align:1px; font-family:sans-serif; }
@@ -990,6 +991,13 @@ function tileInfoHTML(i) {
       <div class="tiCre">${artHTML(o.creature, o.level, 92)}
         <div class="tiCreName">${cname(o.creature, o.level)}</div>
         <div class="tiHp">HP ${hp}${dmg ? `<span class="tiCurse"> −負傷${dmg}</span>` : ''}${curse ? `<span class="tiCurse"> −呪い${curse.hp}</span>` : ''} <small>+地形補正</small></div>
+        ${(() => { const fx = (state.tileFx || {})[i]; if (!fx) return '';
+          const b2 = [];
+          if (fx.vortex) b2.push('🔥炎の渦(侵略者AT+10)');
+          if (fx.roots) b2.push('🌿根の牢獄(侵略者AT-20)');
+          if (fx.uplift) b2.push('⛰岩盤隆起(防衛DF+10)');
+          if (fx.tide) b2.push('🌊満ち潮(通行料+50%)');
+          return b2.length ? `<div class="tiSub" style="color:#F2D062">${b2.join(' / ')}</div>` : ''; })()}
         ${cr.fx ? `<div class="tiFx">${cr.fx}</div>` : ''}
         <div class="tiToll">通行料 ${Math.round(toll)}G</div>
       </div>
@@ -1029,7 +1037,7 @@ function artHTML(cid, lv, w) {
 
 // ===== 盤面描画 =====
 function renderBoard() {
-  const key = JSON.stringify(state.owners) + JSON.stringify(state.curses || {}) + JSON.stringify(state.barrier || {}) + state.players.map(p => p.id + p.color).join('');
+  const key = JSON.stringify(state.owners) + JSON.stringify(state.curses || {}) + JSON.stringify(state.barrier || {}) + state.players.map(p => p.id + p.color).join('') + state.tiles.map(t => t.e || t.t).join('');
   if (key === ownersCache) return;
   ownersCache = key;
   const st = $('stage');
@@ -1156,8 +1164,7 @@ function renderBoard() {
     if (!o) return;
     const { x, y } = proj(GEO[i][0], GEO[i][1]);
     const lift = (o.level - 1) * 7;
-    let toll = o.level * chain(o.player, state.tiles[i].e) * 30;
-    if (o.creature === 'orphe') toll = Math.round(toll * 1.2);
+    const toll = (state.tolls && state.tolls[i]) || 0;
     const cands = [[52,-76],[-52,-76],[62,-34],[-62,-34],[0,-106]];
     let pos = cands[0];
     for (const [dx, dy] of cands) {
@@ -1236,8 +1243,8 @@ function renderHUD() {
         <span class="ic"><img src="/assets/ic_hand.png">${p.handCount}</span>
         <span class="ic" title="山札/捨て札">${sic('draft')}${p.deckCount ?? 0}<small style="opacity:.65">/${p.discardCount ?? 0}</small></span>
         <span class="ic sealIc ${p.seal ? 'has' : ''}" title="門の刻印">刻</span>
-        <span class="ic"><img src="/assets/ic_gem.png">${p.gems}</span>
-        <span class="ic"><img src="/assets/ic_treasure.png">${p.treasures}</span>
+        ${p.gems ? `<span class="ic"><img src="/assets/ic_gem.png">${p.gems}</span>` : ''}
+        ${p.treasures ? `<span class="ic"><img src="/assets/ic_treasure.png">${p.treasures}</span>` : ''}
         ${p.points >= (state.reachAt || state.target - 1) ? '<span class="reach">ラストスパート</span>' : ''}</div>
       <div class="row3">${['fire','water','earth','wind'].map(e => {
         const n = state.owners.filter((o, i) => o && o.player === p.id && state.tiles[i].e === e).length;
@@ -1417,7 +1424,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.54';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.57';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {

@@ -595,7 +595,7 @@ let mmSel = null;
 function tileTargets(p) {
   const m = {};
   p.options.forEach(o => {
-    const mt = /^(up|ct|qt|mt|mv|mb|sw|sl|st|sd):(\d+)$/.exec(o.id);
+    const mt = /^(up|ct|qt|mt|mv|mb|sw|sl|st|sd|tg):(\d+)$/.exec(o.id);
     if (mt) m[+mt[2]] = o.id;
   });
   return m;
@@ -846,7 +846,7 @@ const PIPS = { 1:[[30,30]], 2:[[16,16],[44,44]], 3:[[16,16],[30,30],[44,44]],
 const DICE_FACES = [1,2,3,4,5,6].map(v => `<div class="dface f${v}"><svg viewBox="0 0 60 60">${
   PIPS[v].map(([x,y]) => `<circle cx="${x}" cy="${y}" r="5.4" fill="#2C2A4A"/>`).join('')}</svg></div>`).join('');
 const FACE_ROT = { 1:[0,0], 2:[-90,0], 3:[0,-90], 4:[0,90], 5:[90,0], 6:[0,180] };
-let lastDiceAt = 0;
+let lastDiceAt = 0, settleT = 0;
 
 function showUltConfirm() {
   const m = me(), u = state.catalog.ULTS[m.charId];
@@ -875,6 +875,7 @@ function settleDice(n) {
   const [fx, fy] = FACE_ROT[n];
   die.style.transition = 'transform 1.1s cubic-bezier(.16,.84,.26,1.02)';
   die.style.transform = `rotateX(${fx + 720}deg) rotateY(${fy + 1080}deg)`;
+  settleT = Date.now() + 1500;
   setTimeout(() => { rolling = false; render(); }, 1400);
 }
 
@@ -908,6 +909,8 @@ function render() {
     renderHand();
     return;
   }
+  // 方向選択待ちでダイス演出が終わっている(または来ない)場合は描画を止めない
+  if (rolling && p && p.type === 'direction' && Date.now() > settleT) rolling = false;
   if (rolling) return;
 
   // キャラ選択オーバーレイ
@@ -1041,7 +1044,8 @@ function render() {
     ], null);
   } else if (p.type === 'curse_target' || p.type === 'quake_target' || p.type === 'ult_mio' ||
              p.type === 'move_a' || p.type === 'move_b' || p.type === 'swap_land' || p.type === 'upgrade' ||
-             p.type === 'sell' || p.type === 'step_a' || p.type === 'step_b') {
+             p.type === 'sell' || p.type === 'step_a' || p.type === 'step_b' ||
+             p.type === 'spell_target' || p.type === 'wc_a' || p.type === 'wc_b') {
     renderMiniMap(p);
   } else if (p.type === 'direction') {
     $('msg').innerHTML = iconize(p.prompt);
