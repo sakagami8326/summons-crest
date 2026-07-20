@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const VERSION = '0.57';
+const VERSION = '0.58';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -944,13 +944,14 @@ function handleChoose(r, playerId, optionId) {
       if (EXILE_SPELLS.has(sid)) { p.exile.push(sid); }
       else p.discard.push(sid);
       if (SPELLS[sid].cost) p.gold -= SPELLS[sid].cost;
-      r.lastEvent = { type: 'spell', player: p.id, name: SPELLS[sid].name, at: stamp(r) };
+      r.lastEvent = { type: 'spell', player: p.id, name: SPELLS[sid].name, desc: SPELLS[sid].desc, at: stamp(r) };
       log(r, `📜 ${p.name}が呪文「${SPELLS[sid].name}」を唱えた!${SPELLS[sid].cost ? `(−${SPELLS[sid].cost}G)` : ''}${EXILE_SPELLS.has(sid) ? '(廃棄)' : ''}`);
     };
     if (sid === 'sp_gold') {
       castLog();
       const gain = (p.lap || 1) * 100;
       p.gold += gain;
+      r.lastEvent.desc = `第${p.lap || 1}周 ─ ${gain}Gを獲得(所持${p.gold}G)`;
       log(r, `第${p.lap || 1}周 ─ ${p.name}は${gain}Gを得た(所持${p.gold}G)`);
       return askRoll(r, p);
     }
@@ -998,6 +999,7 @@ function handleChoose(r, playerId, optionId) {
       const n = r.owners.filter(o => o && o.player === p.id).length;
       const gain = n * 20;
       p.gold += gain;
+      r.lastEvent.desc = `領地${n}つ ─ ${gain}Gを獲得`;
       log(r, `豊穣の角があふれ出す! 領地${n}つ ─ ${p.name}は${gain}Gを得た`);
       return askRoll(r, p);
     }
@@ -1060,7 +1062,8 @@ function handleChoose(r, playerId, optionId) {
         p.hand.splice(p.hand.indexOf('sp_weaken'), 1);
         p.discard.push('sp_weaken');
         if (SPELLS.sp_weaken.cost) p.gold -= SPELLS.sp_weaken.cost;
-        r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_weaken.name, at: stamp(r) };
+        r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_weaken.name,
+          desc: `${pById(r, o.player).name}の${CREATURES[o.creature].name}に20ダメージ!`, at: stamp(r) };
         log(r, `☠ ${p.name}が${pById(r, o.player).name}の${CREATURES[o.creature].name}に衰弱の呪文!(20ダメージ)`);
         spellDamage(r, i, SPELLS.sp_weaken.hp, '衰弱');
       }
@@ -1096,7 +1099,7 @@ function handleChoose(r, playerId, optionId) {
       p.hand.splice(p.hand.indexOf(sid), 1);
       if (EXILE_SPELLS.has(sid)) p.exile.push(sid); else p.discard.push(sid);
       if (SPELLS[sid].cost) p.gold -= SPELLS[sid].cost;
-      r.lastEvent = { type: 'spell', player: p.id, name: SPELLS[sid].name, at: stamp(r) };
+      r.lastEvent = { type: 'spell', player: p.id, name: SPELLS[sid].name, desc: SPELLS[sid].desc, at: stamp(r) };
     };
     const fx = () => (r.tileFx[i] = r.tileFx[i] || {});
     if (ELEM_OF_SPELL[sid]) {
@@ -1104,17 +1107,20 @@ function handleChoose(r, playerId, optionId) {
       pay();
       const el = ELEM_OF_SPELL[sid];
       if (TILES[i].e === el) delete r.elemOv[i]; else r.elemOv[i] = el;
+      r.lastEvent.desc = `${p.name}の領地(${i}番)が${ELEM_JA[el]}属性に変化!(連鎖・地価を再計算)`;
       log(r, `📜 ${p.name}が${SPELLS[sid].name}を使用。マス${i}が${ELEM_JA[el]}属性に変化した!(連鎖・地価を再計算)`);
     } else if (sid === 'sp_flame_vortex') {
       if (o.player === p.id) return askRoll(r, p);
       pay();
       fx().vortex = true;
+      r.lastEvent.desc = `${pById(r, o.player).name}の${CREATURES[o.creature].name}に10ダメージ! 次の侵略者はAT+10`;
       log(r, `🔥 炎の渦がマス${i}を包む。${CREATURES[o.creature].name}に10ダメージ! 次の侵略者はAT+10`);
       spellDamage(r, i, 10, '炎の渦');
     } else if (sid === 'sp_high_tide') {
       if (o.player !== p.id || tileElem(r, i) !== 'water') return askRoll(r, p);
       pay();
       fx().tide = { by: p.id };
+      r.lastEvent.desc = `${p.name}の水領地(${i}番)で次に受け取る通行料+50%(次の手番まで)`;
       log(r, `🌊 満ち潮! マス${i}で次に受け取る通行料+50%(次の手番まで)`);
     } else if (sid === 'sp_bedrock_uplift') {
       if (o.player !== p.id || tileElem(r, i) !== 'earth') return askRoll(r, p);
@@ -1122,11 +1128,13 @@ function handleChoose(r, playerId, optionId) {
       const before = o.dmg || 0;
       o.dmg = Math.max(0, before - 20);
       fx().uplift = true;
+      r.lastEvent.desc = `${CREATURES[o.creature].name}の負傷${before}→${o.dmg}。次の戦闘でDF+10`;
       log(r, `⛰ 岩盤隆起! ${CREATURES[o.creature].name}の負傷${before}→${o.dmg}。次の戦闘でDF+10`);
     } else if (sid === 'sp_root_prison') {
       if (o.player !== p.id) return askRoll(r, p);
       pay();
       fx().roots = true;
+      r.lastEvent.desc = `${p.name}の領地(${i}番)を守る。次に侵略するクリーチャーはAT-20`;
       log(r, `🌿 根の牢獄がマス${i}を守る。次にこの領地へ侵略するクリーチャーはAT-20`);
     } else if (sid === 'sp_feather_rest') {
       if (o.player !== p.id) return askRoll(r, p);
@@ -1136,6 +1144,7 @@ function handleChoose(r, playerId, optionId) {
       p.hand.push(c);
       r.owners[i] = null;
       delete r.tileFx[i];
+      r.lastEvent.desc = `${CREATURES[c].name}は全回復して${p.name}の手札へ。マス${i}は空き地に`;
       log(r, `🪶 羽休め ─ ${CREATURES[c].name}は全回復して${p.name}の手札へ戻った。マス${i}は空き地に`);
     }
     return askRoll(r, p);
@@ -1163,7 +1172,9 @@ function handleChoose(r, playerId, optionId) {
       p.hand.splice(p.hand.indexOf('sp_wind_corridor'), 1);
       p.discard.push('sp_wind_corridor');
       p.gold -= SPELLS.sp_wind_corridor.cost;
-      r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_wind_corridor.name, at: stamp(r) };
+      r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_wind_corridor.name,
+        desc: r.owners[j] ? `${CREATURES[src.creature].name}が隣の敵領地へ侵略開始!(通行料なし)`
+                          : `${CREATURES[src.creature].name}が隣の空き地へ渡り、Lv1の領地に`, at: stamp(r) };
       p.stepI = null;
       // 進化状態を維持したまま土地から引き剥がす(解決時点で移動元は空き地へ)
       let c = src.creature;
@@ -1209,7 +1220,9 @@ function handleChoose(r, playerId, optionId) {
       p.hand.splice(p.hand.indexOf('sp_step'), 1);
       p.discard.push('sp_step');
       p.gold -= SPELLS.sp_step.cost;
-      r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_step.name, at: stamp(r) };
+      r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_step.name,
+        desc: r.owners[j] ? `${CREATURES[src.creature].name}が隣の敵領地へ侵略!(通行料なし)`
+                          : `${CREATURES[src.creature].name}が隣の空き地へ進出し、Lv1の領地に`, at: stamp(r) };
       p.stepI = null;
       const dest = r.owners[j];
       if (!dest) {
@@ -1247,7 +1260,8 @@ function handleChoose(r, playerId, optionId) {
         p.hand.splice(p.hand.indexOf('sp_move'), 1);
         p.discard.push('sp_move');
         p.gold -= SPELLS.sp_move.cost;
-        r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_move.name, at: stamp(r) };
+        r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_move.name,
+          desc: `${CREATURES[ob.creature].name}と${CREATURES[oa.creature].name}が入れ替わった`, at: stamp(r) };
         log(r, `📜 ${p.name}が転移の呪文! ${CREATURES[ob.creature].name}と${CREATURES[oa.creature].name}が入れ替わった(−${SPELLS.sp_move.cost}G)`);
       }
     }
@@ -1278,7 +1292,8 @@ function handleChoose(r, playerId, optionId) {
         p.hand.splice(p.hand.indexOf('sp_swap'), 1);
         p.discard.push('sp_swap');
         p.gold -= SPELLS.sp_swap.cost + CREATURES[c].cost;
-        r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_swap.name, at: stamp(r) };
+        r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_swap.name,
+          desc: `${CREATURES[oldC].name}に代わり${CREATURES[c].name}が領地に立った`, at: stamp(r) };
         log(r, `📜 ${p.name}が交代の呪文! ${CREATURES[oldC].name}に代わり${CREATURES[c].name}が領地に立った(−${SPELLS.sp_swap.cost + CREATURES[c].cost}G)`);
       }
     }
@@ -1329,7 +1344,8 @@ function handleChoose(r, playerId, optionId) {
       if (SPELLS.sp_quake.cost) p.gold -= SPELLS.sp_quake.cost;
       const o = r.owners[i];
       o.level = Math.max(1, o.level - 1);
-      r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_quake.name, at: stamp(r) };
+      r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_quake.name,
+        desc: `${pById(r, o.player).name}の領地(${i}番)がLv${o.level}に崩れた!`, at: stamp(r) };
       log(r, `⛰ ${p.name}の地割れで${pById(r, o.player).name}の領地(${i}番)がLv${o.level}に崩れた!`);
     }
     return askRoll(r, p);
