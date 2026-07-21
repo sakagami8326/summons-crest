@@ -6,7 +6,7 @@
 テストプレイ→即日修正のサイクルで開発している。
 
 - 公開URL: https://summons-crest.onrender.com (mainへのpushでRenderが自動デプロイ)
-- 現在バージョン: **v0.62**(server.jsの`VERSION`とboard.html左下の`board X.XX`表記)
+- 現在バージョン: **v0.63**(server.jsの`VERSION`とboard.html左下の`board X.XX`表記)
 
 ## 構成
 
@@ -66,7 +66,7 @@ npm run test:ui                              # スマホUI貫通
 
 - **セーブ/再開**(v0.62): 盤面ブラウザが`saveRev`契機で`/api/save`を呼びlocalStorageへ自動保存 → タイトル「続きから再開」で`/api/restore`(同一コード・同一ID復元)。save/close/restoreは`boardToken`認可。**ルームに新フィールドを追加したら`ROOM_PERSIST_KEYS`/`ROOM_RUNTIME_KEYS`に必ず分類する**(save_testが未分類を検出)。名前復帰=進行中ルームへ同名(切断中のみ)で/api/join。
 
-- **選択ドロー**(v0.61): 手番開始時に山札から2枚見て1枚を手札へ・1枚を捨て札へ(`startPickDraw`/pending `pick_draw`/10秒で自動選択・候補は本人のみ公開)。祠・戦闘勝利・ひらめきは従来どおり直接ドロー。
+- **選択ドロー**(v0.61): 手番開始時に山札から2枚見て1枚を手札へ・1枚を捨て札へ(`startPickDraw`/pending `pick_draw`/候補は本人のみ公開)。**制限時間なし**(v0.63でタイムアウト廃止)。祠・戦闘勝利・ひらめきは従来どおり直接ドロー。
 - **獲得カードは山札行き**(v0.61): ドラフト・支援購入・鍛冶は`gainToDeck()`で山札に加えてシャッフル。捨て札直行にしないこと。
 
 - **勝利**: 総資産8000G以上で城を通過(資産=所持金+地価+称号500G+秘宝600G)。7000Gでラストスパート。

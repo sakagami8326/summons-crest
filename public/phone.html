@@ -344,11 +344,16 @@
   #cardZoom { position:fixed; inset:0; display:none; z-index:63; align-items:center;
       justify-content:center; background:rgba(10,8,25,.9); }
   #cardZoom.on { display:flex; }
-  #cardZoomCard { position:relative; height:min(88dvh, calc(56vw * 470 / 300)); aspect-ratio:300/470;
+  #cardZoomCard { position:relative; height:min(92dvh, calc(58vw * 470 / 300)); aspect-ratio:300/470;
       animation:drawIn .3s ease; }
-  #cardZoomCard .face .art { height:42% !important; }
-  #cardZoomCard .face .fx { font-size:max(2.1dvh, 13px); overflow:visible; max-height:none; flex:none; }
-  #cardZoomCard .face .stats { font-size:max(2.1dvh, 13px); }
+  /* 拡大表示では効果全文を読ませるのが目的 ─ アートを詰めて文字を大きく(inline指定に勝つため!important) */
+  #cardZoomCard .face .art { height:34% !important; margin-top:5dvh !important; }
+  #cardZoomCard .face .glyph { height:30% !important; font-size:7dvh !important; }
+  #cardZoomCard .face .nm { font-size:max(3.4dvh, 20px) !important; margin-top:1dvh !important; }
+  #cardZoomCard .face .fx { font-size:max(2.8dvh, 17px) !important; line-height:1.55 !important;
+      overflow:visible !important; max-height:none !important; flex:none !important; padding:0 14px !important; }
+  #cardZoomCard .face .stats { font-size:max(2.8dvh, 17px) !important; }
+  #cardZoomCard .face .type { font-size:max(1.8dvh, 11px); }
   #cardZoom .tap { position:absolute; bottom:4dvh; width:100%; text-align:center;
       font-size:2dvh; letter-spacing:3px; color:rgba(241,232,208,.8); }
   #galZoom { position:fixed; inset:0; display:none; z-index:62; align-items:center;
@@ -411,9 +416,18 @@
   .shopBtn .sbD { font-size:max(1.5dvh, 11px); color:rgba(36,28,5,.75); margin-top:.5dvh; line-height:1.4; }
   .shopBtn.ghost .sbD { color:rgba(241,232,208,.6); }
   .shopBtn.full { grid-column:1 / -1; text-align:center; }
-  /* 門の選択肢(等幅・タイトル+説明) */
-  .gateBtns { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:1.2dvh;
-      width:min(92%, 100dvh); align-content:center; }
+  /* 門の選択肢(全画面オーバーレイ・等幅・タイトル+説明) */
+  #gateOv { position:fixed; inset:0; display:none; z-index:56; background:rgba(10,8,25,.94);
+      flex-direction:column; align-items:center; justify-content:center; gap:2.6dvh;
+      padding:2dvh calc(4vw + env(safe-area-inset-right)) 2dvh calc(4vw + env(safe-area-inset-left)); }
+  #gateOv.on { display:flex; }
+  #gateTitle { font-size:max(2.8dvh, 16px); letter-spacing:3px; color:var(--gold-soft);
+      font-family:'Reggae One','Yu Mincho',serif; }
+  .gateBtns { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:2dvh;
+      width:min(92vw, 130dvh); align-content:center; }
+  #gateOv .gateBtn { padding:2.8dvh 2.8dvh; }
+  #gateOv .gbT { font-size:max(3dvh, 17px); }
+  #gateOv .gbD { font-size:max(2dvh, 12px); margin-top:.8dvh; }
   .gateBtn { font-family:inherit; text-align:left; padding:1.6dvh 2dvh; cursor:pointer;
       background:linear-gradient(180deg,#E8C55A,#B8901F); color:#241C05;
       border:2px solid #F2D062; border-radius:1.4dvh; box-shadow:0 3px 10px rgba(0,0,0,.5); }
@@ -483,6 +497,7 @@
   <div id="draftOv"><div id="draftTitle">カードを1枚選んで獲得</div><div id="draftRow"></div><div id="draftFoot"></div></div>
   <div id="pickOv"><div id="pickTitle">手札に加えるカードを選んでください</div>
     <div id="pickRow"></div><div id="pickHint"></div></div>
+  <div id="gateOv"><div id="gateTitle">変化の門 ─ 恩恵を選べ</div><div id="gateBtnsWrap" class="gateBtns"></div></div>
   <div id="gainToast"></div>
   <div id="galleryOv">
     <div class="gTop">
@@ -1175,6 +1190,7 @@ function render() {
     });
   } else $('charSel').classList.remove('on');
   if (!p || p.type !== 'draft') $('draftOv').classList.remove('on');
+  if (!p || p.type !== 'gate') $('gateOv').classList.remove('on');
   // 選択ドロー: 選択後の飛翔演出が終わるまでは閉じない(操作ロック)
   if ((!p || p.type !== 'pick_draw') && Date.now() > pickAnimUntil) {
     const pov = $('pickOv');
@@ -1288,10 +1304,7 @@ function render() {
         if (o) armLongPress(el, () => openCardZoom(o.card));  // 長押しで拡大は選択中も使える
       });
     }
-    const remain = p.until ? Math.max(0, Math.ceil((p.until - Date.now()) / 1000)) : null;
-    $('pickHint').textContent = '選ばなかった1枚は捨て札へ' +
-      (remain !== null ? ` ｜ 残り${remain}秒で自動選択` : '');
-    if (remain !== null && remain > 0 && !pdLock) { clearTimeout(pickTickT); pickTickT = setTimeout(render, 1000); }
+    $('pickHint').textContent = '選ばなかった1枚は捨て札へ(制限時間はありません)';
     pov.classList.add('on');
     renderHand();
     return;
@@ -1362,21 +1375,23 @@ function render() {
           return { card: c, pickId: o.id, zone: `→ ${cr2.evo || '進化'}` }; }) },
     ], 'back');
   } else if (p.type === 'gate') {
-    // 門: 等幅ボタン(タイトル+説明)で選ぶ
+    // 門: 全画面オーバーレイで選ぶ(押し込み配置だとボタンが見切れるため)
     $('msg').innerHTML = iconize(p.prompt);
+    A.innerHTML = '';
     const GATE_META = {
       g_up:    { t: '領地強化', d: '自分の領地1つのレベルを上げる(費用は通常どおり)', ic: 'up' },
       g_draft: { t: 'カードを引く', d: '山札から3枚公開し、1枚を選んで獲得する', ic: 'draft' },
       g_forge: { t: '鍛錬', d: '手札のクリーチャーを進化させる', ic: 'forge' },
       pass:    { t: '何もしない', d: '恩恵を受けずに手番を終える' },
     };
-    A.innerHTML = '<div class="gateBtns">' + p.options.map(o => {
+    $('gateBtnsWrap').innerHTML = p.options.map(o => {
       const mt = GATE_META[o.id] || { t: iconize(o.label), d: '' };
       const cost = (o.label.match(/−\d+G/) || [''])[0];
       return `<button class="gateBtn ${o.id === 'pass' ? 'ghost' : ''}" onclick="choose('${o.id}')">
-        <div class="gbT">${mt.ic ? sic(mt.ic, '2.4dvh') + ' ' : ''}${mt.t}${cost ? ` <span class="gbC">${cost}</span>` : ''}</div>
+        <div class="gbT">${mt.ic ? sic(mt.ic, '3dvh') + ' ' : ''}${mt.t}${cost ? ` <span class="gbC">${cost}</span>` : ''}</div>
         <div class="gbD">${mt.d}</div></button>`;
-    }).join('') + '</div>';
+    }).join('');
+    $('gateOv').classList.add('on');
   } else if (p.type === 'select_char') {
     $('msg').textContent = '';
     A.innerHTML = '';

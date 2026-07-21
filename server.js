@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '0.62';
+const VERSION = '0.63';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -211,7 +211,6 @@ setInterval(() => {
   const cutoff = Date.now() - 60 * 60 * 1000;
   for (const [code, r] of rooms) {
     if ((r.lastActivity || 0) < cutoff) {
-      clearTimeout(r.pickTimer);
       for (const c of r.clients) { try { c.res.end(); } catch (e) {} }
       rooms.delete(code);
       console.log(`ルーム${code}を掃除(60分無操作)`);
@@ -403,17 +402,13 @@ function startPickDraw(r, p) {
     return askRoll(r, p);
   }
   p.pickCards = cards;  // 選択中カード(山札・手札・捨て札のどれにも属さない)
+  // v0.63: 制限時間なし(じっくり選んでよい)
   ask(r, p.id, 'pick_draw', '手札に加えるカードを選んでください(選ばなかった1枚は捨て札へ)',
     cards.map((c, i) => ({ id: 'pd:' + i, card: c,
       label: (CREATURES[c] || SPELLS[c] || SUPPORTS[c] || { name: c }).name })));
-  r.pending[p.id].until = Date.now() + 10000;  // 時間切れ10秒で自動選択
-  clearTimeout(r.pickTimer);
-  r.pickTimer = setTimeout(() => autoPickDraw(r, p.id), 10200);
-  if (r.pickTimer.unref) r.pickTimer.unref();
 }
 function resolvePickDraw(r, p, idx) {
   const cards = p.pickCards;
-  clearTimeout(r.pickTimer);
   if (!cards || !cards.length) return askRoll(r, p);
   const take = cards[idx] !== undefined ? idx : 0;
   p.hand.push(cards[take]);
@@ -422,17 +417,6 @@ function resolvePickDraw(r, p, idx) {
   r.lastDraw = { player: p.id, n: 1, reason: 'pick', at: stamp(r) };
   log(r, `${p.name}がカードを1枚引いた(もう1枚は捨て札へ)`);  // カード名は共有ログに出さない
   return askRoll(r, p);
-}
-function autoPickDraw(r, pid) {
-  if (r.phase !== 'playing') return;
-  const pend = r.pending[pid];
-  if (!pend || pend.type !== 'pick_draw') return;
-  const p = pById(r, pid);
-  if (!p || !p.pickCards) return;
-  delete r.pending[pid];
-  log(r, `時間切れ ─ ${p.name}のカードは自動で選ばれた`);
-  resolvePickDraw(r, p, Math.floor(Math.random() * p.pickCards.length));
-  broadcast(r);
 }
 function beginTurn(r) {
   if (r.phase !== 'playing') return;
@@ -1706,7 +1690,7 @@ function broadcast(r) {
 const SAVE_VER = 1;
 // ルームのフィールド分類表。ルームに新しいキーを追加したら必ずどちらかに分類すること
 // (save_testが未分類キーを検出して失敗する)
-const ROOM_RUNTIME_KEYS = new Set(['clients', 'pickTimer', 'lastActivity']);  // 保存しない
+const ROOM_RUNTIME_KEYS = new Set(['clients', 'lastActivity']);  // 保存しない
 const ROOM_PERSIST_KEYS = new Set([                                            // 保存する
   'code', 'phase', 'players', 'owners', 'deck', 'market', 'turn', 'round', 'log',
   'pending', 'titles', 'duel', 'lastBattle', 'winner', 'barrier', 'elemOv', 'tileFx',
@@ -1794,23 +1778,16 @@ function restoreRoom(save) {
   const existing = rooms.get(d.code);
   if (existing && existing.boardToken !== d.boardToken)
     return { error: `ルーム${d.code}は使用中のため復元できません(既存のルームを閉じてから再試行してください)`, status: 409 };
-  const room = Object.assign(d, { clients: new Set(), pickTimer: null, lastActivity: Date.now() });
+  const room = Object.assign(d, { clients: new Set(), lastActivity: Date.now() });
   // ここから先は失敗しない操作のみ(原子的な差し替え)
   if (existing) {
-    clearTimeout(existing.pickTimer);
     for (const c of existing.clients) { try { c.res.end(); } catch (e) {} }
     rooms.delete(d.code);
   }
   rooms.set(room.code, room);
-  // 選択ドロー中だった場合は制限時間を張り直す(タイマーは1本のみ)
-  for (const [pid2, pend] of Object.entries(room.pending || {})) {
-    if (pend && pend.type === 'pick_draw') {
-      pend.until = Date.now() + 10000;
-      room.pickTimer = setTimeout(() => autoPickDraw(room, pid2), 10200);
-      if (room.pickTimer.unref) room.pickTimer.unref();
-      break;  // pick_drawは手番プレイヤー1人だけ
-    }
-  }
+  // 選択ドロー中のセーブは候補2枚ごと復元される(v0.63: 制限時間なし)
+  for (const pend of Object.values(room.pending || {}))
+    if (pend && pend.type === 'pick_draw') delete pend.until;  // 旧セーブの制限時間表記は破棄
   log(room, 'セーブデータからゲームを再開した');
   const warn = save.gameVer !== VERSION
     ? `セーブ時のゲームバージョン(${save.gameVer})と現在(${VERSION})が異なります` : null;
@@ -1919,7 +1896,6 @@ const server = http.createServer(async (req, res) => {
     const r = rooms.get((b.room || '').toUpperCase());
     if (r) {
       if (b.token !== r.boardToken) return json(res, { error: '権限がありません' }, 403);  // v0.62
-      clearTimeout(r.pickTimer);
       for (const c of r.clients) { try { c.res.end(); } catch (e) {} }
       rooms.delete(r.code);
       console.log(`ルーム${r.code}を手動クローズ`);

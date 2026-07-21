@@ -9,7 +9,7 @@ let src = fs.readFileSync(path.join(__dirname, 'server.js'), 'utf8');
 src = src.replace(/server\.listen\([\s\S]*?\}\);\s*$/, '');
 const G = new Function('require', '__dirname', 'process', 'console', 'setInterval',
   src + '\n;return { makeRoom, startSelect, handleChoose, publicState, rooms, CHARS,' +
-  ' serializeRoom, restoreRoom, validateSave, autoPickDraw,' +
+  ' serializeRoom, restoreRoom, validateSave,' +
   ' ROOM_PERSIST_KEYS, ROOM_RUNTIME_KEYS, SAVE_VER };')(
   require, __dirname, process, console, () => {});
 
@@ -85,7 +85,7 @@ function setupGame() {
   G.rooms.delete(r.code);
 }
 
-// ===== A-2: 復元直後のpick_drawタイマーが一度だけ効く =====
+// ===== A-2: pick_draw中の復元 ─ 候補保持・解決は一度だけ(v0.63: 制限時間なし) =====
 {
   const r = setupGame();
   const p = r.players[r.turn];
@@ -97,13 +97,12 @@ function setupGame() {
   const r2 = out.room;
   const p2 = r2.players.find(q => q.id === p.id);
   ok(r2.pending[p2.id].type === 'pick_draw' && p2.pickCards.length === 2, 'A-2: 候補2枚が保持されている');
-  ok(typeof r2.pending[p2.id].until === 'number' && r2.pending[p2.id].until > Date.now(), 'A-2: 制限時間が張り直されている');
+  ok(r2.pending[p2.id].until === undefined, 'A-2: 制限時間なし(v0.63)');
   const h = p2.hand.length;
-  G.autoPickDraw(r2, p2.id);           // 時間切れ相当を1回
-  ok(p2.hand.length === h + 1, 'A-2: 自動選択で手札+1');
-  G.autoPickDraw(r2, p2.id);           // 二重発火しても何も起きない
-  ok(p2.hand.length === h + 1, 'A-2: タイムアウトは一度だけ効く');
-  clearTimeout(r2.pickTimer);
+  G.handleChoose(r2, p2.id, 'pd:0');   // 通常の選択で解決
+  ok(p2.hand.length === h + 1, 'A-2: 復元後に選択できる(手札+1)');
+  G.handleChoose(r2, p2.id, 'pd:1');   // 二重送信は無視される
+  ok(p2.hand.length === h + 1, 'A-2: 解決は一度だけ');
   G.rooms.delete(r2.code);
 }
 
@@ -147,7 +146,6 @@ function setupGame() {
   ok(G.rooms.get(r.code) === r, 'A-4: 拒否時に既存ルームが残っている');
   const out2 = G.restoreRoom(clone(sv));
   ok(!out2.error && G.rooms.get(r.code) === out2.room, 'A-4: トークン一致なら自ルームを差し替え');
-  clearTimeout(out2.room.pickTimer);
   G.rooms.delete(r.code);
 }
 
@@ -156,7 +154,6 @@ function setupGame() {
   const r = setupGame();
   const st = JSON.stringify(G.publicState(r, r.players[0].id));
   ok(!st.includes(r.boardToken), 'A-5: publicStateにboardTokenが含まれない');
-  clearTimeout(r.pickTimer);
   G.rooms.delete(r.code);
 }
 

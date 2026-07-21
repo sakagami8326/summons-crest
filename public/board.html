@@ -449,6 +449,17 @@
     background:rgba(16,13,36,.7); border:1px solid rgba(201,162,39,.5); color:rgba(241,232,208,.8);
     border-radius:7px; font-family:inherit; font-size:12px; padding:4px 10px; cursor:pointer;">♪ ON</button>
   <div id="verTag" style="position:fixed; left:10px; bottom:8px; z-index:20; font-size:11px; color:rgba(241,232,208,.45); letter-spacing:1px;"></div>
+  <button id="optBtn" style="display:none; position:fixed; left:10px; bottom:64px; z-index:20;
+    font-family:inherit; font-size:13px; letter-spacing:1px; padding:6px 14px;
+    background:rgba(16,13,36,.8); color:var(--gold-soft); border:1px solid rgba(201,162,39,.6);
+    border-radius:8px; cursor:pointer;">オプション</button>
+  <div id="optMenu" style="display:none; position:fixed; left:10px; bottom:100px; z-index:75;
+    background:rgba(16,13,36,.96); border:1px solid var(--gold); border-radius:12px;
+    padding:14px; flex-direction:column; gap:10px; min-width:240px;">
+    <button class="saveSmall" id="optSaveQuit" style="font-size:15px; padding:10px 18px;">セーブして終了</button>
+    <div id="optMsg" style="font-size:12px; color:rgba(241,232,208,.7); min-height:1.1em;"></div>
+    <button class="saveSmall" id="optClose">閉じる</button>
+  </div>
   <div id="world"><div id="stage"></div><div id="pawnLayer"></div><div id="spot"></div></div>
   <div id="tileInfo"></div>
   <div id="hud"></div>
@@ -994,9 +1005,32 @@ function enterRoom(c, phoneUrl, token) {
     localStorage.setItem('sc_board', code);
     if (boardToken) localStorage.setItem('sc_btoken', boardToken);
   } catch (e) {}
+  $('optBtn').style.display = 'block';
   connectBoard();
   fitWorld();
 }
+// ===== v0.63 オプションメニュー(セーブして終了) =====
+$('optBtn').onclick = () => {
+  const m = $('optMenu');
+  m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
+  $('optMsg').textContent = '';
+};
+$('optClose').onclick = () => { $('optMenu').style.display = 'none'; };
+$('optSaveQuit').onclick = async () => {
+  if (!code || !boardToken) return;
+  $('optMsg').textContent = '保存中…';
+  try {
+    const sv = await (await fetch('/api/save?room=' + code + '&token=' + boardToken)).json();
+    if (!sv || !sv.room) { $('optMsg').textContent = '保存に失敗しました'; return; }
+    const meta = { rev: (state && state.saveRev) || 0, savedAt: Date.now(), code,
+      phase: state ? state.phase : '', round: state ? state.round : 0,
+      names: state ? state.players.map(q => q.name).join('・') : '', save: sv };
+    try { localStorage.setItem('sc_save', JSON.stringify(meta)); } catch (e) {}
+    $('optMsg').textContent = '保存しました。ルームを閉じています…';
+    await fetch('/api/close', { method: 'POST', body: JSON.stringify({ room: code, token: boardToken }) });
+    location.reload();  // タイトルに戻る(「続きから再開」ボタンが表示される)
+  } catch (e) { $('optMsg').textContent = '保存に失敗しました(サーバー接続を確認)'; }
+};
 async function boot() {
   const c = await (await fetch('/api/create', { method: 'POST' })).json();
   enterRoom(c.code, c.phoneUrl, c.boardToken);
@@ -1597,7 +1631,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.62';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.63';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
