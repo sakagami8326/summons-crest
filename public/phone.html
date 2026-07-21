@@ -217,7 +217,18 @@
       padding:1.6dvh calc(3vw + env(safe-area-inset-right)) 1.6dvh calc(3vw + env(safe-area-inset-left)); }
   #mapOv.on { display:flex; }
   #mapOvTitle { flex:none; text-align:center; font-size:max(2.6dvh, 15px); letter-spacing:2px;
-      color:var(--gold-soft); font-family:'Reggae One','Yu Mincho',serif; }
+      color:var(--gold-soft); font-family:'Reggae One','Yu Mincho',serif; padding-right:24vw; padding-left:6vw; }
+  /* マス表示の切替(領地主/レベル/クリーチャー) ─ 画面右上 */
+  #mmModeSw { position:absolute; top:1.4dvh; right:calc(3vw + env(safe-area-inset-right));
+      display:flex; gap:.8dvh; z-index:2; }
+  .mmSwBtn { font-family:inherit; font-size:max(1.8dvh, 11px); letter-spacing:1px; cursor:pointer;
+      background:rgba(0,0,0,.4); color:rgba(241,232,208,.7); border:1px solid rgba(201,162,39,.4);
+      border-radius:999px; padding:.7dvh 1.8dvh; }
+  .mmSwBtn.act { background:rgba(201,162,39,.25); color:var(--gold-soft); border-color:var(--gold); }
+  .mmT .mmFace { width:82%; height:82%; object-fit:contain; border-radius:1dvh; pointer-events:none;
+      filter:drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
+  .mmT .mmCre { width:88%; height:88%; object-fit:contain; pointer-events:none;
+      filter:drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
   #mapOvBody { flex:1; min-height:0; display:flex; gap:4vw; align-items:center; justify-content:center; }
   #mapOvMap { flex:none; height:100%; aspect-ratio:1; max-width:46vw; display:flex; align-items:center; }
   #mapOvSide { flex:none; display:flex; flex-direction:column; gap:1.6dvh; width:32vw; }
@@ -478,6 +489,11 @@
   <div id="handWrap" style="display:none"><div id="hand"></div><div id="lpHint">カードを長押しで拡大</div></div>
 
   <div id="mapOv"><div id="mapOvTitle"></div>
+    <div id="mmModeSw">
+      <button class="mmSwBtn" data-m="owner" onclick="mmModeSet('owner')">領地主</button>
+      <button class="mmSwBtn" data-m="level" onclick="mmModeSet('level')">レベル</button>
+      <button class="mmSwBtn" data-m="creature" onclick="mmModeSet('creature')">クリーチャー</button>
+    </div>
     <div id="mapOvBody"><div id="mapOvMap"></div><div id="mapOvSide"></div></div></div>
   <div id="cardZoom"><div id="cardZoomCard"></div><div class="tap">タップで閉じる</div></div>
 
@@ -716,6 +732,34 @@ const MM_GEO = [[4,7],[3,7],[2,7],[1,7],[0,7],[0,6],[0,5],[0,4],[0,3],[0,2],[0,1
   [1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],[6,7],[5,7]];
 const MM_COL = { fire:'#B0452A', water:'#2E6EB0', earth:'#5A7A2A', wind:'#3E837C' };
 let mmSel = null;
+// マスの表示モード(owner=誰の領地か(既定) / level=領地レベル / creature=クリーチャー)
+let mmMode = 'owner';
+try { mmMode = localStorage.getItem('sc_mmMode') || 'owner'; } catch (e) {}
+function mmModeSet(m) {
+  mmMode = m;
+  try { localStorage.setItem('sc_mmMode', m); } catch (e) {}
+  if (mapView) renderMapView(); else render();
+}
+function syncMmModeSw() {
+  document.querySelectorAll('#mmModeSw .mmSwBtn').forEach(b =>
+    b.classList.toggle('act', b.dataset.m === mmMode));
+}
+// マス1つぶんの表示内容(選択マップ・領地マップ共通)
+function mmCellContent(t, o) {
+  const st2 = { castle: '城', shrine: '祠', market: '市', gate: '門' }[t.t];
+  if (st2) return st2;
+  if (!o) return '';
+  if (mmMode === 'level') return 'L' + o.level;
+  if (mmMode === 'creature') {
+    const bid = o.creature.replace(/_f$/, '');
+    const cr = state.catalog.CREATURES[o.creature];
+    const evo = /_f$/.test(o.creature) || (o.level >= (state.evoLevel || 3) && !!state.catalog.CREATURES[bid].evo);
+    if (HAS_ART.has(bid)) return `<img class="mmCre" src="/assets/${evo ? 'e_' : 'c_'}${bid}.png">`;
+    return `<span style="font-size:max(1.5dvh,9px)">${cr.name.slice(0, 2)}</span>`;
+  }
+  const pl = state.players.find(q => q.id === o.player);
+  return pl && pl.charId ? `<img class="mmFace" src="/assets/f_${pl.charId}.png">` : '';
+}
 function tileTargets(p) {
   const m = {};
   p.options.forEach(o => {
@@ -758,7 +802,7 @@ function renderMiniMap(p) {
   MM_GEO.forEach(([gx, gy], i) => {
     const t = state.tiles[i], o = state.owners[i];
     const bg = t.e ? MM_COL[t.e] : '#3A3554';
-    const glyph = t.t === 'castle' ? '城' : t.t === 'shrine' ? '祠' : t.t === 'market' ? '市' : t.t === 'gate' ? '門' : (o ? 'L' + o.level : '');
+    const glyph = mmCellContent(t, o);
     const own = o ? `<div class="mmOwn" style="background:${(state.players.find(q => q.id === o.player) || {}).color || '#888'}"></div>` : '';
     const meHere = state.players.some(q => q.pos === i && q.id === pid) ? `<div class="mmMe" style="background:${(me() || {}).color || '#fff'}"></div>` : '';
     const cls = targets[i] ? 'pickable' : 'dim';
@@ -774,6 +818,7 @@ function renderMiniMap(p) {
       : '光っているマスを選ぶと詳細が表示されます'}</div>
     ${selOpt ? `<button class="abtn" onclick="mmSel=null; hideMapOv(); choose('${selOpt}')">ここに決定</button>` : ''}
     ${cancel ? `<button class="abtn ghost" onclick="mmSel=null; hideMapOv(); choose('${cancel.id}')">${cancel.label}</button>` : ''}`;
+  syncMmModeSw();
   $('mapOv').classList.add('on');
 }
 function mmTap(i) { mmSel = i; render(); }
@@ -825,7 +870,7 @@ function renderMapView() {
   MM_GEO.forEach(([gx, gy], i) => {
     const t = state.tiles[i], o = state.owners[i];
     const bg = t.e ? MM_COL[t.e] : '#3A3554';
-    const glyph = t.t === 'castle' ? '城' : t.t === 'shrine' ? '祠' : t.t === 'market' ? '市' : t.t === 'gate' ? '門' : (o ? 'L' + o.level : '');
+    const glyph = mmCellContent(t, o);
     const own = o ? `<div class="mmOwn" style="background:${(state.players.find(q => q.id === o.player) || {}).color || '#888'}"></div>` : '';
     const meHere = state.players.some(q => q.pos === i && q.id === pid) ? `<div class="mmMe" style="background:${(me() || {}).color || '#fff'}"></div>` : '';
     cells.push(`<div class="mmT ${viewSel === i ? 'sel' : ''}" style="grid-column:${gx + 1}; grid-row:${gy + 1}; background:${bg}"
@@ -835,6 +880,7 @@ function renderMapView() {
   $('mapOvMap').innerHTML = `<div id="miniMap">${cells.join('')}</div>`;
   $('mapOvSide').innerHTML = `<div id="mapOvSel">${tileDetailHTML(viewSel)}</div>
     <button class="abtn ghost" onclick="mapView=false; hideMapOv()">閉じる</button>`;
+  syncMmModeSw();
   $('mapOv').classList.add('on');
 }
 function viewTap(i) { viewSel = i; renderMapView(); }
