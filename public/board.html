@@ -455,10 +455,15 @@
     border-radius:8px; cursor:pointer;">オプション</button>
   <div id="optMenu" style="display:none; position:fixed; left:10px; bottom:100px; z-index:75;
     background:rgba(16,13,36,.96); border:1px solid var(--gold); border-radius:12px;
-    padding:14px; flex-direction:column; gap:10px; min-width:240px;">
-    <button class="saveSmall" id="optSaveQuit" style="font-size:15px; padding:10px 18px;">セーブして終了</button>
+    padding:16px; flex-direction:column; gap:10px; min-width:250px; align-items:center;">
+    <div style="font-size:12px; color:rgba(241,232,208,.7); letter-spacing:2px;">ルームコード ─ スマホで参加/復帰</div>
+    <div id="optCode" style="font-size:30px; letter-spacing:8px; color:var(--gold-soft);
+      font-family:'Reggae One','Yu Mincho',serif; text-shadow:0 0 10px rgba(242,208,98,.4);"></div>
+    <div id="optQr"></div>
+    <div id="optPhoneUrl" style="font-size:11px; color:rgba(241,232,208,.6); letter-spacing:1px;"></div>
+    <button class="saveSmall" id="optSaveQuit" style="font-size:15px; padding:10px 18px; width:100%;">セーブして終了</button>
     <div id="optMsg" style="font-size:12px; color:rgba(241,232,208,.7); min-height:1.1em;"></div>
-    <button class="saveSmall" id="optClose">閉じる</button>
+    <button class="saveSmall" id="optClose" style="width:100%;">閉じる</button>
   </div>
   <div id="world"><div id="stage"></div><div id="pawnLayer"></div><div id="spot"></div></div>
   <div id="tileInfo"></div>
@@ -988,9 +993,11 @@ function connectBoard() {
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && code && Date.now() - lastMsgAt > 8000) connectBoard();
 });
+let phoneUrlG = '';
 function enterRoom(c, phoneUrl, token) {
   code = c;
   boardToken = token || boardToken;
+  phoneUrlG = phoneUrl || phoneUrlG;
   $('bigcode').textContent = code;
   $('phoneUrl').textContent = phoneUrl;
   $('qrBox').innerHTML = QR.svg(phoneUrl, 5);
@@ -1012,8 +1019,15 @@ function enterRoom(c, phoneUrl, token) {
 // ===== v0.63 オプションメニュー(セーブして終了) =====
 $('optBtn').onclick = () => {
   const m = $('optMenu');
-  m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
+  const opening = m.style.display !== 'flex';
+  m.style.display = opening ? 'flex' : 'none';
   $('optMsg').textContent = '';
+  if (opening) {
+    // 復元後にスマホで入り直すとき用: ルームコード+QRをいつでも出せる
+    $('optCode').textContent = code || '';
+    $('optPhoneUrl').textContent = phoneUrlG || '';
+    $('optQr').innerHTML = phoneUrlG ? QR.svg(phoneUrlG, 4) : '';
+  }
 };
 $('optClose').onclick = () => { $('optMenu').style.display = 'none'; };
 $('optSaveQuit').onclick = async () => {
@@ -1631,7 +1645,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.63';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.64';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
