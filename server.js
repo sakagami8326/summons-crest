@@ -6,8 +6,9 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const crypto = require('crypto');
 
-const VERSION = '0.61';
+const VERSION = '0.62';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -210,6 +211,7 @@ setInterval(() => {
   const cutoff = Date.now() - 60 * 60 * 1000;
   for (const [code, r] of rooms) {
     if ((r.lastActivity || 0) < cutoff) {
+      clearTimeout(r.pickTimer);
       for (const c of r.clients) { try { c.res.end(); } catch (e) {} }
       rooms.delete(code);
       console.log(`ルーム${code}を掃除(60分無操作)`);
@@ -231,6 +233,7 @@ function makeRoom() {
     tileFx: {},                           // 土地継続効果: マスi → {vortex,tide:{by},uplift,roots}
     treasureCost: {},                     // playerId → 次の秘宝に必要な宝石数
     curses: {},                           // tileIdx → { by, hp }
+    boardToken: crypto.randomBytes(16).toString('hex'),  // v0.62: 盤面だけが持つ保存/復元/クローズ権限
   };
   room.lastActivity = Date.now();
   rooms.set(room.code, room);
@@ -1659,6 +1662,7 @@ function publicState(r, viewerId) {
     titles: r.titles, duel: r.duel, curses: r.curses, lastEvent: r.lastEvent || null,
     barrier: r.barrier || {}, lastUlt: r.lastUlt || null, lastBattle: r.lastBattle, lastDice: r.lastDice || null,
     lastSeal: r.lastSeal || null, lastRuin: r.lastRuin || null,
+    saveRev: r.saveRev || 0,
     winner: r.winner,
     pending: Object.fromEntries(Object.entries(r.pending).map(([k, v]) =>
       v.type === 'draft' && k !== viewerId
@@ -1691,14 +1695,136 @@ function publicState(r, viewerId) {
   };
 }
 function broadcast(r) {
+  r.saveRev = (r.saveRev || 0) + 1;  // v0.62: 状態変化ごとに単調増加(盤面の自動セーブ契機)
   for (const c of r.clients) {
     try { c.res.write(`data: ${JSON.stringify(publicState(r, c.viewerId))}\n\n`); }
     catch (e) { r.clients.delete(c); }
   }
 }
+
+// ===== v0.62 セーブ/再開(docs/plan_save_v0.62.md §7準拠) =====
+const SAVE_VER = 1;
+// ルームのフィールド分類表。ルームに新しいキーを追加したら必ずどちらかに分類すること
+// (save_testが未分類キーを検出して失敗する)
+const ROOM_RUNTIME_KEYS = new Set(['clients', 'pickTimer', 'lastActivity']);  // 保存しない
+const ROOM_PERSIST_KEYS = new Set([                                            // 保存する
+  'code', 'phase', 'players', 'owners', 'deck', 'market', 'turn', 'round', 'log',
+  'pending', 'titles', 'duel', 'lastBattle', 'winner', 'barrier', 'elemOv', 'tileFx',
+  'treasureCost', 'curses', 'boardToken', 'atSeq', 'saveRev', 'battle', 'draft',
+  'dirPend', 'halfMarket',
+  'lastEvent', 'lastDice', 'lastUlt', 'lastSeal', 'lastRuin', 'lastDraw', 'lastGain',
+]);
+function serializeRoom(r) {
+  const room = {};
+  for (const k of Object.keys(r)) {
+    if (ROOM_RUNTIME_KEYS.has(k)) continue;
+    if (ROOM_PERSIST_KEYS.has(k)) room[k] = r[k];
+    // 未分類キーは保存しない(save_testが検出する)
+  }
+  return { saveVer: SAVE_VER, gameVer: VERSION, savedAt: Date.now(),
+           room: JSON.parse(JSON.stringify(room)) };
+}
+const VALID_CARD = c => !!(CREATURES[c] || SPELLS[c] || SUPPORTS[c]);
+// セーブデータの検証。問題なければnull、あればエラーメッセージを返す
+function validateSave(save) {
+  if (!save || typeof save !== 'object') return 'セーブデータが不正です';
+  if (typeof save.saveVer !== 'number' || save.saveVer > SAVE_VER)
+    return `このセーブ形式(ver${save.saveVer})は新しすぎて読めません(対応: ver${SAVE_VER}まで)`;
+  if (save.saveVer < SAVE_VER)
+    return `このセーブ形式(ver${save.saveVer})には対応していません(対応: ver${SAVE_VER})`;
+  const d = save.room;
+  if (!d || typeof d !== 'object') return 'セーブデータが壊れています';
+  if (typeof d.code !== 'string' || !/^[A-Z0-9]{4}$/.test(d.code)) return 'ルームコードが不正です';
+  if (typeof d.boardToken !== 'string' || d.boardToken.length < 16) return '権限トークンが不正です';
+  if (!['lobby', 'select', 'playing', 'ended'].includes(d.phase)) return 'フェーズが不正です';
+  if (!Array.isArray(d.players) || d.players.length < 1 || d.players.length > 4) return 'プレイヤー数が不正です';
+  const ids = new Set();
+  for (const q of d.players) {
+    if (!q || typeof q.id !== 'string' || !q.id || q.id.length > 24 || ids.has(q.id)) return 'プレイヤーIDが不正です';
+    ids.add(q.id);
+    if (typeof q.name !== 'string' || q.name.length > 16) return 'プレイヤー名が不正です';
+    if (q.charId != null && !CHARS[q.charId]) return 'キャラクターIDが不正です';
+    for (const zone of ['deck', 'hand', 'discard', 'exile', 'pickCards']) {
+      const z = q[zone];
+      if (z == null) continue;
+      if (!Array.isArray(z) || z.length > 300) return `カード置き場(${zone})が不正です`;
+      for (const c of z) if (!VALID_CARD(c)) return `不明なカードID: ${c}`;
+    }
+    for (const nk of ['gold', 'pos', 'lap', 'gems', 'treasures', 'battleWins', 'shrineVisits'])
+      if (q[nk] != null && (typeof q[nk] !== 'number' || !isFinite(q[nk]))) return `数値(${nk})が不正です`;
+    if (q.pos != null && (q.pos < 0 || q.pos >= TILES.length)) return 'プレイヤー位置が不正です';
+  }
+  if (!Array.isArray(d.owners) || d.owners.length !== TILES.length) return '盤面データが不正です';
+  for (const o of d.owners) {
+    if (o == null) continue;
+    if (!ids.has(o.player)) return '領地の所有者が不正です';
+    if (!VALID_CARD(o.creature)) return `盤面に不明なカードID: ${o.creature}`;
+    if (typeof o.level !== 'number' || o.level < 1 || o.level > RULES.maxLevel) return '領地レベルが不正です';
+  }
+  if (!Array.isArray(d.deck) || d.deck.length > 500) return '共通山札が不正です';
+  for (const c of d.deck) if (!VALID_CARD(c)) return `共通山札に不明なカードID: ${c}`;
+  if (d.market != null && (!Array.isArray(d.market) || d.market.some(c => !VALID_CARD(c)))) return '市場データが不正です';
+  if (d.pending != null) {
+    if (typeof d.pending !== 'object') return 'pendingが不正です';
+    for (const [k, v] of Object.entries(d.pending)) {
+      if (!ids.has(k)) return 'pendingの対象プレイヤーが不正です';
+      if (!v || typeof v.type !== 'string' || !Array.isArray(v.options)) return 'pendingの形式が不正です';
+    }
+  }
+  if (d.battle != null && (!ids.has(d.battle.attacker) || !ids.has(d.battle.defender))) return '戦闘データが不正です';
+  if (d.draft != null && !ids.has(d.draft.player)) return 'ドラフトデータが不正です';
+  for (const key of ['elemOv', 'tileFx', 'curses'])
+    if (d[key] != null) {
+      if (typeof d[key] !== 'object') return `${key}が不正です`;
+      for (const ti of Object.keys(d[key]))
+        if (!(+ti >= 0 && +ti < TILES.length)) return `${key}のマス番号が不正です`;
+    }
+  if (d.elemOv != null)
+    for (const e of Object.values(d.elemOv))
+      if (!['fire', 'water', 'earth', 'wind'].includes(e)) return '属性上書きが不正です';
+  return null;
+}
+// 復元(原子的): 検証・構築がすべて成功してからroomsへ登録する。失敗時は既存ルームを変更しない
+function restoreRoom(save) {
+  const err = validateSave(save);
+  if (err) return { error: err, status: 400 };
+  let d;
+  try { d = JSON.parse(JSON.stringify(save.room)); }  // 別オブジェクトへ複製
+  catch (e) { return { error: 'セーブデータを複製できません', status: 400 }; }
+  const existing = rooms.get(d.code);
+  if (existing && existing.boardToken !== d.boardToken)
+    return { error: `ルーム${d.code}は使用中のため復元できません(既存のルームを閉じてから再試行してください)`, status: 409 };
+  const room = Object.assign(d, { clients: new Set(), pickTimer: null, lastActivity: Date.now() });
+  // ここから先は失敗しない操作のみ(原子的な差し替え)
+  if (existing) {
+    clearTimeout(existing.pickTimer);
+    for (const c of existing.clients) { try { c.res.end(); } catch (e) {} }
+    rooms.delete(d.code);
+  }
+  rooms.set(room.code, room);
+  // 選択ドロー中だった場合は制限時間を張り直す(タイマーは1本のみ)
+  for (const [pid2, pend] of Object.entries(room.pending || {})) {
+    if (pend && pend.type === 'pick_draw') {
+      pend.until = Date.now() + 10000;
+      room.pickTimer = setTimeout(() => autoPickDraw(room, pid2), 10200);
+      if (room.pickTimer.unref) room.pickTimer.unref();
+      break;  // pick_drawは手番プレイヤー1人だけ
+    }
+  }
+  log(room, 'セーブデータからゲームを再開した');
+  const warn = save.gameVer !== VERSION
+    ? `セーブ時のゲームバージョン(${save.gameVer})と現在(${VERSION})が異なります` : null;
+  return { room, warn };
+}
+const BODY_LIMIT = 2 * 1024 * 1024;  // v0.62: 2MB(復元JSONの上限を兼ねる)
 const readBody = req => new Promise(res => {
-  let raw = ''; req.on('data', c => raw += c);
-  req.on('end', () => { try { res(JSON.parse(raw || '{}')); } catch (e) { res({}); } });
+  let raw = '';
+  req.on('data', c => {
+    if (raw === null) return;
+    raw += c;
+    if (raw.length > BODY_LIMIT) { raw = null; try { req.destroy(); } catch (e) {} res({ __tooLarge: true }); }
+  });
+  req.on('end', () => { if (raw === null) return; try { res(JSON.parse(raw || '{}')); } catch (e) { res({}); } });
 });
 const json = (res, o, s = 200) => { res.writeHead(s, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(o)); };
 const MIME = { html: 'text/html', png: 'image/png', js: 'text/javascript', svg: 'image/svg+xml', jpg: 'image/jpeg' };
@@ -1729,20 +1855,54 @@ const server = http.createServer(async (req, res) => {
     const base = process.env.PUBLIC_URL
       ? process.env.PUBLIC_URL.replace(/\/$/, '')
       : `http://${lanIP()}:${PORT}`;
-    return json(res, { code: r.code, phoneUrl: `${base}/phone` });
+    return json(res, { code: r.code, phoneUrl: `${base}/phone`, boardToken: r.boardToken });
   }
   if (p === '/api/join' && req.method === 'POST') {
     const b = await readBody(req);
     const r = rooms.get((b.room || '').toUpperCase());
     if (!r) return json(res, { error: 'ルームが見つかりません' }, 404);
-    if (r.phase !== 'lobby') return json(res, { error: 'ゲームは開始済みです' }, 400);
+    const nm = String(b.name || '').trim().slice(0, 8);
+    if (r.phase !== 'lobby') {
+      // v0.62: 名前復帰 ─ 同名の「切断中」プレイヤーを引き継ぐ(接続中は乗っ取り不可)
+      const pl = nm && r.players.find(x => x.name === nm);
+      if (pl) {
+        const connected = [...r.clients].some(c => c.viewerId === pl.id);
+        if (connected) return json(res, { error: `「${nm}」は接続中のため復帰できません` }, 400);
+        touch(r);
+        log(r, `${pl.name}が復帰した`);
+        broadcast(r);
+        return json(res, { playerId: pl.id, room: r.code, resumed: true });
+      }
+      return json(res, { error: 'ゲームは開始済みです(参加中の名前を入力すると復帰できます)' }, 400);
+    }
     if (r.players.length >= 4) return json(res, { error: '満員です' }, 400);
+    if (nm && r.players.some(x => x.name === nm))
+      return json(res, { error: '同じ名前のプレイヤーがいます' }, 400);  // v0.62: 名前復帰のため重複禁止
     const id = 'p' + Math.random().toString(36).slice(2, 8);
-    r.players.push({ id, name: (b.name || '名無し').slice(0, 8) });
+    r.players.push({ id, name: nm || '名無し' });
     touch(r);
     log(r, `${r.players[r.players.length - 1].name}が参加した`);
     broadcast(r);
     return json(res, { playerId: id, room: r.code });
+  }
+  if (p === '/api/save') {
+    // v0.62: 盤面専用(boardToken必須)。全員の手札・山札を含むため参加者には渡さない
+    const r = rooms.get((url.searchParams.get('room') || '').toUpperCase());
+    if (!r) return json(res, { error: 'ルームが見つかりません' }, 404);
+    if (url.searchParams.get('token') !== r.boardToken) return json(res, { error: '権限がありません' }, 403);
+    return json(res, serializeRoom(r));
+  }
+  if (p === '/api/restore' && req.method === 'POST') {
+    const b = await readBody(req);
+    if (b.__tooLarge) return json(res, { error: 'セーブデータが大きすぎます' }, 413);
+    const out = restoreRoom(b);
+    if (out.error) return json(res, { error: out.error }, out.status || 400);
+    const base = process.env.PUBLIC_URL
+      ? process.env.PUBLIC_URL.replace(/\/$/, '')
+      : `http://${lanIP()}:${PORT}`;
+    console.log(`ルーム${out.room.code}をセーブデータから復元`);
+    return json(res, { code: out.room.code, phoneUrl: `${base}/phone`,
+                       boardToken: out.room.boardToken, warn: out.warn || null });
   }
   if (p === '/api/resume' && req.method === 'POST') {
     const b = await readBody(req);
@@ -1758,6 +1918,8 @@ const server = http.createServer(async (req, res) => {
     const b = await readBody(req);
     const r = rooms.get((b.room || '').toUpperCase());
     if (r) {
+      if (b.token !== r.boardToken) return json(res, { error: '権限がありません' }, 403);  // v0.62
+      clearTimeout(r.pickTimer);
       for (const c of r.clients) { try { c.res.end(); } catch (e) {} }
       rooms.delete(r.code);
       console.log(`ルーム${r.code}を手動クローズ`);

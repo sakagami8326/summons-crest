@@ -427,6 +427,10 @@
   .selCard .scu b { color:var(--gold-soft); letter-spacing:1px; }
   .selCard .aff { font-size:10.5px; color:rgba(241,232,208,.6); margin-top:4px; }
   #titleResumeWrap { display:none; align-items:center; gap:8px; }
+  .saveSmall { background:transparent; border:1px solid rgba(201,162,39,.6); color:var(--gold-soft);
+      font-family:inherit; font-size:13px; letter-spacing:1px; padding:7px 16px; border-radius:8px;
+      cursor:pointer; }
+  .saveSmall:hover { background:rgba(201,162,39,.15); }
   #resumeClose { background:transparent; border:1px solid #E86A5A; color:#F5B0A5;
       border-radius:8px; font-size:15px; padding:8px 13px; cursor:pointer; font-family:inherit; }
 
@@ -469,6 +473,15 @@
     <div id="titleResumeWrap">
       <button class="gbtn" id="titleResume" style="filter:hue-rotate(-18deg)"></button>
       <button id="resumeClose" title="このルームを閉じる">✕ 閉じる</button>
+    </div>
+    <div id="saveWrap" style="display:none; flex-direction:column; align-items:center; gap:8px;">
+      <button class="gbtn" id="saveResume" style="filter:hue-rotate(-40deg)"></button>
+      <div style="display:flex; gap:8px;">
+        <button class="saveSmall" id="saveExport">セーブをファイルに書き出す</button>
+        <button class="saveSmall" id="saveImportBtn">ファイルから再開</button>
+        <input type="file" id="saveImport" accept="application/json,.json" style="display:none">
+      </div>
+      <div id="saveMsg" style="font-size:13px; color:#F5B0A5; min-height:1.2em; max-width:60vw;"></div>
     </div>
     <p class="hint">テレビ/大画面でこの画面を開き、スマホで参加します</p>
   </div>
@@ -927,6 +940,28 @@ function bgmHeal() {
 setInterval(bgmHeal, 3000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) bgmHeal(); });
 let es = null, lastMsgAt = 0;
+// ===== v0.62 自動セーブ(saveRev契機・盤面のlocalStorageへ) =====
+let boardToken = null, lastSavedRev = 0, saveInFlight = false;
+function maybeAutoSave() {
+  if (!state || !boardToken || !code) return;
+  const rev = state.saveRev || 0;
+  if (rev <= lastSavedRev || saveInFlight) return;  // 1リクエストずつ・巻き戻り防止
+  saveInFlight = true;
+  const myRev = rev;
+  fetch('/api/save?room=' + code + '&token=' + boardToken)
+    .then(r2 => r2.json())
+    .then(sv => {
+      saveInFlight = false;
+      if (sv && sv.room && myRev > lastSavedRev) {
+        lastSavedRev = myRev;
+        const meta = { rev: myRev, savedAt: Date.now(), code, phase: state.phase, round: state.round,
+          names: state.players.map(q => q.name).join('・'), save: sv };
+        try { localStorage.setItem('sc_save', JSON.stringify(meta)); } catch (e) {}
+      }
+      if (state && (state.saveRev || 0) > lastSavedRev) maybeAutoSave();  // 保存中に進んだ分を追いかける
+    })
+    .catch(() => { saveInFlight = false; });
+}
 function connectBoard() {
   if (es) es.close();
   es = new EventSource('/api/events?room=' + code);
@@ -935,38 +970,43 @@ function connectBoard() {
     $('connBar').style.display = 'none';
     state = JSON.parse(e.data);
     render();
+    maybeAutoSave();
   };
   es.onerror = () => { $('connBar').style.display = 'block'; };
 }
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && code && Date.now() - lastMsgAt > 8000) connectBoard();
 });
-function enterRoom(c, phoneUrl) {
+function enterRoom(c, phoneUrl, token) {
   code = c;
+  boardToken = token || boardToken;
   $('bigcode').textContent = code;
   $('phoneUrl').textContent = phoneUrl;
   $('qrBox').innerHTML = QR.svg(phoneUrl, 5);
   $('lobbyCancel').onclick = async () => {
-    await fetch('/api/close', { method: 'POST', body: JSON.stringify({ room: code }) });
-    try { localStorage.removeItem('sc_board'); } catch (e) {}
+    await fetch('/api/close', { method: 'POST', body: JSON.stringify({ room: code, token: boardToken }) });
+    try { localStorage.removeItem('sc_board'); localStorage.removeItem('sc_btoken'); } catch (e) {}
     location.reload();
   };
   $('startBtn').onclick = () =>
     fetch('/api/action', { method: 'POST', body: JSON.stringify({ room: code, type: 'start_select' }) });
-  try { localStorage.setItem('sc_board', code); } catch (e) {}
+  try {
+    localStorage.setItem('sc_board', code);
+    if (boardToken) localStorage.setItem('sc_btoken', boardToken);
+  } catch (e) {}
   connectBoard();
   fitWorld();
 }
 async function boot() {
   const c = await (await fetch('/api/create', { method: 'POST' })).json();
-  enterRoom(c.code, c.phoneUrl);
+  enterRoom(c.code, c.phoneUrl, c.boardToken);
 }
 ['redani','linnei','grease','mio'].forEach(c => { new Image().src = '/assets/full_' + c + '.png'; });
 addEventListener('resize', fitWorld);
 // 前回のルームが生きていれば「戻る」ボタンを出す
 (async () => {
-  let saved = null;
-  try { saved = localStorage.getItem('sc_board'); } catch (e) {}
+  let saved = null, savedToken = null;
+  try { saved = localStorage.getItem('sc_board'); savedToken = localStorage.getItem('sc_btoken'); } catch (e) {}
   if (!saved) return;
   try {
     const d = await (await fetch('/api/room?code=' + saved)).json();
@@ -977,15 +1017,75 @@ addEventListener('resize', fitWorld);
       btn.onclick = () => {
         initAudio();
         document.getElementById('titleOv').classList.remove('on');
-        enterRoom(saved, d.phoneUrl);
+        enterRoom(saved, d.phoneUrl, savedToken);
       };
       document.getElementById('resumeClose').onclick = async () => {
-        await fetch('/api/close', { method: 'POST', body: JSON.stringify({ room: saved }) });
-        try { localStorage.removeItem('sc_board'); } catch (e) {}
+        await fetch('/api/close', { method: 'POST', body: JSON.stringify({ room: saved, token: savedToken }) });
+        try { localStorage.removeItem('sc_board'); localStorage.removeItem('sc_btoken'); } catch (e) {}
         document.getElementById('titleResumeWrap').style.display = 'none';
       };
     }
   } catch (e) {}
+})();
+// ===== v0.62 セーブ/再開UI(タイトル画面) =====
+async function restoreFromSave(meta) {
+  $('saveMsg').textContent = '復元中…';
+  try {
+    const resp = await fetch('/api/restore', { method: 'POST', body: JSON.stringify(meta.save) });
+    const d = await resp.json();
+    if (d.error) { $('saveMsg').textContent = d.error; return; }
+    if (d.warn) $('saveMsg').textContent = d.warn;
+    try {
+      localStorage.setItem('sc_board', d.code);
+      localStorage.setItem('sc_btoken', d.boardToken);
+    } catch (e) {}
+    lastSavedRev = 0;
+    initAudio();
+    $('titleOv').classList.remove('on');
+    enterRoom(d.code, d.phoneUrl, d.boardToken);
+  } catch (e) { $('saveMsg').textContent = '復元に失敗しました(サーバーに接続できません)'; }
+}
+(function initSaveUI() {
+  let meta = null;
+  try { meta = JSON.parse(localStorage.getItem('sc_save') || 'null'); } catch (e) {}
+  const has = meta && meta.save && meta.save.room;
+  $('saveWrap').style.display = 'flex';
+  if (has && meta.phase !== 'ended') {
+    const dt = new Date(meta.savedAt || 0);
+    const pad = n => String(n).padStart(2, '0');
+    $('saveResume').textContent =
+      `続きから再開 ─ 第${meta.round || '?'}周(${meta.names || ''})` +
+      ` ${dt.getMonth() + 1}/${dt.getDate()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}保存`;
+    $('saveResume').onclick = () => restoreFromSave(meta);
+  } else {
+    $('saveResume').style.display = 'none';
+  }
+  if (!has) $('saveExport').style.display = 'none';
+  $('saveExport').onclick = () => {
+    if (!has) return;
+    const blob = new Blob([JSON.stringify(meta)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `summons-crest-save-${meta.code || 'game'}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+    $('saveMsg').textContent = 'ダウンロードフォルダに書き出しました';
+  };
+  $('saveImportBtn').onclick = () => $('saveImport').click();
+  $('saveImport').onchange = async e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    try {
+      const m2 = JSON.parse(await f.text());
+      // metaごと書き出したファイルと、生のセーブJSONの両方を受け付ける
+      const meta2 = m2.save ? m2 : { save: m2, savedAt: m2.savedAt || Date.now(),
+        round: (m2.room || {}).round, names: ((m2.room || {}).players || []).map(q => q.name).join('・'),
+        code: (m2.room || {}).code };
+      restoreFromSave(meta2);
+    } catch (err) { $('saveMsg').textContent = 'ファイルを読み込めませんでした'; }
+  };
 })();
 function fitWorld() {
   const s = Math.min(innerWidth / 1310, (innerHeight - 16) / 960, 1);
@@ -1497,7 +1597,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.61';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.62';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
