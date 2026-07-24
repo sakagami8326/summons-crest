@@ -1,13 +1,14 @@
 {
   "name": "summons-crest",
-  "version": "0.65.0",
+  "version": "0.66.0",
   "private": true,
   "scripts": {
     "start": "node server.js",
-    "test": "node bot_test.js && node ui_test.js && node save_test.js",
+    "test": "node timing_test.js && node bot_test.js && node ui_test.js && node save_test.js",
     "test:bot": "node bot_test.js",
     "test:ui": "node ui_test.js",
-    "test:save": "node save_test.js"
+    "test:save": "node save_test.js",
+    "test:timing": "node timing_test.js"
   },
   "engines": {
     "node": ">=18"

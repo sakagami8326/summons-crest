@@ -6,7 +6,7 @@
 テストプレイ→即日修正のサイクルで開発している。
 
 - 公開URL: https://summons-crest.onrender.com (mainへのpushでRenderが自動デプロイ)
-- 現在バージョン: **v0.63**(server.jsの`VERSION`とboard.html左下の`board X.XX`表記)
+- 現在バージョン: **v0.66**(server.jsの`VERSION`とboard.html左下の`board X.XX`表記)
 
 ## 構成
 
@@ -38,10 +38,9 @@ docs/              … ゲーム説明書・仕様書(ファイル名は文字�
 ## 検証(コード変更後は必ず全部通すこと)
 
 ```bash
-node --check server.js                       # 構文
+node --check server.js && node --check public/game_timing.js && node --check public/board_world.js
 node -e "const fs=require('fs');for(const f of ['public/board.html','public/phone.html']){[...fs.readFileSync(f,'utf8').matchAll(/<script>([\s\S]*?)<\/script>/g)].forEach(m=>new Function(m[1]));}console.log('OK')"
-npm run test:bot                             # サーバー回帰
-npm run test:ui                              # スマホUI貫通
+npm test    # timing(定数共有) → bot(サーバー回帰) → ui(スマホ貫通) → save(セーブ/復元)
 ```
 
 - **bot_test.js**: server.jsをin-processで評価し、4体のランダムBOTが5局完走するかを検証。
@@ -52,6 +51,8 @@ npm run test:ui                              # スマホUI貫通
   - 実HTMLに存在しないIDへの参照はnullを返す(=`$('actions')`型の実行時死を検知)
   - 毎手番「pendingがあるのに操作可能なUI(choose/mmTap/onclick/カードタップ)がゼロ」なら進行不能として失敗
   - 仮想時計(skew)で到着演出の時間待ちを解く。演出系を追加したら最大3パスの範囲で解けるか確認
+- **save_test.js**: セーブ/復元の往復・検証・認可(v0.62)。**timing_test.js**: 移動タイミングのgame_timing.js共有と直書き再発検出(v0.66)。
+- **盤面描画(v0.66〜)**: 既定はPhaser(`public/board_world.js`+同梱`vendor/phaser.min.js` 3.90.0固定)。`?render=dom`とオプションメニューで旧DOM描画へ切替可・初期化失敗時は自動退避。**移動タイミングはgame_timing.jsのみで変更する**(直書き禁止)。パリティ確認は`/?fixture=1`の固定state表示+PW.snapshot()。
 - 機能追加時は上記に加えて**単体テスト**(handleChoose/resolveBattleを直接叩く小スクリプト)を書き、仕様書の計算例をそのまま検証する。
 
 過去にテストが検知した実バグ(教訓):

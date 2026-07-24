@@ -15,7 +15,10 @@ const S = new Function('require', '__dirname', 'process', 'console', 'setInterva
 // ===== phone.html → DOMスタブ環境で実行 =====
 const html = fs.readFileSync('public/phone.html', 'utf8');
 const knownIds = new Set([...html.matchAll(/id="([^"]+)"/g)].map(m => m[1]));
-const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n');
+// v0.66: 共有タイミング定数(外部スクリプト)をインラインscriptの前に連結して実行する
+const timingSrc = fs.readFileSync('public/game_timing.js', 'utf8');
+const scripts = timingSrc + '\n' +
+  [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n');
 
 // ===== レイアウト不変条件 =====
 // HUD(header)・メッセージ・アクション・手札は「フロー配置」でなければならない。

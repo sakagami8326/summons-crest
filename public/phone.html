@@ -535,6 +535,7 @@
   </div></div>
   <div id="drawModal"><div id="drawCard"></div><div class="tap">タップで閉じる</div></div>
 
+<script src="/game_timing.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 let room = null, pid = null, state = null, selected = null, rolling = false;
@@ -1281,18 +1282,19 @@ function render() {
     }
     const ld = state.lastDice;
     if (p && ['tile', 'upgrade', 'market', 'draft', 'gate', 'forge'].includes(p.type) && ld && ld.player === pid) {
+      const GT = GAME_TIMING;  // 盤面と共有の移動タイミング(直書き禁止)
       const steps = ld.multi ? ld.multi.reduce((a, b) => a + b, 0) : ld.value;
-      const init = ld.multi ? 2900 : 1900;
-      let doneAt = ld.at + init + steps * 250 + 1300;
+      const init = ld.multi ? GT.moveStartDelayMulti : GT.moveStartDelay;
+      let doneAt = ld.at + init + steps * GT.stepMs + GT.arriveBuf;
       if (ld.castle && p.type !== 'draft') {
         // 城ドラフト後の到着: テレビ側は選択後に残りを移動する(残り歩数=現在地)
-        doneAt = pendSince + 650 + m.pos * 250 + 1100;
+        doneAt = pendSince + GT.castleResume + m.pos * GT.stepMs + GT.arriveBufCastle;
       }
       if (p.type === 'draft' && ld.castle) {
         // 城ドラフトはコマが城に着いた瞬間に表示する
         const from = ((m.pos - steps) % 28 + 28) % 28;
         const toCastle = (28 - from) % 28 || 28;
-        doneAt = ld.at + init + toCastle * 250 + 400;
+        doneAt = ld.at + init + toCastle * GT.stepMs + GT.castleDraftLead;
       }
       // サーバーとの時計ズレで「移動中…」から抜けなくなるのを防ぐ(最大8秒で強制解除)
       doneAt = Math.min(doneAt, pendSince + 8000);

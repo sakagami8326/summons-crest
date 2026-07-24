@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '0.65';
+const VERSION = '0.66';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -1814,6 +1814,38 @@ function serveFile(res, rel) {
     res.end(data);
   });
 }
+// v0.66: 描画パリティ確認用のフィクスチャルーム(roomsに登録せず、publicState生成にだけ使う)
+function makeFixtureRoom() {
+  const r = makeRoom();
+  rooms.delete(r.code);
+  r.code = 'FIXT';
+  r.phase = 'playing';
+  r.round = 12;
+  const chars = ['redani', 'linnei', 'grease', 'mio'];
+  r.players = chars.map((c, i) => ({
+    id: 'fx' + i, name: 'テスト' + '甲乙丙丁'[i], charId: c, confirmed: true,
+    color: CHARS[c].color, pos: 20, gold: 800 + i * 300, lap: 3, dir: 1,
+    deck: [], hand: [], discard: [], exile: [],
+    gems: i, treasures: i % 2, battleWins: i, shrineVisits: i, seal: i % 2 === 0,
+  }));
+  // Lv1〜4・進化・全属性・呪い・結界・土地効果を網羅した盤面
+  const own = (i, pl, lv, cr) => { r.owners[i] = { player: 'fx' + pl, level: lv, creature: cr, dmg: lv * 5 }; };
+  own(1, 0, 1, 'gecko'); own(2, 0, 2, 'magado'); own(3, 0, 4, 'detropas');     // 火(Lv4=進化)
+  own(9, 3, 1, 'gaston'); own(10, 3, 3, 'garble'); own(12, 3, 2, 'pakawata');  // 風(Lv3=進化)
+  own(16, 2, 2, 'nome'); own(17, 2, 4, 'barbaro'); own(19, 2, 1, 'bedebero');  // 土
+  own(21, 1, 3, 'orphe'); own(22, 1, 1, 'cresteria'); own(24, 1, 2, 'kbaby_f'); // 水(手札鍛錬済み_f)
+  own(26, 1, 1, 'mimic'); own(27, 0, 2, 'beruf');                               // 無属性トークン確認
+  r.owners[27].shade = 2;
+  r.curses[16] = { by: 'fx0', hp: 20 };
+  r.barrier['fx1'] = true;
+  r.tileFx[3] = { vortex: true, roots: true };
+  r.tileFx[21] = { tide: { by: 'fx1' } };
+  r.elemOv[19] = 'fire';
+  r.titles.conqueror = 'fx0';
+  r.titles.pilgrim = 'fx1';
+  log(r, 'フィクスチャ表示(開発用)');
+  return r;
+}
 const lanIP = () => {
   for (const l of Object.values(os.networkInterfaces()))
     for (const it of l || []) if (it.family === 'IPv4' && !it.internal) return it.address;
@@ -1826,6 +1858,13 @@ const server = http.createServer(async (req, res) => {
   if (p === '/') return serveFile(res, 'board.html');
   if (p === '/phone') return serveFile(res, 'phone.html');
   if (p.startsWith('/assets/')) return serveFile(res, p.slice(1));
+  // v0.66: 共有タイミング定数・Phaserワールド描画・同梱ライブラリ
+  if (p === '/game_timing.js' || p === '/board_world.js' || p.startsWith('/vendor/'))
+    return serveFile(res, p.slice(1));
+  if (p === '/api/fixture') {
+    // v0.66: 描画パリティ確認用の固定state(ルームは登録しない・開発用)
+    return json(res, publicState(makeFixtureRoom(), null));
+  }
 
   if (p === '/api/create' && req.method === 'POST') {
     const r = makeRoom();

@@ -1,0 +1,7 @@
+Phaser 3.90.0 (同梱・v0.66で導入)
+取得元: https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js
+取得日: 2026-07-24
+SHA256: E92DDEF111BA42E92D316979C732311757093688EA1810591CB7AA2858EBA7A7
+サイズ: 1,196,122 bytes
+ライセンス: PHASER_LICENSE.md (MIT)
+更新方針: オーナー承認制・手動更新(docs/plan_phaser_board_v0.66.md §9.1)
