@@ -134,13 +134,16 @@ const BW = (() => {
   async function start(atkUrl, defUrl) {
     if (!(await init())) return false;
     stop();
+    // 呼び出し時点で#battleは表示済み ─ 親サイズを再計算してFITを正す(非表示中の初期化対策)
+    try { if (game && game.scale && game.scale.refresh) game.scale.refresh(); } catch (e) {}
     const [ka, kd] = await Promise.all([tex(atkUrl), tex(defUrl)]);
     if (!ka || !kd || !scene) return false;
+    const baseY = H - 110;   // 足元はCanvas下端から浮かせ、画面中央帯に立たせる
     const mk = (k, x, flip) => {
-      const s = scene.add.image(x, H - 56, k).setOrigin(0.5, 1).setDepth(40);
+      const s = scene.add.image(x, baseY, k).setOrigin(0.5, 1).setDepth(40);
       s.setScale(Math.min(300 / s.width, 290 / s.height));
       s.setFlipX(!!flip);
-      s.bwHome = { x, y: H - 56, sx: s.scaleX, sy: s.scaleY };
+      s.bwHome = { x, y: baseY, sx: s.scaleX, sy: s.scaleY };
       s.setAlpha(0);
       scene.tweens.add({ targets: s, alpha: 1, duration: 280 });
       return s;
@@ -158,9 +161,9 @@ const BW = (() => {
     const col = ELEM_COL[elem] || 0xD8D2E8;
     await tw(S, { x: S.bwHome.x - 46 * dir, scaleY: S.bwHome.sy * 0.94 }, 230, 'Sine.easeIn');   // 予備動作
     await tw(S, { x: S.bwHome.x + 150 * dir, scaleY: S.bwHome.sy }, 150, 'Cubic.easeIn');        // 踏み込み
-    await trail(S.bwHome.x + 200 * dir, T.bwHome.x - 70 * dir, H - 200, col, elem);              // 属性trail(素材優先)
-    if (!(await impactImg(T.bwHome.x, H - 190, elem))) flash(T.bwHome.x, H - 190, col);          // impact(素材優先)
-    burst(T.bwHome.x, H - 180, col, heavy ? 15 : 9);
+    await trail(S.bwHome.x + 200 * dir, T.bwHome.x - 70 * dir, H - 250, col, elem);              // 属性trail(素材優先)
+    if (!(await impactImg(T.bwHome.x, H - 250, elem))) flash(T.bwHome.x, H - 250, col);          // impact(素材優先)
+    burst(T.bwHome.x, H - 240, col, heavy ? 15 : 9);
     // ヒットストップ(§8.4-5/§8.9: 演出Tweenだけを止める。JS・SSEは止めない)
     if (scene.tweens) { scene.tweens.timeScale = 0.05; await waitMs(75); scene.tweens.timeScale = 1; }
     tw(T, { x: T.bwHome.x + 30 * dir, angle: 4 * dir }, 90, 'Cubic.easeOut')                     // 反動
@@ -172,7 +175,7 @@ const BW = (() => {
     const S = sprs[side];
     if (!S || !S.scene) return;
     S.setTint(0x555566);
-    burst(S.x, H - 180, 0x9090B0, 10);
+    burst(S.x, H - 240, 0x9090B0, 10);
     await tw(S, { y: S.bwHome.y + 30, alpha: 0 }, 650, 'Sine.easeIn');
   }
   // 帰還(耐えた攻撃側): 上昇して消える

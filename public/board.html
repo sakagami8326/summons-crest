@@ -102,10 +102,11 @@
            align-items:center; justify-content:center; }
   #battle.on { display:flex; }
   #battle.shake { animation:shake .4s; }
-  /* ハイブリッド戦闘のPhaser Canvas(§8.3): クリーチャーと攻撃だけを描く。文字はDOMが上に載る */
-  #bwHost { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  /* ハイブリッド戦闘のPhaser Canvas(§8.3): クリーチャーと攻撃だけを描く。文字はDOMが上に載る。
+     画面中央やや上の固定ボックスに収める(inset:0だとFITで下寄りになり足元が沈む) */
+  #bwHost { position:absolute; left:50%; top:50%; width:min(94vw, 1200px); height:min(62vh, 560px);
+      transform:translate(-50%, -56%); display:flex; align-items:center; justify-content:center;
       pointer-events:none; }
-  #bwHost canvas { max-width:92vw; max-height:80vh; }
   @keyframes shake { 0%,100%{transform:none} 25%{transform:translate(12px,-7px)}
     50%{transform:translate(-10px,8px)} 75%{transform:translate(7px,4px)} }
   .bside { width:340px; text-align:center; transition:transform .35s ease-in; }
@@ -2046,27 +2047,13 @@ async function playBattle(b) {
   const atkElem = C.CREATURES[b.atkCreature].elem || 'neutral';
   const defElem = C.CREATURES[b.defCreature].elem || 'neutral';
   const dLv = state.owners[b.tile] ? state.owners[b.tile].level : 1;
-  // ハイブリッド戦闘(発注書§8 ─ M5): Phaser描画時はクリーチャーと攻撃をBW(別Canvas)で描く。
-  // 一枚絵が無いトークンやBW初期化失敗時はfalseのまま=従来DOM表現で進行(§8.10フォールバック)
-  let bwOn = false;
-  if (renderModeActive === 'phaser' && typeof BW !== 'undefined' && !BW.hasFailed()) {
-    const bidA = b.atkCreature.replace(/_f$/, ''), bidD = b.defCreature.replace(/_f$/, '');
-    const evoA = /_f$/.test(b.atkCreature);
-    const evoD = /_f$/.test(b.defCreature) || (dLv >= (state.evoLevel || 3) && C.CREATURES[bidD].evo);
-    if (HAS_ART.has(bidA) && HAS_ART.has(bidD)) {
-      try {
-        bwOn = await BW.start(`/assets/${evoA ? 'e_' : 'c_'}${bidA}.png`,
-                              `/assets/${evoD ? 'e_' : 'c_'}${bidD}.png`);
-      } catch (e) { bwOn = false; }
-    }
-  }
-  $('bAtk').innerHTML = `<div class="bArtWrap"${bwOn ? ' style="visibility:hidden"' : ''}>${artHTML(b.atkCreature, 1, 220)}</div>
+  $('bAtk').innerHTML = `<div class="bArtWrap">${artHTML(b.atkCreature, 1, 220)}</div>
     <div class="bname" style="color:${atk.color}">${atk.name} ─ ${C.CREATURES[b.atkCreature].name}</div>
     <div class="bnum">AT ${b.st}${b.atkDf ? ' <span style="font-size:2.4vh;opacity:.85">/ DF ' + b.atkDf + '</span>' : ''}</div>
     <div class="hpBarWrap"><div class="hpBar" id="hpBarA"></div><div class="hpNum" id="hpNumA">HP ${b.atkHp}</div></div>
     <div class="bsub">${b.atkSupport !== 'none' ? '+ ' + C.SUPPORTS[b.atkSupport].name : '&nbsp;'}</div>
     <div class="bhpA" style="position:relative"></div>`;
-  $('bDef').innerHTML = `<div class="bArtWrap"${bwOn ? ' style="visibility:hidden"' : ''}>${artHTML(b.defCreature, dLv, 220)}</div>
+  $('bDef').innerHTML = `<div class="bArtWrap">${artHTML(b.defCreature, dLv, 220)}</div>
     <div class="bname" style="color:${def.color}">${def.name} ─ ${cname(b.defCreature, dLv)}</div>
     <div class="bnum">AT ${C.CREATURES[b.defCreature].st} <span style="font-size:2.4vh;opacity:.85">/ DF ${b.df}</span></div>
     <div class="hpBarWrap"><div class="hpBar" id="hpBarD"></div><div class="hpNum" id="hpNumD">HP ${b.hp}</div></div>
@@ -2084,6 +2071,22 @@ async function playBattle(b) {
   hideLogo(true);
   bannerUntil = Math.max(bannerUntil, Date.now() + 8500); // 演出中はTURN START/バナーを待たせる
   $('battle').classList.add('on');
+  // ハイブリッド戦闘(発注書§8 ─ M5): オーバーレイを表示して#bwHostのサイズが確定してから
+  // BWを起動する(display:none中に起動するとFITのサイズ計算が狂い、下寄りに配置される)。
+  // 一枚絵が無いトークンやBW初期化失敗時はfalseのまま=従来DOM表現で進行(§8.10フォールバック)
+  let bwOn = false;
+  if (renderModeActive === 'phaser' && typeof BW !== 'undefined' && !BW.hasFailed()) {
+    const bidA = b.atkCreature.replace(/_f$/, ''), bidD = b.defCreature.replace(/_f$/, '');
+    const evoA = /_f$/.test(b.atkCreature);
+    const evoD = /_f$/.test(b.defCreature) || (dLv >= (state.evoLevel || 3) && C.CREATURES[bidD].evo);
+    if (HAS_ART.has(bidA) && HAS_ART.has(bidD)) {
+      try {
+        bwOn = await BW.start(`/assets/${evoA ? 'e_' : 'c_'}${bidA}.png`,
+                              `/assets/${evoD ? 'e_' : 'c_'}${bidD}.png`);
+      } catch (e) { bwOn = false; }
+    }
+  }
+  if (bwOn) document.querySelectorAll('#battle .bArtWrap').forEach(el => el.style.visibility = 'hidden');
   await wait(900);
   document.querySelectorAll('.sflipB').forEach(f => f.classList.add('open'));
   await wait(1000);
@@ -2211,7 +2214,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.80' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.81' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
