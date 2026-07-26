@@ -769,7 +769,13 @@ const GS = 1.16;                          // マス間隔の倍率(タイル自�
 const OX = 640, OY = 150;
 const proj = (gx, gy) => ({ x: OX + (gx - gy) * TW * GS / 2, y: OY + (gx + gy) * TH * GS / 2 });
 // アートが存在するクリーチャー(それ以外は色トークン表示)
-const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby','ludi','garble','barbaro','detropas','goagoa','fugorm','beruf','zati','magado','cresteria','mimic','pakawata','bedebero','avalanche','bonerex','morbill']);
+// アートが存在するクリーチャー。正はサーバーのcatalog.artIds(assetsを走査 ─ v0.82)。
+// ここは接続前のフォールバック初期値にすぎない。新クリーチャー追加時にこのリストの更新は不要
+let HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby','ludi','garble','barbaro','detropas','goagoa','fugorm','beruf','zati','magado','cresteria','mimic','pakawata','bedebero','avalanche','bonerex','morbill']);
+function syncHasArt() {
+  if (state && state.catalog && Array.isArray(state.catalog.artIds) && HAS_ART.size !== state.catalog.artIds.length)
+    HAS_ART = new Set(state.catalog.artIds);
+}
 
 let code = null, state = null, prev = { phase: null, turn: -1, battleAt: 0, diceAt: 0 };
 const pawnAnim = {}, prevPos = {};
@@ -1166,6 +1172,7 @@ function connectBoard() {
     lastMsgAt = Date.now();
     $('connBar').style.display = 'none';
     state = JSON.parse(e.data);
+    syncHasArt();
     render();
     maybeAutoSave();
   };
@@ -1353,6 +1360,7 @@ function fitWorld() {
   if (!new URLSearchParams(location.search).get('fixture')) return;
   try {
     state = await (await fetch('/api/fixture')).json();
+    syncHasArt();
     document.getElementById('titleOv').classList.remove('on');
     document.getElementById('lobby').classList.remove('on');
     fitWorld();
@@ -2214,7 +2222,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.81' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.82' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');

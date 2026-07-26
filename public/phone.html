@@ -545,7 +545,13 @@ let pdLock = false, pickAnimUntil = 0, pickTickT = null;
 let lastDrawSeen = 0, lastGainSeen = 0, drawModalT = null, gainT = null;
 let lastPendKey = '', pendSince = 0;
 const flipped = new Set();
-const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby','ludi','garble','barbaro','detropas','goagoa','fugorm','beruf','zati','magado','cresteria','mimic','pakawata','bedebero','avalanche']);
+// アートが存在するクリーチャー。正はサーバーのcatalog.artIds(assetsを走査 ─ v0.82)。
+// ここは接続前のフォールバック初期値にすぎない。新クリーチャー追加時にこのリストの更新は不要
+let HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby','ludi','garble','barbaro','detropas','goagoa','fugorm','beruf','zati','magado','cresteria','mimic','pakawata','bedebero','avalanche']);
+function syncHasArt() {
+  if (state && state.catalog && Array.isArray(state.catalog.artIds) && HAS_ART.size !== state.catalog.artIds.length)
+    HAS_ART = new Set(state.catalog.artIds);
+}
 const RUNE = { fire:'#FF7A45', water:'#56A8E8', earth:'#7FD35C', wind:'#5BE0D0' };
 // ===== 絵文字→アイコン変換 =====
 const SIC = {
@@ -590,6 +596,7 @@ function connect() {
     lastMsgAt = Date.now();
     $('connBar').style.display = 'none';
     state = JSON.parse(e.data);
+    syncHasArt();
     render();
   };
   es.onerror = () => { $('connBar').style.display = 'block'; };

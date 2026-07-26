@@ -6,7 +6,7 @@
 テストプレイ→即日修正のサイクルで開発している。
 
 - 公開URL: https://summons-crest.onrender.com (mainへのpushでRenderが自動デプロイ)
-- 現在バージョン: **v0.80**(server.jsの`VERSION`とboard.html左下の`board X.XX`表記)
+- 現在バージョン: **v0.82**(server.jsの`VERSION`とboard.html左下の`board X.XX`表記)
 
 ## 構成
 
@@ -31,7 +31,7 @@ docs/              … ゲーム説明書・仕様書(ファイル名は文字�
 2. **変更のたびにバージョンを上げる**: server.jsの`const VERSION`と、board.htmlの`/ board X.XX`表記の両方。ユーザーはテレビ左下の表記でデプロイ版を確認する。
 3. `pkill -f node`は使わない(環境を巻き込む)。ポート解放は`fuser -k 3000/tcp`等で。
 4. **UI設計思想**(詳細は`docs/spec_rules.md` 13章): ①選択はボタン列でなくカード/マスを直接タップ(土地選択=ミニマップ、鍛錬・交代=カードタップ) ②大型UIは全画面切替(空きスペースへの押し込み禁止) ③UIに絵文字を出さない(iconizeでアイコン化or除去) ④テレビでは出来事を必ず演出で見せる(秘匿は手札とドラフトのみ)/マス変化はズーム+中央下メッセージ ⑤演出は直列(前の演出が終わってから次を発火) ⑥スマホはフロー配置(帯をfixedで重ねない ─ ui_testが検査)。
-5. カードの絵はファイル名規約で自動解決される: 通常`assets/c_<id>.png`、進化形`assets/e_<id>.png`。新カードはIDとファイル名を一致させれば表示コードの変更は不要。
+5. カードの絵はファイル名規約で自動解決される: 通常`assets/c_<id>.png`、進化形`assets/e_<id>.png`。新カードはIDとファイル名を一致させれば表示コードの変更は不要。**アート有無の判定はサーバーが起動時にassetsを走査して`catalog.artIds`で配布**(v0.82〜)。board/phoneの`HAS_ART`は接続前のフォールバック初期値であり、手動更新は不要(二重管理しない)。
 6. アート加工は `python3 tools/make_outline.py 入力.png public/assets/c_xxx.png --width 12 --color auto`(白背景透過→トリム→縁取り→幅300px)。
 7. 新しい仕様はオーナーがMDで渡してくる。実装後、仕様との差異・確認事項は必ず報告に明記する。
 

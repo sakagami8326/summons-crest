@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '0.81';
+const VERSION = '0.82';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -183,6 +183,15 @@ for (const [cid, c] of Object.entries({ ...CREATURES }))
     cost: c.cost, fx: c.fx, rarity: c.rarity, forged: true };
 
 const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill'];
+// アートが存在するクリーチャーID(assetsのc_*.pngを起動時に走査 ─ v0.82)。
+// クライアントはcatalog.artIds経由で受け取る。手書きリストの二重管理はしない
+// (新クリーチャーはIDとファイル名を一致させて置くだけで盤面・カード・戦闘に反映される)
+const ART_IDS = (() => {
+  try {
+    return fs.readdirSync(path.join(__dirname, 'public', 'assets'))
+      .filter(f => /^c_.+\.png$/.test(f)).map(f => f.slice(2, -4));
+  } catch (e) { return []; }
+})();
 const RARITY_COPIES = { L: 1, R: 2, N: 3 };
 function makeDeck() {
   const d = [];
@@ -1704,7 +1713,7 @@ function publicState(r, viewerId) {
           ? [k, { type: v.type, prompt: v.prompt, options: [], until: v.until }]  // 候補カードは本人だけに見せる
           : [k, v])),
     lastDraw: r.lastDraw || null, lastGain: r.lastGain || null,
-    catalog: { CREATURES, SUPPORTS, ITEMS, CHARS, ULTS, SPELLS },
+    catalog: { CREATURES, SUPPORTS, ITEMS, CHARS, ULTS, SPELLS, artIds: ART_IDS },
     players: r.players.map(p => ({
       id: p.id, name: p.name, charId: p.charId || null, confirmed: !!p.confirmed,
       color: p.color || '#888', pos: p.pos || 0, gold: p.gold ?? 0,
