@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '0.79';
+const VERSION = '0.80';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -102,6 +102,8 @@ const CREATURES = {
   zati:    { name: 'ザーティー', evo: 'ザンティアー', elem: 'wind', st: 40, hp: 30, cost: 90, evoSt: 60, evoHp: 50, fx: '【略奪】侵略成功時、相手から50G奪う', rarity: 'N' },
   pakawata:{ name: 'パカワタ',         elem: 'wind',  st: 50, hp: 25, cost: 130, fx: '【先制】防衛時、侵略側より先に攻撃する', rarity: 'R' },
   avalanche:{ name: 'アヴァランチ', evo: 'アヴァランチジャイアント', elem: 'earth', st: 20, hp: 40, cost: 120, evoSt: 30, evoHp: 60, fx: '【双撃】侵略時、同じATで2回続けて攻撃する', rarity: 'L' },
+  bonerex: { name: 'ボーンレックス', evo: 'ディノガルド', elem: 'earth', st: 35, hp: 45, cost: 110, evoSt: 55, evoHp: 65, fx: '【骨鎧】防衛時DF+10(進化+20)', rarity: 'R' },
+  morbill: { name: 'モービル', evo: 'モルドラ', elem: 'earth', st: 30, hp: 45, cost: 90, evoSt: 50, evoHp: 65, fx: '【腐蝕】侵略時、相手の防衛DF-10(進化-20)', rarity: 'N' },
   mimic:   { name: 'ミミック',         elem: null,    st: 30, hp: 30, cost: 70, fx: '【擬態】戦闘時、相手の基礎AT/HPをコピー', rarity: 'N' },
   beruf:   { name: 'ベルーフ・シェイド', evo: 'デスベルーフ', elem: null, st: 20, hp: 50, cost: 90, evoSt: 40, evoHp: 70, fx: '【死影】スペルダメージを受けるたびAT+10(最大+30)。土地を離れるまで持続', rarity: 'N' },
 };
@@ -180,7 +182,7 @@ for (const [cid, c] of Object.entries({ ...CREATURES }))
   if (c.evo) CREATURES[cid + '_f'] = { name: c.evo, elem: c.elem, st: c.evoSt, hp: c.evoHp,
     cost: c.cost, fx: c.fx, rarity: c.rarity, forged: true };
 
-const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche'];
+const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill'];
 const RARITY_COPIES = { L: 1, R: 2, N: 3 };
 function makeDeck() {
   const d = [];
@@ -803,7 +805,16 @@ function resolveBattle(r) {
   if (carried) notes.push(`負傷を引き継いでいる(−${carried})`);
   const upliftDF = bFx.uplift ? 10 : 0;
   if (upliftDF) notes.push('岩盤隆起が大地を固める!(防衛DF+10)');
-  const defDF = terrain + queenBonus + (dEff ? dEff.hp : 0) + upliftDF;
+  const boneArmor = baseId(o.creature) === 'bonerex' ? (defEvolved ? 20 : 10) : 0;
+  if (boneArmor) notes.push(`【骨鎧】防衛DF+${boneArmor}!`);
+  const atkEvolved = aEvo || /_f$/.test(b.atkCreature);
+  const corrosion = baseId(b.atkCreature) === 'morbill' ? (atkEvolved ? 20 : 10) : 0;
+  let defDF = terrain + queenBonus + (dEff ? dEff.hp : 0) + upliftDF + boneArmor;
+  if (corrosion) {
+    const reduced = Math.min(defDF, corrosion);
+    defDF = Math.max(0, defDF - corrosion);
+    notes.push(`【腐蝕】相手の防衛DFを${reduced}溶かした!`);
+  }
   const effHp = Math.max(1, dBase.hp - curse - carried);   // 現在HP(呪いは一時的な減少)
   const atkDmg = st;                                        // AT = 基礎AT+固有+効果+支援
   const atkDF = aEff ? aEff.hp : 0;

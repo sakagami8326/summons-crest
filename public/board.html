@@ -113,6 +113,37 @@
   .bside.lungeL { transform:translateX(90px); } .bside.lungeR { transform:translateX(-90px); }
   .bside.dead { animation:dead .7s forwards; }
   @keyframes dead { to { opacity:0; transform:translateY(50px) rotate(-12deg); filter:brightness(3); } }
+  #battleFx { position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:4; }
+  .battleFxImg { position:absolute; display:block; pointer-events:none; object-fit:contain;
+      filter:drop-shadow(0 0 12px rgba(255,255,255,.32)); }
+  .battleFxTrail { top:28%; width:min(36vw,460px); opacity:0; }
+  .battleFxTrail.toDef { left:42%; transform-origin:left center;
+      animation:bfxTrailDef .38s cubic-bezier(.2,.8,.3,1) forwards; }
+  .battleFxTrail.toAtk { right:42%; transform:scaleX(-1); transform-origin:right center;
+      animation:bfxTrailAtk .38s cubic-bezier(.2,.8,.3,1) forwards; }
+  .battleFxImpact { top:23%; width:min(25vw,310px); opacity:0; transform:translate(-50%,-8%) scale(.35);
+      animation:bfxImpact .48s cubic-bezier(.15,.85,.25,1) forwards; }
+  .battleFxImpact.atDef { left:72%; } .battleFxImpact.atAtk { left:28%; }
+  .battleFxShock { top:25%; width:min(27vw,340px); opacity:0; transform:translate(-50%,-10%) scale(.25);
+      animation:bfxShock .55s ease-out forwards; }
+  .battleFxShock.atDef { left:72%; } .battleFxShock.atAtk { left:28%; }
+  @keyframes bfxTrailDef {
+    0% { opacity:0; transform:translate(-22%,-4%) scale(.55) rotate(-8deg); }
+    25% { opacity:1; } 100% { opacity:0; transform:translate(34%,4%) scale(1.08) rotate(5deg); }
+  }
+  @keyframes bfxTrailAtk {
+    0% { opacity:0; transform:translate(22%,-4%) scaleX(-1) scale(.55) rotate(-8deg); }
+    25% { opacity:1; } 100% { opacity:0; transform:translate(-34%,4%) scaleX(-1) scale(1.08) rotate(5deg); }
+  }
+  @keyframes bfxImpact {
+    0% { opacity:0; transform:translate(-50%,-8%) scale(.35); }
+    18% { opacity:1; } 68% { opacity:.95; transform:translate(-50%,-8%) scale(1); }
+    100% { opacity:0; transform:translate(-50%,-8%) scale(1.15); }
+  }
+  @keyframes bfxShock {
+    0% { opacity:0; transform:translate(-50%,-10%) scale(.25); }
+    22% { opacity:.8; } 100% { opacity:0; transform:translate(-50%,-10%) scale(1.25); }
+  }
   #bmid { width:230px; text-align:center; }
   #bankruptCut { position:fixed; inset:0; z-index:88; display:none; align-items:center; justify-content:center;
       background:rgba(8,4,10,.82); }
@@ -565,6 +596,7 @@
   <div id="summonCut"><img class="pl" id="scPlayer"><div id="scCreature"></div><div id="scText"></div></div>
 
   <div id="battle">
+    <div id="battleFx"></div>
     <div id="bresult"></div>
     <div class="bside" id="bAtk"></div>
     <div id="bmid"><div id="bcap"></div><div id="bcards"></div><div id="bnotes" style="font-size:1.9vh; color:var(--gold-soft); line-height:1.8; min-height:6vh; text-shadow:0 1px 4px rgba(0,0,0,.8)"></div></div>
@@ -730,7 +762,7 @@ const GS = 1.16;                          // マス間隔の倍率(タイル自�
 const OX = 640, OY = 150;
 const proj = (gx, gy) => ({ x: OX + (gx - gy) * TW * GS / 2, y: OY + (gx + gy) * TH * GS / 2 });
 // アートが存在するクリーチャー(それ以外は色トークン表示)
-const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby','ludi','garble','barbaro','detropas','goagoa','fugorm','beruf','zati','magado','cresteria','mimic','pakawata','bedebero','avalanche']);
+const HAS_ART = new Set(['gecko','orphe','nome','gaston','cleo','qbaby','kbaby','ludi','garble','barbaro','detropas','goagoa','fugorm','beruf','zati','magado','cresteria','mimic','pakawata','bedebero','avalanche','bonerex','morbill']);
 
 let code = null, state = null, prev = { phase: null, turn: -1, battleAt: 0, diceAt: 0 };
 const pawnAnim = {}, prevPos = {};
@@ -1956,11 +1988,40 @@ function showTelop(kind, sub) {
   void img.offsetWidth;
   img.classList.add('play'); s.classList.add('play');
 }
+
+// ハイブリッド戦闘FX: 盤面と同じFX_ASSETSをDOM戦闘画面でも再利用する。
+// 画像が未配置の場合は既存の白フラッシュだけで進行し、戦闘を止めない。
+function battleFxImage(url, classes) {
+  if (!url || !$('battleFx')) return null;
+  const img = document.createElement('img');
+  img.className = 'battleFxImg ' + classes;
+  img.src = url;
+  img.alt = '';
+  $('battleFx').appendChild(img);
+  setTimeout(() => img.remove(), 800);
+  return img;
+}
+function battleTrailFx(elem, target, heavy) {
+  const group = typeof FX_ASSETS !== 'undefined' && FX_ASSETS[elem || 'neutral'];
+  if (!group) return;
+  battleFxImage(heavy ? group.trailHeavy : group.trailLight,
+    'battleFxTrail ' + (target === 'atk' ? 'toAtk' : 'toDef'));
+}
+function battleImpactFx(elem, target, heavy) {
+  const group = typeof FX_ASSETS !== 'undefined' && FX_ASSETS[elem || 'neutral'];
+  const common = typeof FX_ASSETS !== 'undefined' && FX_ASSETS.common;
+  const at = target === 'atk' ? 'atAtk' : 'atDef';
+  if (group) battleFxImage(heavy ? group.impactLarge : group.impactSmall, 'battleFxImpact ' + at);
+  if (heavy && common) battleFxImage(common.shockwave, 'battleFxShock ' + at);
+}
+
 async function playBattle(b) {
   cutBusy++;
   try {
   const C = state.catalog;
   const atk = player(b.attacker), def = player(b.defender);
+  const atkElem = C.CREATURES[b.atkCreature].elem || 'neutral';
+  const defElem = C.CREATURES[b.defCreature].elem || 'neutral';
   const dLv = state.owners[b.tile] ? state.owners[b.tile].level : 1;
   $('bAtk').innerHTML = `${artHTML(b.atkCreature, 1, 220)}
     <div class="bname" style="color:${atk.color}">${atk.name} ─ ${C.CREATURES[b.atkCreature].name}</div>
@@ -1982,6 +2043,7 @@ async function playBattle(b) {
   $('bcap').textContent = '支援カード ─ 同時オープン!';
   ['bAtk','bDef'].forEach(id => $(id).classList.remove('lungeL','lungeR','dead'));
   $('bresult').classList.remove('show'); $('bresult').innerHTML = '';
+  $('battleFx').innerHTML = '';
   hideLogo(true);
   bannerUntil = Math.max(bannerUntil, Date.now() + 8500); // 演出中はTURN START/バナーを待たせる
   $('battle').classList.add('on');
@@ -2020,9 +2082,17 @@ async function playBattle(b) {
   animateHp('hpBarA', 'hpNumA', b.atkHp, b.atkHp, b.atkHp, 1);  // 初期表示(満タン)
   animateHp('hpBarD', 'hpNumD', b.hp, b.hp, b.hp, 1);
   // --- 先攻: 攻撃側の一撃 ---
-  $('bcap').textContent = '攻撃側の一撃!';
+  $('bcap').textContent = b.hits === 2 ? '攻撃側の連撃!' : '攻撃側の一撃!';
   $('bAtk').classList.add('lungeL');
+  battleTrailFx(atkElem, 'def', b.hits === 2 || b.st >= 60);
   await wait(320);
+  battleImpactFx(atkElem, 'def', b.hits === 2 || b.st >= 60);
+  if (b.hits === 2) {
+    await wait(260);
+    battleTrailFx(atkElem, 'def', true);
+    await wait(260);
+    battleImpactFx(atkElem, 'def', true);
+  }
   $('bflash').classList.add('go'); $('battle').classList.add('shake');
   pop('bDef', '−' + b.dealt + (b.st > b.dealt ? '(DF−' + (b.st - b.dealt) + ')' : ''));
   animateHp('hpBarD', 'hpNumD', b.hp, b.win ? 0 : b.remainHp, b.hp);
@@ -2042,7 +2112,9 @@ async function playBattle(b) {
     await wait(1100);
     $('bcap').textContent = '防衛側の反撃!';
     $('bDef').classList.add('lungeR');
+    battleTrailFx(defElem, 'atk', b.counterSt >= 60);
     await wait(320);
+    battleImpactFx(defElem, 'atk', b.counterSt >= 60);
     $('bflash').classList.add('go'); $('battle').classList.add('shake');
     pop('bAtk', '−' + b.counterDealt + (b.counterSt > b.counterDealt ? '(DF−' + (b.counterSt - b.counterDealt) + ')' : ''));
     animateHp('hpBarA', 'hpNumA', b.atkHp, b.atkSurvived ? Math.max(0, b.atkHp - b.counterDealt) : 0, b.atkHp);
@@ -2062,6 +2134,7 @@ async function playBattle(b) {
     await wait(1700);
   }
   $('battle').classList.remove('on');
+  $('battleFx').innerHTML = '';
   hideLogo(false);
   // 2E plan§9: 戦闘終了後の盤面演出。オーバーレイを閉じてからマスへズームし、
   // 命中余韻(侵略)/反動+残光(防衛)を中央下メッセージと同時に再生する

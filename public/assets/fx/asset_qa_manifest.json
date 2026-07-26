@@ -1,0 +1,655 @@
+{
+  "version": 1,
+  "elements": {
+    "fire": {
+      "particle_01": {
+        "file": "particle_01.png",
+        "width": 95,
+        "height": 250,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 8013,
+        "partialAlphaPixels": 1225,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "particle_02": {
+        "file": "particle_02.png",
+        "width": 79,
+        "height": 256,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 6087,
+        "partialAlphaPixels": 998,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "trail_light": {
+        "file": "trail_light.png",
+        "width": 328,
+        "height": 175,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 12874,
+        "partialAlphaPixels": 1790,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "trail_heavy": {
+        "file": "trail_heavy.png",
+        "width": 358,
+        "height": 343,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 39448,
+        "partialAlphaPixels": 2300,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "impact_small": {
+        "file": "impact_small.png",
+        "width": 335,
+        "height": 254,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 22415,
+        "partialAlphaPixels": 2748,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "impact_large": {
+        "file": "impact_large.png",
+        "width": 345,
+        "height": 403,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 51544,
+        "partialAlphaPixels": 4645,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "summon": {
+        "file": "summon.png",
+        "width": 347,
+        "height": 376,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 38011,
+        "partialAlphaPixels": 5705,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "disperse": {
+        "file": "disperse.png",
+        "width": 322,
+        "height": 345,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 13824,
+        "partialAlphaPixels": 4632,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "particle_03": {
+        "file": "particle_03.png",
+        "width": 79,
+        "height": 80,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 3402,
+        "partialAlphaPixels": 444,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "particle_04": {
+        "file": "particle_04.png",
+        "width": 70,
+        "height": 72,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 2395,
+        "partialAlphaPixels": 320,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      }
+    },
+    "water": {
+      "particle_01": {
+        "file": "particle_01.png",
+        "width": 170,
+        "height": 259,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 10246,
+        "partialAlphaPixels": 1187,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "particle_02": {
+        "file": "particle_02.png",
+        "width": 101,
+        "height": 109,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 7088,
+        "partialAlphaPixels": 420,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "trail_light": {
+        "file": "trail_light.png",
+        "width": 328,
+        "height": 135,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 8283,
+        "partialAlphaPixels": 1693,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "trail_heavy": {
+        "file": "trail_heavy.png",
+        "width": 312,
+        "height": 343,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 32353,
+        "partialAlphaPixels": 2896,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "impact_small": {
+        "file": "impact_small.png",
+        "width": 230,
+        "height": 220,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 18484,
+        "partialAlphaPixels": 2683,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "impact_large": {
+        "file": "impact_large.png",
+        "width": 334,
+        "height": 383,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 52136,
+        "partialAlphaPixels": 7022,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "summon": {
+        "file": "summon.png",
+        "width": 344,
+        "height": 350,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 48582,
+        "partialAlphaPixels": 10026,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "disperse": {
+        "file": "disperse.png",
+        "width": 302,
+        "height": 284,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 13714,
+        "partialAlphaPixels": 3429,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "particle_03": {
+        "file": "particle_03.png",
+        "width": 97,
+        "height": 184,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 4214,
+        "partialAlphaPixels": 739,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "particle_04": {
+        "file": "particle_04.png",
+        "width": 74,
+        "height": 71,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 3141,
+        "partialAlphaPixels": 272,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      }
+    },
+    "earth": {
+      "particle_01": {
+        "file": "particle_01.png",
+        "width": 222,
+        "height": 323,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 31335,
+        "partialAlphaPixels": 3453,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "particle_02": {
+        "file": "particle_02.png",
+        "width": 140,
+        "height": 190,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 16626,
+        "partialAlphaPixels": 833,
+        "magentaPixels": 0,
+        "transparentCorners": false
+      },
+      "trail_light": {
+        "file": "trail_light.png",
+        "width": 384,
+        "height": 252,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 20778,
+        "partialAlphaPixels": 4554,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "trail_heavy": {
+        "file": "trail_heavy.png",
+        "width": 331,
+        "height": 347,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 50531,
+        "partialAlphaPixels": 3351,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "impact_small": {
+        "file": "impact_small.png",
+        "width": 344,
+        "height": 199,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 25463,
+        "partialAlphaPixels": 2570,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "impact_large": {
+        "file": "impact_large.png",
+        "width": 357,
+        "height": 362,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 77552,
+        "partialAlphaPixels": 3498,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "summon": {
+        "file": "summon.png",
+        "width": 329,
+        "height": 296,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 38993,
+        "partialAlphaPixels": 3428,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "disperse": {
+        "file": "disperse.png",
+        "width": 340,
+        "height": 335,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 36784,
+        "partialAlphaPixels": 6281,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "particle_03": {
+        "file": "particle_03.png",
+        "width": 95,
+        "height": 122,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 6817,
+        "partialAlphaPixels": 552,
+        "magentaPixels": 0,
+        "transparentCorners": false
+      },
+      "particle_04": {
+        "file": "particle_04.png",
+        "width": 92,
+        "height": 89,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 5018,
+        "partialAlphaPixels": 460,
+        "magentaPixels": 0,
+        "transparentCorners": false
+      }
+    },
+    "wind": {
+      "particle_01": {
+        "file": "particle_01.png",
+        "width": 122,
+        "height": 287,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 10261,
+        "partialAlphaPixels": 1269,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "particle_02": {
+        "file": "particle_02.png",
+        "width": 104,
+        "height": 281,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 8257,
+        "partialAlphaPixels": 1116,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "trail_light": {
+        "file": "trail_light.png",
+        "width": 344,
+        "height": 177,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 8102,
+        "partialAlphaPixels": 1432,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "trail_heavy": {
+        "file": "trail_heavy.png",
+        "width": 358,
+        "height": 336,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 37300,
+        "partialAlphaPixels": 2647,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "impact_small": {
+        "file": "impact_small.png",
+        "width": 333,
+        "height": 239,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 22213,
+        "partialAlphaPixels": 2154,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "impact_large": {
+        "file": "impact_large.png",
+        "width": 329,
+        "height": 373,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 66531,
+        "partialAlphaPixels": 4133,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "summon": {
+        "file": "summon.png",
+        "width": 351,
+        "height": 356,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 60510,
+        "partialAlphaPixels": 5675,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "disperse": {
+        "file": "disperse.png",
+        "width": 336,
+        "height": 333,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 16462,
+        "partialAlphaPixels": 3287,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "particle_03": {
+        "file": "particle_03.png",
+        "width": 188,
+        "height": 67,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 4489,
+        "partialAlphaPixels": 487,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "particle_04": {
+        "file": "particle_04.png",
+        "width": 141,
+        "height": 126,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 5320,
+        "partialAlphaPixels": 531,
+        "magentaPixels": 0,
+        "transparentCorners": false
+      }
+    },
+    "neutral": {
+      "particle_01": {
+        "file": "particle_01.png",
+        "width": 99,
+        "height": 301,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 8643,
+        "partialAlphaPixels": 1797,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "particle_02": {
+        "file": "particle_02.png",
+        "width": 83,
+        "height": 175,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 3675,
+        "partialAlphaPixels": 1103,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "trail_light": {
+        "file": "trail_light.png",
+        "width": 321,
+        "height": 195,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 9601,
+        "partialAlphaPixels": 4696,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "trail_heavy": {
+        "file": "trail_heavy.png",
+        "width": 348,
+        "height": 354,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 48247,
+        "partialAlphaPixels": 9065,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "impact_small": {
+        "file": "impact_small.png",
+        "width": 258,
+        "height": 241,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 15001,
+        "partialAlphaPixels": 6356,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "impact_large": {
+        "file": "impact_large.png",
+        "width": 346,
+        "height": 420,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 40439,
+        "partialAlphaPixels": 13086,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "summon": {
+        "file": "summon.png",
+        "width": 337,
+        "height": 359,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 37594,
+        "partialAlphaPixels": 13037,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "disperse": {
+        "file": "disperse.png",
+        "width": 298,
+        "height": 332,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 11971,
+        "partialAlphaPixels": 3315,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      },
+      "particle_03": {
+        "file": "particle_03.png",
+        "width": 86,
+        "height": 135,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 4057,
+        "partialAlphaPixels": 1571,
+        "magentaPixels": 0,
+        "transparentCorners": false
+      },
+      "particle_04": {
+        "file": "particle_04.png",
+        "width": 82,
+        "height": 136,
+        "hasAlpha": true,
+        "hasVisiblePixels": true,
+        "visiblePixels": 3346,
+        "partialAlphaPixels": 1281,
+        "magentaPixels": 0,
+        "transparentCorners": true
+      }
+    }
+  },
+  "common": {
+    "flash_soft": {
+      "file": "flash_soft.png",
+      "width": 259,
+      "height": 249,
+      "hasAlpha": true,
+      "hasVisiblePixels": true,
+      "visiblePixels": 30937,
+      "partialAlphaPixels": 16748,
+      "magentaPixels": 0,
+      "transparentCorners": true
+    },
+    "shockwave": {
+      "file": "shockwave.png",
+      "width": 353,
+      "height": 357,
+      "hasAlpha": true,
+      "hasVisiblePixels": true,
+      "visiblePixels": 30661,
+      "partialAlphaPixels": 22810,
+      "magentaPixels": 0,
+      "transparentCorners": true
+    },
+    "glow_round": {
+      "file": "glow_round.png",
+      "width": 325,
+      "height": 332,
+      "hasAlpha": true,
+      "hasVisiblePixels": true,
+      "visiblePixels": 41735,
+      "partialAlphaPixels": 21929,
+      "magentaPixels": 0,
+      "transparentCorners": true
+    },
+    "spark_gold": {
+      "file": "spark_gold.png",
+      "width": 224,
+      "height": 268,
+      "hasAlpha": true,
+      "hasVisiblePixels": true,
+      "visiblePixels": 11496,
+      "partialAlphaPixels": 5414,
+      "magentaPixels": 0,
+      "transparentCorners": true
+    },
+    "hit_small": {
+      "file": "hit_small.png",
+      "width": 203,
+      "height": 194,
+      "hasAlpha": true,
+      "hasVisiblePixels": true,
+      "visiblePixels": 9807,
+      "partialAlphaPixels": 4372,
+      "magentaPixels": 0,
+      "transparentCorners": true
+    },
+    "hit_large": {
+      "file": "hit_large.png",
+      "width": 366,
+      "height": 391,
+      "hasAlpha": true,
+      "hasVisiblePixels": true,
+      "visiblePixels": 45941,
+      "partialAlphaPixels": 17984,
+      "magentaPixels": 0,
+      "transparentCorners": true
+    },
+    "victory_ring": {
+      "file": "victory_ring.png",
+      "width": 377,
+      "height": 388,
+      "hasAlpha": true,
+      "hasVisiblePixels": true,
+      "visiblePixels": 39215,
+      "partialAlphaPixels": 19771,
+      "magentaPixels": 0,
+      "transparentCorners": true
+    },
+    "disperse_light": {
+      "file": "disperse_light.png",
+      "width": 300,
+      "height": 316,
+      "hasAlpha": true,
+      "hasVisiblePixels": true,
+      "visiblePixels": 9357,
+      "partialAlphaPixels": 6067,
+      "magentaPixels": 0,
+      "transparentCorners": true
+    }
+  }
+}

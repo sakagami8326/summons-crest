@@ -44,4 +44,23 @@ for (const [name, re] of BANNED) {
 // 4) roundPixelsの明示(spec §4.2-8)
 ok(/roundPixels:\s*false/.test(world), 'board_world: roundPixels: false を明示している');
 
+// 5) 属性FX素材とハイブリッド戦闘の配線
+const fxRoot = path.join(__dirname, 'public/assets/fx');
+const elements = ['fire', 'water', 'earth', 'wind', 'neutral'];
+const elementFx = [
+  'particle_01.png', 'particle_02.png', 'particle_03.png', 'particle_04.png',
+  'trail_light.png', 'trail_heavy.png', 'impact_small.png', 'impact_large.png',
+  'summon.png', 'disperse.png',
+];
+for (const elem of elements)
+  for (const file of elementFx)
+    ok(fs.existsSync(path.join(fxRoot, elem, file)), `FX素材: ${elem}/${file}`);
+for (const file of ['flash_soft.png', 'shockwave.png', 'glow_round.png', 'spark_gold.png'])
+  ok(fs.existsSync(path.join(fxRoot, 'common', file)), `FX素材: common/${file}`);
+ok(/function battleTrailFx\(/.test(board), 'board.html: 戦闘画面の属性軌跡を実装している');
+ok(/function battleImpactFx\(/.test(board), 'board.html: 戦闘画面の属性着弾を実装している');
+ok(/group\.trailHeavy/.test(board) && /group\.impactLarge/.test(board),
+  'board.html: 強攻撃用の軌跡・着弾素材を使用している');
+ok(/common\.shockwave/.test(board), 'board.html: 強打時に共通衝撃波を使用している');
+
 console.log(`PHASER ALL ${pass} CHECKS PASSED (Phaser ${EXPECT_VER})`);
