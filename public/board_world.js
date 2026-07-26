@@ -420,6 +420,11 @@ const PW = (() => {
                 makeShadowTex();
                 ready = true;
                 clearTimeout(wd);
+                // 全景ズームを盤面の実バウンズから算出して即適用
+                // (Canvasは境界で描画が切れるため、端のマスのはみ出し分だけ引いて収める)
+                computeFit();
+                this.cameras.main.centerOn(fitCx, fitCy);
+                this.cameras.main.setZoom(fitZoom);
                 console.log('Phaser ' + Phaser.VERSION + ' / ' +
                   (game.renderer && game.renderer.gl ? 'WebGL' : 'Canvas') + ' / Scene ready');
                 if (readyCb) readyCb();
@@ -628,6 +633,23 @@ const PW = (() => {
   }
 
   // ===== カメラ(setZoom契約: null=全景 / タイル番号=1.5倍ズーム) =====
+  // 全景: マス中心のバウンズ+はみ出し余白(クリーチャー上方・バッジ・タイル厚み)が
+  // 1280x905のCanvasに収まるズームを算出(既定は1相当。端が切れる盤面だけ僅かに縮む)
+  let fitZoom = 1, fitCx = 640, fitCy = 452.5;
+  function computeFit() {
+    let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+    for (let i = 0; i < GEO.length; i++) {
+      const { x, y } = proj(GEO[i][0], GEO[i][1]);
+      minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+      minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+    }
+    const mx = DW / 2 + 14;                   // 左右: タイル半幅+バッジ分
+    minX -= mx; maxX += mx;
+    minY -= 132;                              // 上: クリーチャー立ち上がり+レベル持ち上げ
+    maxY += THICK + 36;                       // 下: タイル厚み+影
+    fitZoom = Math.min(1, 1280 / (maxX - minX), 905 / (maxY - minY));
+    fitCx = (minX + maxX) / 2; fitCy = (minY + maxY) / 2;
+  }
   function setCamera(ti) {
     if (!ready) return;
     const target = ti === null || ti === undefined ? 'fit' : 'z' + ti;
@@ -635,12 +657,12 @@ const PW = (() => {
     camTarget = target;
     const cam = scene.cameras.main;
     if (target === 'fit') {
-      cam.pan(640, 452.5, 850, 'Cubic.easeOut');
-      cam.zoomTo(1, 850, 'Cubic.easeOut');
+      cam.pan(fitCx, fitCy, 850, 'Cubic.easeOut');
+      cam.zoomTo(fitZoom, 850, 'Cubic.easeOut');
     } else {
       const { x, y } = proj(GEO[ti][0], GEO[ti][1]);
       cam.pan(x, y + 24, 850, 'Cubic.easeOut');   // マスを画面中央やや上(DOM版の46%相当)に
-      cam.zoomTo(1.5, 850, 'Cubic.easeOut');
+      cam.zoomTo(fitZoom * 1.5, 850, 'Cubic.easeOut');
     }
   }
 

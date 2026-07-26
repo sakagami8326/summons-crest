@@ -1343,6 +1343,7 @@ function render() {
     if (pov.dataset.k !== pkey) {
       pov.dataset.k = pkey;
       pdLock = false;
+      $('pickRow').style.gap = p.options.length >= 3 ? '3.5vw' : '6vw';  // 祠は3枚(v0.72)
       $('pickRow').innerHTML = p.options.map(o => {
         const rr = (C.CREATURES[o.card] || C.SPELLS[o.card] || {}).rarity || 'N';
         return `<div class="draftCard rar-${rr}" data-pd="${o.id}" onclick="pdChoose('${o.id}')">${bigCardHTML(o.card)}</div>`;
@@ -1352,7 +1353,7 @@ function render() {
         if (o) armLongPress(el, () => openCardZoom(o.card));  // 長押しで拡大は選択中も使える
       });
     }
-    $('pickHint').textContent = '選ばなかった1枚は捨て札へ(制限時間はありません)';
+    $('pickHint').textContent = `選ばなかった${p.options.length - 1}枚は捨て札へ(制限時間はありません)`;
     pov.classList.add('on');
     renderHand();
     return;

@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '0.71';
+const VERSION = '0.72';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -382,9 +382,12 @@ function askRoll(r, p) {
   ask(r, p.id, 'roll', 'あなたの手番です', opts);
 }
 // ===== v0.61 選択ドロー: 手番開始時、山札から2枚見て1枚を手札へ・1枚を捨て札へ =====
-function startPickDraw(r, p) {
+// 選択ドロー: 山札からn枚見て1枚を手札へ、残りは捨て札へ。
+// after='roll'(既定)=完了後にaskRoll(手番開始のドロー) / 'end'=完了後にendTurn(祠 v0.72)
+function startPickDraw(r, p, n = 2, after = 'roll') {
+  const done = () => after === 'end' ? endTurn(r) : askRoll(r, p);
   const cards = [];
-  for (let k = 0; k < 2; k++) {
+  for (let k = 0; k < n; k++) {
     if (!p.deck.length && p.discard.length) {
       p.deck = shuffle(p.discard);
       p.discard = [];
@@ -399,24 +402,28 @@ function startPickDraw(r, p) {
       r.lastDraw = { player: p.id, n: 1, reason: 'pick', at: stamp(r) };
       log(r, `${p.name}がカードを1枚引いた`);
     }
-    return askRoll(r, p);
+    return done();
   }
   p.pickCards = cards;  // 選択中カード(山札・手札・捨て札のどれにも属さない)
+  p.pickAfter = after;
   // v0.63: 制限時間なし(じっくり選んでよい)
-  ask(r, p.id, 'pick_draw', '手札に加えるカードを選んでください(選ばなかった1枚は捨て札へ)',
+  ask(r, p.id, 'pick_draw', `手札に加えるカードを選んでください(選ばなかった${cards.length - 1}枚は捨て札へ)`,
     cards.map((c, i) => ({ id: 'pd:' + i, card: c,
       label: (CREATURES[c] || SPELLS[c] || SUPPORTS[c] || { name: c }).name })));
 }
 function resolvePickDraw(r, p, idx) {
+  const after = p.pickAfter === 'end' ? 'end' : 'roll';
+  p.pickAfter = null;
+  const done = () => after === 'end' ? endTurn(r) : askRoll(r, p);
   const cards = p.pickCards;
-  if (!cards || !cards.length) return askRoll(r, p);
+  if (!cards || !cards.length) return done();
   const take = cards[idx] !== undefined ? idx : 0;
   p.hand.push(cards[take]);
   p.discard.push(...cards.filter((c, i) => i !== take));
   p.pickCards = null;
   r.lastDraw = { player: p.id, n: 1, reason: 'pick', at: stamp(r) };
-  log(r, `${p.name}がカードを1枚引いた(もう1枚は捨て札へ)`);  // カード名は共有ログに出さない
-  return askRoll(r, p);
+  log(r, `${p.name}がカードを1枚引いた(残り${cards.length - 1}枚は捨て札へ)`);  // カード名は共有ログに出さない
+  return done();
 }
 function beginTurn(r) {
   if (r.phase !== 'playing') return;
@@ -563,15 +570,12 @@ function resolveTile(r, p) {
   if (tile.t === 'gate') { log(r, `${p.name}は門に到着`); return askGate(r, p); }
   if (tile.t === 'shrine') {
     p.gold += RULES.shrineBonus; p.shrineVisits++;
-    const got = drawCards(r, p, 1);
-    if (got) {
-      r.lastDraw = { player: p.id, n: got, reason: 'shrine', at: stamp(r) };
-      log(r, `⛩ 祠の導きで${p.name}はカードを1枚引いた`);
-    }
     r.lastEvent = { type: 'shrine', player: p.id, gold: RULES.shrineBonus,
                     visits: p.shrineVisits, at: stamp(r) };
     log(r, `${p.name}は祠に参拝(+${RULES.shrineBonus}G / 通算${p.shrineVisits}回)`);
-    return endTurn(r);
+    // v0.72: 祠の導きは3枚から1枚を選ぶ(残り2枚は捨て札へ)。完了後に手番終了
+    log(r, `⛩ 祠の導き ─ ${p.name}は3枚のカードから1枚を選ぶ`);
+    return startPickDraw(r, p, 3, 'end');
   }
   if (tile.t === 'market') return askMarket(r, p);
 

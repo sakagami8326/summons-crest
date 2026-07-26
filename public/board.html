@@ -1931,7 +1931,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.71' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.72' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
@@ -2350,10 +2350,12 @@ function render() {
       clearTimeout(prev.turnT);
       prev.turnT = setTimeout(render, Math.max(waitMs, 450) + 30);
     } else {
-      // 鮮度チェック: 手番プレイヤーが既に行動を始めていたら(=pendingがroll以外)テロップは出さず破棄
+      // 鮮度チェック: 手番プレイヤーが既に行動を始めていたらテロップは出さず破棄。
+      // 手番開始時のpendingは選択ドロー(pick_draw)→roll の順なので両方を「未行動」扱いにする
+      // (rollのみ判定だと、前の演出待ちが無い場合にpick_draw中で破棄されTURN STARTが出ない)
       const tp0 = state.players[queuedTurn];
       const tpd = tp0 && state.pending[tp0.id];
-      const fresh = state.turn === queuedTurn && tpd && tpd.type === 'roll';
+      const fresh = state.turn === queuedTurn && tpd && (tpd.type === 'roll' || tpd.type === 'pick_draw');
       if (fresh && queuedTurn !== firedTurn) {
         firedTurn = queuedTurn;
         showTelop('turn', tp0.name + 'の手番');
