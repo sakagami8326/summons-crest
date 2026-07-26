@@ -162,4 +162,5 @@
 - v0.66: **盤面ワールドをPhaser描画に移行**(既定=Phaser・`?render=dom`とオプションでDOM描画に切替可・移動タイミングはgame_timing.jsで両画面共有)。詳細は`plan_phaser_board_v0.66.md`
 - v0.67: **Phaser 4.2.1へ更新**(3.90.0から移行・表示/挙動は不変・Canvasは診断用でフォールバックはDOM)。詳細は`spec_phaser4_migration_v0.67.md`
 - v0.68: **演出基盤+移動ジュース**(優先度つき演出キュー・PW.play・EffectPool・演出品質High/Standard/Lite+演出低減設定(オプションから切替)・コマ移動のsquash&stretch+着地土埃)。詳細は`plan_phaser4_phase2plus_v0.67.md` §19
+- v0.70: **経済・連鎖の演出(Phase 2D)**(通行料コインが弧軌道で受取側HUDへ・品質差7/5/3枚+High光跡・連鎖成立/減少は実対象タイルだけを盤面順に弱く順次発光→倍率バナー・呪い着弾時にクリーチャーが短時間紫変色)。詳細は`plan_phaser4_phase2plus_v0.67.md` §19
 - v0.69: **盤面状態変化の演出(Phase 2C)**(召喚=波紋+出現ポップ+属性粒子(立ち絵カットインは従来どおり主役)・強化=リング+発光+上昇粒子・進化=光柱の中で旧姿→新姿切替・退場=単色化+沈下+粒子分解。いずれもマスのズーム+中央下メッセージは従来どおり。DOM描画時は従来FXのまま)。詳細は`plan_phaser4_phase2plus_v0.67.md` §19

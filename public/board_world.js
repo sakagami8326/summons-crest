@@ -101,7 +101,30 @@ const PW = (() => {
     'upgrade-sparks': fx2cUpgrade,
     'evolve-fx': fx2cEvolve,
     'ruin-fx': fx2cRuin,
+    // ===== Phase 2D: 連鎖の順次発光(plan §8.2-8.3) =====
+    'chain-glow': fx2dChain,
   };
+
+  // 連鎖(§8.2): 実際の連鎖対象タイルだけを盤面順に弱く順次発光。減少(§8.3)はさらに弱く
+  // (全対象の同時強点滅・赤フラッシュは使わない)
+  async function fx2dChain(ev) {
+    const tiles = (ev.tiles || []).filter(i => GEO[i]);
+    if (!tiles.length) return;
+    const col = elemCol(ev.element);
+    const peak = ev.dim ? 0.28 : 0.55;
+    for (const i of tiles) {
+      const { x, y } = proj(GEO[i][0], GEO[i][1]);
+      const g = scene.add.graphics().setDepth(298);
+      scene.tweens.addCounter({ from: 0, to: 1, duration: 620, ease: 'Sine.easeOut',
+        onUpdate: tw => { const v = tw.getValue(); g.clear();
+          const a = peak * Math.sin(Math.PI * v);
+          g.fillStyle(col, a * 0.5); g.fillEllipse(x, y, 96, 52);
+          g.lineStyle(2, col, a); g.strokeEllipse(x, y, 100 + 18 * v, (100 + 18 * v) * 0.55); },
+        onComplete: () => g.destroy() });
+      await wait(140);
+    }
+    await wait(480);
+  }
 
   // ---- 2C共通ヘルパー ----
   const ELEM_COL = { fire: 0xFF7A45, water: 0x56A8E8, earth: 0x7FD35C, wind: 0x5BE0D0 };
@@ -618,6 +641,12 @@ const PW = (() => {
         scene.tweens.add({ targets: s, y: y + dy - 34, duration: 420, ease: 'Bounce.easeOut',
           onComplete: () => scene.tweens.add({ targets: s, alpha: 0, duration: 600, delay: 350, onComplete: () => s.destroy() }) });
       });
+      // 呪い(2D plan§8.4): 着弾時にクリーチャーを短時間だけ紫に変色(ColorMatrix代替のsetTint)
+      const spr = creatureSprites[i];
+      if (spr && spr.scene && quality !== 'lite') {
+        setTimeout(() => { if (spr.scene) spr.setTint(0xB07AE0); }, 380);
+        setTimeout(() => { if (spr.scene) spr.clearTint(); }, 860);
+      }
     }
   }
 

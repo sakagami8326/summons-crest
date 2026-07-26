@@ -346,6 +346,9 @@
   .coinFly { position:fixed; z-index:92; width:13px; height:13px; border-radius:50%;
       background:radial-gradient(circle at 35% 30%, #FFE9A0, #C9A227 60%, #8A6A1E);
       border:1px solid #8A6A1E; pointer-events:none; transition:transform .85s cubic-bezier(.3,.1,.6,1), opacity .85s; }
+  .coinFly.arc { transition:none; transform:translate(-50%,-50%); }
+  .coinTrail { position:fixed; z-index:91; width:5px; height:5px; border-radius:50%;
+      background:#FFE9A0; pointer-events:none; transform:translate(-50%,-50%); }
   /* 強化・進化・呪いのFX */
   .fxRing { position:absolute; transform:translate(-50%,-50%); z-index:380; width:30px; height:30px;
       border-radius:50%; border:3px solid var(--fxc); pointer-events:none; animation:fxring .9s ease-out forwards; }
@@ -874,19 +877,41 @@ function flyCoins(fromPid, toPid) {
   };
   const from = ptOf(fromPid), to = ptOf(toPid);
   if (!from || !to) return;
-  for (let k = 0; k < 6; k++) {
+  // 2D plan§8.1: 弧軌道で受取側HUDへ吸い込み。品質差 High7枚+光跡 / Standard5 / Lite3
+  const q = (renderModeActive === 'phaser' && PW.getQuality) ? PW.getQuality().quality : 'standard';
+  const n = q === 'high' ? 7 : q === 'lite' ? 3 : 5;
+  const trail = q === 'high';
+  for (let k = 0; k < n; k++) {
     setTimeout(() => {
       const c = document.createElement('div');
-      c.className = 'coinFly';
-      c.style.left = from.x + 'px';
-      c.style.top = from.y + 'px';
+      c.className = 'coinFly arc';
       document.body.appendChild(c);
-      requestAnimationFrame(() => {
-        c.style.transform = `translate(${to.x - from.x}px, ${to.y - from.y}px)`;
-        c.style.opacity = '0.2';
-      });
-      setTimeout(() => c.remove(), 950);
-    }, k * 70);
+      const mx = (from.x + to.x) / 2 + (Math.random() * 60 - 30);
+      const my = Math.min(from.y, to.y) - 80 - Math.random() * 50;   // 弧の頂点
+      const t0 = performance.now(), dur = 720 + Math.random() * 160;
+      let fr = 0;
+      const step = now => {
+        const v = Math.min(1, (now - t0) / dur), u = 1 - v;
+        const x = u * u * from.x + 2 * u * v * mx + v * v * to.x;
+        const y = u * u * from.y + 2 * u * v * my + v * v * to.y;
+        c.style.left = x + 'px'; c.style.top = y + 'px';
+        // HUD付近で縮小・消滅
+        const end = v > 0.82 ? (v - 0.82) / 0.18 : 0;
+        c.style.opacity = String(1 - end * 0.9);
+        c.style.transform = `translate(-50%,-50%) scale(${1 - end * 0.55})`;
+        if (trail && (fr++ % 4) === 0 && v < 0.85) {
+          const d = document.createElement('div');
+          d.className = 'coinTrail';
+          d.style.left = x + 'px'; d.style.top = y + 'px';
+          document.body.appendChild(d);
+          d.animate([{ opacity: 0.8 }, { opacity: 0 }], { duration: 320 }).onfinish = () => d.remove();
+          setTimeout(() => d.remove(), 400);   // animate未発火時の保険
+        }
+        if (v < 1) requestAnimationFrame(step); else c.remove();
+      };
+      requestAnimationFrame(step);
+      setTimeout(() => c.remove(), 2500);   // 非表示タブ等でrAFが止まった場合の残留防止
+    }, k * 80);
   }
 }
 // ===== 絵文字→アイコン変換(ULT・門・建造物など) =====
@@ -1282,6 +1307,30 @@ async function runFxHarness(name) {
     delete pawnAnim[p0];
     renderPawns();
     return { done: true, fxDebug: PW.fxDebug() };
+  }
+  // ---- Phase 2D: 単独再生ハーネス(?fixture=1&fx=chain|coins) ----
+  if (name === 'chain') {
+    let alive = true;
+    if (document.hidden) {
+      const mc = new MessageChannel();
+      mc.port1.onmessage = () => { if (!alive) return; PW.pump(1); mc.port2.postMessage(0); };
+      mc.port2.postMessage(0);
+    }
+    try {
+      const elemQ = new URLSearchParams(location.search).get('elem') || 'water';
+      const tiles2 = [];
+      state.owners.forEach((o2, i2) => { if (o2 && state.tiles[i2].e === elemQ) tiles2.push(i2); });
+      const t0 = Date.now();
+      await PW.play({ type: 'chain-glow', tiles: tiles2, element: elemQ });
+      await PW.play({ type: 'chain-glow', tiles: tiles2, element: elemQ, dim: true });
+      return { tiles: tiles2, ms: Date.now() - t0, fxDebug: PW.fxDebug() };
+    } finally { alive = false; }
+  }
+  if (name === 'coins') {
+    const a = state.players[0].id, b = state.players[1].id;
+    flyCoins(a, b);
+    await new Promise(r => setTimeout(r, 1400));
+    return { coins: document.querySelectorAll('.coinFly').length, trails: document.querySelectorAll('.coinTrail').length };
   }
   // ---- Phase 2C: 単独再生ハーネス(plan §13.2 ─ ?fixture=1&fx=summon&elem=water 等) ----
   if (['summon', 'upgrade', 'evolve', 'ruin', 'leak2c'].includes(name)) {
@@ -1868,7 +1917,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.69' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.70' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
@@ -2229,6 +2278,16 @@ function render() {
           const pl2 = player(pid2);
           if (!pl2) continue;
           const mul = CHAIN_MUL2[Math.min(5, Math.max(1, n))];
+          // 連鎖の実対象タイルを盤面順に順次発光させてからバナー(2D plan§8.2-8.3)
+          if (renderModeActive === 'phaser') {
+            const tiles2 = [];
+            state.owners.forEach((o2, i2) => { if (o2 && o2.player === pid2 && state.tiles[i2].e === e) tiles2.push(i2); });
+            const dim = n < b0;
+            queueFx(3, () => {
+              bannerUntil = Math.max(bannerUntil, Date.now() + tiles2.length * 140 + 500);
+              PW.play({ type: 'chain-glow', tiles: tiles2, element: e, dim });
+            });
+          }
           queueBanner(
             n > b0 ? `${EJA2[e]}の連鎖 ×${n}!` : `${EJA2[e]}の連鎖が ×${n} に減少…`,
             `${pl2.name}の${EJA2[e]}属性領地${n}つ ─ 地価倍率${mul}倍`, 2600);
