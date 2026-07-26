@@ -16,6 +16,8 @@ const PW = (() => {
   let camTarget = 'none';                           // カメラの現在目標(同一目標への再tween防止)
 
   const sum = i => GEO[i][0] + GEO[i][1];
+  // '#RRGGBB' → 数値。Phaserの色変換APIに依存しない(v3/v4差異の影響を受けない)
+  const hexInt = s => parseInt(String(s || '#F2D062').replace('#', ''), 16);
 
   function fail(why) {
     if (failed || ready) { if (!ready) return; }
@@ -79,10 +81,13 @@ const PW = (() => {
         if (failed) return;
         stoneDataUrl = dataUrl;
         try {
-          const forceCanvas = new URLSearchParams(location.search).get('gl') === '0';  // 検証用: ?gl=0でCanvas強制
+          // ?gl=0: 非推奨Canvas Rendererの診断用(Phaser 4ではCanvasは製品保証外。
+          // 本命フォールバックは既存DOM描画 ─ spec_phaser4_migration_v0.67.md P4-06)
+          const forceCanvas = new URLSearchParams(location.search).get('gl') === '0';
           game = new Phaser.Game({
             type: forceCanvas ? Phaser.CANVAS : Phaser.AUTO, parent: 'phaserHost', width: 1280, height: 905,
             transparent: true, banner: false,
+            render: { roundPixels: false },  // Phaser 4は既定false ─ 滑らかな移動優先で明示(spec §4.2-8)
             scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
             scene: {
               create: function () {
@@ -90,6 +95,8 @@ const PW = (() => {
                 makeShadowTex();
                 ready = true;
                 clearTimeout(wd);
+                console.log('Phaser ' + Phaser.VERSION + ' / ' +
+                  (game.renderer && game.renderer.gl ? 'WebGL' : 'Canvas') + ' / Scene ready');
                 if (readyCb) readyCb();
                 if (pendingState) { const s = pendingState; pendingState = null; syncBoard(s); }
                 if (pendingLayout) { const l = pendingLayout; pendingLayout = null; syncPawns(l); }
@@ -206,7 +213,7 @@ const PW = (() => {
       { fontFamily: 'sans-serif', fontSize: '13px', fontStyle: '700', color: '#fff' }).setOrigin(0.5, 0.5);
     txt.setShadow(0, 1, 'rgba(0,0,0,.45)', 2);
     const w = txt.width + (b.icon ? 34 : 22), h = 19, sk = 2;  // skewX(-6deg)相当の平行四辺形
-    const col = Phaser.Display.Color.HexStringToColor(b.color).color;
+    const col = hexInt(b.color);
     const g = scene.add.graphics();
     g.fillStyle(col, 1);
     g.beginPath();
@@ -304,7 +311,7 @@ const PW = (() => {
   function fx(i, cls, color, dy = 0) {
     if (!ready) return;
     const { x, y } = proj(GEO[i][0], GEO[i][1]);
-    const col = Phaser.Display.Color.HexStringToColor(color || '#F2D062').color;
+    const col = hexInt(color);
     if (cls === 'fxRing') {
       const g = scene.add.graphics().setDepth(300);
       scene.tweens.addCounter({ from: 0, to: 1, duration: 900, ease: 'Cubic.easeOut',
@@ -348,11 +355,15 @@ const PW = (() => {
              boardObjs: boardObjs.length, zoom: scene.cameras.main.zoom };
   }
   // 非表示タブ(RAF停止)でも検証できるようループを手動で進める(テスト用)
+  // 注意(Phaser 4): tween/カメラ効果は実時間基準のため、合成時刻での早送りは効かない。
+  // 検証時は「実時間で待ちながら pump(2) を繰り返す」こと(時刻は単調増加を維持)
+  let pumpT = 0;
   function pump(frames = 60) {
     if (!ready || !game) return;
-    const t0 = performance.now();
-    for (let k = 0; k < frames; k++) game.loop.step(t0 + k * 16.7);
+    pumpT = Math.max(pumpT, performance.now());
+    for (let k = 0; k < frames; k++) { pumpT += 16.7; game.loop.step(pumpT); }
   }
   return { init, syncBoard, syncPawns, setCamera, worldToViewport, pawnViewport, fx,
-           snapshot, debugCounts, pump, isReady: () => ready, hasFailed: () => failed };
+           snapshot, debugCounts, pump, isReady: () => ready, hasFailed: () => failed,
+           _debugScene: () => scene };  // 診断用(製品コードからは使用しない)
 })();

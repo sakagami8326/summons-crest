@@ -1,7 +1,15 @@
-Phaser 3.90.0 (同梱・v0.66で導入)
+Phaser 4.2.1 "Giedi" (同梱・v0.67で3.90.0から移行)
+取得元: https://cdn.jsdelivr.net/npm/phaser@4.2.1/dist/phaser.min.js
+取得日: 2026-07-26
+SHA256: 66348B1B5141E49B7D5EBBE688CDDCB502EAB1CB00F21C538686A5B2C5ABE4DE
+サイズ: 1,375,976 bytes
+ライセンス: PHASER_LICENSE.md (MIT)
+更新方針: オーナー承認制・手動更新(docs/spec_phaser4_migration_v0.67.md §2.2)
+
+--- ロールバック用の旧版記録(v0.66) ---
+Phaser 3.90.0
 取得元: https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js
-取得日: 2026-07-24
 SHA256: E92DDEF111BA42E92D316979C732311757093688EA1810591CB7AA2858EBA7A7
 サイズ: 1,196,122 bytes
-ライセンス: PHASER_LICENSE.md (MIT)
-更新方針: オーナー承認制・手動更新(docs/plan_phaser_board_v0.66.md §9.1)
+同梱コミット: 0117157e015d5ccd2c39481cd48c471e4bf8a6f1
+ロールバック: docs/spec_phaser4_migration_v0.67.md §12.2(git checkout 0117157 -- public/vendor/)

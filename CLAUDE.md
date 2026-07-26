@@ -6,7 +6,7 @@
 テストプレイ→即日修正のサイクルで開発している。
 
 - 公開URL: https://summons-crest.onrender.com (mainへのpushでRenderが自動デプロイ)
-- 現在バージョン: **v0.66**(server.jsの`VERSION`とboard.html左下の`board X.XX`表記)
+- 現在バージョン: **v0.67**(server.jsの`VERSION`とboard.html左下の`board X.XX`表記)
 
 ## 構成
 
@@ -52,7 +52,7 @@ npm test    # timing(定数共有) → bot(サーバー回帰) → ui(スマホ�
   - 毎手番「pendingがあるのに操作可能なUI(choose/mmTap/onclick/カードタップ)がゼロ」なら進行不能として失敗
   - 仮想時計(skew)で到着演出の時間待ちを解く。演出系を追加したら最大3パスの範囲で解けるか確認
 - **save_test.js**: セーブ/復元の往復・検証・認可(v0.62)。**timing_test.js**: 移動タイミングのgame_timing.js共有と直書き再発検出(v0.66)。
-- **盤面描画(v0.66〜)**: 既定はPhaser(`public/board_world.js`+同梱`vendor/phaser.min.js` 3.90.0固定)。`?render=dom`とオプションメニューで旧DOM描画へ切替可・初期化失敗時は自動退避。**移動タイミングはgame_timing.jsのみで変更する**(直書き禁止)。パリティ確認は`/?fixture=1`の固定state表示+PW.snapshot()。
+- **盤面描画(v0.66〜)**: 既定はPhaser(`public/board_world.js`+同梱`vendor/phaser.min.js` **4.2.1固定**・v0.67で3.90.0から移行)。`?render=dom`とオプションメニューで旧DOM描画へ切替可・初期化失敗時は自動退避(Canvasは`?gl=0`の診断用・製品フォールバックはDOM)。**移動タイミングはgame_timing.jsのみで変更する**(直書き禁止)。パリティ確認は`/?fixture=1`+PW.snapshot()。禁止API等はphaser_test.jsが検査。Phase 2の新演出はPhaser 4のFilter/RenderNode方式で実装する(3系のFX/Pipeline例を持ち込まない)。
 - 機能追加時は上記に加えて**単体テスト**(handleChoose/resolveBattleを直接叩く小スクリプト)を書き、仕様書の計算例をそのまま検証する。
 
 過去にテストが検知した実バグ(教訓):
