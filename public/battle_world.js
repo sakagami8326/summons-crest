@@ -82,30 +82,41 @@ const BW = (() => {
     const m = FX_ASSETS[group] || FX_ASSETS.neutral;
     return (m && m[key]) || null;
   }
-  // 属性trail(§8.6): 支給trail_heavy素材があれば画像、なければ光球+残像
+  // 属性trail(§8.6): 支給trail_heavy素材があれば画像、なければ光球+残像。
+  // 軌道と速度に属性差 ─ 火=直線で速い / 水=大きな曲線 / 土=重い放物線でゆっくり /
+  // 風=最速+二連の筋 / 無=静かな直線
   async function trail(fromX, toX, y, col, elem) {
     if (!scene) return;
     const k = elem ? await tex(fxUrl(elem, 'trailHeavy')) : null;
-    return new Promise(res => {
+    const P = {
+      fire: { ms: 190, arc: -4 },
+      water: { ms: 260, arc: -34 },
+      earth: { ms: 320, arc: -64 },
+      wind: { ms: 150, arc: -14 },
+    }[elem] || { ms: 230, arc: -18 };
+    const run = (delay, small) => new Promise(res => {
       if (!scene) return res();
       let s;
-      if (k) {
+      if (k && !small) {
         s = scene.add.image(fromX, y, k).setDepth(48);
         s.setScale(150 / s.width);           // 縦横比は素材のまま(ASSET_NOTES)
         s.setFlipX(toX < fromX);             // trail_*は左右反転可
       } else {
-        s = scene.add.circle(fromX, y, 7, col, 1).setDepth(48);
+        s = scene.add.circle(fromX, y, small ? 4 : 7, col, small ? 0.7 : 1).setDepth(small ? 47 : 48);
       }
       let fr = 0;
-      scene.tweens.addCounter({ from: 0, to: 1, duration: 230, ease: 'Sine.easeIn',
+      scene.tweens.addCounter({ from: 0, to: 1, duration: P.ms, delay: delay || 0, ease: 'Sine.easeIn',
         onUpdate: t2 => { const v = t2.getValue();
-          s.setPosition(fromX + (toX - fromX) * v, y + Math.sin(v * Math.PI) * -18);
+          s.setPosition(fromX + (toX - fromX) * v, y + Math.sin(v * Math.PI) * P.arc);
           if (!qLite() && !k && (fr++ % 2) === 0) {
             const d = scene.add.circle(s.x, s.y, 4, col, 0.6).setDepth(47);
             scene.tweens.add({ targets: d, alpha: 0, duration: 200, onComplete: () => d.destroy() });
           } },
         onComplete: () => { s.destroy(); res(); } });
     });
+    // 風は二連の筋(§8.6 高速軌跡)
+    if (elem === 'wind' && !qLite()) return Promise.all([run(0, false), run(60, true)]).then(() => {});
+    return run(0, false);
   }
   // 命中画像(impact_large+shockwave ─ 顔を長時間隠さない短時間表示)
   async function impactImg(x, y, elem) {
@@ -153,22 +164,132 @@ const BW = (() => {
     return true;
   }
 
-  // 攻撃1回分(§8.4): 予備動作→踏み込み→trail→impact→ヒットストップ→相手の反動→戻る
-  async function attack(side, elem, heavy) {
+  // モーションProfile(§8.5 ─ 見せ方のみを変え、AT・攻撃順・結果へは影響しない)。
+  // 割当は暫定(オーナー調整前提)。未登録はmelee
+  const PROFILES = {
+    gecko: 'melee', kbaby: 'melee', bedebero: 'melee',
+    barbaro: 'charge', avalanche: 'charge', bonerex: 'charge',
+    qbaby: 'caster', cleo: 'caster', cresteria: 'caster', beruf: 'caster', ludi: 'caster',
+    fugorm: 'weapon', magado: 'weapon', detropas: 'weapon', zati: 'weapon',
+    nome: 'beast', goagoa: 'beast', morbill: 'beast', pakawata: 'beast',
+    orphe: 'floating', gaston: 'floating', garble: 'floating', mimic: 'floating',
+  };
+  // 詠唱の収束光(caster用)
+  function gatherGlow(S, col) {
+    return new Promise(res => {
+      if (!scene || !S || !S.scene) return res();
+      const g = scene.add.graphics().setDepth(45);
+      const cx = S.x, cy = S.y - 130;
+      scene.tweens.addCounter({ from: 0, to: 1, duration: 320, ease: 'Sine.easeIn',
+        onUpdate: t2 => { const v = t2.getValue(); g.clear();
+          g.lineStyle(2, col, 0.9 * v); g.strokeCircle(cx, cy, 34 * (1 - v) + 8);
+          g.fillStyle(col, 0.5 * v); g.fillCircle(cx, cy, 7 * v + 2); },
+        onComplete: () => { g.destroy(); res(); } });
+    });
+  }
+  // 武器の斬撃弧(trail_light素材があれば回転画像、なければ弧のGraphics)
+  async function slashArc(x, y, dir, col, elem) {
+    if (!scene) return;
+    const k = elem ? await tex(fxUrl(elem, 'trailLight')) : null;
+    return new Promise(res => {
+      if (!scene) return res();
+      if (k) {
+        const s = scene.add.image(x, y, k).setDepth(51);
+        s.setScale(130 / s.width).setFlipX(dir < 0).setRotation(-0.7 * dir).setAlpha(0);
+        scene.tweens.addCounter({ from: 0, to: 1, duration: 190, ease: 'Cubic.easeOut',
+          onUpdate: t2 => { const v = t2.getValue();
+            if (!s.scene) return;
+            s.setRotation((-0.7 + 1.4 * v) * dir);
+            s.setAlpha(Math.sin(Math.PI * v)); },
+          onComplete: () => { s.destroy(); res(); } });
+      } else {
+        const g = scene.add.graphics().setDepth(51);
+        scene.tweens.addCounter({ from: 0, to: 1, duration: 190, ease: 'Cubic.easeOut',
+          onUpdate: t2 => { const v = t2.getValue(); g.clear();
+            g.lineStyle(4, col, 0.9 * (1 - v * 0.4));
+            g.beginPath();
+            g.arc(x, y, 55, (-1.1 + 1.6 * v) * dir - Math.PI / 2, (-0.4 + 1.6 * v) * dir - Math.PI / 2);
+            g.strokePath(); },
+          onComplete: () => { g.destroy(); res(); } });
+      }
+    });
+  }
+  // 支援カード発光(§8.7 支援演出連携): weapon系=攻性の赤金 / shield系=守りの青輪 / jinx=紫
+  function supportGlow(side, kind) {
+    const S = sprs[side];
+    if (!scene || !S || !S.scene) return;
+    const col = /shield/.test(kind) ? 0x6FA8E8 : kind === 'jinx' ? 0x9B59D0 : 0xE8A050;
+    const g = scene.add.graphics().setDepth(46);
+    const cx = S.bwHome.x, cy = S.bwHome.y - 110;
+    scene.tweens.addCounter({ from: 0, to: 1, duration: 650, ease: 'Sine.easeOut',
+      onUpdate: t2 => { const v = t2.getValue(); g.clear();
+        const a = 0.85 * Math.sin(Math.PI * v);
+        g.lineStyle(3, col, a); g.strokeCircle(cx, cy, 70 + 40 * v);
+        g.fillStyle(col, a * 0.15); g.fillCircle(cx, cy, 90); },
+      onComplete: () => g.destroy() });
+  }
+  // 相手の支援を無効化された側の明示(jinx ─ 紫の弾け)
+  function jinxedFlash(side) {
+    const S = sprs[side];
+    if (!scene || !S || !S.scene) return;
+    burst(S.bwHome.x, S.bwHome.y - 120, 0x9B59D0, 8);
+    S.setTint(0xB07AE0);
+    setTimeout(() => { if (S.scene) S.clearTint(); }, 400);
+  }
+
+  // 攻撃1回分(§8.4/§8.5/§8.6): Profile別の予備動作・踏み込み→属性trail→impact→
+  // ヒットストップ→相手の反動→戻る。opts = { heavy, cid(Profile解決用), guard(DF軽減の防御スパーク), corrode(腐蝕) }
+  async function attack(side, elem, opts) {
+    const o2 = typeof opts === 'object' && opts ? opts : { heavy: !!opts };
     const S = sprs[side], T = sprs[side === 'atk' ? 'def' : 'atk'];
     if (!S || !S.scene || !T || !T.scene) return;
     const dir = side === 'atk' ? 1 : -1;
     const col = ELEM_COL[elem] || 0xD8D2E8;
-    await tw(S, { x: S.bwHome.x - 46 * dir, scaleY: S.bwHome.sy * 0.94 }, 230, 'Sine.easeIn');   // 予備動作
-    await tw(S, { x: S.bwHome.x + 150 * dir, scaleY: S.bwHome.sy }, 150, 'Cubic.easeIn');        // 踏み込み
-    await trail(S.bwHome.x + 200 * dir, T.bwHome.x - 70 * dir, H - 250, col, elem);              // 属性trail(素材優先)
-    if (!(await impactImg(T.bwHome.x, H - 250, elem))) flash(T.bwHome.x, H - 250, col);          // impact(素材優先)
-    burst(T.bwHome.x, H - 240, col, heavy ? 15 : 9);
+    const prof = PROFILES[(o2.cid || '').replace(/_f$/, '')] || 'melee';
+    // 【腐蝕】など: 攻撃開始時に相手を病的な色へ短時間変色
+    if (o2.corrode && T.scene) { T.setTint(0x9BB86A); setTimeout(() => { if (T.scene) T.clearTint(); }, 700); }
+    // --- 予備動作+踏み込み(Profile別 §8.5) ---
+    if (prof === 'charge') {           // 低く構える→直線突進(本体が弾丸 ─ trailなし)
+      await tw(S, { scaleY: S.bwHome.sy * 0.82, y: S.bwHome.y + 6 }, 240, 'Sine.easeIn');
+      await tw(S, { x: S.bwHome.x + 265 * dir, scaleY: S.bwHome.sy, y: S.bwHome.y }, 130, 'Cubic.easeIn');
+    } else if (prof === 'caster') {    // 収束→遠隔projectile(本体は動かない)
+      await gatherGlow(S, col);
+    } else if (prof === 'floating') {  // 浮上→遠隔攻撃→(後で漂って戻る)
+      await tw(S, { y: S.bwHome.y - 26 }, 260, 'Sine.easeOut');
+    } else if (prof === 'beast') {     // 全身の短い踏み込み×2(噛みつき ─ trailなし)
+      await tw(S, { x: S.bwHome.x + 60 * dir, y: S.bwHome.y - 10 }, 130, 'Sine.easeOut');
+      await tw(S, { y: S.bwHome.y }, 90, 'Sine.easeIn');
+      await tw(S, { x: S.bwHome.x + 180 * dir, y: S.bwHome.y - 8 }, 120, 'Cubic.easeIn');
+    } else if (prof === 'weapon') {    // 一歩踏み込み→武器起点の斬撃弧
+      await tw(S, { x: S.bwHome.x + 95 * dir }, 160, 'Cubic.easeIn');
+    } else {                           // melee: 後ろへ引く→前進
+      await tw(S, { x: S.bwHome.x - 46 * dir, scaleY: S.bwHome.sy * 0.94 }, 230, 'Sine.easeIn');
+      await tw(S, { x: S.bwHome.x + 150 * dir, scaleY: S.bwHome.sy }, 150, 'Cubic.easeIn');
+    }
+    // --- 属性trail(§8.6。charge/beastは本体突撃のため省略、weaponは斬撃弧) ---
+    if (prof === 'weapon') await slashArc(T.bwHome.x - 40 * dir, H - 250, dir, col, elem);
+    else if (prof !== 'charge' && prof !== 'beast')
+      await trail(S.x + 80 * dir, T.bwHome.x - 70 * dir, H - 250, col, elem);
+    // --- impact(素材優先) ---
+    if (!(await impactImg(T.bwHome.x, H - 250, elem))) flash(T.bwHome.x, H - 250, col);
+    burst(T.bwHome.x, H - 240, col, (o2.heavy || prof === 'charge') ? 15 : 9);
+    // DF軽減があった命中: 防御スパーク(骨鎧・岩壁などの「守った感」 ─ 数値はDOMが正)
+    if (o2.guard) {
+      const g = scene.add.graphics().setDepth(52);
+      scene.tweens.addCounter({ from: 0, to: 1, duration: 260, ease: 'Cubic.easeOut',
+        onUpdate: t2 => { const v = t2.getValue(); g.clear();
+          g.lineStyle(3, 0xCBB878, 0.9 * (1 - v));
+          g.beginPath();
+          g.arc(T.bwHome.x - 46 * dir, H - 250, 44 + 14 * v, -Math.PI / 2 - 0.8 * dir, -Math.PI / 2 + 0.8 * dir);
+          g.strokePath(); },
+        onComplete: () => g.destroy() });
+    }
     // ヒットストップ(§8.4-5/§8.9: 演出Tweenだけを止める。JS・SSEは止めない)
-    if (scene.tweens) { scene.tweens.timeScale = 0.05; await waitMs(75); scene.tweens.timeScale = 1; }
-    tw(T, { x: T.bwHome.x + 30 * dir, angle: 4 * dir }, 90, 'Cubic.easeOut')                     // 反動
+    if (scene.tweens) { scene.tweens.timeScale = 0.05; await waitMs(prof === 'charge' ? 90 : 75); scene.tweens.timeScale = 1; }
+    tw(T, { x: T.bwHome.x + (prof === 'charge' ? 44 : 30) * dir, angle: 4 * dir }, 90, 'Cubic.easeOut')  // 反動
       .then(() => tw(T, { x: T.bwHome.x, angle: 0 }, 240, 'Sine.easeOut'));
-    await tw(S, { x: S.bwHome.x }, 260, 'Sine.easeOut');                                         // 戻る
+    // --- 戻る(floatingは漂って降りる §8.5) ---
+    await tw(S, { x: S.bwHome.x, y: S.bwHome.y }, prof === 'floating' ? 420 : 260, 'Sine.easeOut');
   }
   // 撃破: 単色化→沈んで消える
   async function defeat(side) {
@@ -205,5 +326,6 @@ const BW = (() => {
       tweens: scene && scene.tweens && scene.tweens.getTweens ? scene.tweens.getTweens().length : 0 };
   }
   return { start, attack, defeat, returnHome, stop, pump, debug,
+           supportGlow, jinxedFlash,
            isReady: () => ready, hasFailed: () => failed };
 })();

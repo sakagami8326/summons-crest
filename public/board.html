@@ -1408,19 +1408,27 @@ async function runFxHarness(name) {
   }
   // ---- M5: ハイブリッド戦闘ハーネス(?fixture=1&fx=battle&elem=water&result=win|counter) ----
   if (name === 'battle') {
+    // M5縦切り+M6全分岐(§8.7): ?fx=battle&result=win|counter|dead|preempt|preempt-kill
+    //   &atk=<cid>&def=<cid>(Profile確認用)&sup=<支援>&dsup=<防衛側支援>
     const q2 = new URLSearchParams(location.search);
     const result = q2.get('result') || 'win';
-    // 縦切り(§8.8): 水属性攻撃側(orphe) × 土属性防御側(nome)・支援なし・通常1回攻撃
+    const atkCid = q2.get('atk') || 'orphe';
+    const defCid = q2.get('def') || 'nome';
+    const preempt = result.indexOf('preempt') === 0;
     const b = { tile: 16, attacker: state.players[0].id, defender: state.players[2].id,
-      atkCreature: 'orphe', defCreature: 'nome', st: 40, atkHp: 40, atkDf: 0,
-      hp: 30, df: 20, terrain: 10, atkSupport: 'none', defSupport: 'none', notes: [],
-      hits: 1,
+      atkCreature: atkCid, defCreature: defCid, st: 40, atkHp: 40, atkDf: 0,
+      hp: 30, df: 20, terrain: 10,
+      atkSupport: q2.get('sup') || 'none', defSupport: q2.get('dsup') || 'none',
+      notes: atkCid === 'morbill' ? ['【腐蝕】相手の防衛DF-10'] : [],
+      hits: atkCid === 'avalanche' && result === 'win' ? 2 : 1,
+      preempt,
       win: result === 'win',
       dealt: result === 'win' ? 50 : 20, remainHp: result === 'win' ? 0 : 10,
-      counterSt: 30, counterDealt: 25, atkSurvived: true };
+      counterSt: 30, counterDealt: 25,
+      atkSurvived: result !== 'preempt-kill' && result !== 'dead' };
     const t0 = Date.now();
     await playBattle(b);
-    return { result, ms: Date.now() - t0,
+    return { result, atkCid, defCid, ms: Date.now() - t0,
              bw: typeof BW !== 'undefined' ? BW.debug() : null, fxDebug: PW.fxDebug() };
   }
   // ---- M7: 勝利演出ハーネス(?fixture=1&fx=victory) ----
@@ -2097,6 +2105,13 @@ async function playBattle(b) {
   if (bwOn) document.querySelectorAll('#battle .bArtWrap').forEach(el => el.style.visibility = 'hidden');
   await wait(900);
   document.querySelectorAll('.sflipB').forEach(f => f.classList.add('open'));
+  // 支援カード演出の連携(M6 §8.7): 装備側に属性リング、呪具は無効化された側に紫の弾け
+  if (bwOn) {
+    if (b.atkSupport !== 'none') BW.supportGlow('atk', b.atkSupport);
+    if (b.defSupport !== 'none') BW.supportGlow('def', b.defSupport);
+    if (b.atkSupport === 'jinx' && b.defSupport !== 'none' && b.defSupport !== 'jinx') BW.jinxedFlash('def');
+    if (b.defSupport === 'jinx' && b.atkSupport !== 'none' && b.atkSupport !== 'jinx') BW.jinxedFlash('atk');
+  }
   await wait(1000);
   if (b.notes && b.notes.length)
     $('bnotes').innerHTML = b.notes.map(n => '✦ ' + n).join('<br>');
@@ -2129,71 +2144,100 @@ async function playBattle(b) {
   };
   animateHp('hpBarA', 'hpNumA', b.atkHp, b.atkHp, b.atkHp, 1);  // 初期表示(満タン)
   animateHp('hpBarD', 'hpNumD', b.hp, b.hp, b.hp, 1);
-  // --- 先攻: 攻撃側の一撃 ---
-  $('bcap').textContent = b.hits === 2 ? '攻撃側の連撃!' : '攻撃側の一撃!';
-  if (bwOn) {
-    // BWが予備動作→踏み込み→trail→命中→ヒットストップ→反動まで担当(全画面フラッシュ・shakeは使わない)
-    await BW.attack('atk', atkElem, b.hits === 2 || b.st >= 60);
-    if (b.hits === 2) await BW.attack('atk', atkElem, true);
-  } else {
-    $('bAtk').classList.add('lungeL');
-    battleTrailFx(atkElem, 'def', b.hits === 2 || b.st >= 60);
-    await wait(320);
-    battleImpactFx(atkElem, 'def', b.hits === 2 || b.st >= 60);
-    if (b.hits === 2) {
-      await wait(260);
-      battleTrailFx(atkElem, 'def', true);
-      await wait(260);
-      battleImpactFx(atkElem, 'def', true);
-    }
-    $('bflash').classList.add('go'); $('battle').classList.add('shake');
-  }
-  pop('bDef', '−' + b.dealt + (b.st > b.dealt ? '(DF−' + (b.st - b.dealt) + ')' : ''));
-  animateHp('hpBarD', 'hpNumD', b.hp, b.win ? 0 : b.remainHp, b.hp);
-  await wait(450);
-  $('bflash').classList.remove('go'); $('battle').classList.remove('shake');
-  $('bAtk').classList.remove('lungeL');
-  if (b.win) {
-    if (bwOn) BW.defeat('def');
-    else $('bDef').classList.add('dead');
-    $('bcap').textContent = '';
-    await wait(600);
-    $('bresult').textContent = '侵略成功';
-    $('bresult').classList.add('show');
-    await wait(1800);
-  } else {
-    // 耐えた → 残HP表示と反撃
-    $('bcap').textContent = `耐えた! 残りHP ${b.remainHp}(負傷は引き継ぐ)`;
-    await wait(1100);
-    $('bcap').textContent = '防衛側の反撃!';
+  // 攻撃アニメ1回分(BW/DOMの分岐を共通化 ─ M6)
+  const strike = async (side2, elem2, heavy2, opt2) => {
     if (bwOn) {
-      await BW.attack('def', defElem, b.counterSt >= 60);
+      await BW.attack(side2, elem2, Object.assign({ heavy: heavy2 }, opt2 || {}));
+    } else if (side2 === 'atk') {
+      $('bAtk').classList.add('lungeL');
+      battleTrailFx(elem2, 'def', heavy2);
+      await wait(320);
+      battleImpactFx(elem2, 'def', heavy2);
+      $('bflash').classList.add('go'); $('battle').classList.add('shake');
     } else {
       $('bDef').classList.add('lungeR');
-      battleTrailFx(defElem, 'atk', b.counterSt >= 60);
+      battleTrailFx(elem2, 'atk', heavy2);
       await wait(320);
-      battleImpactFx(defElem, 'atk', b.counterSt >= 60);
+      battleImpactFx(elem2, 'atk', heavy2);
       $('bflash').classList.add('go'); $('battle').classList.add('shake');
     }
+  };
+  const strikeEnd = () => {
+    $('bflash').classList.remove('go'); $('battle').classList.remove('shake');
+    $('bAtk').classList.remove('lungeL'); $('bDef').classList.remove('lungeR');
+  };
+  const showResult = async (text, preWait) => {
+    await wait(preWait);
+    $('bresult').textContent = text;
+    $('bresult').classList.add('show');
+    await wait(text === '侵略成功' ? 1800 : 1700);
+  };
+  const corrode = (b.notes || []).some(n => n.includes('腐蝕'));   // 【腐蝕】は相手を病的な色へ(M6)
+  await (async () => {
+    // --- 先制(§8.7): パカワタ防衛時は防衛側が先に1回攻撃(反撃の代わり) ---
+    if (b.preempt) {
+      $('bcap').textContent = '防衛側の先制攻撃!';
+      await strike('def', defElem, b.counterSt >= 60, { cid: b.defCreature, guard: b.counterSt > b.counterDealt });
+      pop('bAtk', '−' + b.counterDealt + (b.counterSt > b.counterDealt ? '(DF−' + (b.counterSt - b.counterDealt) + ')' : ''));
+      animateHp('hpBarA', 'hpNumA', b.atkHp, b.atkSurvived ? Math.max(0, b.atkHp - b.counterDealt) : 0, b.atkHp);
+      await wait(450);
+      strikeEnd();
+      if (!b.atkSurvived) {
+        // 先制で侵略側が討たれた → 攻撃側の一撃は発生しない
+        if (bwOn) BW.defeat('atk'); else $('bAtk').classList.add('dead');
+        $('bcap').textContent = '';
+        return showResult('防衛成功', 900);
+      }
+      await wait(400);
+    }
+    // --- 攻撃側の一撃 ---
+    $('bcap').textContent = b.hits === 2 ? '攻撃側の連撃!' : '攻撃側の一撃!';
+    const atkGuard = (b.hits || 1) * b.st > b.dealt;   // DFが軽減した命中は防御スパーク(M6)
+    await strike('atk', atkElem, b.hits === 2 || b.st >= 60, { cid: b.atkCreature, corrode, guard: atkGuard });
+    if (b.hits === 2) {
+      if (bwOn) await BW.attack('atk', atkElem, { heavy: true, cid: b.atkCreature, guard: atkGuard });
+      else {
+        await wait(260);
+        battleTrailFx(atkElem, 'def', true);
+        await wait(260);
+        battleImpactFx(atkElem, 'def', true);
+      }
+    }
+    pop('bDef', '−' + b.dealt + (b.st > b.dealt ? '(DF−' + (b.st - b.dealt) + ')' : ''));
+    animateHp('hpBarD', 'hpNumD', b.hp, b.win ? 0 : b.remainHp, b.hp);
+    await wait(450);
+    strikeEnd();
+    if (b.win) {
+      if (bwOn) BW.defeat('def'); else $('bDef').classList.add('dead');
+      $('bcap').textContent = '';
+      return showResult('侵略成功', 600);
+    }
+    // --- 耐えた ---
+    $('bcap').textContent = `耐えた! 残りHP ${b.remainHp}(負傷は引き継ぐ)`;
+    await wait(1100);
+    if (b.preempt) {
+      // 先制は反撃の代わり(§8.7) → 反撃なしでそのまま帰還
+      if (bwOn) BW.returnHome('atk');
+      pop('bAtk', '帰還(全快)', true);
+      $('bcap').textContent = C.CREATURES[b.atkCreature].name + 'は耐えて手札に帰還';
+      return showResult('防衛成功', 900);
+    }
+    $('bcap').textContent = '防衛側の反撃!';
+    await strike('def', defElem, b.counterSt >= 60, { cid: b.defCreature, guard: b.counterSt > b.counterDealt });
     pop('bAtk', '−' + b.counterDealt + (b.counterSt > b.counterDealt ? '(DF−' + (b.counterSt - b.counterDealt) + ')' : ''));
     animateHp('hpBarA', 'hpNumA', b.atkHp, b.atkSurvived ? Math.max(0, b.atkHp - b.counterDealt) : 0, b.atkHp);
     await wait(450);
-    $('bflash').classList.remove('go'); $('battle').classList.remove('shake');
-    $('bDef').classList.remove('lungeR');
+    strikeEnd();
     if (!b.atkSurvived) {
-      if (bwOn) BW.defeat('atk');
-      else $('bAtk').classList.add('dead');
+      if (bwOn) BW.defeat('atk'); else $('bAtk').classList.add('dead');
       $('bcap').textContent = '';
     } else {
       if (bwOn) BW.returnHome('atk');
       pop('bAtk', '帰還(全快)', true);
       $('bcap').textContent = C.CREATURES[b.atkCreature].name + 'は耐えて手札に帰還';
     }
-    await wait(900);
-    $('bresult').textContent = '防衛成功';
-    $('bresult').classList.add('show');
-    await wait(1700);
-  }
+    return showResult('防衛成功', 900);
+  })();
   $('battle').classList.remove('on');
   $('battleFx').innerHTML = '';
   hideLogo(false);
@@ -2222,7 +2266,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.82' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.83' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
