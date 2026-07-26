@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '0.72';
+const VERSION = '0.73';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -593,6 +593,8 @@ function resolveTile(r, p) {
   const opts = [{ id: 'toll', label: `通行料を払う(−${toll}G)` }];
   if (r.barrier[o.player]) {
     log(r, `🛡 ${enemy.name}の大結界により侵略できない!`);
+    // v0.73: 結界が侵略を阻んだ瞬間(TVの衝撃時発光 ─ plan_phaser4 §8.4)
+    r.lastBarrierHit = { tile: i, owner: o.player, by: p.id, at: stamp(r) };
   } else if (p.hand.some(c => CREATURES[c])) opts.push({ id: 'invade', label: '⚔ 侵略する' });
   ask(r, p.id, 'tile', `${enemy.name}の領地(${tileElem(r, p.pos)} Lv${o.level} / 通行料${toll}G)`, opts);
 }
@@ -1650,6 +1652,7 @@ function publicState(r, viewerId) {
     titles: r.titles, duel: r.duel, curses: r.curses, lastEvent: r.lastEvent || null,
     barrier: r.barrier || {}, lastUlt: r.lastUlt || null, lastBattle: r.lastBattle, lastDice: r.lastDice || null,
     lastSeal: r.lastSeal || null, lastRuin: r.lastRuin || null,
+    lastBarrierHit: r.lastBarrierHit || null,
     saveRev: r.saveRev || 0,
     winner: r.winner,
     pending: Object.fromEntries(Object.entries(r.pending).map(([k, v]) =>
@@ -1701,6 +1704,7 @@ const ROOM_PERSIST_KEYS = new Set([                                            /
   'treasureCost', 'curses', 'boardToken', 'atSeq', 'saveRev', 'battle', 'draft',
   'dirPend', 'halfMarket',
   'lastEvent', 'lastDice', 'lastUlt', 'lastSeal', 'lastRuin', 'lastDraw', 'lastGain',
+  'lastBarrierHit',
 ]);
 function serializeRoom(r) {
   const room = {};

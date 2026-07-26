@@ -1333,7 +1333,7 @@ async function runFxHarness(name) {
     return { coins: document.querySelectorAll('.coinFly').length, trails: document.querySelectorAll('.coinTrail').length };
   }
   // ---- Phase 2C/2E: 単独再生ハーネス(plan §13.2 ─ ?fixture=1&fx=summon&elem=water 等) ----
-  if (['summon', 'upgrade', 'evolve', 'ruin', 'invade', 'defend', 'leak2c'].includes(name)) {
+  if (['summon', 'upgrade', 'evolve', 'ruin', 'invade', 'defend', 'barrier', 'leak2c'].includes(name)) {
     // 非表示タブではRAFが止まりtweenが進まないため、MessageChannelでループを駆動する
     let alive = true;
     if (document.hidden) {
@@ -1355,6 +1355,7 @@ async function runFxHarness(name) {
       if (nm === 'evolve') return { type: 'evolve-fx', tile: i, bid: (o.creature || 'gecko').replace(/_f$/, ''), element: state.tiles[i].e, level: o.level || 3 };
       if (nm === 'invade') return { type: 'invade-fx', tile: i, element: state.tiles[i].e, color: col };
       if (nm === 'defend') return { type: 'defend-fx', tile: i, element: state.tiles[i].e, color: col };
+      if (nm === 'barrier') return { type: 'barrier-flash', tile: i };
       return { type: 'ruin-fx', tile: i, cid: o.creature || 'gecko', element: state.tiles[i].e };
     };
     try {
@@ -1931,7 +1932,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.72' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.73' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
@@ -2249,6 +2250,18 @@ function render() {
       sideCut(sp, `<div class="tcWho">${sp.name} ─ 変化の門を通過</div>
         <div class="tcAmt plus">❖ 刻印を取得!${sg ? ` +${sg}G` : ''}</div>
         <div class="tcGold">城まで持ち帰ると一周ボーナス</div>`, 2400);
+    });
+  }
+  // 結界が侵略を阻んだ瞬間 ─ クローズアップ+衝撃時発光(v0.73 plan§8.4)
+  if (state.lastBarrierHit && state.lastBarrierHit.at !== prev.barrierHitAt) {
+    prev.barrierHitAt = state.lastBarrierHit.at;
+    const bh = state.lastBarrierHit;
+    const op = player(bh.owner), ap = player(bh.by);
+    queueFx(2, () => {   // 盤面上の出来事
+      tileCloseup(bh.tile,
+        `${op ? op.name + 'の' : ''}<b style="color:#9BD8FF">結界</b>が${ap ? ap.name + 'の' : ''}侵略を阻んだ!`, 2400);
+      if (renderModeActive === 'phaser') PW.play({ type: 'barrier-flash', tile: bh.tile });
+      else fxAt(bh.tile, 'fxRing', '#9BD8FF');
     });
   }
   // クリーチャー退場(スペル等でHP0) ─ マスにクローズアップ

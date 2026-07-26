@@ -106,7 +106,28 @@ const PW = (() => {
     // ===== Phase 2E: 侵略結果の盤面演出(plan §9) =====
     'invade-fx': fx2eInvade,
     'defend-fx': fx2eDefend,
+    // 結界の衝撃時発光(plan §8.4 ─ v0.73)
+    'barrier-flash': fx2dBarrierFlash,
   };
+
+  // 結界(§8.4): 侵略を阻んだ瞬間だけ強く発光する輪(常時表示の結界枠はタイル側で描画済み)
+  async function fx2dBarrierFlash(ev) {
+    const { x, y } = proj(GEO[ev.tile][0], GEO[ev.tile][1]);
+    const col = 0x9BD8FF;
+    for (let k = 0; k < 2; k++) {
+      const g = scene.add.graphics().setDepth(322);
+      scene.tweens.addCounter({ from: 0, to: 1, duration: 620, ease: 'Cubic.easeOut',
+        onUpdate: tw => { const v = tw.getValue(); g.clear();
+          const a = 0.95 * (1 - v);
+          g.lineStyle(3 + 5 * (1 - v), col, a);
+          g.strokeEllipse(x, y, 60 + 110 * v, (60 + 110 * v) * 0.55);
+          g.fillStyle(col, a * 0.22); g.fillEllipse(x, y, 96, 52); },
+        onComplete: () => g.destroy() });
+      await wait(200);
+    }
+    elemBurst(x, y, col, 7, true, 323);
+    await wait(600);
+  }
 
   // 小さな反動(防衛成功: 潰れ→わずかに伸びて戻る)
   function recoilSprite(spr, dur) {
