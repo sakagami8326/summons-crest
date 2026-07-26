@@ -1932,7 +1932,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.73' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.74' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
@@ -2359,7 +2359,10 @@ function render() {
   // TURN STARTテロップ ─ 祠・称号などのバナーを全て消化してから表示
   if (queuedTurn !== null && !animBusy && state.phase === 'playing') {
     const waitMs = bannerUntil + 400 - Date.now();
-    if (waitMs > 0 || bq.length || cutBusy) {  // 前の演出が完全に終わるまでTURN STARTを出さない(基本設計思想)
+    // 同じstate更新に「手番交代+戦闘」が同時に載ると、戦闘検出(この後の処理)より先に
+    // ここへ到達してしまう。未処理のlastBattleがある間はTURN STARTを出さない(v0.74)
+    const battleUnplayed = state.lastBattle && state.lastBattle.at !== prev.battleAt;
+    if (waitMs > 0 || bq.length || cutBusy || battleUnplayed) {  // 前の演出が完全に終わるまでTURN STARTを出さない(基本設計思想)
       clearTimeout(prev.turnT);
       prev.turnT = setTimeout(render, Math.max(waitMs, 450) + 30);
     } else {

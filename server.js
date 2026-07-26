@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '0.73';
+const VERSION = '0.74';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -573,9 +573,9 @@ function resolveTile(r, p) {
     r.lastEvent = { type: 'shrine', player: p.id, gold: RULES.shrineBonus,
                     visits: p.shrineVisits, at: stamp(r) };
     log(r, `${p.name}は祠に参拝(+${RULES.shrineBonus}G / 通算${p.shrineVisits}回)`);
-    // v0.72: 祠の導きは3枚から1枚を選ぶ(残り2枚は捨て札へ)。完了後に手番終了
+    // v0.74: 祠の導きは門と同じ3枚ドラフト(共通山札から3枚→1枚獲得→自分の山札へ)。完了後に手番終了
     log(r, `⛩ 祠の導き ─ ${p.name}は3枚のカードから1枚を選ぶ`);
-    return startPickDraw(r, p, 3, 'end');
+    return startDraft(r, p, 'end');
   }
   if (tile.t === 'market') return askMarket(r, p);
 
@@ -865,10 +865,6 @@ function resolveBattle(r) {
       : { player: atk.id, level: o.level, creature: b.atkCreature };  // 手札からの占領は全快
     atk.battleWins++;
     log(r, `${ac.name}の${hitsDone === 2 ? '連撃' : '一撃'}(実ダメージ${dealt})が${dc.name}を討ち取った! Lv${o.level}の土地を奪取!`);
-    if (drawCards(r, atk, 1)) {
-      r.lastDraw = { player: atk.id, n: 1, reason: 'battle', at: stamp(r) };
-      log(r, `戦勝の報酬 ─ ${atk.name}はカードを1枚引いた`);
-    }
     if (baseId(b.atkCreature) === 'zati') {
       const got = payTo(r, def, atk, 50);
       if (got) log(r, `【略奪】ザーティーが${def.name}から${got}Gを奪った!`);
@@ -917,10 +913,6 @@ function resolveBattle(r) {
       log(r, `${def.name}が防衛成功!(移動系スペルによる侵略のため通行料なし)`);
     }
     def.battleWins++;
-    if (drawCards(r, def, 1)) {
-      r.lastDraw = { player: def.id, n: 1, reason: 'battle', at: stamp(r) };
-      log(r, `防衛の報酬 ─ ${def.name}はカードを1枚引いた`);
-    }
     if (baseId(o.creature) === 'barbaro') {
       const extra = payTo(r, atk, def, defEvolved ? 50 : 30);
       if (extra) log(r, `【逆鱗】バーグランダの怒りで追加${extra}Gを支払った!`);
@@ -935,6 +927,13 @@ function resolveBattle(r) {
   const endFx = r.tileFx[b.tile];
   if (endFx) { delete endFx.vortex; delete endFx.roots; delete endFx.uplift; }  // 戦闘終了で解除
   r.battle = null;
+  // v0.74: 戦勝報酬は共通山札から3枚ドラフト(勝者=攻守どちらでも)。
+  // ドラフト完了後にsettleAll→endTurnへ続く(進行を直列化し、r.draftの競合を防ぐ)
+  const bWinner = win ? atk : def;
+  if (!bWinner.bankrupt) {
+    log(r, `戦${win ? '勝' : '果'}の報酬 ─ ${bWinner.name}は3枚のカードから1枚を選ぶ`);
+    return startDraft(r, bWinner, 'battle');
+  }
   settleAll(r);
 }
 
@@ -1440,6 +1439,7 @@ function handleChoose(r, playerId, optionId) {
       r.draft = null;
       if (resume0 === 'tile') return resolveTile(r, p);
       if (resume0 === 'market') return askMarket(r, p);
+      if (resume0 === 'battle') return settleAll(r);  // 戦勝ドラフト後は精算→手番終了へ(v0.74)
       return endTurn(r);
     }
     const c = optionId.slice(5);
@@ -1454,6 +1454,7 @@ function handleChoose(r, playerId, optionId) {
     r.draft = null;
     if (resume === 'tile') return resolveTile(r, p);
     if (resume === 'market') return askMarket(r, p);
+    if (resume === 'battle') return settleAll(r);  // 戦勝ドラフト後は精算→手番終了へ(v0.74)
     return endTurn(r);
   }
 
