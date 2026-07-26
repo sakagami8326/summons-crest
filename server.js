@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '0.76';
+const VERSION = '0.77';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -252,6 +252,10 @@ const pById = (r, id) => r.players.find(p => p.id === id);
 // ===== 得点・称号 =====
 // イベント刻印: 同一ミリ秒でも必ず増加する(クライアントのat比較による重複排除を確実にする)
 function stamp(r) { r.atSeq = Math.max(Date.now(), (r.atSeq || 0) + 1); return r.atSeq; }
+// 盤面スペル演出イベント(発注書v0.75 §7 ─ TVがPW.playへ接続する。結果はstateが正)
+function spellFx(r, sid, tiles, caster) {
+  r.lastSpellFx = { spell: sid, tiles, caster: caster || null, at: stamp(r) };
+}
 function tileElem(r, i) { return (r.elemOv && r.elemOv[i]) || TILES[i].e; }
 const ELEM_OF_SPELL = { sp_volcanic_core: 'fire', sp_abyssal_pearl: 'water',
                         sp_earth_mother_stone: 'earth', sp_sky_crystal: 'wind' };
@@ -1141,6 +1145,7 @@ function handleChoose(r, playerId, optionId) {
         r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_weaken.name,
           desc: `${pById(r, o.player).name}の${CREATURES[o.creature].name}に20ダメージ!`, at: stamp(r) };
         log(r, `☠ ${p.name}が${pById(r, o.player).name}の${CREATURES[o.creature].name}に衰弱の呪文!(20ダメージ)`);
+        spellFx(r, 'sp_weaken', [i], p.id);
         spellDamage(r, i, SPELLS.sp_weaken.hp, '衰弱');
       }
     }
@@ -1192,6 +1197,7 @@ function handleChoose(r, playerId, optionId) {
       fx().vortex = true;
       r.lastEvent.desc = `${pById(r, o.player).name}の${CREATURES[o.creature].name}に10ダメージ! 次の侵略者はAT+10`;
       log(r, `🔥 炎の渦がマス${i}を包む。${CREATURES[o.creature].name}に10ダメージ! 次の侵略者はAT+10`);
+      spellFx(r, 'sp_flame_vortex', [i], p.id);
       spellDamage(r, i, 10, '炎の渦');
     } else if (sid === 'sp_high_tide') {
       if (o.player !== p.id || tileElem(r, i) !== 'water') return askRoll(r, p);
@@ -1207,12 +1213,14 @@ function handleChoose(r, playerId, optionId) {
       fx().uplift = true;
       r.lastEvent.desc = `${CREATURES[o.creature].name}の負傷${before}→${o.dmg}。次の戦闘でDF+10`;
       log(r, `⛰ 岩盤隆起! ${CREATURES[o.creature].name}の負傷${before}→${o.dmg}。次の戦闘でDF+10`);
+      spellFx(r, 'sp_bedrock_uplift', [i], p.id);
     } else if (sid === 'sp_root_prison') {
       if (o.player !== p.id) return askRoll(r, p);
       pay();
       fx().roots = true;
       r.lastEvent.desc = `${p.name}の領地(${i}番)を守る。次に侵略するクリーチャーはAT-20`;
       log(r, `🌿 根の牢獄がマス${i}を守る。次にこの領地へ侵略するクリーチャーはAT-20`);
+      spellFx(r, 'sp_root_prison', [i], p.id);
     } else if (sid === 'sp_feather_rest') {
       if (o.player !== p.id) return askRoll(r, p);
       pay();
@@ -1343,6 +1351,7 @@ function handleChoose(r, playerId, optionId) {
         r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_move.name,
           desc: `${CREATURES[ob.creature].name}と${CREATURES[oa.creature].name}が入れ替わった`, at: stamp(r) };
         log(r, `📜 ${p.name}が転移の呪文! ${CREATURES[ob.creature].name}と${CREATURES[oa.creature].name}が入れ替わった(−${SPELLS.sp_move.cost}G)`);
+        spellFx(r, 'sp_move', [a, bI], p.id);
       }
     }
     p.moveA = null;
@@ -1429,6 +1438,7 @@ function handleChoose(r, playerId, optionId) {
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_quake.name,
         desc: `${pById(r, o.player).name}の領地(${i}番)がLv${o.level}に崩れた!`, at: stamp(r) };
       log(r, `⛰ ${p.name}の地割れで${pById(r, o.player).name}の領地(${i}番)がLv${o.level}に崩れた!`);
+      spellFx(r, 'sp_quake', [i], p.id);
     }
     return askRoll(r, p);
   }
@@ -1657,6 +1667,7 @@ function publicState(r, viewerId) {
     lastSeal: r.lastSeal || null, lastRuin: r.lastRuin || null,
     lastBarrierHit: r.lastBarrierHit || null,
     upgradePreview: r.upgradePreview || null,   // 強化候補プレビュー(揮発 ─ v0.75)
+    lastSpellFx: r.lastSpellFx || null,         // スペル盤面演出(発注書§7 ─ v0.77)
     saveRev: r.saveRev || 0,
     winner: r.winner,
     pending: Object.fromEntries(Object.entries(r.pending).map(([k, v]) =>
@@ -1708,7 +1719,7 @@ const ROOM_PERSIST_KEYS = new Set([                                            /
   'treasureCost', 'curses', 'boardToken', 'atSeq', 'saveRev', 'battle', 'draft',
   'dirPend', 'halfMarket',
   'lastEvent', 'lastDice', 'lastUlt', 'lastSeal', 'lastRuin', 'lastDraw', 'lastGain',
-  'lastBarrierHit',
+  'lastBarrierHit', 'lastSpellFx',
 ]);
 function serializeRoom(r) {
   const room = {};

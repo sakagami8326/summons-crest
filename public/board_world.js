@@ -174,7 +174,160 @@ const PW = (() => {
     'defend-fx': fx2eDefend,
     // 結界の衝撃時発光(plan §8.4 ─ v0.73)
     'barrier-flash': fx2dBarrierFlash,
+    // スペルの盤面演出(発注書v0.75 §7 ─ M3第1群)
+    'spell-fx': fxSpell,
   };
+
+  // ===== スペル演出プリミティブ(発注書§7.2) =====
+  function casterPoint(pid) {
+    const P = pid && pawns[pid];
+    return P ? { x: P.x, y: P.y - 20 } : { x: 640, y: -40 };  // コマが無ければ画面外上から
+  }
+  // 弧を描いて飛ぶ投射体+短い軌跡
+  function projectile(from, to, col, ms) {
+    return new Promise(res => {
+      const s = scene.add.circle(from.x, from.y, 4, col, 1).setDepth(340);
+      const mx = (from.x + to.x) / 2, my = Math.min(from.y, to.y) - 60;
+      let fr = 0;
+      scene.tweens.addCounter({ from: 0, to: 1, duration: ms || 420, ease: 'Sine.easeIn',
+        onUpdate: tw => { const v = tw.getValue(), u = 1 - v;
+          s.setPosition(u * u * from.x + 2 * u * v * mx + v * v * to.x,
+                        u * u * from.y + 2 * u * v * my + v * v * to.y);
+          if ((fr++ % 3) === 0 && quality !== 'lite') {
+            const t2 = scene.add.circle(s.x, s.y, 2.5, col, 0.7).setDepth(339);
+            scene.tweens.add({ targets: t2, alpha: 0, duration: 260, onComplete: () => t2.destroy() });
+          } },
+        onComplete: () => { s.destroy(); res(); } });
+    });
+  }
+  // 着弾(素材impact_small優先・なければリング+白閃)
+  function impactAt(x, y, col, elem) {
+    if (!fxImageFlash(elem, 'impactSmall', x, y, { width: 84, ms: 330, depth: 341 })) {
+      const g = scene.add.graphics().setDepth(341);
+      scene.tweens.addCounter({ from: 0, to: 1, duration: 330, ease: 'Cubic.easeOut',
+        onUpdate: tw => { const v = tw.getValue(); g.clear();
+          g.lineStyle(2 + 3 * (1 - v), col, 1 - v);
+          g.strokeEllipse(x, y, 18 + 60 * v, (18 + 60 * v) * 0.55);
+          g.fillStyle(0xFFFFFF, 0.5 * (1 - v));
+          g.fillEllipse(x, y, 22 * (1 - v) + 4, (22 * (1 - v) + 4) * 0.55); },
+        onComplete: () => g.destroy() });
+    }
+    elemBurst(x, y, col, 7, true, 342, elem);
+  }
+  // 亀裂: 中心から外周へ暗いライン(§7.3 地割れ/岩盤)
+  function crackAt(x, y, ms) {
+    const g = scene.add.graphics().setDepth(300);
+    const arms = [];
+    for (let k = 0; k < 6; k++)
+      arms.push({ a: (k / 6) * Math.PI * 2 + Math.random() * 0.5, len: 26 + Math.random() * 22 });
+    return new Promise(res => scene.tweens.addCounter({ from: 0, to: 1, duration: ms || 700, ease: 'Cubic.easeOut',
+      onUpdate: tw => { const v = tw.getValue(); g.clear();
+        const al = v < 0.7 ? 0.9 : 0.9 * (1 - (v - 0.7) / 0.3);
+        g.lineStyle(2, 0x1A1620, al);
+        for (const m of arms) {
+          const L = m.len * Math.min(1, v * 1.6);
+          g.beginPath(); g.moveTo(x, y);
+          g.lineTo(x + Math.cos(m.a) * L * 0.5, y + Math.sin(m.a) * L * 0.28 + 3);
+          g.lineTo(x + Math.cos(m.a) * L, y + Math.sin(m.a) * L * 0.55);
+          g.strokePath();
+        } },
+      onComplete: () => { g.destroy(); res(); } }));
+  }
+  // 回復・強化の柔らかい明滅
+  function pulseAt(x, y, col, ms) {
+    const g = scene.add.graphics().setDepth(320);
+    return new Promise(res => scene.tweens.addCounter({ from: 0, to: 1, duration: ms || 600, ease: 'Sine.easeInOut',
+      onUpdate: tw => { const v = tw.getValue(); g.clear();
+        const a = 0.5 * Math.sin(Math.PI * v);
+        g.fillStyle(col, a * 0.4); g.fillEllipse(x, y, 90, 48);
+        g.lineStyle(2, col, a); g.strokeEllipse(x, y, 70 + 20 * v, (70 + 20 * v) * 0.55); },
+      onComplete: () => { g.destroy(); res(); } }));
+  }
+  function tintCreature(i, col, ms) {
+    const spr = creatureSprites[i];
+    if (spr && spr.scene && quality !== 'lite') {
+      spr.setTint(col);
+      setTimeout(() => { if (spr.scene) spr.clearTint(); }, ms || 450);
+    }
+  }
+  // 転移(§7.3): 両マスに魔法陣→2体同時縮小→交差する光跡→再出現
+  async function fxSwapTiles(tiles) {
+    const [a, b] = tiles || [];
+    if (a == null || b == null || !GEO[a] || !GEO[b]) return;
+    const pa = proj(GEO[a][0], GEO[a][1]), pb = proj(GEO[b][0], GEO[b][1]);
+    groundRipple(a, 0xC8BAE8, 600); groundRipple(b, 0xC8BAE8, 600);
+    const sa = creatureSprites[a], sb = creatureSprites[b];
+    const shrink = s => new Promise(res => {
+      if (!s || !s.scene) return res();
+      const base = s.scale;
+      scene.tweens.addCounter({ from: 0, to: 1, duration: 260, ease: 'Sine.easeIn',
+        onUpdate: tw => { const v = tw.getValue(); if (!s.scene) return;
+          s.setScale(base * (1 - 0.9 * v)); s.setAlpha(1 - v); },
+        onComplete: () => { if (s.scene) s.setScale(base); res(); } });
+    });
+    await Promise.all([shrink(sa), shrink(sb)]);
+    await Promise.all([
+      projectile({ x: pa.x, y: pa.y - 20 }, { x: pb.x, y: pb.y - 20 }, 0xC8BAE8, 420),
+      projectile({ x: pb.x, y: pb.y - 20 }, { x: pa.x, y: pa.y - 20 }, 0xC8BAE8, 420),
+    ]);
+    await Promise.all([popInSprite(sa), popInSprite(sb)]);
+    await wait(150);
+  }
+  // 第1群のスペル別シーケンス(§7.3・§7.5)
+  async function fxSpell(ev) {
+    const sid = ev.spell;
+    if (sid === 'sp_move') return fxSwapTiles(ev.tiles);
+    const i = (ev.tiles || [])[0];
+    if (i == null || !GEO[i]) return;
+    const { x, y } = proj(GEO[i][0], GEO[i][1]);
+    const from = casterPoint(ev.caster);
+    if (sid === 'sp_weaken') {
+      await projectile(from, { x, y: y - 14 }, 0x7A2EB8, 420);   // 暗紫projectile
+      impactAt(x, y, 0x9B59D0, null);
+      tintCreature(i, 0xB07AE0, 500);
+      await wait(500);
+    } else if (sid === 'sp_flame_vortex') {
+      await projectile(from, { x, y: y - 10 }, 0xFF7A45, 420);   // 火種
+      const g = scene.add.graphics().setDepth(330);              // 円形の炎(回転)
+      await new Promise(res => scene.tweens.addCounter({ from: 0, to: 1, duration: 900, ease: 'Sine.easeOut',
+        onUpdate: tw => { const v = tw.getValue(); g.clear();
+          const a = v < 0.75 ? 0.85 : 0.85 * (1 - (v - 0.75) / 0.25);
+          for (let k = 0; k < 8; k++) {
+            const an = v * 6 + k * Math.PI / 4;
+            g.fillStyle(0xFF7A45, a);
+            g.fillCircle(x + Math.cos(an) * 34, y + Math.sin(an) * 18, 3.5);
+          } },
+        onComplete: () => { g.destroy(); res(); } }));
+      tintCreature(i, 0xFFB08A, 400);
+      elemBurst(x, y, 0xFF7A45, 6, true, 331, 'fire');
+      await wait(200);
+    } else if (sid === 'sp_root_prison') {
+      const g = scene.add.graphics().setDepth(330);              // 四隅から根が中心へ
+      const cs = [[-DW / 2 + 8, 0], [0, -DH / 2 + 5], [DW / 2 - 8, 0], [0, DH / 2 - 5]];
+      await new Promise(res => scene.tweens.addCounter({ from: 0, to: 1, duration: 750, ease: 'Sine.easeOut',
+        onUpdate: tw => { const v = tw.getValue(); g.clear();
+          g.lineStyle(3, 0x6B4F2A, 0.95);
+          for (const [dx2, dy2] of cs) {
+            const sx = x + dx2, sy = y + dy2;
+            g.beginPath(); g.moveTo(sx, sy);
+            g.lineTo(sx + (x - sx) * v + Math.sin(v * 9) * 4, sy + (y - sy) * v);
+            g.strokePath();
+          } },
+        onComplete: () => { g.destroy(); res(); } }));
+      pulseAt(x, y, 0x7FD35C, 500);
+      await wait(300);
+    } else if (sid === 'sp_bedrock_uplift') {
+      crackAt(x, y, 550);
+      elemBurst(x, y, 0x8A7350, 8, true, 331, 'earth');          // 岩片が下から上へ
+      await wait(350);
+      await pulseAt(x, y, 0x7FD35C, 600);                        // 回復pulse
+    } else if (sid === 'sp_quake') {
+      await crackAt(x, y, 750);                                  // 亀裂→岩片・砂煙→段が沈む(SVGはstateで切替済み)
+      dustBurst(x, y, 8, 0x9A8B6E, 331);
+      shake(5, 220);
+      await wait(300);
+    }
+  }
 
   // 結界(§8.4): 侵略を阻んだ瞬間だけ強く発光する輪(常時表示の結界枠はタイル側で描画済み)
   async function fx2dBarrierFlash(ev) {

@@ -1333,6 +1333,24 @@ async function runFxHarness(name) {
     renderPawns();
     return { done: true, fxDebug: PW.fxDebug() };
   }
+  // ---- M3: スペル演出ハーネス(?fixture=1&fx=spell&spell=sp_weaken 等) ----
+  if (name === 'spell') {
+    let alive = true;
+    if (document.hidden) {
+      const mc = new MessageChannel();
+      mc.port1.onmessage = () => { if (!alive) return; PW.pump(1); mc.port2.postMessage(0); };
+      mc.port2.postMessage(0);
+    }
+    try {
+      const sid = new URLSearchParams(location.search).get('spell') || 'sp_weaken';
+      const owned = [];
+      state.owners.forEach((o2, i2) => { if (o2) owned.push(i2); });
+      const tiles = sid === 'sp_move' ? owned.slice(0, 2) : [owned[0]];
+      const t0 = Date.now();
+      await PW.play({ type: 'spell-fx', spell: sid, tiles, caster: state.players[0].id });
+      return { sid, tiles, ms: Date.now() - t0, fxDebug: PW.fxDebug() };
+    } finally { alive = false; }
+  }
   // ---- M1: 静止盤面ハーネス(発注書v0.75 §11.2) ----
   if (name === 'tile-levels') {
     // Lv1〜4の見え方比較: レベル別に代表マスへ順にクローズアップ
@@ -2014,7 +2032,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.76' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.77' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
@@ -2320,8 +2338,9 @@ function render() {
       setTimeout(() => $('bankruptCut').classList.remove('on'), 4000);
     }
     else if (state.lastEvent.type === 'spell')
+      // スペルはpri2(発注書§2.2)─ 直後の盤面FXと同じ優先度にして「バナー→FX」の順を保つ
       queueBanner(sic('spell') + ' 呪文「' + state.lastEvent.name + '」 ─ ' + player(state.lastEvent.player).name,
-        state.lastEvent.desc || (player(state.lastEvent.player).name + 'が唱えた'), 3600);
+        state.lastEvent.desc || (player(state.lastEvent.player).name + 'が唱えた'), 3600, 2);
     else if (state.lastEvent.type === 'gate') {
       const gl = { g_up: sic('up') + ' 領地を強化', g_draft: sic('draft') + ' カードを引く',
                    g_forge: sic('forge') + ' 鍛錬 ─ クリーチャー進化', pass: '─ 何もしない' }[state.lastEvent.choice];
@@ -2338,6 +2357,19 @@ function render() {
       sideCut(sp, `<div class="tcWho">${sp.name} ─ 変化の門を通過</div>
         <div class="tcAmt plus">❖ 刻印を取得!${sg ? ` +${sg}G` : ''}</div>
         <div class="tcGold">城まで持ち帰ると一周ボーナス</div>`, 2400);
+    });
+  }
+  // スペルの盤面演出(発注書§7 ─ M3第1群)。バナー(pri2)の後にズーム+FXを直列再生
+  if (state.lastSpellFx && state.lastSpellFx.at !== prev.spellFxAt) {
+    prev.spellFxAt = state.lastSpellFx.at;
+    const sf = state.lastSpellFx;
+    const sfMsg = state.lastEvent && state.lastEvent.type === 'spell' ? (state.lastEvent.desc || '') : '';
+    queueFx(2, () => {
+      // 対象マス表示: 単一対象はズーム+中央下メッセージ(既存原則)。転移は両マスへFXのみ
+      if (sf.tiles && sf.tiles.length === 1) tileCloseup(sf.tiles[0], iconize(sfMsg), 2600);
+      if (renderModeActive === 'phaser')
+        PW.play({ type: 'spell-fx', spell: sf.spell, tiles: sf.tiles, caster: sf.caster });
+      else if (sf.tiles) sf.tiles.forEach(ti2 => fxAt(ti2, 'fxRing', '#C8BAE8'));
     });
   }
   // 結界が侵略を阻んだ瞬間 ─ クローズアップ+衝撃時発光(v0.73 plan§8.4)

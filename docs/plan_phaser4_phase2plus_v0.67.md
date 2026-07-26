@@ -1054,3 +1054,12 @@ Phase 3完了:
   fxTexLoaded=1・画像粒子3個使用→プール返却0残を確認(試験後削除) / マニフェスト未ロード時
   (typeof未定義)もno-opで進行 / npm test全通過
 - **水・土素材の先行接続**(M2発注分)は素材未支給のため未了 ─ ファイルを置くだけで自動適用される状態
+
+### 発注書v0.75 Milestone 3: スペル第1群(v0.77 / 2026-07-26)
+
+- **イベント経路**: サーバー`spellFx()`→`lastSpellFx`(PERSIST分類)→TVがバナー(スペルはpri2へ変更 ─
+  §2.2の「バナー→対象マス→FX」順を保証)→単一対象はtileCloseup+中央下に結果メッセージ→PW.play
+- **プリミティブ**(§7.2): projectile(弧+軌跡・術者コマ起点)/ impactAt(素材impact_small優先)/
+  crackAt(亀裂)/ pulseAt(回復・強化)/ tintCreature / fxSwapTiles(転移)
+- **第1群6種**: 衰弱・炎の渦・根の牢獄・岩盤隆起・地割れ・転移(§7.5)。対応表は`docs/spell_fx_map.md`
+- **検証**: 6種すべて単独再生0.9〜1.5秒・連続再生後オブジェクト残なし(tween 0)/ npm test全通過
