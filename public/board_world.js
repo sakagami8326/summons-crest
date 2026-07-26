@@ -10,6 +10,7 @@ const PW = (() => {
   let pendingState = null, pendingLayout = null;   // Scene準備前に届いたstateの保留(最新1件)
   let boardKey = '', boardGen = 0;
   let boardObjs = [];                               // 現行世代の表示オブジェクト
+  const creatureSprites = {};                       // タイル番号 → クリーチャースプライト(2C演出用)
   let tileTexKeys = [];                             // 現行世代のタイルテクスチャ
   const pawns = {};                                 // id → { spr, sh, tex, x, y, tw }
   const texPromises = {};
@@ -95,7 +96,152 @@ const PW = (() => {
     'debug-error': () => { throw new Error('debug-error'); },
     // 着地土埃(2B: 移動ジュースからも直接使用)
     'dust': ev => { const { x, y } = proj(GEO[ev.tile][0], GEO[ev.tile][1]); dustBurst(x, y, ev.n || 4, null, 250); return Promise.resolve(); },
+    // ===== Phase 2C: 盤面状態変化(plan §7) =====
+    'summon': fx2cSummon,
+    'upgrade-sparks': fx2cUpgrade,
+    'evolve-fx': fx2cEvolve,
+    'ruin-fx': fx2cRuin,
   };
+
+  // ---- 2C共通ヘルパー ----
+  const ELEM_COL = { fire: 0xFF7A45, water: 0x56A8E8, earth: 0x7FD35C, wind: 0x5BE0D0 };
+  const elemCol = e => ELEM_COL[e] || 0xD8D2E8;
+  const wait = ms => new Promise(res => setTimeout(res, ms));
+  // 属性色の粒子を放射(pool再利用。上方向up=trueで立ち上る)
+  function elemBurst(x, y, col, base, up, depth) {
+    if (!ready || quality === 'lite') return;
+    const n = Math.max(2, Math.round(base * qf()));
+    for (let k = 0; k < n; k++) {
+      const p = acquireDust();
+      p.setPosition(x + (Math.random() * 36 - 18), y - (up ? 10 : 2));
+      p.setFillStyle(col, 0.9);
+      p.setRadius(1.5 + Math.random() * 2);
+      p.setDepth(depth != null ? depth : 320);
+      const dx = Math.random() * 40 - 20;
+      const dy = up ? -(30 + Math.random() * 50) : (8 + Math.random() * 14);
+      scene.tweens.addCounter({
+        from: 0, to: 1, duration: 500 + Math.random() * 300, ease: 'Sine.easeOut',
+        onUpdate: tw => { const v = tw.getValue(); p.setPosition(p.x + dx * 0.03, y - (up ? 10 : 2) + dy * v); p.setAlpha(0.9 * (1 - v)); },
+        onComplete: () => releaseDust(p),
+      });
+    }
+  }
+  // 地面の波紋(召喚の紋章代替: 属性共通素材が届くまでの生成版 ─ plan §3.1)
+  function groundRipple(i, col, dur) {
+    const { x, y } = proj(GEO[i][0], GEO[i][1]);
+    const g = scene.add.graphics().setDepth(299);
+    scene.tweens.addCounter({ from: 0, to: 1, duration: dur || 700, ease: 'Cubic.easeOut',
+      onUpdate: tw => { const v = tw.getValue(); g.clear();
+        g.lineStyle(2 + 3 * (1 - v), col, 0.9 * (1 - v));
+        g.strokeEllipse(x, y, 20 + 90 * v, (20 + 90 * v) * 0.55);
+        g.lineStyle(1.5, col, 0.5 * (1 - v));
+        g.strokeEllipse(x, y, 10 + 55 * v, (10 + 55 * v) * 0.55); },
+      onComplete: () => g.destroy() });
+  }
+  // クリーチャースプライトのポップ(85%→105%→100% ─ plan §7.1)
+  function popSprite(spr, dur) {
+    return new Promise(res => {
+      if (!spr || !spr.scene) return res();
+      const base = spr.scale;
+      scene.tweens.addCounter({ from: 0, to: 1, duration: dur || 420, ease: 'Sine.easeOut',
+        onUpdate: tw => { const v = tw.getValue();
+          if (!spr.scene) return;
+          const s = v < 0.55 ? 0.85 + 0.2 * (v / 0.55) : 1.05 - 0.05 * ((v - 0.55) / 0.45);
+          spr.setScale(base * s); },
+        onComplete: () => { if (spr.scene) spr.setScale(base); res(); } });
+    });
+  }
+  // 再構築完了後のクリーチャースプライトを待つ(state更新→演出の順序ずれ対策)
+  function waitCreature(i, tries = 20) {
+    return new Promise(res => {
+      const chk = () => {
+        const s = creatureSprites[i];
+        if (s && s.scene) return res(s);
+        if (--tries <= 0) return res(null);
+        setTimeout(chk, 100);
+      };
+      chk();
+    });
+  }
+
+  // 召喚(plan §7.1): DOM立ち絵カットインが主役。盤面側は波紋+出現ポップ+属性粒子のみ
+  async function fx2cSummon(ev) {
+    const col = elemCol(ev.element);
+    groundRipple(ev.tile, col, 700);
+    const spr = await waitCreature(ev.tile);
+    const { x, y } = proj(GEO[ev.tile][0], GEO[ev.tile][1]);
+    elemBurst(x, y, col, 10, true, 320);
+    if (spr) await popSprite(spr, 450);
+    await wait(250);
+  }
+
+  // 強化(plan §7.2): 外周リング+短い発光+上昇粒子。カメラは動かさない
+  async function fx2cUpgrade(ev) {
+    const col = hexInt(ev.color != null ? ev.color : '#EBD98A');
+    fx(ev.tile, 'fxRing', col);
+    const { x, y } = proj(GEO[ev.tile][0], GEO[ev.tile][1]);
+    elemBurst(x, y, col, 6, true, 320);
+    const spr = creatureSprites[ev.tile];
+    if (spr && spr.scene && quality !== 'lite') {
+      spr.setTint(0xFFF2C0);
+      setTimeout(() => { if (spr.scene) spr.clearTint(); }, 260);
+    }
+    await wait(500);
+  }
+
+  // 進化(plan §7.3): 旧姿オーバーレイ→光柱の中でフェードアウト→新姿ポップ。
+  // stateが先に進化後へ切り替わるため、旧テクスチャを上に重ねて切替の瞬間を隠す
+  async function fx2cEvolve(ev) {
+    const col = elemCol(ev.element);
+    const { x, y } = proj(GEO[ev.tile][0], GEO[ev.tile][1]);
+    const lift = ((ev.level || 3) - 1) * 7;
+    let old = null;
+    const oldKey = 'pwCre_c_' + ev.bid;
+    await pngTexture(oldKey, '/assets/c_' + ev.bid + '.png').catch(() => {});
+    if (scene && scene.textures.exists(oldKey)) {
+      old = scene.add.image(x, y - lift + 6, oldKey).setOrigin(0.5, 1).setDepth(330);
+      old.setScale(80 / old.width);
+    }
+    await wait(300);
+    fx(ev.tile, 'fxPillar', col, -lift);
+    elemBurst(x, y - lift, col, 12, true, 331);
+    if (old) {
+      await new Promise(res => scene.tweens.add({ targets: old, alpha: 0, duration: 500, delay: 250,
+        onComplete: () => { old.destroy(); res(); } }));
+    } else { await wait(750); }
+    const spr = await waitCreature(ev.tile, 8);
+    if (spr) await popSprite(spr, 450);
+    await wait(300);
+  }
+
+  // 退場(plan §7.4): stateからは既に消えているため、旧姿を一時表示して沈下+粒子分解
+  async function fx2cRuin(ev) {
+    const col = elemCol(ev.element);
+    const { x, y } = proj(GEO[ev.tile][0], GEO[ev.tile][1]);
+    const bid = (ev.cid || '').replace(/_f$/, '');
+    let ghost = null;
+    if (bid) {
+      const evo = bid !== ev.cid;
+      const key = 'pwCre_' + (evo ? 'e_' : 'c_') + bid;
+      await pngTexture(key, '/assets/' + (evo ? 'e_' : 'c_') + bid + '.png').catch(() => {});
+      if (scene && scene.textures.exists(key)) {
+        ghost = scene.add.image(x, y + 6, key).setOrigin(0.5, 1).setDepth(330);
+        ghost.setScale(80 / ghost.width);
+      }
+    }
+    await wait(200);
+    if (ghost) {
+      ghost.setTint(0x555566);   // 彩度低下の代替(単色化)
+      elemBurst(x, y, col, 10, false, 331);
+      await new Promise(res => scene.tweens.add({ targets: ghost, y: ghost.y + 14, alpha: 0,
+        duration: 800, ease: 'Sine.easeIn', onComplete: () => { ghost.destroy(); res(); } }));
+      elemBurst(x, y, col, 6, true, 331);
+    } else {
+      elemBurst(x, y, col, 10, false, 331);
+      await wait(800);
+    }
+    await wait(200);
+  }
   function play(ev) {
     if (!ev || !ev.type) return Promise.resolve();
     if (ev.id != null) {
@@ -279,6 +425,7 @@ const PW = (() => {
           if (!scene.textures.exists(texKey)) return;
           const img = scene.add.image(x, y - lift + 6, texKey).setOrigin(0.5, 1).setDepth(d);
           img.setScale(80 / img.width);
+          creatureSprites[i] = img;   // 2C演出(出現ポップ・発光・反動)の対象
           boardObjs.push(img);
         });
       } else {
@@ -308,6 +455,7 @@ const PW = (() => {
       }
       boardObjs.forEach(ob => { try { ob.destroy(); } catch (e) {} });
       boardObjs = [];
+      Object.keys(creatureSprites).forEach(k => delete creatureSprites[k]);
       tileTexKeys.forEach(k => { if (scene.textures.exists(k)) scene.textures.remove(k); });
       tileTexKeys = newTileTex;
       makers.forEach(fn => { try { fn(); } catch (e) {} });

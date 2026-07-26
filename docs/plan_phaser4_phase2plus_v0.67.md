@@ -961,3 +961,25 @@ Phase 3完了:
   lite切替で粒子ゼロ / 実ゲーム7ラウンド・コンソールエラーなし / npm test全通過
 - 属性共通素材(§3)はアート未着のため、粒子はプログラム生成(Graphics円)で仮実装。素材到着後に差し替え
 - 次: Phase 2C(召喚・強化・進化・退場)から
+
+### Phase 2C(v0.69 / 2026-07-26)
+
+- **EFFECTS追加**(board_world.js): `summon` / `upgrade-sparks` / `evolve-fx` / `ruin-fx`
+  - **召喚**(§7.1): 地面の波紋(紋章素材の生成版)→クリーチャー出現ポップ(85%→105%→100%)→属性色粒子の立ち上り。
+    DOM立ち絵カットイン(summonCut)が主役のため、盤面側はカメラを動かさず約0.7秒+余韻の控えめ構成
+  - **強化**(§7.2): 既存fxRing+スプライト短発光(setTint 260ms)+上昇粒子。カメラ再移動なし・拘束0.5秒
+  - **進化**(§7.3): stateが先に進化後へ切り替わるため**旧姿(c_<bid>)を上に重ねて**切替の瞬間を隠す →
+    光柱+属性粒子の中で旧姿フェードアウト→新姿ポップ。全体約1.8〜2.3秒、tileCloseupズーム+中央下メッセージと同時再生
+  - **退場**(§7.4): stateからは消滅済みのため旧姿を一時表示 → 単色化(setTint 0x555566=彩度低下の代替)→
+    沈下+フェード+粒子分解(下向き→上向きの2段)。約1.2秒
+- **共通ヘルパー**: elemBurst(属性色粒子・dustPool再利用・品質係数適用・lite=0)/ groundRipple / popSprite /
+  waitCreature(再構築完了後のスプライトを最大2秒待つ ─ state更新と演出の順序ずれ対策)
+- **board.htmlフック**: レベルアップ検出→Phaser時はupgrade-sparks(進化時はevolve-fxをtileCloseupと同時にqueueFx(2)で)、
+  召喚検出→queueFx(2)でsummon(DOMカットインと並走・重複主役化しない)、lastRuin→tileCloseupと同時にruin-fx。
+  DOM描画時は従来のfxRing/fxPillarのまま
+- **ハーネス**(§13.2): `?fixture=1&fx=summon|upgrade|evolve|ruin(&elem=water等)`で単独再生、
+  `fx=leak2c`で4演出×25周=100回のリーク検査。非表示タブではMessageChannelでループを駆動
+- **検証**: 各演出の単独再生OK(実測 summon 0.70s / upgrade 0.50s+リング余韻 / evolve 1.83s / ruin 1.21s)・
+  再生後のオブジェクト数はベース95で不変・tween残0 / npm test全通過
+- 粒子・波紋・光柱はすべてプログラム生成の仮実装(§3素材到着後に差し替え)。ColorMatrixフィルタは
+  使わずsetTintで代替(Phaser4のFilter方式移行は素材差し替え時にまとめて判断)

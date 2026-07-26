@@ -1283,6 +1283,45 @@ async function runFxHarness(name) {
     renderPawns();
     return { done: true, fxDebug: PW.fxDebug() };
   }
+  // ---- Phase 2C: 単独再生ハーネス(plan §13.2 ─ ?fixture=1&fx=summon&elem=water 等) ----
+  if (['summon', 'upgrade', 'evolve', 'ruin', 'leak2c'].includes(name)) {
+    // 非表示タブではRAFが止まりtweenが進まないため、MessageChannelでループを駆動する
+    let alive = true;
+    if (document.hidden) {
+      const mc = new MessageChannel();
+      mc.port1.onmessage = () => { if (!alive) return; PW.pump(1); mc.port2.postMessage(0); };
+      mc.port2.postMessage(0);
+    }
+    const elemQ = new URLSearchParams(location.search).get('elem');
+    const pick = () => {
+      for (let i = 0; i < 28; i++)
+        if (state.owners[i] && (!elemQ || state.tiles[i].e === elemQ)) return i;
+      return 1;
+    };
+    const evOf = (nm, i) => {
+      const o = state.owners[i] || {};
+      const col = player(o.player) ? player(o.player).color : '#EBD98A';
+      if (nm === 'summon') return { type: 'summon', tile: i, element: state.tiles[i].e };
+      if (nm === 'upgrade') return { type: 'upgrade-sparks', tile: i, color: col };
+      if (nm === 'evolve') return { type: 'evolve-fx', tile: i, bid: (o.creature || 'gecko').replace(/_f$/, ''), element: state.tiles[i].e, level: o.level || 3 };
+      return { type: 'ruin-fx', tile: i, cid: o.creature || 'gecko', element: state.tiles[i].e };
+    };
+    try {
+      if (name === 'leak2c') {
+        // §12.4: 各演出を繰り返してもオブジェクトが増え続けないこと
+        const before = PW.fxDebug();
+        const i = pick();
+        for (let r = 0; r < 25; r++)
+          for (const nm of ['summon', 'upgrade', 'evolve', 'ruin']) await PW.play(evOf(nm, i));
+        await new Promise(res => setTimeout(res, 1200));   // 残粒子の消化待ち
+        return { runs: 100, before, after: PW.fxDebug() };
+      }
+      const i = pick();
+      const t0 = Date.now();
+      await PW.play(evOf(name, i));
+      return { tile: i, elem: state.tiles[i].e, ms: Date.now() - t0, fxDebug: PW.fxDebug() };
+    } finally { alive = false; }
+  }
   return { unknown: name };
 }
 {
@@ -1829,7 +1868,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.68' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.69' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
@@ -1956,13 +1995,22 @@ function render() {
       const was = prev.ownersArr[i], now = state.owners[i];
       if (was && now && now.level > was.level) {
         const col = player(now.player).color;
-        fxAt(i, 'fxRing', col);
-        if (now.level >= (state.evoLevel || 3) && !/_f$/.test(now.creature) &&
-            state.catalog.CREATURES[now.creature].evo && now.level - 1 < (state.evoLevel || 3)) {
-          fxAt(i, 'fxPillar', col, 20);
-          // 進化はマスにクローズアップして告知(設計思想: マス変化は必ず見せる)
-          const ei = i, cr0 = state.catalog.CREATURES[now.creature];
-          queueFx(2, () => tileCloseup(ei, `${cr0.name}が<b style="color:#F2D062">${cr0.evo}</b>に進化!`));  // 盤面変化
+        const isEvo = now.level >= (state.evoLevel || 3) && !/_f$/.test(now.creature) &&
+            state.catalog.CREATURES[now.creature].evo && now.level - 1 < (state.evoLevel || 3);
+        if (isEvo) {
+          // 進化(2C plan§7.3): ズーム+光柱+旧姿→新姿切替+中央下メッセージ(設計思想: マス変化は必ず見せる)
+          const ei = i, cr0 = state.catalog.CREATURES[now.creature], bid = now.creature, lv = now.level;
+          queueFx(2, () => {   // 盤面変化
+            tileCloseup(ei, `${cr0.name}が<b style="color:#F2D062">${cr0.evo}</b>に進化!`);
+            if (renderModeActive === 'phaser')
+              PW.play({ type: 'evolve-fx', tile: ei, bid, element: state.tiles[ei].e, level: lv });
+            else fxAt(ei, 'fxPillar', col, 20);
+          });
+        } else if (renderModeActive === 'phaser') {
+          // 強化(2C plan§7.2): リング+短い発光+上昇粒子。カメラは動かさない
+          PW.play({ type: 'upgrade-sparks', tile: i, color: col });
+        } else {
+          fxAt(i, 'fxRing', col);
         }
       }
     }
@@ -1982,6 +2030,12 @@ function render() {
           };
           if (img.src.endsWith('full_' + pl.charId + '.png') && img.complete) show();
           else { img.onload = show; img.src = '/assets/full_' + pl.charId + '.png'; }
+          // 盤面側の出現演出(2C plan§7.1): 波紋+ポップ+属性粒子。
+          // 立ち絵カットイン(DOM)が主役なので、こちらはカメラを動かさず控えめに重ねる
+          if (renderModeActive === 'phaser') {
+            const si = i, sel = state.tiles[i].e;
+            queueFx(2, () => PW.play({ type: 'summon', tile: si, element: sel }));
+          }
           break;
         }
       }
@@ -2139,8 +2193,13 @@ function render() {
     prev.ruinAt = state.lastRuin.at;
     const ru = state.lastRuin;
     const rp = player(ru.player);
-    queueFx(2, () => tileCloseup(ru.tile,   // 盤面変化
-      `${rp ? rp.name + 'の' : ''}${state.catalog.CREATURES[ru.creature].name}は${ru.src}に蝕まれ力尽きた…<br>土地は空き地になった`));
+    queueFx(2, () => {   // 盤面変化
+      tileCloseup(ru.tile,
+        `${rp ? rp.name + 'の' : ''}${state.catalog.CREATURES[ru.creature].name}は${ru.src}に蝕まれ力尽きた…<br>土地は空き地になった`);
+      // 退場(2C plan§7.4): 旧姿を一時表示して単色化→沈下→粒子分解
+      if (renderModeActive === 'phaser')
+        PW.play({ type: 'ruin-fx', tile: ru.tile, cid: ru.creature, element: state.tiles[ru.tile].e });
+    });
   }
   // 称号の移動・リーチ到達を中央バナーで告知
   if (state.phase === 'playing') {
