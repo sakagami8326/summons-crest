@@ -176,7 +176,44 @@ const PW = (() => {
     'barrier-flash': fx2dBarrierFlash,
     // スペルの盤面演出(発注書v0.75 §7 ─ M3第1群)
     'spell-fx': fxSpell,
+    // 勝利演出(発注書v0.75 §9 ─ M7)
+    'victory-glow': fxVictoryGlow,
+    'victory-castle': fxVictoryCastle,
   };
+
+  // 勝利§9.2-4〜5: 勝者の所有領地だけを盤面順に弱く発光→光を城へ収束(Liteは省略 ─ §9.5)
+  async function fxVictoryGlow(ev) {
+    if (quality === 'lite') return;
+    const castle = ev.castle;
+    const pc = castle != null && GEO[castle] ? proj(GEO[castle][0], GEO[castle][1]) : null;
+    const col = hexInt(ev.color || '#F2D062');
+    const tiles = (ev.tiles || []).filter(t2 => GEO[t2]);
+    for (const t2 of tiles) {
+      const pz = proj(GEO[t2][0], GEO[t2][1]);
+      const g = scene.add.graphics().setDepth(330);
+      scene.tweens.addCounter({ from: 0, to: 1, duration: 700, ease: 'Sine.easeOut',
+        onUpdate: tw => { const v = tw.getValue(); g.clear();
+          const a = 0.6 * Math.sin(Math.PI * v);
+          g.lineStyle(2.5, col, a); g.strokeEllipse(pz.x, pz.y, 76 + 20 * v, (76 + 20 * v) * 0.55);
+          g.fillStyle(col, a * 0.25); g.fillEllipse(pz.x, pz.y, 80, 44); },
+        onComplete: () => g.destroy() });
+      if (pc) projectile({ x: pz.x, y: pz.y - 10 }, { x: pc.x, y: pc.y - 24 }, col, 800);
+      await wait(120);
+    }
+    await wait(800);
+  }
+  // 勝利§9.2-7: 城から金色の光柱と粒子
+  async function fxVictoryCastle(ev) {
+    const castle = ev.castle;
+    if (castle == null || !GEO[castle]) return;
+    const pc = proj(GEO[castle][0], GEO[castle][1]);
+    if (quality !== 'lite') {
+      fx(castle, 'fxPillar', '#F2D062', -20);
+      fxImageFlash('common', 'sparkGold', pc.x, pc.y - 50, { width: 130, ms: 900, depth: 341 });
+      elemBurst(pc.x, pc.y - 10, 0xF2D062, 12, true, 342);
+      await wait(1300);
+    } else await wait(400);
+  }
 
   // ===== スペル演出プリミティブ(発注書§7.2) =====
   function casterPoint(pid) {

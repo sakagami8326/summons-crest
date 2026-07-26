@@ -1359,6 +1359,26 @@ async function runFxHarness(name) {
     renderPawns();
     return { done: true, fxDebug: PW.fxDebug() };
   }
+  // ---- M7: 勝利演出ハーネス(?fixture=1&fx=victory) ----
+  if (name === 'victory') {
+    let alive = true;
+    if (document.hidden) {
+      const mc = new MessageChannel();
+      mc.port1.onmessage = () => { if (!alive) return; PW.pump(1); mc.port2.postMessage(0); };
+      mc.port2.postMessage(0);
+    }
+    try {
+      const wpid = state.players[0].id;
+      const castle = state.tiles.findIndex(t2 => t2.t === 'castle');
+      const lands = [];
+      state.owners.forEach((o2, i2) => { if (o2 && o2.player === wpid) lands.push(i2); });
+      const t0 = Date.now();
+      await PW.play({ type: 'victory-glow', tiles: lands, castle, color: player(wpid).color, timeoutMs: 9000 });
+      tileCloseup(castle, 'テスト勝者の勝利!', 2400);
+      await PW.play({ type: 'victory-castle', castle, timeoutMs: 6000 });
+      return { lands, castle, ms: Date.now() - t0, fxDebug: PW.fxDebug() };
+    } finally { alive = false; }
+  }
   // ---- M3: スペル演出ハーネス(?fixture=1&fx=spell&spell=sp_weaken 等) ----
   if (name === 'spell') {
     let alive = true;
@@ -2064,7 +2084,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.78' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.79' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
@@ -2570,13 +2590,37 @@ function render() {
     prev.battleAt = state.lastBattle.at;
     playBattle(state.lastBattle);
   }
-  // 勝利
-  $('winOv').classList.toggle('on', state.phase === 'ended');
+  // 勝利演出(発注書v0.75 §9 ─ M7): 全景→勝者領地の盤面順発光→光の収束→城ズーム→光柱→カットイン
   if (state.phase === 'ended' && state.winner) {
-    const w = player(state.winner);
-    $('winArt').src = '/assets/full_' + w.charId + '.png';
-    $('winText').textContent = `${w.name}(${state.catalog.CHARS[w.charId].name}) ─ 総資産${w.points}Gで勝利!`;
-  }
+    if (prev.winPlayed !== state.winner) {
+      prev.winPlayed = state.winner;
+      const w = player(state.winner);
+      const castle = state.tiles.findIndex(t2 => t2.t === 'castle');
+      const lands = [];
+      state.owners.forEach((o2, i2) => { if (o2 && o2.player === state.winner) lands.push(i2); });
+      const showWin = () => {
+        const titles2 = [state.titles.conqueror === state.winner ? '覇者' : null,
+                         state.titles.pilgrim === state.winner ? '大巡礼者' : null].filter(Boolean);
+        $('winArt').src = '/assets/full_' + w.charId + '.png';
+        $('winText').textContent = `${w.name}(${state.catalog.CHARS[w.charId].name}) ─ 総資産${w.points}G / 領地${lands.length}つ` +
+          (titles2.length ? ` / 称号「${titles2.join('」「')}」` : '') + 'で勝利!';
+        $('winOv').classList.add('on');
+      };
+      if (renderModeActive === 'phaser') {
+        queueFx(1, () => {   // 勝利は最優先(§2.2)。城到着演出の完了はキュー側(animBusy/cutBusy)が保証
+          bannerUntil = Math.max(bannerUntil, Date.now() + 5200);
+          (async () => {
+            await PW.play({ type: 'victory-glow', tiles: lands, castle, color: w.color, timeoutMs: 7000 });
+            tileCloseup(castle, `${w.name}の勝利!`, 3200);    // §9.2-6 城へクローズアップ
+            await PW.play({ type: 'victory-castle', castle, timeoutMs: 6000 });
+            showWin();                                        // §9.2-8〜10 カットイン+最終結果(自動では消さない)
+          })();
+        });
+      } else {
+        queueFx(1, () => showWin());   // DOM描画時は既存勝利画面へフォールバック(§9.5)
+      }
+    }
+  } else { $('winOv').classList.remove('on'); prev.winPlayed = null; }
 }
 fitWorld(); addEventListener('resize', fitWorld);
 ['redani','linnei','grease','mio'].forEach(c => { new Image().src = '/assets/full_' + c + '.png'; });
