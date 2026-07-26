@@ -1039,3 +1039,18 @@ Phase 3完了:
   ?fx=place(&elem=…)
 - **検証**: ハイライト4件表示→解除でオブジェクト完全除去(95→99→95)/ place11連続でリークなし
   (tween残0)/ npm test全通過。素材(§3)未着のため粒子・波紋はGraphics仮実装のまま
+
+### 発注書v0.75 Milestone 2: 属性素材基盤(v0.76 / 2026-07-26)
+
+- **マニフェスト**(§3.4): `public/fx_manifest.js`(グローバルFX_ASSETS ─ fire/water/earth/wind/neutral各7種
+  +common4種)。素材パスの参照はマニフェスト経由のみ。配置先 `public/assets/fx/`(README同梱)
+- **preload**: Scene起動時に全素材の読込を試行。欠損はSceneを失敗させず黙って無視(404のみ)。
+  読込成功分だけ`fxTexKey()`が同期で返す
+- **画像FX基盤**: 画像粒子プール(上限40・fxImgPool/fxImgActiveをfxDebugへ追加)+
+  `fxImageFlash(属性, キー, x, y, opts)`(中心表示のスケールイン/アウト)
+- **接続**: elemBurst=素材があれば画像粒子(回転つき)/なければGraphics円。配置=summon紋+impact_small、
+  退場=disperse、侵略命中=impact_large をそれぞれ素材優先で接続(未着時は従来Graphicsのまま)
+- **検証**: 素材ゼロ(現状)で全演出がフォールバック動作・リークなし / ダミーPNGを置いた一時試験で
+  fxTexLoaded=1・画像粒子3個使用→プール返却0残を確認(試験後削除) / マニフェスト未ロード時
+  (typeof未定義)もno-opで進行 / npm test全通過
+- **水・土素材の先行接続**(M2発注分)は素材未支給のため未了 ─ ファイルを置くだけで自動適用される状態

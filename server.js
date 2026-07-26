@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '0.75';
+const VERSION = '0.76';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -1871,7 +1871,7 @@ const server = http.createServer(async (req, res) => {
   if (p === '/phone') return serveFile(res, 'phone.html');
   if (p.startsWith('/assets/')) return serveFile(res, p.slice(1));
   // v0.66: 共有タイミング定数・Phaserワールド描画・同梱ライブラリ
-  if (p === '/game_timing.js' || p === '/board_world.js' || p.startsWith('/vendor/'))
+  if (p === '/game_timing.js' || p === '/board_world.js' || p === '/fx_manifest.js' || p.startsWith('/vendor/'))
     return serveFile(res, p.slice(1));
   if (p === '/api/fixture') {
     // v0.66: 描画パリティ確認用の固定state(ルームは登録しない・開発用)

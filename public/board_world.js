@@ -41,6 +41,72 @@ const PW = (() => {
     try { localStorage.setItem('sc_reduce_fx', b ? '1' : '0'); } catch (e) {}
   }
 
+  // ===== 属性エフェクト素材基盤(発注書v0.75 §3 / M2) =====
+  // 参照はfx_manifest.jsのFX_ASSETS経由のみ。未配置・読込失敗はGraphicsへフォールバック
+  const ELEM_FX_GROUP = { fire: 'fire', water: 'water', earth: 'earth', wind: 'wind' };
+  const fxTexOk = new Set();     // 読込成功したテクスチャキー
+  function fxAssetUrl(group, key) {
+    if (typeof FX_ASSETS === 'undefined') return null;
+    const m = FX_ASSETS[group];
+    if (!m) return null;
+    const v = m[key];
+    if (Array.isArray(v)) return v[Math.floor(Math.random() * v.length)] || null;
+    return v || null;
+  }
+  // 起動時に全素材の読込を試みる(欠損はSceneを失敗させず黙って無視 ─ §3.4)
+  function preloadFxAssets() {
+    if (typeof FX_ASSETS === 'undefined') return;
+    for (const m of Object.values(FX_ASSETS))
+      for (const v of Object.values(m))
+        for (const url of (Array.isArray(v) ? v : [v])) {
+          const tk = 'pwFx_' + url;
+          pngTexture(tk, url).then(k => { if (k) fxTexOk.add(tk); }).catch(() => {});
+        }
+  }
+  // 同期参照(読込済みのみ返す)。elemはfire等のゲーム属性、なければneutral/commonを直接指定
+  function fxTexKey(group, key) {
+    const url = fxAssetUrl(ELEM_FX_GROUP[group] || group, key);
+    if (!url) return null;
+    const tk = 'pwFx_' + url;
+    return fxTexOk.has(tk) && scene && scene.textures.exists(tk) ? tk : null;
+  }
+  // 画像粒子プール(素材到着後に使用。未着時はdustPoolの円で代替)
+  const fxImgPool = [];
+  let fxImgActive = 0;
+  const FX_IMG_POOL_MAX = 40;
+  function acquireFxImg(texKey) {
+    let s = fxImgPool.pop();
+    if (!s) s = scene.add.image(0, 0, texKey);
+    else s.setTexture(texKey);
+    s.setVisible(true).setActive(true).setAlpha(1).setScale(1).setRotation(0);
+    fxImgActive++;
+    return s;
+  }
+  function releaseFxImg(s) {
+    fxImgActive = Math.max(0, fxImgActive - 1);
+    s.setVisible(false).setActive(false);
+    if (fxImgPool.length < FX_IMG_POOL_MAX) fxImgPool.push(s);
+    else s.destroy();
+  }
+  // 単発の画像フラッシュ(summon/impact/disperse等の中心表示)。テクスチャ未着ならfalse
+  function fxImageFlash(group, key, x, y, opt) {
+    const tk = fxTexKey(group, key);
+    if (!tk) return false;
+    const o = opt || {};
+    const s = acquireFxImg(tk);
+    s.setPosition(x, y).setDepth(o.depth != null ? o.depth : 320);
+    const w = o.width || 90;
+    s.setScale((w / s.width) * (o.from != null ? o.from : 0.5));
+    s.setAlpha(0);
+    scene.tweens.addCounter({ from: 0, to: 1, duration: o.ms || 450, ease: 'Sine.easeOut',
+      onUpdate: tw => { const v = tw.getValue();
+        if (!s.active) return;
+        s.setScale((w / s.width) * ((o.from != null ? o.from : 0.5) + ((o.to != null ? o.to : 1) - (o.from != null ? o.from : 0.5)) * v));
+        s.setAlpha(Math.sin(Math.PI * v) * (o.alpha || 0.95)); },
+      onComplete: () => releaseFxImg(s) });
+    return true;
+  }
+
   // ===== Phase 2A: EffectPool(短命粒子の再利用・plan §2.4) =====
   const dustPool = [];
   let dustActive = 0;
@@ -149,7 +215,8 @@ const PW = (() => {
   async function fx2eInvade(ev) {
     const col = elemCol(ev.element);
     const { x, y } = proj(GEO[ev.tile][0], GEO[ev.tile][1]);
-    elemBurst(x, y, col, 12, true, 331);
+    fxImageFlash(ev.element, 'impactLarge', x, y - 10, { width: 120, ms: 380, depth: 332 });  // 支給素材があれば命中画像
+    elemBurst(x, y, col, 12, true, 331, ev.element);
     shake(4, 180);
     await wait(250);
     groundRipple(ev.tile, hexInt(ev.color || '#F2D062'), 700);
@@ -201,20 +268,37 @@ const PW = (() => {
   const elemCol = e => ELEM_COL[e] || 0xD8D2E8;
   const wait = ms => new Promise(res => setTimeout(res, ms));
   // 属性色の粒子を放射(pool再利用。上方向up=trueで立ち上る)
-  function elemBurst(x, y, col, base, up, depth) {
+  // elem指定時、支給素材(particle_01〜04)が読込済みなら画像粒子を使う(M2 ─ 未着はGraphics円)
+  function elemBurst(x, y, col, base, up, depth, elem) {
     if (!ready || quality === 'lite') return;
     const n = Math.max(2, Math.round(base * qf()));
     for (let k = 0; k < n; k++) {
+      const sx = x + (Math.random() * 36 - 18), sy = y - (up ? 10 : 2);
+      const dx = Math.random() * 40 - 20;
+      const dy = up ? -(30 + Math.random() * 50) : (8 + Math.random() * 14);
+      const dur = 500 + Math.random() * 300;
+      const tk = elem ? fxTexKey(elem, 'particles') : null;
+      if (tk) {
+        const s = acquireFxImg(tk);
+        s.setPosition(sx, sy).setDepth(depth != null ? depth : 320);
+        const w = 9 + Math.random() * 8;
+        s.setScale(w / s.width).setRotation(Math.random() * Math.PI * 2);
+        scene.tweens.addCounter({ from: 0, to: 1, duration: dur, ease: 'Sine.easeOut',
+          onUpdate: tw => { const v = tw.getValue();
+            if (!s.active) return;
+            s.setPosition(sx + dx * v * 0.6, sy + dy * v);
+            s.setAlpha(0.95 * (1 - v)); },
+          onComplete: () => releaseFxImg(s) });
+        continue;
+      }
       const p = acquireDust();
-      p.setPosition(x + (Math.random() * 36 - 18), y - (up ? 10 : 2));
+      p.setPosition(sx, sy);
       p.setFillStyle(col, 0.9);
       p.setRadius(1.5 + Math.random() * 2);
       p.setDepth(depth != null ? depth : 320);
-      const dx = Math.random() * 40 - 20;
-      const dy = up ? -(30 + Math.random() * 50) : (8 + Math.random() * 14);
       scene.tweens.addCounter({
-        from: 0, to: 1, duration: 500 + Math.random() * 300, ease: 'Sine.easeOut',
-        onUpdate: tw => { const v = tw.getValue(); p.setPosition(p.x + dx * 0.03, y - (up ? 10 : 2) + dy * v); p.setAlpha(0.9 * (1 - v)); },
+        from: 0, to: 1, duration: dur, ease: 'Sine.easeOut',
+        onUpdate: tw => { const v = tw.getValue(); p.setPosition(p.x + dx * 0.03, sy + dy * v); p.setAlpha(0.9 * (1 - v)); },
         onComplete: () => releaseDust(p),
       });
     }
@@ -299,13 +383,17 @@ const PW = (() => {
   async function fx2cSummon(ev) {
     const col = elemCol(ev.element);
     const { x, y } = proj(GEO[ev.tile][0], GEO[ev.tile][1]);
-    groundRipple(ev.tile, col, 650);          // 波紋/召喚紋(§3素材到着後にsummon素材へ差替)
+    // 召喚紋: 支給素材があれば画像、なければ波紋Graphics(§3.4フォールバック)
+    if (!fxImageFlash(ev.element, 'summon', x, y, { width: 104, ms: 600, depth: 317, from: 0.55, to: 1.05 }))
+      groundRipple(ev.tile, col, 650);
     convergeBurst(x, y, col, 10);
     const spr = await waitCreature(ev.tile);
     if (spr && spr.scene) spr.setAlpha(0);    // 収束の間は隠す
     await wait(280);
     if (spr) await popInSprite(spr);
-    elemBurst(x, y, col, 8, true, 320);       // 着地impact(素材到着後impact_smallへ差替)
+    // 着地impact: 支給素材(impact_small)があれば画像+粒子、なければ粒子のみ
+    fxImageFlash(ev.element, 'impactSmall', x, y - 6, { width: 80, ms: 320, depth: 321 });
+    elemBurst(x, y, col, 8, true, 320, ev.element);
     await wait(150);
   }
 
@@ -364,9 +452,10 @@ const PW = (() => {
       }
     }
     await wait(200);
+    fxImageFlash(ev.element, 'disperse', x, y - 20, { width: 96, ms: 700, depth: 332 });  // 支給素材があれば重ねる
     if (ghost) {
       ghost.setTint(0x555566);   // 彩度低下の代替(単色化)
-      elemBurst(x, y, col, 10, false, 331);
+      elemBurst(x, y, col, 10, false, 331, ev.element);
       await new Promise(res => scene.tweens.add({ targets: ghost, y: ghost.y + 14, alpha: 0,
         duration: 800, ease: 'Sine.easeIn', onComplete: () => { ghost.destroy(); res(); } }));
       elemBurst(x, y, col, 6, true, 331);
@@ -401,6 +490,7 @@ const PW = (() => {
       quality, reduceFx, playing: fxPlaying,
       tweens: ready && scene.tweens ? (scene.tweens.getTweens ? scene.tweens.getTweens().length : -1) : 0,
       dustPool: dustPool.length, dustActive,
+      fxImgPool: fxImgPool.length, fxImgActive, fxTexLoaded: fxTexOk.size,
       children: ready ? scene.children.length : 0,
       zoom: ready ? scene.cameras.main.zoom : 0,
     };
@@ -482,6 +572,7 @@ const PW = (() => {
                 makeShadowTex();
                 ready = true;
                 clearTimeout(wd);
+                preloadFxAssets();   // 属性エフェクト素材(未配置は黙って無視 ─ M2 §3.4)
                 // 全景ズームを盤面の実バウンズから算出して即適用
                 // (Canvasは境界で描画が切れるため、端のマスのはみ出し分だけ引いて収める)
                 computeFit();

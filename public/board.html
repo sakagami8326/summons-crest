@@ -669,6 +669,7 @@ const QR = (() => {
 })();
 </script>
 <script src="/game_timing.js"></script>
+<script src="/fx_manifest.js"></script>
 <script src="/vendor/phaser.min.js"></script>
 <script src="/board_world.js"></script>
 <script>
@@ -2013,7 +2014,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.75' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.76' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
