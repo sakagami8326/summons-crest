@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '0.77';
+const VERSION = '0.78';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -253,8 +253,8 @@ const pById = (r, id) => r.players.find(p => p.id === id);
 // イベント刻印: 同一ミリ秒でも必ず増加する(クライアントのat比較による重複排除を確実にする)
 function stamp(r) { r.atSeq = Math.max(Date.now(), (r.atSeq || 0) + 1); return r.atSeq; }
 // 盤面スペル演出イベント(発注書v0.75 §7 ─ TVがPW.playへ接続する。結果はstateが正)
-function spellFx(r, sid, tiles, caster) {
-  r.lastSpellFx = { spell: sid, tiles, caster: caster || null, at: stamp(r) };
+function spellFx(r, sid, tiles, caster, extra) {
+  r.lastSpellFx = Object.assign({ spell: sid, tiles, caster: caster || null, at: stamp(r) }, extra || {});
 }
 function tileElem(r, i) { return (r.elemOv && r.elemOv[i]) || TILES[i].e; }
 const ELEM_OF_SPELL = { sp_volcanic_core: 'fire', sp_abyssal_pearl: 'water',
@@ -1031,6 +1031,7 @@ function handleChoose(r, playerId, optionId) {
       p.gold += gain;
       r.lastEvent.desc = `第${p.lap || 1}周 ─ ${gain}Gを獲得(所持${p.gold}G)`;
       log(r, `第${p.lap || 1}周 ─ ${p.name}は${gain}Gを得た(所持${p.gold}G)`);
+      spellFx(r, 'sp_gold', [], p.id);
       return askRoll(r, p);
     }
     if (sid === 'sp_insight') {
@@ -1038,18 +1039,21 @@ function handleChoose(r, playerId, optionId) {
       const got = drawCards(r, p, 2);
       if (got) r.lastDraw = { player: p.id, n: got, reason: 'insight', at: stamp(r) };
       log(r, `${p.name}はカードを${got}枚引いた`);
+      spellFx(r, 'sp_insight', [], p.id, { n: got });
       return askRoll(r, p);
     }
     if (sid === 'sp_gale') {
       castLog();
       p.gale = true;
       log(r, `${p.name}に追い風が吹く…(このターンはダイス2個)`);
+      spellFx(r, 'sp_gale', [], p.id);
       return askRoll(r, p);
     }
     if (sid === 'sp_ward') {
       castLog();
       r.barrier[p.id] = true;
       log(r, `${p.name}の全領地に結界が張られた(次の手番まで侵略不可)`);
+      spellFx(r, 'sp_ward', r.owners.map((o, i) => o && o.player === p.id ? i : null).filter(x => x !== null), p.id);
       return askRoll(r, p);
     }
     if (sid === 'sp_weaken') {
@@ -1080,18 +1084,21 @@ function handleChoose(r, playerId, optionId) {
       p.gold += gain;
       r.lastEvent.desc = `領地${n}つ ─ ${gain}Gを獲得`;
       log(r, `豊穣の角があふれ出す! 領地${n}つ ─ ${p.name}は${gain}Gを得た`);
+      spellFx(r, 'sp_cornucopia', r.owners.map((o, i) => o && o.player === p.id ? i : null).filter(x => x !== null), p.id);
       return askRoll(r, p);
     }
     if (sid === 'sp_bloodstained_blade') {
       castLog();
       p.blade = true;
       log(r, `${p.name}の刃が血に染まる…(次の侵略でAT+10・成功時30G強奪)`);
+      spellFx(r, 'sp_bloodstained_blade', [], p.id);
       return askRoll(r, p);
     }
     if (sid === 'sp_wind_shift') {
       castLog();
       p.windShift = true;
       log(r, `${p.name}は風向転換で逆方向へ進む!(このターンのみ)`);
+      spellFx(r, 'sp_wind_shift', [], p.id);
       return askRoll(r, p);
     }
     if (ELEM_OF_SPELL[sid] || sid === 'sp_flame_vortex' || sid === 'sp_high_tide' ||
@@ -1191,6 +1198,7 @@ function handleChoose(r, playerId, optionId) {
       if (TILES[i].e === el) delete r.elemOv[i]; else r.elemOv[i] = el;
       r.lastEvent.desc = `${p.name}の領地(${i}番)が${ELEM_JA[el]}属性に変化!(連鎖・地価を再計算)`;
       log(r, `📜 ${p.name}が${SPELLS[sid].name}を使用。マス${i}が${ELEM_JA[el]}属性に変化した!(連鎖・地価を再計算)`);
+      spellFx(r, sid, [i], p.id, { elem: el });
     } else if (sid === 'sp_flame_vortex') {
       if (o.player === p.id) return askRoll(r, p);
       pay();
@@ -1205,6 +1213,7 @@ function handleChoose(r, playerId, optionId) {
       fx().tide = { by: p.id };
       r.lastEvent.desc = `${p.name}の水領地(${i}番)で次に受け取る通行料+50%(次の手番まで)`;
       log(r, `🌊 満ち潮! マス${i}で次に受け取る通行料+50%(次の手番まで)`);
+      spellFx(r, 'sp_high_tide', [i], p.id);
     } else if (sid === 'sp_bedrock_uplift') {
       if (o.player !== p.id || tileElem(r, i) !== 'earth') return askRoll(r, p);
       pay();
@@ -1231,6 +1240,7 @@ function handleChoose(r, playerId, optionId) {
       delete r.tileFx[i];
       r.lastEvent.desc = `${CREATURES[c].name}は全回復して${p.name}の手札へ。マス${i}は空き地に`;
       log(r, `🪶 羽休め ─ ${CREATURES[c].name}は全回復して${p.name}の手札へ戻った。マス${i}は空き地に`);
+      spellFx(r, 'sp_feather_rest', [i], p.id, { cid: c });
     }
     return askRoll(r, p);
   }
@@ -1273,9 +1283,11 @@ function handleChoose(r, playerId, optionId) {
       if (!dest) {
         r.owners[j] = { player: p.id, level: 1, creature: c, dmg: carry, shade: carryShade };
         log(r, `🌬 風の回廊! ${CREATURES[c].name}が隣の空き地(${tileElem(r, j)})へ渡り、Lv1の領地とした`);
+        spellFx(r, 'sp_wind_corridor', [i, j], p.id);
         return askRoll(r, p);
       }
       log(r, `🌬 風の回廊から侵略開始! ${CREATURES[c].name}が${pById(r, dest.player).name}の領地へ攻め込む(通行料なし)`);
+      spellFx(r, 'sp_wind_corridor', [i, j], p.id, { battle: true });
       r.battle = { tile: j, attacker: p.id, defender: dest.player,
                    atkCreature: c, corridor: true, atkCarry: carry, atkShade: carryShade, supports: {} };
       return askSupports(r);
@@ -1317,10 +1329,12 @@ function handleChoose(r, playerId, optionId) {
         r.owners[j] = { player: p.id, level: 1, creature: src.creature, dmg: src.dmg || 0 };
         r.owners[i] = null;
         log(r, `📜 ${p.name}の移動の呪文! ${CREATURES[r.owners[j].creature].name}が隣の空き地(${TILES[j].e})へ進出し、Lv1の領地とした`);
+        spellFx(r, 'sp_step', [i, j], p.id);
         return askRoll(r, p);
       }
       // 敵領地へ: そのまま侵略(通行料なし)。攻撃クリーチャーは土地から出撃
       log(r, `📜 ${p.name}の移動の呪文! ${CREATURES[src.creature].name}が隣の${pById(r, dest.player).name}の領地へ攻め込む!(通行料なし)`);
+      spellFx(r, 'sp_step', [i, j], p.id, { battle: true });
       r.battle = { tile: j, attacker: p.id, defender: dest.player,
                    atkCreature: src.creature, moveFrom: i, supports: {} };
       return askSupports(r);
@@ -1385,6 +1399,7 @@ function handleChoose(r, playerId, optionId) {
         r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_swap.name,
           desc: `${CREATURES[oldC].name}に代わり${CREATURES[c].name}が領地に立った`, at: stamp(r) };
         log(r, `📜 ${p.name}が交代の呪文! ${CREATURES[oldC].name}に代わり${CREATURES[c].name}が領地に立った(−${SPELLS.sp_swap.cost + CREATURES[c].cost}G)`);
+        spellFx(r, 'sp_swap', [p.swapI], p.id, { cid: oldC });
       }
     }
     p.swapI = null;

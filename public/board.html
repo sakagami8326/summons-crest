@@ -349,6 +349,11 @@
   .coinFly.arc { transition:none; transform:translate(-50%,-50%); }
   .coinTrail { position:fixed; z-index:91; width:5px; height:5px; border-radius:50%;
       background:#FFE9A0; pointer-events:none; transform:translate(-50%,-50%); }
+  /* ひらめきのカード裏飛翔 */
+  .cardFlyBack { position:fixed; z-index:92; width:26px; height:36px; border-radius:4px;
+      background:linear-gradient(160deg,#2E2A48,#1C1930); border:1px solid #C9A227;
+      color:#C9A227; font-size:15px; display:flex; align-items:center; justify-content:center;
+      pointer-events:none; transition:transform .8s cubic-bezier(.3,.1,.6,1), opacity .8s; }
   /* 強化候補ハイライト(DOM描画時の最低限表示) */
   .upHl { position:absolute; transform:translate(-50%,-50%); z-index:120; pointer-events:none;
       animation:upHlPulse 1.5s ease-in-out infinite; }
@@ -855,6 +860,27 @@ function tileCloseup(i, html, dur = 2800) {
   }, dur);
   bannerUntil = Math.max(bannerUntil, Date.now() + dur + 200);
 }
+// ひらめき: カード裏だけをHUDプレートへ飛ばす(中身はTVに出さない ─ 発注書§7.3)
+function flyCardBacks(pid2, n) {
+  const pl = $('plate-' + pid2);
+  if (!pl) return;
+  const r2 = pl.getBoundingClientRect();
+  const to = { x: r2.left + r2.width / 2, y: r2.top + r2.height / 2 };
+  let from = { x: innerWidth / 2, y: innerHeight / 2 };
+  if (renderModeActive === 'phaser') { const v = PW.pawnViewport(pid2); if (v) from = v; }
+  for (let k = 0; k < (n || 2); k++) setTimeout(() => {
+    const c = document.createElement('div');
+    c.className = 'cardFlyBack';
+    c.textContent = '❖';
+    c.style.left = from.x + 'px'; c.style.top = from.y + 'px';
+    document.body.appendChild(c);
+    requestAnimationFrame(() => {
+      c.style.transform = `translate(${to.x - from.x}px, ${to.y - from.y}px) scale(.45)`;
+      c.style.opacity = '0.15';
+    });
+    setTimeout(() => c.remove(), 950);
+  }, k * 150);
+}
 // 強化候補ハイライトのDOM版(Phaser失敗時の最低限表示 ─ 発注書v0.75 §6.4)
 let hlDomKey = '';
 function renderHighlightsDom(hl) {
@@ -1345,10 +1371,16 @@ async function runFxHarness(name) {
       const sid = new URLSearchParams(location.search).get('spell') || 'sp_weaken';
       const owned = [];
       state.owners.forEach((o2, i2) => { if (o2) owned.push(i2); });
-      const tiles = sid === 'sp_move' ? owned.slice(0, 2) : [owned[0]];
+      const multi = ['sp_move', 'sp_step', 'sp_wind_corridor'].includes(sid) ? owned.slice(0, 2)
+        : ['sp_ward', 'sp_cornucopia'].includes(sid) ? owned.slice(0, 4)
+        : ['sp_gold', 'sp_gale', 'sp_wind_shift', 'sp_bloodstained_blade', 'sp_insight'].includes(sid) ? []
+        : [owned[0]];
+      const o0 = state.owners[multi[0]];
+      const ELQ = { sp_volcanic_core: 'fire', sp_abyssal_pearl: 'water', sp_earth_mother_stone: 'earth', sp_sky_crystal: 'wind' };
       const t0 = Date.now();
-      await PW.play({ type: 'spell-fx', spell: sid, tiles, caster: state.players[0].id });
-      return { sid, tiles, ms: Date.now() - t0, fxDebug: PW.fxDebug() };
+      await PW.play({ type: 'spell-fx', spell: sid, tiles: multi, caster: state.players[0].id,
+                      cid: o0 ? o0.creature : 'gecko', elem: ELQ[sid], n: 2 });
+      return { sid, tiles: multi, ms: Date.now() - t0, fxDebug: PW.fxDebug() };
     } finally { alive = false; }
   }
   // ---- M1: 静止盤面ハーネス(発注書v0.75 §11.2) ----
@@ -2032,7 +2064,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.77' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.78' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
@@ -2178,8 +2210,10 @@ function render() {
         }
       } else if (was && now && was.creature !== now.creature && was.level === now.level &&
                  (!state.lastBattle || state.lastBattle.at === prev.battleAt) &&
+                 !(state.lastSpellFx && state.lastSpellFx.at !== prev.spellFxAt &&
+                   (state.lastSpellFx.tiles || []).includes(i)) &&   // 交代/転移スペルFXと二重再生しない(M4)
                  renderModeActive === 'phaser') {
-        // 交代・転移など既存領地に別クリーチャーが現れた → 配置演出を流用(発注書v0.75 §4.1)
+        // スペル以外で既存領地に別クリーチャーが現れた → 配置演出を流用(発注書v0.75 §4.1)
         const si = i;
         queueFx(2, () => PW.play({ type: 'summon', tile: si, element: state.tiles[si].e }));
       }
@@ -2365,11 +2399,13 @@ function render() {
     const sf = state.lastSpellFx;
     const sfMsg = state.lastEvent && state.lastEvent.type === 'spell' ? (state.lastEvent.desc || '') : '';
     queueFx(2, () => {
-      // 対象マス表示: 単一対象はズーム+中央下メッセージ(既存原則)。転移は両マスへFXのみ
+      // 対象マス表示: 単一対象はズーム+中央下メッセージ(既存原則)。複数対象・術者中心はFXのみ
       if (sf.tiles && sf.tiles.length === 1) tileCloseup(sf.tiles[0], iconize(sfMsg), 2600);
       if (renderModeActive === 'phaser')
-        PW.play({ type: 'spell-fx', spell: sf.spell, tiles: sf.tiles, caster: sf.caster });
+        PW.play({ type: 'spell-fx', spell: sf.spell, tiles: sf.tiles, caster: sf.caster,
+                  cid: sf.cid, elem: sf.elem, battle: sf.battle, n: sf.n });
       else if (sf.tiles) sf.tiles.forEach(ti2 => fxAt(ti2, 'fxRing', '#C8BAE8'));
+      if (sf.spell === 'sp_insight') flyCardBacks(sf.caster, sf.n || 2);   // カード裏だけ飛ばす(中身は非表示)
     });
   }
   // 結界が侵略を阻んだ瞬間 ─ クローズアップ+衝撃時発光(v0.73 plan§8.4)

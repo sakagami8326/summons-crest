@@ -273,14 +273,78 @@ const PW = (() => {
     await Promise.all([popInSprite(sa), popInSprite(sb)]);
     await wait(150);
   }
+  // 風の渦(疾風・風向転換): 中心の周りを回る風粒子
+  function windSwirl(x, y, ms, reverse) {
+    const g = scene.add.graphics().setDepth(340);
+    return new Promise(res => scene.tweens.addCounter({ from: 0, to: 1, duration: ms || 800, ease: 'Sine.easeInOut',
+      onUpdate: tw => { const v = tw.getValue(); g.clear();
+        const a = v < 0.75 ? 0.8 : 0.8 * (1 - (v - 0.75) / 0.25);
+        const dir = reverse ? -1 : 1;
+        for (let k = 0; k < 6; k++) {
+          const an = dir * (v * 7 + k * Math.PI / 3);
+          g.fillStyle(0x9FE8D8, a * (0.5 + 0.5 * Math.sin(an * 2)));
+          g.fillCircle(x + Math.cos(an) * 26, y - 14 + Math.sin(an) * 12, 2.6);
+        } },
+      onComplete: () => { g.destroy(); res(); } }));
+  }
+  // 2マスを結ぶ線/帯に沿ってクリーチャーが渡る(移動の呪文・風の回廊)
+  async function fxLinkMove(ev, col, band) {
+    const [a, b] = ev.tiles || [];
+    if (a == null || b == null || !GEO[a] || !GEO[b]) return;
+    const pa = proj(GEO[a][0], GEO[a][1]), pb = proj(GEO[b][0], GEO[b][1]);
+    const g = scene.add.graphics().setDepth(315);
+    const draw = v => { g.clear();
+      g.lineStyle(band ? 10 : 3, col, band ? 0.3 * v : 0.85 * v);
+      g.beginPath(); g.moveTo(pa.x, pa.y - 8); g.lineTo(pb.x, pb.y - 8); g.strokePath();
+      if (band) { g.lineStyle(2, col, 0.8 * v);
+        g.beginPath(); g.moveTo(pa.x, pa.y - 8); g.lineTo(pb.x, pb.y - 8); g.strokePath(); } };
+    await new Promise(res => scene.tweens.addCounter({ from: 0, to: 1, duration: 260,
+      onUpdate: tw => draw(tw.getValue()), onComplete: res }));
+    await projectile({ x: pa.x, y: pa.y - 16 }, { x: pb.x, y: pb.y - 16 }, col, 480);
+    await new Promise(res => scene.tweens.addCounter({ from: 1, to: 0, duration: 300,
+      onUpdate: tw => draw(tw.getValue()), onComplete: () => { g.destroy(); res(); } }));
+    // 到着先の出現(空き地取得はstate反映済み → ポップ。戦闘時は戦闘演出に委ねる)
+    if (!ev.battle) {
+      const spr = creatureSprites[b];
+      if (spr && spr.scene) await popInSprite(spr);
+    }
+  }
+  // 一時ゴースト(羽休め・交代の旧クリーチャー)
+  async function ghostOf(cid, x, y) {
+    const bid = (cid || '').replace(/_f$/, '');
+    if (!bid) return null;
+    const evo = bid !== cid;
+    const key = 'pwCre_' + (evo ? 'e_' : 'c_') + bid;
+    await pngTexture(key, '/assets/' + (evo ? 'e_' : 'c_') + bid + '.png').catch(() => {});
+    if (!scene || !scene.textures.exists(key)) return null;
+    const s = scene.add.image(x, y + 6, key).setOrigin(0.5, 1).setDepth(333);
+    s.setScale(80 / s.width);
+    return s;
+  }
+  // タイルを一瞬覆う光(属性変更の切替被覆 ─ §7.4。stateは切替済みのため被覆のみの簡略版)
+  function coverFlash(x, y, col, ms) {
+    const g = scene.add.graphics().setDepth(316);
+    return new Promise(res => scene.tweens.addCounter({ from: 0, to: 1, duration: ms || 700, ease: 'Sine.easeInOut',
+      onUpdate: tw => { const v = tw.getValue(); g.clear();
+        const a = Math.sin(Math.PI * v);
+        g.fillStyle(col, a * 0.55); g.fillEllipse(x, y, DW + 10, DH + 6);
+        g.fillStyle(0xFFFFFF, a * 0.3); g.fillEllipse(x, y, DW - 20, DH - 12); },
+      onComplete: () => { g.destroy(); res(); } }));
+  }
+
   // 第1群のスペル別シーケンス(§7.3・§7.5)
   async function fxSpell(ev) {
     const sid = ev.spell;
     if (sid === 'sp_move') return fxSwapTiles(ev.tiles);
-    const i = (ev.tiles || [])[0];
-    if (i == null || !GEO[i]) return;
-    const { x, y } = proj(GEO[i][0], GEO[i][1]);
     const from = casterPoint(ev.caster);
+    const i = (ev.tiles || [])[0];
+    const hasTile = i != null && !!GEO[i];
+    // 術者中心のスペル(黄金・疾風・風向転換・血染めの刃・ひらめき)と
+    // 自前でtiles配列を処理するスペル(加護・豊穣)以外は対象マス必須
+    const needTile = !['sp_gold', 'sp_gale', 'sp_wind_shift', 'sp_bloodstained_blade',
+                       'sp_insight', 'sp_ward', 'sp_cornucopia'].includes(sid);
+    if (needTile && !hasTile) return;
+    const { x, y } = hasTile ? proj(GEO[i][0], GEO[i][1]) : { x: from.x, y: from.y };
     if (sid === 'sp_weaken') {
       await projectile(from, { x, y: y - 14 }, 0x7A2EB8, 420);   // 暗紫projectile
       impactAt(x, y, 0x9B59D0, null);
@@ -326,6 +390,119 @@ const PW = (() => {
       dustBurst(x, y, 8, 0x9A8B6E, 331);
       shake(5, 220);
       await wait(300);
+    } else if (sid === 'sp_feather_rest') {
+      // 羽休め(§7.3): 風の光で包む→縮小・上昇・消滅(stateでは既に空き地 → ゴーストで再現)
+      const gh = await ghostOf(ev.cid, x, y);
+      windSwirl(x, y, 700);
+      elemBurst(x, y, 0x9FE8D8, 8, true, 332, 'wind');
+      if (gh) {
+        await new Promise(res => scene.tweens.add({ targets: gh, y: gh.y - 46, alpha: 0,
+          scaleX: gh.scaleX * 0.55, scaleY: gh.scaleY * 0.55,
+          duration: 750, ease: 'Sine.easeIn', onComplete: () => { gh.destroy(); res(); } }));
+      } else await wait(750);
+      await wait(200);
+    } else if (sid === 'sp_swap') {
+      // 交代(§7.3): 旧を暗転縮小して捨て札方向へ→新を配置演出(直列)
+      const gh = await ghostOf(ev.cid, x, y);
+      const spr = creatureSprites[i];
+      if (spr && spr.scene) spr.setAlpha(0);   // 新クリーチャーは旧退場まで隠す
+      if (gh) {
+        gh.setTint(0x555566);
+        await new Promise(res => scene.tweens.add({ targets: gh, y: gh.y + 10, alpha: 0,
+          scaleX: gh.scaleX * 0.5, scaleY: gh.scaleY * 0.5,
+          duration: 520, ease: 'Sine.easeIn', onComplete: () => { gh.destroy(); res(); } }));
+      } else await wait(400);
+      if (!fxImageFlash(ev.elem || null, 'summon', x, y, { width: 100, ms: 550, depth: 317 }))
+        groundRipple(i, 0xD8D2E8, 600);
+      convergeBurst(x, y, 0xD8D2E8, 8);
+      await wait(240);
+      if (spr) await popInSprite(spr);
+      await wait(150);
+    } else if (sid === 'sp_high_tide') {
+      // 満ち潮(§7.3): 外周を一周する波+水滴の立ち上り
+      const g = scene.add.graphics().setDepth(330);
+      await new Promise(res => scene.tweens.addCounter({ from: 0, to: 1, duration: 950, ease: 'Sine.easeInOut',
+        onUpdate: tw => { const v = tw.getValue(); g.clear();
+          const a = v < 0.8 ? 0.85 : 0.85 * (1 - (v - 0.8) / 0.2);
+          const an = v * Math.PI * 2 - Math.PI / 2;
+          for (let k = 0; k < 5; k++) {
+            const a2 = an - k * 0.22;
+            g.fillStyle(0x56A8E8, a * (1 - k * 0.17));
+            g.fillCircle(x + Math.cos(a2) * (DW / 2 - 6), y + Math.sin(a2) * (DH / 2 - 3), 3.4 - k * 0.4);
+          } },
+        onComplete: () => { g.destroy(); res(); } }));
+      elemBurst(x, y, 0x56A8E8, 6, true, 331, 'water');
+      await wait(200);
+    } else if (sid === 'sp_ward') {
+      // 加護(§7.3): 自領地を盤面順に弱発光+結界輪(以降の常時表示は既存結界枠)
+      const tiles = (ev.tiles || []).filter(t2 => GEO[t2]);
+      for (const t2 of tiles) {
+        const pz = proj(GEO[t2][0], GEO[t2][1]);
+        const g = scene.add.graphics().setDepth(330);
+        scene.tweens.addCounter({ from: 0, to: 1, duration: 650, ease: 'Sine.easeOut',
+          onUpdate: tw => { const v = tw.getValue(); g.clear();
+            const a = 0.8 * Math.sin(Math.PI * v);
+            g.lineStyle(2.5, 0xBFEFFF, a);
+            g.strokeEllipse(pz.x, pz.y, 70 + 26 * v, (70 + 26 * v) * 0.55); },
+          onComplete: () => g.destroy() });
+        await wait(130);
+      }
+      await wait(500);
+    } else if (ev.elem && (sid === 'sp_volcanic_core' || sid === 'sp_abyssal_pearl' ||
+                           sid === 'sp_earth_mother_stone' || sid === 'sp_sky_crystal')) {
+      // 属性変更4種(§7.3/§7.4): 導入FX→光の被覆→(SVGはstate反映済み)→属性バースト
+      const ecol = elemCol(ev.elem);
+      if (sid === 'sp_volcanic_core') { await projectile(from, { x, y: y - 8 }, ecol, 420); crackAt(x, y, 500); }
+      else if (sid === 'sp_abyssal_pearl') { await projectile({ x, y: y - 140 }, { x, y: y - 8 }, ecol, 380); groundRipple(i, ecol, 500); }
+      else if (sid === 'sp_earth_mother_stone') { convergeBurst(x, y, ecol, 10); await wait(380); }
+      else { await projectile({ x: x + 90, y: y - 150 }, { x, y: y - 8 }, ecol, 380); windSwirl(x, y, 450); }
+      await coverFlash(x, y, ecol, 650);
+      elemBurst(x, y, ecol, 9, true, 331, ev.elem);
+      await wait(250);
+    } else if (sid === 'sp_step') {
+      await fxLinkMove(ev, 0xD8D2E8, false);   // 細い線で接続して移動(§7.3)
+    } else if (sid === 'sp_wind_corridor') {
+      const [a2, b2] = ev.tiles || [];
+      if (a2 != null && GEO[a2]) groundRipple(a2, 0x9FE8D8, 500);
+      if (b2 != null && GEO[b2]) groundRipple(b2, 0x9FE8D8, 500);
+      await fxLinkMove(ev, 0x9FE8D8, true);    // 太い風の帯(§7.3)
+    } else if (sid === 'sp_gold') {
+      // 黄金(§7.3): コマ付近に金色ルーン+金粒子(獲得額はバナー=DOM)
+      pulseAt(from.x, from.y + 14, 0xF2D062, 700);
+      elemBurst(from.x, from.y, 0xF2D062, 10, true, 341);
+      fxImageFlash('common', 'sparkGold', from.x, from.y - 10, { width: 90, ms: 600, depth: 342 });
+      await wait(800);
+    } else if (sid === 'sp_cornucopia') {
+      // 豊穣の角(§7.3): 自領地を盤面順に金緑pulse(合計金額はバナー=DOM)
+      const tiles = (ev.tiles || []).filter(t2 => GEO[t2]);
+      for (const t2 of tiles) {
+        const pz = proj(GEO[t2][0], GEO[t2][1]);
+        pulseAt(pz.x, pz.y, 0xBFD35C, 550);
+        elemBurst(pz.x, pz.y, 0xF2D062, 3, true, 331);
+        await wait(140);
+      }
+      await wait(500);
+    } else if (sid === 'sp_gale') {
+      await windSwirl(from.x, from.y, 800);            // 疾風(§7.3): コマ周囲の旋風(ダイス2個はDOM)
+    } else if (sid === 'sp_wind_shift') {
+      await windSwirl(from.x, from.y, 900, true);      // 風向転換(§7.3): 逆回りの風
+    } else if (sid === 'sp_bloodstained_blade') {
+      // 血染めの刃(§7.3): コマ付近に暗赤の刃(斜めの閃線2本)
+      const g = scene.add.graphics().setDepth(341);
+      await new Promise(res => scene.tweens.addCounter({ from: 0, to: 1, duration: 650, ease: 'Sine.easeOut',
+        onUpdate: tw => { const v = tw.getValue(); g.clear();
+          const a = v < 0.7 ? 0.9 : 0.9 * (1 - (v - 0.7) / 0.3);
+          g.lineStyle(3, 0xA32020, a);
+          const L = 30 * Math.min(1, v * 1.8);
+          g.beginPath(); g.moveTo(from.x - L, from.y - 10 + L * 0.6); g.lineTo(from.x + L, from.y - 10 - L * 0.6); g.strokePath();
+          g.lineStyle(2, 0xE05050, a * 0.8);
+          g.beginPath(); g.moveTo(from.x - L * 0.7, from.y - 4 - L * 0.5); g.lineTo(from.x + L * 0.7, from.y - 4 + L * 0.5); g.strokePath(); },
+        onComplete: () => { g.destroy(); res(); } }));
+    } else if (sid === 'sp_insight') {
+      // ひらめき(§7.3): 白金の閃き(カード裏の飛翔はDOM側 ─ 中身はTVに出さない)
+      pulseAt(from.x, from.y, 0xEDE6F8, 550);
+      elemBurst(from.x, from.y - 6, 0xEDE6F8, 7, true, 341);
+      await wait(650);
     }
   }
 
