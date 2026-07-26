@@ -463,6 +463,8 @@
     <div id="optPhoneUrl" style="font-size:11px; color:rgba(241,232,208,.6); letter-spacing:1px;"></div>
     <button class="saveSmall" id="optSaveQuit" style="font-size:15px; padding:10px 18px; width:100%;">セーブして終了</button>
     <button class="saveSmall" id="optRender" style="width:100%;"></button>
+    <button class="saveSmall" id="optQuality" style="width:100%;"></button>
+    <button class="saveSmall" id="optReduce" style="width:100%;"></button>
     <div id="optMsg" style="font-size:12px; color:rgba(241,232,208,.7); min-height:1.1em;"></div>
     <button class="saveSmall" id="optClose" style="width:100%;">閉じる</button>
   </div>
@@ -911,8 +913,15 @@ function iconize(t) {
 }
 let bannerUntil = 0;
 let cutBusy = 0;  // 進行中のカットイン/戦闘演出の数。>0の間は次の演出(バナー・TURN START)を発火しない
+// ===== PresentationQueue(v0.68 / plan_phaser4_phase2plus §2.3) =====
+// 優先度: 1=戦闘・破産・勝利 / 2=召喚・進化・退場など盤面変化 / 3=通行料・連鎖など経済 / 4=補助ジュース
+// 同一優先度は投入順。優先度4はstale判定で安全に省略できる。TURN STARTはキューが空になるまで待つ(既存ロジック)
 const bq = [];
-function queueBanner(main, sub, dur) { bq.push([main, sub, dur]); }
+let bqSeq = 0;
+function queueFx(pri, item, opts) {
+  bq.push({ pri, seq: bqSeq++, item, stale: opts && opts.stale });
+}
+function queueBanner(main, sub, dur, pri) { queueFx(pri || 3, [main, sub, dur]); }
 function showBanner(main, sub, dur) {
   const el = $('centerBanner');
   el.innerHTML = iconize(main) + (sub ? `<small>${iconize(sub)}</small>` : '');
@@ -1085,7 +1094,25 @@ $('optBtn').onclick = () => {
     $('optPhoneUrl').textContent = phoneUrlG || '';
     $('optQr').innerHTML = phoneUrlG ? QR.svg(phoneUrlG, 4) : '';
     $('optRender').textContent = '描画方式: ' + (renderModeActive === 'phaser' ? 'Phaser(新)' : 'DOM(旧)') + ' ─ 切り替える';
+    syncFxOptLabels();
   }
+};
+// v0.68: 演出品質・演出低減(再読み込み不要で即時反映 ─ plan_phaser4_phase2plus §4.2-4.3)
+const Q_LABEL = { high: 'High(全演出)', standard: 'Standard(標準)', lite: 'Lite(軽量)' };
+function syncFxOptLabels() {
+  const q = PW.getQuality();
+  $('optQuality').textContent = '演出品質: ' + (Q_LABEL[q.quality] || q.quality) + ' ─ 切替';
+  $('optReduce').textContent = '演出低減(揺れ/点滅を抑える): ' + (q.reduceFx ? 'オン' : 'オフ') + ' ─ 切替';
+}
+$('optQuality').onclick = () => {
+  const order = ['high', 'standard', 'lite'];
+  const cur = PW.getQuality().quality;
+  PW.setQuality(order[(order.indexOf(cur) + 1) % order.length]);
+  syncFxOptLabels();
+};
+$('optReduce').onclick = () => {
+  PW.setReduceFx(!PW.getQuality().reduceFx);
+  syncFxOptLabels();
 };
 // v0.66: 描画方式の手動切替(URL入力不要でその場で復旧できる)
 $('optRender').onclick = () => {
@@ -1217,6 +1244,52 @@ function fitWorld() {
     render();
   } catch (e) { console.log('fixture読み込み失敗: ' + e.message); }
 })();
+// ===== v0.68 演出ハーネス(開発用・fixtureモード時のみ有効 / plan §13.2) =====
+// 使い方: /?fixture=1&fx=selftest → window.__fxRun() で実行し結果を返す
+async function runFxHarness(name) {
+  if (name === 'selftest') {
+    // 2A完了条件: 優先度順の直列再生・例外継続・未対応type即resolve・同一id二重防止
+    const order = [];
+    const items = [];
+    for (let k = 0; k < 20; k++) items.push({ pri: [1, 2, 3, 4][k % 4], k });
+    items.forEach(({ pri, k }) => queueFx(pri, () => order.push(k)));
+    const expected = items.slice().sort((a, b) => a.pri - b.pri || a.k - b.k).map(i => i.k);
+    for (let t = 0; t < 40 && bq.length; t++) { render(); await new Promise(r => setTimeout(r, 40)); }
+    const orderOk = JSON.stringify(order) === JSON.stringify(expected);
+    let afterError = false;
+    queueFx(1, () => { throw new Error('boom'); });
+    queueFx(1, () => { afterError = true; });
+    for (let t = 0; t < 10 && bq.length; t++) { render(); await new Promise(r => setTimeout(r, 40)); }
+    const t0 = Date.now();
+    await PW.play({ type: 'unknown-type' });
+    const unknownFast = Date.now() - t0 < 100;
+    const e0 = Date.now(); await PW.play({ type: 'debug-wait', ms: 200, id: 'fxdup' }); const d1 = Date.now() - e0;
+    const e1 = Date.now(); await PW.play({ type: 'debug-wait', ms: 200, id: 'fxdup' }); const d2 = Date.now() - e1;
+    await PW.play({ type: 'debug-error', id: 'fxerr' });   // 例外でもresolveすること
+    return { orderOk, exceptionQueueOk: afterError, unknownFast,
+             dedupOk: d1 >= 150 && d2 < 60, playErrorOk: true, fxDebug: PW.fxDebug() };
+  }
+  if (name === 'move') {
+    // コマ1体を8歩動かして移動ジュースを目視/計測できるようにする
+    const p0 = state.players[0].id;
+    const from = state.players[0].pos;
+    for (let s2 = 1; s2 <= 8; s2++) {
+      pawnAnim[p0] = (from + s2) % 28;
+      renderPawns();
+      await new Promise(r => setTimeout(r, GAME_TIMING.stepMs));
+      PW.pump(2);
+    }
+    delete pawnAnim[p0];
+    renderPawns();
+    return { done: true, fxDebug: PW.fxDebug() };
+  }
+  return { unknown: name };
+}
+{
+  const fxName = new URLSearchParams(location.search).get('fx');
+  if (fxName && new URLSearchParams(location.search).get('fixture'))
+    window.__fxRun = () => runFxHarness(fxName);
+}
 
 // ===== 停止マスへのズームと詳細ウィンドウ =====
 let worldFit = 1, zoomTile = null;
@@ -1756,7 +1829,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.67' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.68' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
@@ -1889,7 +1962,7 @@ function render() {
           fxAt(i, 'fxPillar', col, 20);
           // 進化はマスにクローズアップして告知(設計思想: マス変化は必ず見せる)
           const ei = i, cr0 = state.catalog.CREATURES[now.creature];
-          bq.push(() => tileCloseup(ei, `${cr0.name}が<b style="color:#F2D062">${cr0.evo}</b>に進化!`));
+          queueFx(2, () => tileCloseup(ei, `${cr0.name}が<b style="color:#F2D062">${cr0.evo}</b>に進化!`));  // 盤面変化
         }
       }
     }
@@ -2054,7 +2127,7 @@ function render() {
   if (state.lastSeal && state.lastSeal.at !== prev.sealAt) {
     prev.sealAt = state.lastSeal.at;
     const sp = player(state.lastSeal.player), sg = state.lastSeal.gold || 0;
-    if (sp) bq.push(() => {
+    if (sp) queueFx(3, () => {   // 経済変化
       bannerUntil = Math.max(bannerUntil, Date.now() + 2600);
       sideCut(sp, `<div class="tcWho">${sp.name} ─ 変化の門を通過</div>
         <div class="tcAmt plus">❖ 刻印を取得!${sg ? ` +${sg}G` : ''}</div>
@@ -2066,7 +2139,7 @@ function render() {
     prev.ruinAt = state.lastRuin.at;
     const ru = state.lastRuin;
     const rp = player(ru.player);
-    bq.push(() => tileCloseup(ru.tile,
+    queueFx(2, () => tileCloseup(ru.tile,   // 盤面変化
       `${rp ? rp.name + 'の' : ''}${state.catalog.CREATURES[ru.creature].name}は${ru.src}に蝕まれ力尽きた…<br>土地は空き地になった`));
   }
   // 称号の移動・リーチ到達を中央バナーで告知
@@ -2125,9 +2198,15 @@ function render() {
   } else $('turnPortrait').classList.remove('show');
   // キューされたバナーを順に表示(移動中・別バナー表示中は待つ)
   if (bq.length && !animBusy && !cutBusy && Date.now() > bannerUntil) {
+    bq.sort((a, b) => a.pri - b.pri || a.seq - b.seq);
+    while (bq.length && bq[0].stale && bq[0].stale()) bq.shift();  // 古くなった低優先演出は省略
     const x = bq.shift();
-    if (typeof x === 'function') x();  // 関数キュー: カットイン・クローズアップ等
-    else showBanner(x[0], x[1], x[2]);
+    if (x) {
+      const it = x.item;
+      if (typeof it === 'function') {
+        try { it(); } catch (e) { console.log('演出例外(継続): ' + e.message); }  // 例外でもキューを止めない
+      } else showBanner(it[0], it[1], it[2]);
+    }
   }
   if (bq.length) { clearTimeout(prev.bqT); prev.bqT = setTimeout(render, 450); }
   updateTileInfo();

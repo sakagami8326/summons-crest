@@ -161,3 +161,4 @@
 - v0.64: オプションにルームコード+QR表示 / v0.65: スマホのマップ表示3モード切替(領地主/レベル/クリーチャー)
 - v0.66: **盤面ワールドをPhaser描画に移行**(既定=Phaser・`?render=dom`とオプションでDOM描画に切替可・移動タイミングはgame_timing.jsで両画面共有)。詳細は`plan_phaser_board_v0.66.md`
 - v0.67: **Phaser 4.2.1へ更新**(3.90.0から移行・表示/挙動は不変・Canvasは診断用でフォールバックはDOM)。詳細は`spec_phaser4_migration_v0.67.md`
+- v0.68: **演出基盤+移動ジュース**(優先度つき演出キュー・PW.play・EffectPool・演出品質High/Standard/Lite+演出低減設定(オプションから切替)・コマ移動のsquash&stretch+着地土埃)。詳細は`plan_phaser4_phase2plus_v0.67.md` §19

@@ -19,6 +19,113 @@ const PW = (() => {
   // '#RRGGBB' → 数値。Phaserの色変換APIに依存しない(v3/v4差異の影響を受けない)
   const hexInt = s => parseInt(String(s || '#F2D062').replace('#', ''), 16);
 
+  // ===== Phase 2A: 品質コントローラ(plan_phaser4_phase2plus §4.2-4.3) =====
+  // 設定は再読み込みなしで即時反映される。イベントの意味・尺は品質で変えない
+  const QUALITY_FACTOR = { high: 1, standard: 0.65, lite: 0.3 };
+  let quality = 'standard';
+  let reduceFx = false;
+  try {
+    quality = localStorage.getItem('sc_quality') || 'standard';
+    reduceFx = localStorage.getItem('sc_reduce_fx') === '1';
+  } catch (e) {}
+  if (!QUALITY_FACTOR[quality]) quality = 'standard';
+  const qf = () => QUALITY_FACTOR[quality];
+  function setQuality(q) {
+    if (!QUALITY_FACTOR[q]) return;
+    quality = q;
+    try { localStorage.setItem('sc_quality', q); } catch (e) {}
+  }
+  function setReduceFx(b) {
+    reduceFx = !!b;
+    try { localStorage.setItem('sc_reduce_fx', b ? '1' : '0'); } catch (e) {}
+  }
+
+  // ===== Phase 2A: EffectPool(短命粒子の再利用・plan §2.4) =====
+  const dustPool = [];
+  let dustActive = 0;
+  const DUST_POOL_MAX = 60;
+  function acquireDust() {
+    let p = dustPool.pop();
+    if (!p) p = scene.add.circle(0, 0, 2, 0xffffff);
+    p.setVisible(true).setActive(true);
+    dustActive++;
+    return p;
+  }
+  function releaseDust(p) {
+    dustActive = Math.max(0, dustActive - 1);
+    p.setVisible(false).setActive(false);
+    if (dustPool.length < DUST_POOL_MAX) dustPool.push(p);
+    else p.destroy();
+  }
+  // 着地の土埃など: 小粒子を放射(品質で数を絞る。lite=0)
+  function dustBurst(x, y, base, col, depth) {
+    if (!ready || quality === 'lite') return;
+    const n = Math.max(1, Math.round(base * qf()));
+    for (let k = 0; k < n; k++) {
+      const p = acquireDust();
+      p.setPosition(x + (Math.random() * 18 - 9), y - 2);
+      p.setFillStyle(col != null ? col : 0xBBB49A, 0.85);
+      p.setRadius(1.5 + Math.random() * 1.5);
+      p.setDepth(depth != null ? depth : 250);
+      const dx = Math.random() * 26 - 13, dy = -(6 + Math.random() * 10);
+      scene.tweens.addCounter({
+        from: 0, to: 1, duration: 260 + Math.random() * 140, ease: 'Sine.easeOut',
+        onUpdate: tw => { const v = tw.getValue(); p.setPosition(p.x + dx * 0.06, y - 2 + dy * v + 14 * v * v); p.setAlpha(0.85 * (1 - v)); },
+        onComplete: () => releaseDust(p),
+      });
+    }
+  }
+  // カメラシェイク(演出低減設定で無効/半減 ─ plan §4.3)
+  function shake(px, ms) {
+    if (!ready || reduceFx) return;
+    const amp = (quality === 'lite' ? px * 0.5 : px) / 1280;
+    scene.cameras.main.shake(ms, amp);
+  }
+
+  // ===== Phase 2A: EffectDirector(plan §2.2) =====
+  // PW.play(ev)はPromiseを返す。未対応typeは即resolve。同一idの二重再生を防止。
+  // 個別演出は最大4秒でタイムアウトし、例外でも呼び出し側を止めない
+  const playedIds = [];
+  const playedSet = new Set();
+  let fxPlaying = null;
+  const EFFECTS = {
+    // 検証用: 指定時間だけ「演出中」になる
+    'debug-wait': ev => new Promise(res => setTimeout(res, ev.ms || 100)),
+    // 検証用: 例外を投げる(キューが止まらないことの確認)
+    'debug-error': () => { throw new Error('debug-error'); },
+    // 着地土埃(2B: 移動ジュースからも直接使用)
+    'dust': ev => { const { x, y } = proj(GEO[ev.tile][0], GEO[ev.tile][1]); dustBurst(x, y, ev.n || 4, null, 250); return Promise.resolve(); },
+  };
+  function play(ev) {
+    if (!ev || !ev.type) return Promise.resolve();
+    if (ev.id != null) {
+      if (playedSet.has(ev.id)) return Promise.resolve();   // 二重再生防止(SSE再接続対策)
+      playedSet.add(ev.id);
+      playedIds.push(ev.id);
+      if (playedIds.length > 200) playedSet.delete(playedIds.shift());
+    }
+    if (failed || !ready) return Promise.resolve();          // DOM描画時は安全なno-op
+    const impl = EFFECTS[ev.type];
+    if (!impl) return Promise.resolve();                     // 未対応typeはゲームを止めない
+    fxPlaying = ev.type;
+    let p;
+    try { p = Promise.resolve(impl(ev)); }
+    catch (e) { fxPlaying = null; return Promise.resolve(); }
+    return Promise.race([p, new Promise(res => setTimeout(res, ev.timeoutMs || 4000))])
+      .catch(() => {})
+      .then(() => { fxPlaying = null; });
+  }
+
+  function fxDebug() {
+    return {
+      quality, reduceFx, playing: fxPlaying,
+      tweens: ready && scene.tweens ? (scene.tweens.getTweens ? scene.tweens.getTweens().length : -1) : 0,
+      dustPool: dustPool.length, dustActive,
+      children: ready ? scene.children.length : 0,
+      zoom: ready ? scene.cameras.main.zoom : 0,
+    };
+  }
+
   function fail(why) {
     if (failed || ready) { if (!ready) return; }
     if (failed) return;
@@ -251,16 +358,36 @@ const PW = (() => {
         });
       }
       const moved = Math.hypot(it.x - P.x, it.y - P.y) > 2;
+      if (!moved) {
+        // 目標が変わらない再描画(HUD更新など)では進行中のホップを殺さない
+        if (!P.tw) place(P, it.x, it.y, it);
+        P.x = it.x; P.y = it.y;
+        continue;
+      }
       if (P.tw) { P.tw.remove(); P.tw = null; }
-      if (moved && P.spr) {
+      if (P.spr) {
+        // 2B 移動ジュース: 出発で縦に縮み→上昇で伸び→着地で1回潰れる+影は空中で小さく薄く
+        // GAME_TIMING.stepMsは変更せず、tweenは既存の1歩時間内に完了させる(plan §6)
         const sx = P.x, sy = P.y, dist = Math.hypot(it.x - sx, it.y - sy);
+        const juice = quality !== 'lite';
         P.tw = scene.tweens.addCounter({
           from: 0, to: 1, duration: Math.min(GAME_TIMING.stepMs - 30, 220), ease: 'Sine.easeInOut',
           onUpdate: tw => {
             const v = tw.getValue();
-            place(P, sx + (it.x - sx) * v, sy + (it.y - sy) * v - Math.sin(Math.PI * v) * Math.min(20, dist * 0.35), it);
+            const air = Math.sin(Math.PI * v);
+            let d = { sx: 1, sy: 1, air };
+            if (juice) {
+              if (v < 0.18) { const k = 1 - v / 0.18; d = { sx: 1 + 0.04 * k, sy: 1 - 0.06 * k, air }; }
+              else if (v < 0.75) { d = { sx: 1 - 0.03 * air, sy: 1 + 0.06 * air, air }; }
+              else { const k = Math.sin(Math.PI * (v - 0.75) / 0.25); d = { sx: 1 + 0.05 * k, sy: 1 - 0.07 * k, air }; }
+            }
+            place(P, sx + (it.x - sx) * v, sy + (it.y - sy) * v - air * Math.min(20, dist * 0.35), it, d);
           },
-          onComplete: () => { P.tw = null; place(P, it.x, it.y, it); },
+          onComplete: () => {
+            P.tw = null;
+            place(P, it.x, it.y, it);
+            if (dist > 8) dustBurst(it.x, it.y, 3, 0xB8AE8F, it.z + 1);  // 着地の小粒子(品質係数・liteは0)
+          },
         });
       } else {
         place(P, it.x, it.y, it);
@@ -268,12 +395,16 @@ const PW = (() => {
       P.x = it.x; P.y = it.y;
     }
   }
-  function place(P, x, y, it) {
+  function place(P, x, y, it, d) {
     if (P.spr) {
+      const base = it.w / P.spr.width;
       P.spr.setPosition(x, y).setDepth(it.z);
-      P.spr.setScale(it.w / P.spr.width);
+      P.spr.setScale(base * (d ? d.sx : 1), base * (d ? d.sy : 1));
     }
-    P.sh.setPosition(x, y - 5).setDepth(100 + Math.floor(it.z) - 102);
+    const air = d ? d.air : 0;
+    P.sh.setPosition(x, y - 5).setDepth(it.zs != null ? it.zs : it.z - 2);
+    P.sh.setDisplaySize(40 * (1 - 0.35 * air), 13 * (1 - 0.35 * air));
+    P.sh.setAlpha(1 - 0.5 * air);
   }
 
   // ===== カメラ(setZoom契約: null=全景 / タイル番号=1.5倍ズーム) =====
@@ -365,5 +496,8 @@ const PW = (() => {
   }
   return { init, syncBoard, syncPawns, setCamera, worldToViewport, pawnViewport, fx,
            snapshot, debugCounts, pump, isReady: () => ready, hasFailed: () => failed,
+           // Phase 2A: 演出基盤
+           play, shake, fxDebug, setQuality, setReduceFx,
+           getQuality: () => ({ quality, reduceFx }),
            _debugScene: () => scene };  // 診断用(製品コードからは使用しない)
 })();

@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '0.67';
+const VERSION = '0.68';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,

@@ -938,3 +938,26 @@ Phase 3完了:
 - Phaser 4.2.1 Release  
   https://github.com/phaserjs/phaser/releases/tag/v4.2.1
 
+
+---
+
+## 19. 実装記録
+
+### Phase 2A+2B(v0.68 / 2026-07-26)
+
+- **PresentationQueue**: 既存バナーキューを優先度つき(1=必須〜4=補助)に拡張。同priは投入順、pri4は
+  stale判定で省略可、演出例外はcatchしてキューを継続。TURN STARTの待機ロジックは既存のまま
+- **EffectDirector**: `PW.play(ev)`実装(Promise返却・未対応type即resolve・同一id二重再生防止(上限200件)・
+  4秒タイムアウト・DOM描画時no-op)。初期エフェクト: dust(+検証用debug-wait/debug-error)
+- **EffectPool**: 土埃粒子のPool(上限60・超過分はdestroy)
+- **QualityController**: High/Standard/Lite(既定Standard・粒子係数1/0.65/0.3・liteは土埃と変形なし)+
+  演出低減設定(shake無効)。オプションメニューから再読み込みなしで切替
+- **2B移動ジュース**: 出発squash→上昇stretch→着地潰れ(±4〜7%)・影は空中で縮小/半透明・
+  着地土埃2〜5個(品質係数)。tweenは既存stepMs内(220ms)で完了しタイミング定数は不変
+- **カメラ追従は省略**: 全景FITでは盤面全体が常に可視のため追従の意味がない(レビュー時合意)
+- **バグ修正**: 目標が変わらない再描画(HUD更新等)が進行中のホップtweenを殺していた問題
+- **検証**: ?fixture=1&fx=selftest(優先度順20件・例外継続・未対応即resolve・id重複防止=全通過)/
+  ?fx=move(変形・影・土埃・tween残0)/ dust100回×2でオブジェクト数155で安定(リークなし・plan §12.4)/
+  lite切替で粒子ゼロ / 実ゲーム7ラウンド・コンソールエラーなし / npm test全通過
+- 属性共通素材(§3)はアート未着のため、粒子はプログラム生成(Graphics円)で仮実装。素材到着後に差し替え
+- 次: Phase 2C(召喚・強化・進化・退場)から
