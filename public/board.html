@@ -102,6 +102,10 @@
            align-items:center; justify-content:center; }
   #battle.on { display:flex; }
   #battle.shake { animation:shake .4s; }
+  /* ハイブリッド戦闘のPhaser Canvas(§8.3): クリーチャーと攻撃だけを描く。文字はDOMが上に載る */
+  #bwHost { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      pointer-events:none; }
+  #bwHost canvas { max-width:92vw; max-height:80vh; }
   @keyframes shake { 0%,100%{transform:none} 25%{transform:translate(12px,-7px)}
     50%{transform:translate(-10px,8px)} 75%{transform:translate(7px,4px)} }
   .bside { width:340px; text-align:center; transition:transform .35s ease-in; }
@@ -596,6 +600,7 @@
   <div id="summonCut"><img class="pl" id="scPlayer"><div id="scCreature"></div><div id="scText"></div></div>
 
   <div id="battle">
+    <div id="bwHost"></div>
     <div id="battleFx"></div>
     <div id="bresult"></div>
     <div class="bside" id="bAtk"></div>
@@ -709,6 +714,7 @@ const QR = (() => {
 <script src="/fx_manifest.js"></script>
 <script src="/vendor/phaser.min.js"></script>
 <script src="/board_world.js"></script>
+<script src="/battle_world.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -1391,6 +1397,23 @@ async function runFxHarness(name) {
     renderPawns();
     return { done: true, fxDebug: PW.fxDebug() };
   }
+  // ---- M5: ハイブリッド戦闘ハーネス(?fixture=1&fx=battle&elem=water&result=win|counter) ----
+  if (name === 'battle') {
+    const q2 = new URLSearchParams(location.search);
+    const result = q2.get('result') || 'win';
+    // 縦切り(§8.8): 水属性攻撃側(orphe) × 土属性防御側(nome)・支援なし・通常1回攻撃
+    const b = { tile: 16, attacker: state.players[0].id, defender: state.players[2].id,
+      atkCreature: 'orphe', defCreature: 'nome', st: 40, atkHp: 40, atkDf: 0,
+      hp: 30, df: 20, terrain: 10, atkSupport: 'none', defSupport: 'none', notes: [],
+      hits: 1,
+      win: result === 'win',
+      dealt: result === 'win' ? 50 : 20, remainHp: result === 'win' ? 0 : 10,
+      counterSt: 30, counterDealt: 25, atkSurvived: true };
+    const t0 = Date.now();
+    await playBattle(b);
+    return { result, ms: Date.now() - t0,
+             bw: typeof BW !== 'undefined' ? BW.debug() : null, fxDebug: PW.fxDebug() };
+  }
   // ---- M7: 勝利演出ハーネス(?fixture=1&fx=victory) ----
   if (name === 'victory') {
     let alive = true;
@@ -2023,13 +2046,27 @@ async function playBattle(b) {
   const atkElem = C.CREATURES[b.atkCreature].elem || 'neutral';
   const defElem = C.CREATURES[b.defCreature].elem || 'neutral';
   const dLv = state.owners[b.tile] ? state.owners[b.tile].level : 1;
-  $('bAtk').innerHTML = `${artHTML(b.atkCreature, 1, 220)}
+  // ハイブリッド戦闘(発注書§8 ─ M5): Phaser描画時はクリーチャーと攻撃をBW(別Canvas)で描く。
+  // 一枚絵が無いトークンやBW初期化失敗時はfalseのまま=従来DOM表現で進行(§8.10フォールバック)
+  let bwOn = false;
+  if (renderModeActive === 'phaser' && typeof BW !== 'undefined' && !BW.hasFailed()) {
+    const bidA = b.atkCreature.replace(/_f$/, ''), bidD = b.defCreature.replace(/_f$/, '');
+    const evoA = /_f$/.test(b.atkCreature);
+    const evoD = /_f$/.test(b.defCreature) || (dLv >= (state.evoLevel || 3) && C.CREATURES[bidD].evo);
+    if (HAS_ART.has(bidA) && HAS_ART.has(bidD)) {
+      try {
+        bwOn = await BW.start(`/assets/${evoA ? 'e_' : 'c_'}${bidA}.png`,
+                              `/assets/${evoD ? 'e_' : 'c_'}${bidD}.png`);
+      } catch (e) { bwOn = false; }
+    }
+  }
+  $('bAtk').innerHTML = `<div class="bArtWrap"${bwOn ? ' style="visibility:hidden"' : ''}>${artHTML(b.atkCreature, 1, 220)}</div>
     <div class="bname" style="color:${atk.color}">${atk.name} ─ ${C.CREATURES[b.atkCreature].name}</div>
     <div class="bnum">AT ${b.st}${b.atkDf ? ' <span style="font-size:2.4vh;opacity:.85">/ DF ' + b.atkDf + '</span>' : ''}</div>
     <div class="hpBarWrap"><div class="hpBar" id="hpBarA"></div><div class="hpNum" id="hpNumA">HP ${b.atkHp}</div></div>
     <div class="bsub">${b.atkSupport !== 'none' ? '+ ' + C.SUPPORTS[b.atkSupport].name : '&nbsp;'}</div>
     <div class="bhpA" style="position:relative"></div>`;
-  $('bDef').innerHTML = `${artHTML(b.defCreature, dLv, 220)}
+  $('bDef').innerHTML = `<div class="bArtWrap"${bwOn ? ' style="visibility:hidden"' : ''}>${artHTML(b.defCreature, dLv, 220)}</div>
     <div class="bname" style="color:${def.color}">${def.name} ─ ${cname(b.defCreature, dLv)}</div>
     <div class="bnum">AT ${C.CREATURES[b.defCreature].st} <span style="font-size:2.4vh;opacity:.85">/ DF ${b.df}</span></div>
     <div class="hpBarWrap"><div class="hpBar" id="hpBarD"></div><div class="hpNum" id="hpNumD">HP ${b.hp}</div></div>
@@ -2083,24 +2120,31 @@ async function playBattle(b) {
   animateHp('hpBarD', 'hpNumD', b.hp, b.hp, b.hp, 1);
   // --- 先攻: 攻撃側の一撃 ---
   $('bcap').textContent = b.hits === 2 ? '攻撃側の連撃!' : '攻撃側の一撃!';
-  $('bAtk').classList.add('lungeL');
-  battleTrailFx(atkElem, 'def', b.hits === 2 || b.st >= 60);
-  await wait(320);
-  battleImpactFx(atkElem, 'def', b.hits === 2 || b.st >= 60);
-  if (b.hits === 2) {
-    await wait(260);
-    battleTrailFx(atkElem, 'def', true);
-    await wait(260);
-    battleImpactFx(atkElem, 'def', true);
+  if (bwOn) {
+    // BWが予備動作→踏み込み→trail→命中→ヒットストップ→反動まで担当(全画面フラッシュ・shakeは使わない)
+    await BW.attack('atk', atkElem, b.hits === 2 || b.st >= 60);
+    if (b.hits === 2) await BW.attack('atk', atkElem, true);
+  } else {
+    $('bAtk').classList.add('lungeL');
+    battleTrailFx(atkElem, 'def', b.hits === 2 || b.st >= 60);
+    await wait(320);
+    battleImpactFx(atkElem, 'def', b.hits === 2 || b.st >= 60);
+    if (b.hits === 2) {
+      await wait(260);
+      battleTrailFx(atkElem, 'def', true);
+      await wait(260);
+      battleImpactFx(atkElem, 'def', true);
+    }
+    $('bflash').classList.add('go'); $('battle').classList.add('shake');
   }
-  $('bflash').classList.add('go'); $('battle').classList.add('shake');
   pop('bDef', '−' + b.dealt + (b.st > b.dealt ? '(DF−' + (b.st - b.dealt) + ')' : ''));
   animateHp('hpBarD', 'hpNumD', b.hp, b.win ? 0 : b.remainHp, b.hp);
   await wait(450);
   $('bflash').classList.remove('go'); $('battle').classList.remove('shake');
   $('bAtk').classList.remove('lungeL');
   if (b.win) {
-    $('bDef').classList.add('dead');
+    if (bwOn) BW.defeat('def');
+    else $('bDef').classList.add('dead');
     $('bcap').textContent = '';
     await wait(600);
     $('bresult').textContent = '侵略成功';
@@ -2111,20 +2155,26 @@ async function playBattle(b) {
     $('bcap').textContent = `耐えた! 残りHP ${b.remainHp}(負傷は引き継ぐ)`;
     await wait(1100);
     $('bcap').textContent = '防衛側の反撃!';
-    $('bDef').classList.add('lungeR');
-    battleTrailFx(defElem, 'atk', b.counterSt >= 60);
-    await wait(320);
-    battleImpactFx(defElem, 'atk', b.counterSt >= 60);
-    $('bflash').classList.add('go'); $('battle').classList.add('shake');
+    if (bwOn) {
+      await BW.attack('def', defElem, b.counterSt >= 60);
+    } else {
+      $('bDef').classList.add('lungeR');
+      battleTrailFx(defElem, 'atk', b.counterSt >= 60);
+      await wait(320);
+      battleImpactFx(defElem, 'atk', b.counterSt >= 60);
+      $('bflash').classList.add('go'); $('battle').classList.add('shake');
+    }
     pop('bAtk', '−' + b.counterDealt + (b.counterSt > b.counterDealt ? '(DF−' + (b.counterSt - b.counterDealt) + ')' : ''));
     animateHp('hpBarA', 'hpNumA', b.atkHp, b.atkSurvived ? Math.max(0, b.atkHp - b.counterDealt) : 0, b.atkHp);
     await wait(450);
     $('bflash').classList.remove('go'); $('battle').classList.remove('shake');
     $('bDef').classList.remove('lungeR');
     if (!b.atkSurvived) {
-      $('bAtk').classList.add('dead');
+      if (bwOn) BW.defeat('atk');
+      else $('bAtk').classList.add('dead');
       $('bcap').textContent = '';
     } else {
+      if (bwOn) BW.returnHome('atk');
       pop('bAtk', '帰還(全快)', true);
       $('bcap').textContent = C.CREATURES[b.atkCreature].name + 'は耐えて手札に帰還';
     }
@@ -2151,13 +2201,17 @@ async function playBattle(b) {
       b.win ? atk.name + 'が' + def.name + 'の土地を奪取!'
             : def.name + 'が耐え抜いた(残HP' + b.remainHp + ')');
   }
-  } finally { cutBusy = Math.max(0, cutBusy - 1); }
+  } finally {
+    // ハイブリッド戦闘の後始末(§11.4: 一時オブジェクト・Tweenを残さない。stopは冪等)
+    try { if (typeof BW !== 'undefined') BW.stop(); } catch (e) {}
+    cutBusy = Math.max(0, cutBusy - 1);
+  }
 }
 
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.79' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.80' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');

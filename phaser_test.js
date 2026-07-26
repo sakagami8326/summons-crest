@@ -26,7 +26,8 @@ const actual = crypto.createHash('sha256')
 ok(actual === recorded.toUpperCase(), 'VERSION.txt: 記録SHA256が実ファイルと一致する');
 
 // 3) 禁止API(spec §9.1)がプロジェクトコードに存在しない
-const world = fs.readFileSync(path.join(__dirname, 'public/board_world.js'), 'utf8');
+const world = fs.readFileSync(path.join(__dirname, 'public/board_world.js'), 'utf8')
+  + '\n' + fs.readFileSync(path.join(__dirname, 'public/battle_world.js'), 'utf8');  // v0.80: 戦闘Canvasも検査対象
 const board = fs.readFileSync(path.join(__dirname, 'public/board.html'), 'utf8');
 const BANNED = [
   ['setTintFill', /setTintFill/],

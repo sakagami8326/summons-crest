@@ -1094,3 +1094,27 @@ Phase 3完了:
 - **ハーネス**: ?fixture=1&fx=victory
 - **検証**: 領地4つの順次発光→収束→城ズーム(fit×1.5)→光柱→復帰・後始末完全(tween 0)/
   npm test全通過。実測3〜4秒(§9.3の3〜5秒内)
+
+### 発注書v0.75 Milestone 5: ハイブリッド戦闘の縦切り(v0.80 / 2026-07-26)
+
+- **BattleScene**(§8.3): `public/battle_world.js`(グローバルBW)。#battleオーバーレイ内の
+  #bwHostに透明Canvas(1100×460・FIT)の**別Phaser Game**を遅延生成し再利用。
+  Phaser担当=クリーチャー本体・予備動作・踏み込み・属性trail・命中・ヒットストップ(75ms・
+  tweens.timeScaleのみ停止でJS/SSEは止めない)・反動・撃破沈下・帰還上昇。
+  DOM担当=名前/AT/DF/HPバー/支援カード/注記/結果表示(§8.2 ─ Canvasへ移植しない)
+- **フォールバック**(§8.10): BW.start()失敗(Phaser未初期化・一枚絵なしトークン・テクスチャ読込失敗)は
+  falseを返し、playBattleは従来DOM表現(lunge/bflash/shake/dead)で進行。全画面フラッシュとshakeは
+  BW使用時は発火しない(§2.4)
+- **素材接続**: オーナー支給の属性素材v1(`ASSET_NOTES_v1.md`・48+追加ファイル)が配置済み →
+  trail_heavy/impact_large/shockwaveを戦闘へ、summonリングは背面(depth 96)へ修正、
+  victory_ringを勝利演出へ、共通4キー(hitSmall/hitLarge/victoryRing/disperseLight)をマニフェストに追加。
+  盤面側の粒子・召喚紋・命中は自動で画像化(fxTexLoaded=58)
+- **縦切り範囲**(§8.8): 水属性攻撃(orphe)×土属性防御(nome)・支援なし・通常1回攻撃・
+  侵略成功/防衛成功+反撃。実装は属性・分岐に依存しない共通コードのため、実際には全属性・
+  双撃(hits=2で2回攻撃)・反撃撃破・帰還も同経路で動作する
+- **M6残り(縦切り受入後 ─ §8.8)**: モーションProfile分化(melee/charge/caster/weapon/beast/floating ─
+  現状は共通melee相当のみ)・支援カード演出の連携・固有能力の見せ分け
+- **ハーネス**: ?fixture=1&fx=battle&elem=water&result=win|counter
+- **検証**: win=6.8秒/counter=9.5秒(§8.9の目安内)・戦闘中Canvas 11オブジェクト→終了後0・tween残0 /
+  戦闘Canvasのスクリーンショットで水trailの命中を目視確認 / npm test全通過(phaser_testの
+  禁止API検査にbattle_world.jsを追加)

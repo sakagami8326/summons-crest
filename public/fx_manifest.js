@@ -23,5 +23,10 @@ const FX_ASSETS = {
     shockwave: `${FX_DIR}/common/shockwave.png`,
     glowRound: `${FX_DIR}/common/glow_round.png`,
     sparkGold: `${FX_DIR}/common/spark_gold.png`,
+    // v0.80: 支給素材v1(ASSET_NOTES_v1.md)の共通追加分
+    hitSmall: `${FX_DIR}/common/hit_small.png`,
+    hitLarge: `${FX_DIR}/common/hit_large.png`,
+    victoryRing: `${FX_DIR}/common/victory_ring.png`,
+    disperseLight: `${FX_DIR}/common/disperse_light.png`,
   },
 };

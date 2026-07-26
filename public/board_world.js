@@ -209,6 +209,7 @@ const PW = (() => {
     const pc = proj(GEO[castle][0], GEO[castle][1]);
     if (quality !== 'lite') {
       fx(castle, 'fxPillar', '#F2D062', -20);
+      fxImageFlash('common', 'victoryRing', pc.x, pc.y, { width: 150, ms: 1000, depth: 96, from: 0.4, to: 1.1 });
       fxImageFlash('common', 'sparkGold', pc.x, pc.y - 50, { width: 130, ms: 900, depth: 341 });
       elemBurst(pc.x, pc.y - 10, 0xF2D062, 12, true, 342);
       await wait(1300);
@@ -449,7 +450,7 @@ const PW = (() => {
           scaleX: gh.scaleX * 0.5, scaleY: gh.scaleY * 0.5,
           duration: 520, ease: 'Sine.easeIn', onComplete: () => { gh.destroy(); res(); } }));
       } else await wait(400);
-      if (!fxImageFlash(ev.elem || null, 'summon', x, y, { width: 100, ms: 550, depth: 317 }))
+      if (!fxImageFlash('neutral', 'summon', x, y, { width: 100, ms: 550, depth: 96 }))
         groundRipple(i, 0xD8D2E8, 600);
       convergeBurst(x, y, 0xD8D2E8, 8);
       await wait(240);
@@ -750,8 +751,9 @@ const PW = (() => {
   async function fx2cSummon(ev) {
     const col = elemCol(ev.element);
     const { x, y } = proj(GEO[ev.tile][0], GEO[ev.tile][1]);
-    // 召喚紋: 支給素材があれば画像、なければ波紋Graphics(§3.4フォールバック)
-    if (!fxImageFlash(ev.element, 'summon', x, y, { width: 104, ms: 600, depth: 317, from: 0.55, to: 1.05 }))
+    // 召喚紋: 支給素材があれば画像、なければ波紋Graphics(§3.4フォールバック)。
+    // リング系はクリーチャーの背面に置く(ASSET_NOTES_v1 ─ depthを影(100+)より下げる)
+    if (!fxImageFlash(ev.element, 'summon', x, y, { width: 104, ms: 600, depth: 96, from: 0.55, to: 1.05 }))
       groundRipple(ev.tile, col, 650);
     convergeBurst(x, y, col, 10);
     const spr = await waitCreature(ev.tile);
