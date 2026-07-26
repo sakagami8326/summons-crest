@@ -1332,8 +1332,8 @@ async function runFxHarness(name) {
     await new Promise(r => setTimeout(r, 1400));
     return { coins: document.querySelectorAll('.coinFly').length, trails: document.querySelectorAll('.coinTrail').length };
   }
-  // ---- Phase 2C: 単独再生ハーネス(plan §13.2 ─ ?fixture=1&fx=summon&elem=water 等) ----
-  if (['summon', 'upgrade', 'evolve', 'ruin', 'leak2c'].includes(name)) {
+  // ---- Phase 2C/2E: 単独再生ハーネス(plan §13.2 ─ ?fixture=1&fx=summon&elem=water 等) ----
+  if (['summon', 'upgrade', 'evolve', 'ruin', 'invade', 'defend', 'leak2c'].includes(name)) {
     // 非表示タブではRAFが止まりtweenが進まないため、MessageChannelでループを駆動する
     let alive = true;
     if (document.hidden) {
@@ -1353,6 +1353,8 @@ async function runFxHarness(name) {
       if (nm === 'summon') return { type: 'summon', tile: i, element: state.tiles[i].e };
       if (nm === 'upgrade') return { type: 'upgrade-sparks', tile: i, color: col };
       if (nm === 'evolve') return { type: 'evolve-fx', tile: i, bid: (o.creature || 'gecko').replace(/_f$/, ''), element: state.tiles[i].e, level: o.level || 3 };
+      if (nm === 'invade') return { type: 'invade-fx', tile: i, element: state.tiles[i].e, color: col };
+      if (nm === 'defend') return { type: 'defend-fx', tile: i, element: state.tiles[i].e, color: col };
       return { type: 'ruin-fx', tile: i, cid: o.creature || 'gecko', element: state.tiles[i].e };
     };
     try {
@@ -1908,16 +1910,28 @@ async function playBattle(b) {
   }
   $('battle').classList.remove('on');
   hideLogo(false);
-  showBanner(b.win ? '侵略成功!' : sic('up') + ' 防衛成功!',
-    b.win ? atk.name + 'が' + def.name + 'の土地を奪取!'
-          : def.name + 'が耐え抜いた(残HP' + b.remainHp + ')');
+  // 2E plan§9: 戦闘終了後の盤面演出。オーバーレイを閉じてからマスへズームし、
+  // 命中余韻(侵略)/反動+残光(防衛)を中央下メッセージと同時に再生する
+  if (renderModeActive === 'phaser') {
+    const msg = b.win
+      ? `<b style="color:#F2D062">侵略成功</b> ─ ${atk.name}が${def.name}の土地を奪取!`
+      : `<b style="color:#8FE08A">防衛成功</b> ─ ${def.name}の${cname(b.defCreature, dLv)}が耐え抜いた(残HP${b.remainHp})`;
+    tileCloseup(b.tile, msg);
+    PW.play({ type: b.win ? 'invade-fx' : 'defend-fx', tile: b.tile,
+              element: C.CREATURES[b.win ? b.atkCreature : b.defCreature].elem,
+              color: (b.win ? atk : def).color });
+  } else {
+    showBanner(b.win ? '侵略成功!' : sic('up') + ' 防衛成功!',
+      b.win ? atk.name + 'が' + def.name + 'の土地を奪取!'
+            : def.name + 'が耐え抜いた(残HP' + b.remainHp + ')');
+  }
   } finally { cutBusy = Math.max(0, cutBusy - 1); }
 }
 
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.70' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.71' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');

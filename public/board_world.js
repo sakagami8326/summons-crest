@@ -103,7 +103,56 @@ const PW = (() => {
     'ruin-fx': fx2cRuin,
     // ===== Phase 2D: 連鎖の順次発光(plan §8.2-8.3) =====
     'chain-glow': fx2dChain,
+    // ===== Phase 2E: 侵略結果の盤面演出(plan §9) =====
+    'invade-fx': fx2eInvade,
+    'defend-fx': fx2eDefend,
   };
+
+  // 小さな反動(防衛成功: 潰れ→わずかに伸びて戻る)
+  function recoilSprite(spr, dur) {
+    return new Promise(res => {
+      if (!spr || !spr.scene) return res();
+      const base = spr.scale;
+      scene.tweens.addCounter({ from: 0, to: 1, duration: dur || 340, ease: 'Sine.easeOut',
+        onUpdate: tw => { const v = tw.getValue();
+          if (!spr.scene) return;
+          const s = v < 0.45 ? 1 - 0.1 * Math.sin(Math.PI * v / 0.45)
+                             : 1 + 0.05 * Math.sin(Math.PI * (v - 0.45) / 0.55);
+          spr.setScale(base * s); },
+        onComplete: () => { if (spr.scene) spr.setScale(base); res(); } });
+    });
+  }
+
+  // 侵略成功(§9): 攻撃属性の命中余韻バースト→勝者色の波紋→新クリーチャーのポップ
+  // (所有色・クリーチャーはstate同期のsyncBoardが既に反映済み ─ 演出は余韻のみ)
+  async function fx2eInvade(ev) {
+    const col = elemCol(ev.element);
+    const { x, y } = proj(GEO[ev.tile][0], GEO[ev.tile][1]);
+    elemBurst(x, y, col, 12, true, 331);
+    shake(4, 180);
+    await wait(250);
+    groundRipple(ev.tile, hexInt(ev.color || '#F2D062'), 700);
+    const spr = await waitCreature(ev.tile, 10);
+    if (spr) await popSprite(spr, 420);
+    await wait(300);
+  }
+
+  // 防衛成功(§9): 防御側クリーチャーの小さな反動+防御属性の残光
+  async function fx2eDefend(ev) {
+    const col = elemCol(ev.element);
+    const { x, y } = proj(GEO[ev.tile][0], GEO[ev.tile][1]);
+    const spr = creatureSprites[ev.tile];
+    if (spr && spr.scene) recoilSprite(spr);
+    const g = scene.add.graphics().setDepth(298);
+    await new Promise(res => scene.tweens.addCounter({ from: 0, to: 1, duration: 900, ease: 'Sine.easeOut',
+      onUpdate: tw => { const v = tw.getValue(); g.clear();
+        const a = 0.5 * (1 - v);
+        g.fillStyle(col, a * 0.5); g.fillEllipse(x, y, 100, 55);
+        g.lineStyle(2, col, a); g.strokeEllipse(x, y, 90 + 30 * v, (90 + 30 * v) * 0.55); },
+      onComplete: () => { g.destroy(); res(); } }));
+    elemBurst(x, y, col, 5, true, 331);
+    await wait(200);
+  }
 
   // 連鎖(§8.2): 実際の連鎖対象タイルだけを盤面順に弱く順次発光。減少(§8.3)はさらに弱く
   // (全対象の同時強点滅・赤フラッシュは使わない)
