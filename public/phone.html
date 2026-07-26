@@ -822,7 +822,17 @@ function renderMiniMap(p) {
   syncMmModeSw();
   $('mapOv').classList.add('on');
 }
-function mmTap(i) { mmSel = i; render(); }
+let upPvT = 0;
+function mmTap(i) {
+  mmSel = i; render();
+  // 強化選択中はTVへ選択中候補を通知(発注書v0.75 §6.3。揮発イベント・120ms抑制)
+  const p = pend();
+  if (p && p.type === 'upgrade' && Date.now() - upPvT > 120) {
+    upPvT = Date.now();
+    try { fetch('/api/action', { method: 'POST',
+      body: JSON.stringify({ room, type: 'upgrade_preview', playerId: pid, tile: i }) }); } catch (e) {}
+  }
+}
 
 // ===== マス詳細パネル(選択UI・閲覧モード共通) =====
 const ELEM_JA = { fire: '火', water: '水', earth: '土', wind: '風' };

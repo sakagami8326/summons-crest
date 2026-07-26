@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '0.74';
+const VERSION = '0.75';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -939,6 +939,8 @@ function resolveBattle(r) {
 
 // ===== アクションハンドラ =====
 function handleChoose(r, playerId, optionId) {
+  // 強化候補プレビューは本人の何らかの決定で解除(発注書v0.75 §6.3)
+  if (r.upgradePreview && r.upgradePreview.player === playerId) r.upgradePreview = null;
   const p = pById(r, playerId);
   const pend = r.pending[playerId];
   if (!p || !pend || !pend.options.some(o => o.id === optionId)) return;
@@ -1654,6 +1656,7 @@ function publicState(r, viewerId) {
     barrier: r.barrier || {}, lastUlt: r.lastUlt || null, lastBattle: r.lastBattle, lastDice: r.lastDice || null,
     lastSeal: r.lastSeal || null, lastRuin: r.lastRuin || null,
     lastBarrierHit: r.lastBarrierHit || null,
+    upgradePreview: r.upgradePreview || null,   // 強化候補プレビュー(揮発 ─ v0.75)
     saveRev: r.saveRev || 0,
     winner: r.winner,
     pending: Object.fromEntries(Object.entries(r.pending).map(([k, v]) =>
@@ -1698,7 +1701,7 @@ function broadcast(r) {
 const SAVE_VER = 1;
 // ルームのフィールド分類表。ルームに新しいキーを追加したら必ずどちらかに分類すること
 // (save_testが未分類キーを検出して失敗する)
-const ROOM_RUNTIME_KEYS = new Set(['clients', 'lastActivity']);  // 保存しない
+const ROOM_RUNTIME_KEYS = new Set(['clients', 'lastActivity', 'upgradePreview']);  // 保存しない
 const ROOM_PERSIST_KEYS = new Set([                                            // 保存する
   'code', 'phase', 'players', 'owners', 'deck', 'market', 'turn', 'round', 'log',
   'pending', 'titles', 'duel', 'lastBattle', 'winner', 'barrier', 'elemOv', 'tileFx',
@@ -1966,6 +1969,16 @@ const server = http.createServer(async (req, res) => {
     touch(r);
     if (b.type === 'start_select' && r.phase === 'lobby' && r.players.length >= 2) startSelect(r);
     else if (b.type === 'choose') handleChoose(r, b.playerId, b.optionId);
+    else if (b.type === 'upgrade_preview') {
+      // 発注書v0.75 §6.3: 強化選択中の候補プレビュー(揮発・非保存・ルール影響なし)。
+      // 本人が強化選択中で、送られたtileが現在の候補に含まれる場合のみ表示する
+      const pv = r.pending[b.playerId];
+      if (pv && pv.type === 'upgrade') {
+        r.upgradePreview = pv.options.some(o => o.tile === b.tile)
+          ? { player: b.playerId, tile: b.tile, at: stamp(r) }
+          : null;
+      }
+    }
     broadcast(r);
     return json(res, { ok: true });
   }
@@ -1976,7 +1989,14 @@ const server = http.createServer(async (req, res) => {
     const client = { res, viewerId: url.searchParams.get('me') || null };
     r.clients.add(client);
     res.write(`data: ${JSON.stringify(publicState(r, client.viewerId))}\n\n`);
-    req.on('close', () => r.clients.delete(client));
+    req.on('close', () => {
+      r.clients.delete(client);
+      // 切断時にプレビューを解除(発注書v0.75 §6.3)
+      if (r.upgradePreview && r.upgradePreview.player === client.viewerId) {
+        r.upgradePreview = null;
+        broadcast(r);
+      }
+    });
     return;
   }
   res.writeHead(404); res.end('not found');

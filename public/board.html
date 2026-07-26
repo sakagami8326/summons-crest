@@ -349,6 +349,11 @@
   .coinFly.arc { transition:none; transform:translate(-50%,-50%); }
   .coinTrail { position:fixed; z-index:91; width:5px; height:5px; border-radius:50%;
       background:#FFE9A0; pointer-events:none; transform:translate(-50%,-50%); }
+  /* 強化候補ハイライト(DOM描画時の最低限表示) */
+  .upHl { position:absolute; transform:translate(-50%,-50%); z-index:120; pointer-events:none;
+      animation:upHlPulse 1.5s ease-in-out infinite; }
+  .upHl.strong { animation:none; opacity:.95; filter:drop-shadow(0 0 8px #F2D062); }
+  @keyframes upHlPulse { 0%,100%{opacity:.45} 50%{opacity:.8} }
   /* 強化・進化・呪いのFX */
   .fxRing { position:absolute; transform:translate(-50%,-50%); z-index:380; width:30px; height:30px;
       border-radius:50%; border:3px solid var(--fxc); pointer-events:none; animation:fxring .9s ease-out forwards; }
@@ -849,6 +854,25 @@ function tileCloseup(i, html, dur = 2800) {
   }, dur);
   bannerUntil = Math.max(bannerUntil, Date.now() + dur + 200);
 }
+// 強化候補ハイライトのDOM版(Phaser失敗時の最低限表示 ─ 発注書v0.75 §6.4)
+let hlDomKey = '';
+function renderHighlightsDom(hl) {
+  const key = JSON.stringify(hl || []);
+  if (key === hlDomKey) return;
+  hlDomKey = key;
+  document.querySelectorAll('.upHl').forEach(el => el.remove());
+  for (const it of (hl || [])) {
+    const { x, y } = worldPos(it.tile);
+    const el = document.createElement('div');
+    el.className = 'upHl' + (it.strong ? ' strong' : '');
+    el.style.left = x + 'px'; el.style.top = y + 'px';
+    el.innerHTML = `<svg width="${DW}" height="${DH}" viewBox="0 0 ${DW} ${DH}" overflow="visible">
+      <path d="M${DW/2} 2 L${DW-4} ${DH/2} L${DW/2} ${DH-2} L4 ${DH/2} Z" fill="none" stroke="#F2D062"
+        stroke-width="${it.strong ? 3 : 2}"/>
+      ${it.strong ? `<path d="M${DW/2} 7 L${DW-12} ${DH/2} L${DW/2} ${DH-7} L12 ${DH/2} Z" fill="none" stroke="#F2D062" stroke-width="1.4"/>` : ''}</svg>`;
+    $('world').appendChild(el);
+  }
+}
 function fxAt(i, cls, color, dy = 0) {
   if (renderModeActive === 'phaser') return PW.fx(i, cls, color, dy);
   const { x, y } = worldPos(i);
@@ -1308,6 +1332,33 @@ async function runFxHarness(name) {
     renderPawns();
     return { done: true, fxDebug: PW.fxDebug() };
   }
+  // ---- M1: 静止盤面ハーネス(発注書v0.75 §11.2) ----
+  if (name === 'tile-levels') {
+    // Lv1〜4の見え方比較: レベル別に代表マスへ順にクローズアップ
+    const byLv = {};
+    state.owners.forEach((o2, i2) => { if (o2) (byLv[o2.level] = byLv[o2.level] || []).push(i2); });
+    for (const lv of [1, 2, 3, 4]) {
+      const ti = (byLv[lv] || [])[0];
+      if (ti === undefined) continue;
+      tileCloseup(ti, `Lv${lv} のマスデザイン`, 1500);
+      await new Promise(r2 => setTimeout(r2, 1700));
+    }
+    return { byLv };
+  }
+  if (name === 'upgrade-preview') {
+    // ハイライトの弱/強/進化予告/解除をひととおり表示
+    const cand = [];
+    state.owners.forEach((o2, i2) => { if (o2 && cand.length < 4) cand.push(i2); });
+    const mk = sel => cand.map((ti, k) => ({ tile: ti, strong: sel === k, evolve: sel === k && k === 1 }));
+    PW.setHighlights(mk(-1));
+    await new Promise(r2 => setTimeout(r2, 1200));
+    PW.setHighlights(mk(1));
+    await new Promise(r2 => setTimeout(r2, 1200));
+    PW.setHighlights(mk(2));
+    await new Promise(r2 => setTimeout(r2, 800));
+    PW.setHighlights([]);
+    return { cand, fxDebug: PW.fxDebug() };
+  }
   // ---- Phase 2D: 単独再生ハーネス(?fixture=1&fx=chain|coins) ----
   if (name === 'chain') {
     let alive = true;
@@ -1333,7 +1384,7 @@ async function runFxHarness(name) {
     return { coins: document.querySelectorAll('.coinFly').length, trails: document.querySelectorAll('.coinTrail').length };
   }
   // ---- Phase 2C/2E: 単独再生ハーネス(plan §13.2 ─ ?fixture=1&fx=summon&elem=water 等) ----
-  if (['summon', 'upgrade', 'evolve', 'ruin', 'invade', 'defend', 'barrier', 'leak2c'].includes(name)) {
+  if (['summon', 'place', 'upgrade', 'evolve', 'ruin', 'invade', 'defend', 'barrier', 'leak2c'].includes(name)) {
     // 非表示タブではRAFが止まりtweenが進まないため、MessageChannelでループを駆動する
     let alive = true;
     if (document.hidden) {
@@ -1350,7 +1401,7 @@ async function runFxHarness(name) {
     const evOf = (nm, i) => {
       const o = state.owners[i] || {};
       const col = player(o.player) ? player(o.player).color : '#EBD98A';
-      if (nm === 'summon') return { type: 'summon', tile: i, element: state.tiles[i].e };
+      if (nm === 'summon' || nm === 'place') return { type: 'summon', tile: i, element: state.tiles[i].e };
       if (nm === 'upgrade') return { type: 'upgrade-sparks', tile: i, color: col };
       if (nm === 'evolve') return { type: 'evolve-fx', tile: i, bid: (o.creature || 'gecko').replace(/_f$/, ''), element: state.tiles[i].e, level: o.level || 3 };
       if (nm === 'invade') return { type: 'invade-fx', tile: i, element: state.tiles[i].e, color: col };
@@ -1489,19 +1540,49 @@ function buildTileSVG(i, t, o, ownColor, barrier, pad, stoneHref) {
     const seams = [7, 14].filter(s => s < rise + 1).map(s =>
       `<path d="${bottomEdge(s)}" fill="none" stroke="#1E1B23" stroke-width="1"/>`).join('');
     const topFill = ['#4A4750','#444049','#4F4B54'][i % 3];
+    // 土地レベル別デザイン(発注書v0.75 §5): 外形と面積の差でLv1〜4を判別できるようにする
+    const lv = o ? o.level : 0;
+    const metal = ['', '#8F876E', '#CBB878', '#E5CE82'][lv - 1] || '';   // Lv2/3/4の金属色
+    const runeS = o ? ([1, 1.15, 1.32, 1.5][lv - 1] || 1) : 1;           // 中心ルーンの段階拡大
     const rune = t.t === 'land'
-      ? `<g transform="translate(${DW/2} ${DH/2+1}) scale(1,0.55)">
+      ? `<g transform="translate(${DW/2} ${DH/2+1}) scale(${runeS},${(0.55 * runeS).toFixed(3)})">
            <g transform="translate(1.2,2.4)" opacity=".45">${ELEM_DARK[t.e]}</g>
            <g opacity="${o ? .95 : .62}" style="filter:drop-shadow(0 0 4px ${RUNE[t.e]})">${ELEM[t.e]}</g></g>`
       : '';
+    // Lv3+: クリーチャー下の静止台座(クリーチャー・ルーンより背面)
+    const pedestal = o && lv >= 3 ? `<g transform="translate(${DW/2} ${DH/2+1})">
+        <ellipse rx="${lv >= 4 ? 24 : 20}" ry="${lv >= 4 ? 12 : 10}" fill="#1E1B28" opacity=".5"/>
+        <ellipse rx="${lv >= 4 ? 24 : 20}" ry="${lv >= 4 ? 12 : 10}" fill="none" stroke="${metal}" stroke-width="1.2" opacity=".85"/>
+        ${lv >= 4 ? `<ellipse rx="17" ry="8.5" fill="none" stroke="${RUNE[t.e]}" stroke-width="1" opacity=".6"/>` : ''}
+      </g>` : '';
+    // Lv2+: 四隅の属性装飾(§5.4 火=尖角/水=雫/土=石塊/風=翼状。Lv4は大形状)
+    const cornerP = s => ({
+      fire: `<path d="M0 ${-8*s} L${3.4*s} ${1.6*s} L0 ${-1*s} L${-3.4*s} ${1.6*s} Z"/>`,
+      water: `<path d="M0 ${-7.4*s} C${4.4*s} ${-2.6*s} ${3.4*s} ${2*s} 0 ${2.4*s} C${-3.4*s} ${2*s} ${-4.4*s} ${-2.6*s} 0 ${-7.4*s} Z"/>`,
+      earth: `<path d="M${-3.4*s} ${1.8*s} L${-3.4*s} ${-5.6*s} L${-1.2*s} ${-7.4*s} L${3.4*s} ${-7.4*s} L${3.4*s} ${1.8*s} Z"/>`,
+      wind: `<path d="M0 ${-9.4*s} L${1.8*s} ${-1*s} L0 ${2*s} L${-1.8*s} ${-1*s} Z"/>`,
+    }[t.e] || `<path d="M0 ${-6*s} L${3*s} 0 L0 ${3*s} L${-3*s} 0 Z"/>`);
+    const corners = o && lv >= 2
+      ? [[DW/2, 4.5, 0], [DW-8, DH/2, 90], [DW/2, DH-4.5, 180], [8, DH/2, 270]]
+        .map(([cx2, cy2, rot]) => `<g transform="translate(${cx2} ${cy2}) scale(1,0.55) rotate(${rot})"
+          fill="${metal}" stroke="#26232F" stroke-width=".7" opacity=".95">${cornerP(lv >= 4 ? 1.6 : 1)}</g>`).join('')
+      : '';
+    // 外周: Lv1=1本 / Lv2=補強(内側に薄い2本目) / Lv3=金属との二重 / Lv4=所有色+金属+属性色の3層
+    const ring2 = o && lv === 2 ? `<path d="M${DW/2} 7 L${DW-12.5} ${DH/2} L${DW/2} ${DH-7} L12.5 ${DH/2} Z"
+        fill="none" stroke="${ownColor}" stroke-width="1" opacity=".4"/>` : '';
+    const ring3 = o && lv >= 3 ? `<path d="M${DW/2} 7.5 L${DW-13.5} ${DH/2} L${DW/2} ${DH-7.5} L13.5 ${DH/2} Z"
+        fill="none" stroke="${metal}" stroke-width="1.2" opacity=".9"/>` : '';
+    const ring4 = o && lv >= 4 ? `<path d="M${DW/2} 11 L${DW-19} ${DH/2} L${DW/2} ${DH-11} L19 ${DH/2} Z"
+        fill="none" stroke="${RUNE[t.e]}" stroke-width="1.2" opacity=".7"/>` : '';
     const own = o ? `
       ${barrier ? `<path d="M${DW/2} -1 L${DW-2} ${DH/2} L${DW/2} ${DH+1} L2 ${DH/2} Z" fill="none"
         stroke="#BFEFFF" stroke-width="2.5" opacity=".9"
         style="filter:drop-shadow(0 0 8px #9FE8FF)"/>` : ''}
       <path d="M${DW/2} 3 L${DW-6} ${DH/2} L${DW/2} ${DH-3} L6 ${DH/2} Z" fill="none"
-        stroke="${ownColor}" stroke-width="${1.5 + o.level * .7}" opacity=".95"
-        style="filter:drop-shadow(0 0 ${3 + o.level * 3}px ${ownColor})"/>
-      <path d="${topPath}" fill="${ownColor}" opacity="${.05 + o.level * .03}"/>
+        stroke="${ownColor}" stroke-width="${1.5 + lv * .7}" opacity=".95"
+        style="filter:drop-shadow(0 0 ${3 + lv * 3}px ${ownColor})"/>
+      ${ring2}${ring3}${ring4}${corners}
+      <path d="${topPath}" fill="${ownColor}" opacity="${(.04 + lv * .045).toFixed(3)}"/>
       ${Array.from({length: o.level}, (_, k) => {
         const s = (t.gx === undefined ? GEO[i][0] : 0), gx = GEO[i][0];
         const sg = (gx === 0 || gx === 7) ? 1 : -1;
@@ -1524,7 +1605,7 @@ function buildTileSVG(i, t, o, ownColor, barrier, pad, stoneHref) {
       <path d="${topPath}" fill="${topFill}" opacity=".32"/>
       <path d="${topPath}" fill="none" stroke="#1E1B23" stroke-width="1"/>
       <path d="M${pt(6)} L${pt(7)} L${pt(0)} L${pt(1)} L${pt(2)}" fill="none" stroke="rgba(246,239,221,.2)" stroke-width="1.5"/>
-      ${rune}${own}
+      ${pedestal}${rune}${own}
     </svg>`;
 }
 // 描画モードに応じてPhaser/DOMへ振り分け
@@ -1932,7 +2013,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.74' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.75' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
@@ -2076,6 +2157,12 @@ function render() {
         } else {
           fxAt(i, 'fxRing', col);
         }
+      } else if (was && now && was.creature !== now.creature && was.level === now.level &&
+                 (!state.lastBattle || state.lastBattle.at === prev.battleAt) &&
+                 renderModeActive === 'phaser') {
+        // 交代・転移など既存領地に別クリーチャーが現れた → 配置演出を流用(発注書v0.75 §4.1)
+        const si = i;
+        queueFx(2, () => PW.play({ type: 'summon', tile: si, element: state.tiles[si].e }));
       }
     }
     if ((!state.lastBattle || state.lastBattle.at === prev.battleAt)) {
@@ -2356,6 +2443,29 @@ function render() {
   if (bq.length) { clearTimeout(prev.bqT); prev.bqT = setTimeout(render, 450); }
   updateTileInfo();
   updateDirCut();
+  // 強化候補ハイライト(発注書v0.75 §6): 強化選択中のみ表示・終了で即除去
+  {
+    let hl = [];
+    if (state.phase === 'playing' && state.pending) {
+      for (const [hpid, hpd] of Object.entries(state.pending)) {
+        if (!hpd || hpd.type !== 'upgrade' || !hpd.options) continue;
+        const pv = state.upgradePreview;
+        hl = hpd.options.filter(o2 => o2.tile !== undefined).map(o2 => {
+          const strong = !!(pv && pv.player === hpid && pv.tile === o2.tile);
+          let evolve = false;
+          if (strong) {
+            const ow = state.owners[o2.tile];
+            evolve = !!(ow && !/_f$/.test(ow.creature) && state.catalog.CREATURES[ow.creature].evo &&
+                        ow.level + 1 >= (state.evoLevel || 3) && ow.level < (state.evoLevel || 3));
+          }
+          return { tile: o2.tile, strong, evolve };
+        });
+        break;
+      }
+    }
+    if (renderModeActive === 'phaser') PW.setHighlights(hl);
+    else renderHighlightsDom(hl);
+  }
   // TURN STARTテロップ ─ 祠・称号などのバナーを全て消化してから表示
   if (queuedTurn !== null && !animBusy && state.phase === 'playing') {
     const waitMs = bannerUntil + 400 - Date.now();

@@ -257,15 +257,56 @@ const PW = (() => {
     });
   }
 
-  // 召喚(plan §7.1): DOM立ち絵カットインが主役。盤面側は波紋+出現ポップ+属性粒子のみ
+  // 収束粒子(発注書v0.75 §4.2-3: マス外周から中心へ属性粒子を収束)
+  function convergeBurst(x, y, col, base, depth) {
+    if (!ready || quality === 'lite') return;
+    const n = Math.max(2, Math.round(base * qf()));
+    for (let k = 0; k < n; k++) {
+      const p = acquireDust();
+      const a = Math.random() * Math.PI * 2;
+      const sx = x + Math.cos(a) * (46 + Math.random() * 16), sy = y + Math.sin(a) * (24 + Math.random() * 9);
+      p.setPosition(sx, sy);
+      p.setFillStyle(col, 0);
+      p.setRadius(1.5 + Math.random() * 1.5);
+      p.setDepth(depth != null ? depth : 318);
+      scene.tweens.addCounter({ from: 0, to: 1, duration: 300 + Math.random() * 160, ease: 'Sine.easeIn',
+        onUpdate: tw => { const v = tw.getValue();
+          p.setPosition(sx + (x - sx) * v, sy + (y - 6 - sy) * v);
+          p.setAlpha(Math.min(1, v * 2) * 0.9); },
+        onComplete: () => releaseDust(p) });
+    }
+  }
+  // 出現ポップ(§4.2-4〜6: Alpha0/Scale0.80 → 230msで1.05 → 150msで1.00)
+  function popInSprite(spr) {
+    return new Promise(res => {
+      if (!spr || !spr.scene) return res();
+      const base = spr.scale;
+      spr.setAlpha(0); spr.setScale(base * 0.8);
+      scene.tweens.addCounter({ from: 0, to: 1, duration: 230, ease: 'Sine.easeOut',
+        onUpdate: tw => { const v = tw.getValue(); if (!spr.scene) return;
+          spr.setAlpha(v); spr.setScale(base * (0.8 + 0.25 * v)); },
+        onComplete: () => {
+          if (!spr.scene) return res();
+          scene.tweens.addCounter({ from: 0, to: 1, duration: 150, ease: 'Sine.easeInOut',
+            onUpdate: tw2 => { const v2 = tw2.getValue(); if (!spr.scene) return; spr.setScale(base * (1.05 - 0.05 * v2)); },
+            onComplete: () => { if (spr.scene) { spr.setScale(base); spr.setAlpha(1); } res(); } });
+        } });
+    });
+  }
+
+  // 配置(発注書v0.75 §4.2 / 0.8〜1.2秒): 波紋+収束粒子→出現ポップ→着地バースト。
+  // DOM立ち絵カットインと並列再生(カメラは停止マスズームが既に効いているため動かさない)
   async function fx2cSummon(ev) {
     const col = elemCol(ev.element);
-    groundRipple(ev.tile, col, 700);
-    const spr = await waitCreature(ev.tile);
     const { x, y } = proj(GEO[ev.tile][0], GEO[ev.tile][1]);
-    elemBurst(x, y, col, 10, true, 320);
-    if (spr) await popSprite(spr, 450);
-    await wait(250);
+    groundRipple(ev.tile, col, 650);          // 波紋/召喚紋(§3素材到着後にsummon素材へ差替)
+    convergeBurst(x, y, col, 10);
+    const spr = await waitCreature(ev.tile);
+    if (spr && spr.scene) spr.setAlpha(0);    // 収束の間は隠す
+    await wait(280);
+    if (spr) await popInSprite(spr);
+    elemBurst(x, y, col, 8, true, 320);       // 着地impact(素材到着後impact_smallへ差替)
+    await wait(150);
   }
 
   // 強化(plan §7.2): 外周リング+短い発光+上昇粒子。カメラは動かさない
@@ -653,6 +694,47 @@ const PW = (() => {
     P.sh.setAlpha(1 - 0.5 * air);
   }
 
+  // ===== 強化候補ハイライト(発注書v0.75 §6) =====
+  // list: [{tile, strong, evolve}] ─ 弱=金色外周のゆっくり明滅 / 強=二重外周+面グロー(点滅なし)
+  const hlObjs = [];
+  let hlKey = '';
+  function setHighlights(list) {
+    const arr = Array.isArray(list) ? list : [];
+    const key = JSON.stringify(arr);
+    if (key === hlKey) return;
+    hlKey = key;
+    for (const h of hlObjs) { if (h.tw) h.tw.remove(); h.g.destroy(); }
+    hlObjs.length = 0;
+    if (!ready) return;
+    for (const it of arr) {
+      if (!GEO[it.tile]) continue;
+      const { x, y } = proj(GEO[it.tile][0], GEO[it.tile][1]);
+      const g = scene.add.graphics().setDepth(97);   // タイルより前面・クリーチャー影(100+)より背面
+      const dia = (ins, w, col2, a) => {
+        g.lineStyle(w, col2, a);
+        g.beginPath();
+        g.moveTo(x, y - DH / 2 + ins * 0.55);
+        g.lineTo(x + DW / 2 - ins, y);
+        g.lineTo(x, y + DH / 2 - ins * 0.55);
+        g.lineTo(x - DW / 2 + ins, y);
+        g.closePath(); g.strokePath();
+      };
+      if (it.strong) {
+        dia(2, 3.2, 0xF2D062, 1);
+        dia(7, 1.6, 0xF2D062, 0.9);
+        g.fillStyle(0xF2D062, 0.10); g.fillEllipse(x, y, DW - 16, DH - 10);
+        if (it.evolve) { g.fillStyle(0xFFF3C8, 0.26); g.fillRect(x - 8, y - 72, 16, 64); }  // 進化予告の光柱
+        g.setAlpha(0.95);
+        hlObjs.push({ g, tw: null });
+      } else {
+        dia(3, 2, 0xF2D062, 1);
+        const tw = scene.tweens.add({ targets: g, alpha: { from: 0.45, to: 0.8 },
+          duration: 750, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });   // 1.5秒周期(§6.1)
+        hlObjs.push({ g, tw });
+      }
+    }
+  }
+
   // ===== カメラ(setZoom契約: null=全景 / タイル番号=1.5倍ズーム) =====
   // 全景: マス中心のバウンズ+はみ出し余白(クリーチャー上方・バッジ・タイル厚み)が
   // 1280x905のCanvasに収まるズームを算出(既定は1相当。端が切れる盤面だけ僅かに縮む)
@@ -765,6 +847,7 @@ const PW = (() => {
   }
   return { init, syncBoard, syncPawns, setCamera, worldToViewport, pawnViewport, fx,
            snapshot, debugCounts, pump, isReady: () => ready, hasFailed: () => failed,
+           setHighlights,   // 強化候補ハイライト(発注書v0.75 §6)
            // Phase 2A: 演出基盤
            play, shake, fxDebug, setQuality, setReduceFx,
            getQuality: () => ({ quality, reduceFx }),
