@@ -1652,8 +1652,10 @@ function chain(pid, elem) {
 }
 const player = id => state.players.find(p => p.id === id);
 const cname = (cid, lv) => {
-  const c = state.catalog.CREATURES[cid];
-  return lv >= 4 && c.evo ? c.evo : c.name;
+  // 進化名の解決: 鍛錬済み(_f)はカタログ側が進化名を持つ。レベル進化はevoLevel(=3)以上
+  // (旧実装はlv>=4固定でLv3進化の名前が進化前になっていた ─ v0.86修正)
+  const c = state.catalog.CREATURES[cid] || state.catalog.CREATURES[cid.replace(/_f$/, '')] || { name: cid };
+  return lv >= (state.evoLevel || 3) && c.evo ? c.evo : c.name;
 };
 function artHTML(cid, lv, w) {
   const bid = cid.replace(/_f$/, '');
@@ -2267,7 +2269,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.85' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.86' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');

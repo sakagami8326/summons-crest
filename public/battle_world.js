@@ -161,20 +161,34 @@ const BW = (() => {
     if (!sized) return false;
     const [ka, kd] = await Promise.all([tex(atkUrl), tex(defUrl)]);
     if (!ka || !kd || !scene) return false;
-    const baseY = H - 110;   // 足元はCanvas下端から浮かせ、画面中央帯に立たせる
-    const mk = (k, x, flip) => {
-      const s = scene.add.image(x, baseY, k).setOrigin(0.5, 1).setDepth(40);
-      s.setScale(Math.min(300 / s.width, 290 / s.height));
+    // 立ち位置: DOM側でカード絵のために確保されている枠(.bArtWrap)の位置に合わせる
+    // (名前・HPバーと重ならない ─ v0.86)。取得できなければ従来の固定位置
+    const cr = game && game.canvas ? game.canvas.getBoundingClientRect() : null;
+    const anchor = (sel, fbX) => {
+      const el = document.querySelector(sel);
+      if (!el || !cr || cr.width < 50) return { x: fbX, y: H - 110, hMax: 290 };
+      const r2 = el.getBoundingClientRect();
+      if (r2.width < 10) return { x: fbX, y: H - 110, hMax: 290 };
+      const x = Math.min(W - 90, Math.max(90, (r2.left + r2.width / 2 - cr.left) / cr.width * W));
+      const y = Math.min(H - 12, Math.max(180, (r2.bottom - cr.top) / cr.height * H));
+      const hMax = Math.max(180, Math.min(320, r2.height / cr.height * H));
+      return { x, y, hMax };
+    };
+    const aA = anchor('#bAtk .bArtWrap', W * 0.30);
+    const aD = anchor('#bDef .bArtWrap', W * 0.70);
+    const mk = (k, an, flip) => {
+      const s = scene.add.image(an.x, an.y, k).setOrigin(0.5, 1).setDepth(40);
+      s.setScale(Math.min(310 / s.width, an.hMax / s.height));
       s.setFlipX(!!flip);
-      s.bwHome = { x, y: baseY, sx: s.scaleX, sy: s.scaleY };
+      s.bwHome = { x: an.x, y: an.y, sx: s.scaleX, sy: s.scaleY };
       s.setAlpha(0);
       scene.tweens.add({ targets: s, alpha: 1, duration: 280 });
       return s;
     };
     // クリーチャーの一枚絵は左向き基準 → 左に立つ攻撃側を反転して右(相手)を向かせ、
     // 右に立つ防衛側はそのまま左(相手)を向かせる(v0.85: 向きが逆との指摘で入替)
-    sprs.atk = mk(ka, W * 0.30, true);
-    sprs.def = mk(kd, W * 0.70, false);
+    sprs.atk = mk(ka, aA, true);
+    sprs.def = mk(kd, aD, false);
     return true;
   }
 
@@ -234,7 +248,7 @@ const BW = (() => {
     if (!scene || !S || !S.scene) return;
     const col = /shield/.test(kind) ? 0x6FA8E8 : kind === 'jinx' ? 0x9B59D0 : 0xE8A050;
     const g = scene.add.graphics().setDepth(46);
-    const cx = S.bwHome.x, cy = S.bwHome.y - 110;
+    const cx = S.bwHome.x, cy = S.bwHome.y - Math.min(120, S.displayHeight * 0.5);
     scene.tweens.addCounter({ from: 0, to: 1, duration: 650, ease: 'Sine.easeOut',
       onUpdate: t2 => { const v = t2.getValue(); g.clear();
         const a = 0.85 * Math.sin(Math.PI * v);
@@ -280,13 +294,15 @@ const BW = (() => {
       await tw(S, { x: S.bwHome.x - 46 * dir, scaleY: S.bwHome.sy * 0.94 }, 230, 'Sine.easeIn');
       await tw(S, { x: S.bwHome.x + 150 * dir, scaleY: S.bwHome.sy }, 150, 'Cubic.easeIn');
     }
+    // 相手の胸元の高さ(立ち位置アンカー基準 ─ v0.86)
+    const hitY = T.bwHome.y - Math.min(140, T.displayHeight * 0.55);
     // --- 属性trail(§8.6。charge/beastは本体突撃のため省略、weaponは斬撃弧) ---
-    if (prof === 'weapon') await slashArc(T.bwHome.x - 40 * dir, H - 250, dir, col, elem);
+    if (prof === 'weapon') await slashArc(T.bwHome.x - 40 * dir, hitY, dir, col, elem);
     else if (prof !== 'charge' && prof !== 'beast')
-      await trail(S.x + 80 * dir, T.bwHome.x - 70 * dir, H - 250, col, elem);
+      await trail(S.x + 80 * dir, T.bwHome.x - 70 * dir, hitY, col, elem);
     // --- impact(素材優先) ---
-    if (!(await impactImg(T.bwHome.x, H - 250, elem))) flash(T.bwHome.x, H - 250, col);
-    burst(T.bwHome.x, H - 240, col, (o2.heavy || prof === 'charge') ? 15 : 9);
+    if (!(await impactImg(T.bwHome.x, hitY, elem))) flash(T.bwHome.x, hitY, col);
+    burst(T.bwHome.x, hitY + 10, col, (o2.heavy || prof === 'charge') ? 15 : 9);
     // DF軽減があった命中: 防御スパーク(骨鎧・岩壁などの「守った感」 ─ 数値はDOMが正)
     if (o2.guard) {
       const g = scene.add.graphics().setDepth(52);
@@ -294,7 +310,7 @@ const BW = (() => {
         onUpdate: t2 => { const v = t2.getValue(); g.clear();
           g.lineStyle(5, 0xCBB878, 0.9 * (1 - v));
           g.beginPath();
-          g.arc(T.bwHome.x - 46 * dir, H - 250, 62 + 20 * v, -Math.PI / 2 - 0.8 * dir, -Math.PI / 2 + 0.8 * dir);
+          g.arc(T.bwHome.x - 46 * dir, hitY, 62 + 20 * v, -Math.PI / 2 - 0.8 * dir, -Math.PI / 2 + 0.8 * dir);
           g.strokePath(); },
         onComplete: () => g.destroy() });
     }
@@ -310,7 +326,7 @@ const BW = (() => {
     const S = sprs[side];
     if (!S || !S.scene) return;
     S.setTint(0x555566);
-    burst(S.x, H - 240, 0x9090B0, 10);
+    burst(S.x, S.bwHome.y - 120, 0x9090B0, 10);
     await tw(S, { y: S.bwHome.y + 30, alpha: 0 }, 650, 'Sine.easeIn');
   }
   // 帰還(耐えた攻撃側): 上昇して消える
