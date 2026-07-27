@@ -30,6 +30,8 @@ const BW = (() => {
           scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
           scene: { create: function () { scene = this; ready = true; clearTimeout(wd); res(true); } },
         });
+        // リサイズ・フルスクリーン切替でもFITを追従させる(v0.84)
+        window.addEventListener('resize', () => { try { if (game && game.scale) game.scale.refresh(); } catch (e) {} });
       } catch (e) { failed = true; clearTimeout(wd); res(false); }
     });
     return initP;
@@ -62,16 +64,16 @@ const BW = (() => {
     const g = scene.add.graphics().setDepth(50);
     scene.tweens.addCounter({ from: 0, to: 1, duration: 150, ease: 'Cubic.easeOut',
       onUpdate: t2 => { const v = t2.getValue(); g.clear();
-        g.fillStyle(0xFFFFFF, 0.65 * (1 - v)); g.fillCircle(x, y, 26 + 30 * v);
-        g.lineStyle(3, col, 0.9 * (1 - v)); g.strokeCircle(x, y, 30 + 70 * v); },
+        g.fillStyle(0xFFFFFF, 0.65 * (1 - v)); g.fillCircle(x, y, 40 + 45 * v);
+        g.lineStyle(4, col, 0.9 * (1 - v)); g.strokeCircle(x, y, 46 + 100 * v); },
       onComplete: () => g.destroy() });
   }
   // 命中の粒子(短命・即destroy ─ 戦闘は回数が少ないためPool不要)
   function burst(x, y, col, n) {
     if (!scene || qLite()) return;
     for (let k = 0; k < n; k++) {
-      const p = scene.add.circle(x, y, 2 + Math.random() * 2.5, col, 0.95).setDepth(49);
-      const a = Math.random() * Math.PI * 2, sp = 40 + Math.random() * 90;
+      const p = scene.add.circle(x, y, 3.5 + Math.random() * 3.5, col, 0.95).setDepth(49);
+      const a = Math.random() * Math.PI * 2, sp = 60 + Math.random() * 130;
       scene.tweens.add({ targets: p, x: x + Math.cos(a) * sp, y: y + Math.sin(a) * sp * 0.7,
         alpha: 0, duration: 380 + Math.random() * 220, ease: 'Cubic.easeOut', onComplete: () => p.destroy() });
     }
@@ -99,17 +101,17 @@ const BW = (() => {
       let s;
       if (k && !small) {
         s = scene.add.image(fromX, y, k).setDepth(48);
-        s.setScale(150 / s.width);           // 縦横比は素材のまま(ASSET_NOTES)
+        s.setScale(240 / s.width);           // 縦横比は素材のまま(ASSET_NOTES)
         s.setFlipX(toX < fromX);             // trail_*は左右反転可
       } else {
-        s = scene.add.circle(fromX, y, small ? 4 : 7, col, small ? 0.7 : 1).setDepth(small ? 47 : 48);
+        s = scene.add.circle(fromX, y, small ? 6 : 10, col, small ? 0.7 : 1).setDepth(small ? 47 : 48);
       }
       let fr = 0;
       scene.tweens.addCounter({ from: 0, to: 1, duration: P.ms, delay: delay || 0, ease: 'Sine.easeIn',
         onUpdate: t2 => { const v = t2.getValue();
           s.setPosition(fromX + (toX - fromX) * v, y + Math.sin(v * Math.PI) * P.arc);
           if (!qLite() && !k && (fr++ % 2) === 0) {
-            const d = scene.add.circle(s.x, s.y, 4, col, 0.6).setDepth(47);
+            const d = scene.add.circle(s.x, s.y, 6, col, 0.6).setDepth(47);
             scene.tweens.add({ targets: d, alpha: 0, duration: 200, onComplete: () => d.destroy() });
           } },
         onComplete: () => { s.destroy(); res(); } });
@@ -124,7 +126,7 @@ const BW = (() => {
     const [ki, ks] = await Promise.all([tex(fxUrl(elem, 'impactLarge')), tex(fxUrl('common', 'shockwave'))]);
     if (!ki || !scene) return false;
     const s = scene.add.image(x, y, ki).setDepth(51);
-    const w = 130;
+    const w = 210;
     s.setScale((w / s.width) * 0.55).setAlpha(0);
     scene.tweens.addCounter({ from: 0, to: 1, duration: 300, ease: 'Sine.easeOut',
       onUpdate: t2 => { const v = t2.getValue();
@@ -134,8 +136,8 @@ const BW = (() => {
       onComplete: () => s.destroy() });
     if (ks) {
       const sw = scene.add.image(x, y, ks).setDepth(50);
-      sw.setScale((60 / sw.width)).setAlpha(0.8);
-      scene.tweens.add({ targets: sw, scale: 170 / sw.width, alpha: 0, duration: 320,
+      sw.setScale((90 / sw.width)).setAlpha(0.8);
+      scene.tweens.add({ targets: sw, scale: 270 / sw.width, alpha: 0, duration: 340,
         ease: 'Cubic.easeOut', onComplete: () => sw.destroy() });
     }
     return true;
@@ -147,6 +149,16 @@ const BW = (() => {
     stop();
     // 呼び出し時点で#battleは表示済み ─ 親サイズを再計算してFITを正す(非表示中の初期化対策)
     try { if (game && game.scale && game.scale.refresh) game.scale.refresh(); } catch (e) {}
+    // Canvasが画面上で実サイズを持つことを確認(v0.84)。サイズ0のままだと「クリーチャーが
+    // 見えないのにDOM絵も隠れる」最悪の状態になるため、回復しなければfalse=DOM表現へ
+    let sized = false;
+    for (let k = 0; k < 6; k++) {
+      const rc = game && game.canvas ? game.canvas.getBoundingClientRect() : { width: 0, height: 0 };
+      if (rc.width > 50 && rc.height > 30) { sized = true; break; }
+      await waitMs(80);
+      try { game.scale.refresh(); } catch (e) {}
+    }
+    if (!sized) return false;
     const [ka, kd] = await Promise.all([tex(atkUrl), tex(defUrl)]);
     if (!ka || !kd || !scene) return false;
     const baseY = H - 110;   // 足元はCanvas下端から浮かせ、画面中央帯に立たせる
@@ -182,8 +194,8 @@ const BW = (() => {
       const cx = S.x, cy = S.y - 130;
       scene.tweens.addCounter({ from: 0, to: 1, duration: 320, ease: 'Sine.easeIn',
         onUpdate: t2 => { const v = t2.getValue(); g.clear();
-          g.lineStyle(2, col, 0.9 * v); g.strokeCircle(cx, cy, 34 * (1 - v) + 8);
-          g.fillStyle(col, 0.5 * v); g.fillCircle(cx, cy, 7 * v + 2); },
+          g.lineStyle(3, col, 0.9 * v); g.strokeCircle(cx, cy, 50 * (1 - v) + 12);
+          g.fillStyle(col, 0.5 * v); g.fillCircle(cx, cy, 11 * v + 3); },
         onComplete: () => { g.destroy(); res(); } });
     });
   }
@@ -195,7 +207,7 @@ const BW = (() => {
       if (!scene) return res();
       if (k) {
         const s = scene.add.image(x, y, k).setDepth(51);
-        s.setScale(130 / s.width).setFlipX(dir < 0).setRotation(-0.7 * dir).setAlpha(0);
+        s.setScale(210 / s.width).setFlipX(dir < 0).setRotation(-0.7 * dir).setAlpha(0);
         scene.tweens.addCounter({ from: 0, to: 1, duration: 190, ease: 'Cubic.easeOut',
           onUpdate: t2 => { const v = t2.getValue();
             if (!s.scene) return;
@@ -206,9 +218,9 @@ const BW = (() => {
         const g = scene.add.graphics().setDepth(51);
         scene.tweens.addCounter({ from: 0, to: 1, duration: 190, ease: 'Cubic.easeOut',
           onUpdate: t2 => { const v = t2.getValue(); g.clear();
-            g.lineStyle(4, col, 0.9 * (1 - v * 0.4));
+            g.lineStyle(6, col, 0.9 * (1 - v * 0.4));
             g.beginPath();
-            g.arc(x, y, 55, (-1.1 + 1.6 * v) * dir - Math.PI / 2, (-0.4 + 1.6 * v) * dir - Math.PI / 2);
+            g.arc(x, y, 85, (-1.1 + 1.6 * v) * dir - Math.PI / 2, (-0.4 + 1.6 * v) * dir - Math.PI / 2);
             g.strokePath(); },
           onComplete: () => { g.destroy(); res(); } });
       }
@@ -224,8 +236,8 @@ const BW = (() => {
     scene.tweens.addCounter({ from: 0, to: 1, duration: 650, ease: 'Sine.easeOut',
       onUpdate: t2 => { const v = t2.getValue(); g.clear();
         const a = 0.85 * Math.sin(Math.PI * v);
-        g.lineStyle(3, col, a); g.strokeCircle(cx, cy, 70 + 40 * v);
-        g.fillStyle(col, a * 0.15); g.fillCircle(cx, cy, 90); },
+        g.lineStyle(4, col, a); g.strokeCircle(cx, cy, 95 + 55 * v);
+        g.fillStyle(col, a * 0.15); g.fillCircle(cx, cy, 120); },
       onComplete: () => g.destroy() });
   }
   // 相手の支援を無効化された側の明示(jinx ─ 紫の弾け)
@@ -278,9 +290,9 @@ const BW = (() => {
       const g = scene.add.graphics().setDepth(52);
       scene.tweens.addCounter({ from: 0, to: 1, duration: 260, ease: 'Cubic.easeOut',
         onUpdate: t2 => { const v = t2.getValue(); g.clear();
-          g.lineStyle(3, 0xCBB878, 0.9 * (1 - v));
+          g.lineStyle(5, 0xCBB878, 0.9 * (1 - v));
           g.beginPath();
-          g.arc(T.bwHome.x - 46 * dir, H - 250, 44 + 14 * v, -Math.PI / 2 - 0.8 * dir, -Math.PI / 2 + 0.8 * dir);
+          g.arc(T.bwHome.x - 46 * dir, H - 250, 62 + 20 * v, -Math.PI / 2 - 0.8 * dir, -Math.PI / 2 + 0.8 * dir);
           g.strokePath(); },
         onComplete: () => g.destroy() });
     }

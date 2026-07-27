@@ -194,8 +194,8 @@ const PW = (() => {
       scene.tweens.addCounter({ from: 0, to: 1, duration: 700, ease: 'Sine.easeOut',
         onUpdate: tw => { const v = tw.getValue(); g.clear();
           const a = 0.6 * Math.sin(Math.PI * v);
-          g.lineStyle(2.5, col, a); g.strokeEllipse(pz.x, pz.y, 76 + 20 * v, (76 + 20 * v) * 0.55);
-          g.fillStyle(col, a * 0.25); g.fillEllipse(pz.x, pz.y, 80, 44); },
+          g.lineStyle(3.5, col, a); g.strokeEllipse(pz.x, pz.y, 105 + 28 * v, (105 + 28 * v) * 0.55);
+          g.fillStyle(col, a * 0.25); g.fillEllipse(pz.x, pz.y, 110, 60); },
         onComplete: () => g.destroy() });
       if (pc) projectile({ x: pz.x, y: pz.y - 10 }, { x: pc.x, y: pc.y - 24 }, col, 800);
       await wait(120);
@@ -209,8 +209,8 @@ const PW = (() => {
     const pc = proj(GEO[castle][0], GEO[castle][1]);
     if (quality !== 'lite') {
       fx(castle, 'fxPillar', '#F2D062', -20);
-      fxImageFlash('common', 'victoryRing', pc.x, pc.y, { width: 150, ms: 1000, depth: 96, from: 0.4, to: 1.1 });
-      fxImageFlash('common', 'sparkGold', pc.x, pc.y - 50, { width: 130, ms: 900, depth: 341 });
+      fxImageFlash('common', 'victoryRing', pc.x, pc.y, { width: 230, ms: 1000, depth: 96, from: 0.4, to: 1.1 });
+      fxImageFlash('common', 'sparkGold', pc.x, pc.y - 50, { width: 195, ms: 900, depth: 341 });
       elemBurst(pc.x, pc.y - 10, 0xF2D062, 12, true, 342);
       await wait(1300);
     } else await wait(400);
@@ -224,7 +224,7 @@ const PW = (() => {
   // 弧を描いて飛ぶ投射体+短い軌跡
   function projectile(from, to, col, ms) {
     return new Promise(res => {
-      const s = scene.add.circle(from.x, from.y, 4, col, 1).setDepth(340);
+      const s = scene.add.circle(from.x, from.y, 6.5, col, 1).setDepth(340);
       const mx = (from.x + to.x) / 2, my = Math.min(from.y, to.y) - 60;
       let fr = 0;
       scene.tweens.addCounter({ from: 0, to: 1, duration: ms || 420, ease: 'Sine.easeIn',
@@ -232,7 +232,7 @@ const PW = (() => {
           s.setPosition(u * u * from.x + 2 * u * v * mx + v * v * to.x,
                         u * u * from.y + 2 * u * v * my + v * v * to.y);
           if ((fr++ % 3) === 0 && quality !== 'lite') {
-            const t2 = scene.add.circle(s.x, s.y, 2.5, col, 0.7).setDepth(339);
+            const t2 = scene.add.circle(s.x, s.y, 4, col, 0.7).setDepth(339);
             scene.tweens.add({ targets: t2, alpha: 0, duration: 260, onComplete: () => t2.destroy() });
           } },
         onComplete: () => { s.destroy(); res(); } });
@@ -240,14 +240,14 @@ const PW = (() => {
   }
   // 着弾(素材impact_small優先・なければリング+白閃)
   function impactAt(x, y, col, elem) {
-    if (!fxImageFlash(elem, 'impactSmall', x, y, { width: 84, ms: 330, depth: 341 })) {
+    if (!fxImageFlash(elem, 'impactSmall', x, y, { width: 130, ms: 330, depth: 341 })) {
       const g = scene.add.graphics().setDepth(341);
       scene.tweens.addCounter({ from: 0, to: 1, duration: 330, ease: 'Cubic.easeOut',
         onUpdate: tw => { const v = tw.getValue(); g.clear();
-          g.lineStyle(2 + 3 * (1 - v), col, 1 - v);
-          g.strokeEllipse(x, y, 18 + 60 * v, (18 + 60 * v) * 0.55);
+          g.lineStyle(3 + 4 * (1 - v), col, 1 - v);
+          g.strokeEllipse(x, y, 28 + 90 * v, (28 + 90 * v) * 0.55);
           g.fillStyle(0xFFFFFF, 0.5 * (1 - v));
-          g.fillEllipse(x, y, 22 * (1 - v) + 4, (22 * (1 - v) + 4) * 0.55); },
+          g.fillEllipse(x, y, 32 * (1 - v) + 6, (32 * (1 - v) + 6) * 0.55); },
         onComplete: () => g.destroy() });
     }
     elemBurst(x, y, col, 7, true, 342, elem);
@@ -257,11 +257,11 @@ const PW = (() => {
     const g = scene.add.graphics().setDepth(300);
     const arms = [];
     for (let k = 0; k < 6; k++)
-      arms.push({ a: (k / 6) * Math.PI * 2 + Math.random() * 0.5, len: 26 + Math.random() * 22 });
+      arms.push({ a: (k / 6) * Math.PI * 2 + Math.random() * 0.5, len: 40 + Math.random() * 32 });
     return new Promise(res => scene.tweens.addCounter({ from: 0, to: 1, duration: ms || 700, ease: 'Cubic.easeOut',
       onUpdate: tw => { const v = tw.getValue(); g.clear();
         const al = v < 0.7 ? 0.9 : 0.9 * (1 - (v - 0.7) / 0.3);
-        g.lineStyle(2, 0x1A1620, al);
+        g.lineStyle(3.5, 0x1A1620, al);
         for (const m of arms) {
           const L = m.len * Math.min(1, v * 1.6);
           g.beginPath(); g.moveTo(x, y);
@@ -277,8 +277,8 @@ const PW = (() => {
     return new Promise(res => scene.tweens.addCounter({ from: 0, to: 1, duration: ms || 600, ease: 'Sine.easeInOut',
       onUpdate: tw => { const v = tw.getValue(); g.clear();
         const a = 0.5 * Math.sin(Math.PI * v);
-        g.fillStyle(col, a * 0.4); g.fillEllipse(x, y, 90, 48);
-        g.lineStyle(2, col, a); g.strokeEllipse(x, y, 70 + 20 * v, (70 + 20 * v) * 0.55); },
+        g.fillStyle(col, a * 0.4); g.fillEllipse(x, y, 130, 70);
+        g.lineStyle(3, col, a); g.strokeEllipse(x, y, 100 + 30 * v, (100 + 30 * v) * 0.55); },
       onComplete: () => { g.destroy(); res(); } }));
   }
   function tintCreature(i, col, ms) {
@@ -321,7 +321,7 @@ const PW = (() => {
         for (let k = 0; k < 6; k++) {
           const an = dir * (v * 7 + k * Math.PI / 3);
           g.fillStyle(0x9FE8D8, a * (0.5 + 0.5 * Math.sin(an * 2)));
-          g.fillCircle(x + Math.cos(an) * 26, y - 14 + Math.sin(an) * 12, 2.6);
+          g.fillCircle(x + Math.cos(an) * 38, y - 18 + Math.sin(an) * 18, 4);
         } },
       onComplete: () => { g.destroy(); res(); } }));
   }
@@ -397,7 +397,7 @@ const PW = (() => {
           for (let k = 0; k < 8; k++) {
             const an = v * 6 + k * Math.PI / 4;
             g.fillStyle(0xFF7A45, a);
-            g.fillCircle(x + Math.cos(an) * 34, y + Math.sin(an) * 18, 3.5);
+            g.fillCircle(x + Math.cos(an) * 48, y + Math.sin(an) * 26, 5.5);
           } },
         onComplete: () => { g.destroy(); res(); } }));
       tintCreature(i, 0xFFB08A, 400);
@@ -408,7 +408,7 @@ const PW = (() => {
       const cs = [[-DW / 2 + 8, 0], [0, -DH / 2 + 5], [DW / 2 - 8, 0], [0, DH / 2 - 5]];
       await new Promise(res => scene.tweens.addCounter({ from: 0, to: 1, duration: 750, ease: 'Sine.easeOut',
         onUpdate: tw => { const v = tw.getValue(); g.clear();
-          g.lineStyle(3, 0x6B4F2A, 0.95);
+          g.lineStyle(4.5, 0x6B4F2A, 0.95);
           for (const [dx2, dy2] of cs) {
             const sx = x + dx2, sy = y + dy2;
             g.beginPath(); g.moveTo(sx, sy);
@@ -450,7 +450,7 @@ const PW = (() => {
           scaleX: gh.scaleX * 0.5, scaleY: gh.scaleY * 0.5,
           duration: 520, ease: 'Sine.easeIn', onComplete: () => { gh.destroy(); res(); } }));
       } else await wait(400);
-      if (!fxImageFlash('neutral', 'summon', x, y, { width: 100, ms: 550, depth: 96 }))
+      if (!fxImageFlash('neutral', 'summon', x, y, { width: 155, ms: 550, depth: 96 }))
         groundRipple(i, 0xD8D2E8, 600);
       convergeBurst(x, y, 0xD8D2E8, 8);
       await wait(240);
@@ -466,7 +466,7 @@ const PW = (() => {
           for (let k = 0; k < 5; k++) {
             const a2 = an - k * 0.22;
             g.fillStyle(0x56A8E8, a * (1 - k * 0.17));
-            g.fillCircle(x + Math.cos(a2) * (DW / 2 - 6), y + Math.sin(a2) * (DH / 2 - 3), 3.4 - k * 0.4);
+            g.fillCircle(x + Math.cos(a2) * (DW / 2 - 2), y + Math.sin(a2) * (DH / 2 - 1), 5 - k * 0.6);
           } },
         onComplete: () => { g.destroy(); res(); } }));
       elemBurst(x, y, 0x56A8E8, 6, true, 331, 'water');
@@ -480,8 +480,8 @@ const PW = (() => {
         scene.tweens.addCounter({ from: 0, to: 1, duration: 650, ease: 'Sine.easeOut',
           onUpdate: tw => { const v = tw.getValue(); g.clear();
             const a = 0.8 * Math.sin(Math.PI * v);
-            g.lineStyle(2.5, 0xBFEFFF, a);
-            g.strokeEllipse(pz.x, pz.y, 70 + 26 * v, (70 + 26 * v) * 0.55); },
+            g.lineStyle(3.5, 0xBFEFFF, a);
+            g.strokeEllipse(pz.x, pz.y, 95 + 36 * v, (95 + 36 * v) * 0.55); },
           onComplete: () => g.destroy() });
         await wait(130);
       }
@@ -553,9 +553,9 @@ const PW = (() => {
       scene.tweens.addCounter({ from: 0, to: 1, duration: 620, ease: 'Cubic.easeOut',
         onUpdate: tw => { const v = tw.getValue(); g.clear();
           const a = 0.95 * (1 - v);
-          g.lineStyle(3 + 5 * (1 - v), col, a);
-          g.strokeEllipse(x, y, 60 + 110 * v, (60 + 110 * v) * 0.55);
-          g.fillStyle(col, a * 0.22); g.fillEllipse(x, y, 96, 52); },
+          g.lineStyle(4 + 6 * (1 - v), col, a);
+          g.strokeEllipse(x, y, 80 + 150 * v, (80 + 150 * v) * 0.55);
+          g.fillStyle(col, a * 0.22); g.fillEllipse(x, y, 122, 66); },
         onComplete: () => g.destroy() });
       await wait(200);
     }
@@ -583,7 +583,7 @@ const PW = (() => {
   async function fx2eInvade(ev) {
     const col = elemCol(ev.element);
     const { x, y } = proj(GEO[ev.tile][0], GEO[ev.tile][1]);
-    fxImageFlash(ev.element, 'impactLarge', x, y - 10, { width: 120, ms: 380, depth: 332 });  // 支給素材があれば命中画像
+    fxImageFlash(ev.element, 'impactLarge', x, y - 10, { width: 185, ms: 380, depth: 332 });  // 支給素材があれば命中画像
     elemBurst(x, y, col, 12, true, 331, ev.element);
     shake(4, 180);
     await wait(250);
@@ -603,8 +603,8 @@ const PW = (() => {
     await new Promise(res => scene.tweens.addCounter({ from: 0, to: 1, duration: 900, ease: 'Sine.easeOut',
       onUpdate: tw => { const v = tw.getValue(); g.clear();
         const a = 0.5 * (1 - v);
-        g.fillStyle(col, a * 0.5); g.fillEllipse(x, y, 100, 55);
-        g.lineStyle(2, col, a); g.strokeEllipse(x, y, 90 + 30 * v, (90 + 30 * v) * 0.55); },
+        g.fillStyle(col, a * 0.5); g.fillEllipse(x, y, 135, 74);
+        g.lineStyle(3, col, a); g.strokeEllipse(x, y, 120 + 40 * v, (120 + 40 * v) * 0.55); },
       onComplete: () => { g.destroy(); res(); } }));
     elemBurst(x, y, col, 5, true, 331);
     await wait(200);
@@ -623,8 +623,8 @@ const PW = (() => {
       scene.tweens.addCounter({ from: 0, to: 1, duration: 620, ease: 'Sine.easeOut',
         onUpdate: tw => { const v = tw.getValue(); g.clear();
           const a = peak * Math.sin(Math.PI * v);
-          g.fillStyle(col, a * 0.5); g.fillEllipse(x, y, 96, 52);
-          g.lineStyle(2, col, a); g.strokeEllipse(x, y, 100 + 18 * v, (100 + 18 * v) * 0.55); },
+          g.fillStyle(col, a * 0.5); g.fillEllipse(x, y, 122, 66);
+          g.lineStyle(3, col, a); g.strokeEllipse(x, y, 128 + 26 * v, (128 + 26 * v) * 0.55); },
         onComplete: () => g.destroy() });
       await wait(140);
     }
@@ -649,7 +649,7 @@ const PW = (() => {
       if (tk) {
         const s = acquireFxImg(tk);
         s.setPosition(sx, sy).setDepth(depth != null ? depth : 320);
-        const w = 9 + Math.random() * 8;
+        const w = 15 + Math.random() * 13;
         s.setScale(w / s.width).setRotation(Math.random() * Math.PI * 2);
         scene.tweens.addCounter({ from: 0, to: 1, duration: dur, ease: 'Sine.easeOut',
           onUpdate: tw => { const v = tw.getValue();
@@ -662,11 +662,11 @@ const PW = (() => {
       const p = acquireDust();
       p.setPosition(sx, sy);
       p.setFillStyle(col, 0.9);
-      p.setRadius(1.5 + Math.random() * 2);
+      p.setRadius(2.5 + Math.random() * 3);
       p.setDepth(depth != null ? depth : 320);
       scene.tweens.addCounter({
         from: 0, to: 1, duration: dur, ease: 'Sine.easeOut',
-        onUpdate: tw => { const v = tw.getValue(); p.setPosition(p.x + dx * 0.03, sy + dy * v); p.setAlpha(0.9 * (1 - v)); },
+        onUpdate: tw => { const v = tw.getValue(); p.setPosition(p.x + dx * 0.045, sy + dy * v * 1.4); p.setAlpha(0.9 * (1 - v)); },
         onComplete: () => releaseDust(p),
       });
     }
@@ -677,10 +677,10 @@ const PW = (() => {
     const g = scene.add.graphics().setDepth(299);
     scene.tweens.addCounter({ from: 0, to: 1, duration: dur || 700, ease: 'Cubic.easeOut',
       onUpdate: tw => { const v = tw.getValue(); g.clear();
-        g.lineStyle(2 + 3 * (1 - v), col, 0.9 * (1 - v));
-        g.strokeEllipse(x, y, 20 + 90 * v, (20 + 90 * v) * 0.55);
-        g.lineStyle(1.5, col, 0.5 * (1 - v));
-        g.strokeEllipse(x, y, 10 + 55 * v, (10 + 55 * v) * 0.55); },
+        g.lineStyle(3 + 4 * (1 - v), col, 0.9 * (1 - v));
+        g.strokeEllipse(x, y, 30 + 140 * v, (30 + 140 * v) * 0.55);
+        g.lineStyle(2, col, 0.5 * (1 - v));
+        g.strokeEllipse(x, y, 16 + 85 * v, (16 + 85 * v) * 0.55); },
       onComplete: () => g.destroy() });
   }
   // クリーチャースプライトのポップ(85%→105%→100% ─ plan §7.1)
@@ -716,10 +716,10 @@ const PW = (() => {
     for (let k = 0; k < n; k++) {
       const p = acquireDust();
       const a = Math.random() * Math.PI * 2;
-      const sx = x + Math.cos(a) * (46 + Math.random() * 16), sy = y + Math.sin(a) * (24 + Math.random() * 9);
+      const sx = x + Math.cos(a) * (64 + Math.random() * 22), sy = y + Math.sin(a) * (34 + Math.random() * 12);
       p.setPosition(sx, sy);
       p.setFillStyle(col, 0);
-      p.setRadius(1.5 + Math.random() * 1.5);
+      p.setRadius(2.5 + Math.random() * 2.5);
       p.setDepth(depth != null ? depth : 318);
       scene.tweens.addCounter({ from: 0, to: 1, duration: 300 + Math.random() * 160, ease: 'Sine.easeIn',
         onUpdate: tw => { const v = tw.getValue();
@@ -753,7 +753,7 @@ const PW = (() => {
     const { x, y } = proj(GEO[ev.tile][0], GEO[ev.tile][1]);
     // 召喚紋: 支給素材があれば画像、なければ波紋Graphics(§3.4フォールバック)。
     // リング系はクリーチャーの背面に置く(ASSET_NOTES_v1 ─ depthを影(100+)より下げる)
-    if (!fxImageFlash(ev.element, 'summon', x, y, { width: 104, ms: 600, depth: 96, from: 0.55, to: 1.05 }))
+    if (!fxImageFlash(ev.element, 'summon', x, y, { width: 160, ms: 600, depth: 96, from: 0.55, to: 1.05 }))
       groundRipple(ev.tile, col, 650);
     convergeBurst(x, y, col, 10);
     const spr = await waitCreature(ev.tile);
@@ -761,7 +761,7 @@ const PW = (() => {
     await wait(280);
     if (spr) await popInSprite(spr);
     // 着地impact: 支給素材(impact_small)があれば画像+粒子、なければ粒子のみ
-    fxImageFlash(ev.element, 'impactSmall', x, y - 6, { width: 80, ms: 320, depth: 321 });
+    fxImageFlash(ev.element, 'impactSmall', x, y - 6, { width: 125, ms: 320, depth: 321 });
     elemBurst(x, y, col, 8, true, 320, ev.element);
     await wait(150);
   }
@@ -821,7 +821,7 @@ const PW = (() => {
       }
     }
     await wait(200);
-    fxImageFlash(ev.element, 'disperse', x, y - 20, { width: 96, ms: 700, depth: 332 });  // 支給素材があれば重ねる
+    fxImageFlash(ev.element, 'disperse', x, y - 20, { width: 150, ms: 700, depth: 332 });  // 支給素材があれば重ねる
     if (ghost) {
       ghost.setTint(0x555566);   // 彩度低下の代替(単色化)
       elemBurst(x, y, col, 10, false, 331, ev.element);
@@ -1252,26 +1252,26 @@ const PW = (() => {
       const g = scene.add.graphics().setDepth(300);
       scene.tweens.addCounter({ from: 0, to: 1, duration: 900, ease: 'Cubic.easeOut',
         onUpdate: tw => { const v = tw.getValue(); g.clear();
-          g.lineStyle(1 + 4 * (1 - v), col, 1 - v);
-          g.strokeEllipse(x, y + dy, 30 + 130 * v, (30 + 130 * v) * 0.55); },
+          g.lineStyle(2 + 6 * (1 - v), col, 1 - v);
+          g.strokeEllipse(x, y + dy, 44 + 190 * v, (44 + 190 * v) * 0.55); },
         onComplete: () => g.destroy() });
     } else if (cls === 'fxPillar') {
       const g = scene.add.graphics().setDepth(300);
       scene.tweens.addCounter({ from: 0, to: 1, duration: 1200, ease: 'Sine.easeOut',
         onUpdate: tw => { const v = tw.getValue(); g.clear();
-          g.fillStyle(col, 0.35 * (1 - v));
-          g.fillRect(x - 26, y + dy - 170 * v, 52, 170 * v); },
+          g.fillStyle(col, 0.4 * (1 - v));
+          g.fillRect(x - 38, y + dy - 235 * v, 76, 235 * v); },
         onComplete: () => g.destroy() });
       for (let k = 0; k < 10; k++) {
-        const p = scene.add.circle(x + (Math.random() * 56 - 28), y + dy, 2 + Math.random() * 2, col).setDepth(301);
-        scene.tweens.add({ targets: p, y: p.y - 110 - Math.random() * 70, alpha: 0,
+        const p = scene.add.circle(x + (Math.random() * 76 - 38), y + dy, 3 + Math.random() * 3, col).setDepth(301);
+        scene.tweens.add({ targets: p, y: p.y - 150 - Math.random() * 90, alpha: 0,
           duration: 900 + Math.random() * 400, ease: 'Sine.easeOut', onComplete: () => p.destroy() });
       }
     } else if (cls === 'fxBolt') {
       pngTexture('pwImg_ic_curse', '/assets/ic_curse.png').then(k => {
         if (!k || !scene) return;
         const s = scene.add.image(x, y + dy - 100, k).setOrigin(0.5, 0.5).setDepth(301);
-        s.setScale(58 / s.height);
+        s.setScale(84 / s.height);
         scene.tweens.add({ targets: s, y: y + dy - 34, duration: 420, ease: 'Bounce.easeOut',
           onComplete: () => scene.tweens.add({ targets: s, alpha: 0, duration: 600, delay: 350, onComplete: () => s.destroy() }) });
       });

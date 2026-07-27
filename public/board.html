@@ -2087,9 +2087,10 @@ async function playBattle(b) {
   hideLogo(true);
   bannerUntil = Math.max(bannerUntil, Date.now() + 8500); // 演出中はTURN START/バナーを待たせる
   $('battle').classList.add('on');
+  await wait(80);   // レイアウト確定を待つ(直後に起動するとCanvasがサイズ0で初期化される ─ v0.84)
   // ハイブリッド戦闘(発注書§8 ─ M5): オーバーレイを表示して#bwHostのサイズが確定してから
   // BWを起動する(display:none中に起動するとFITのサイズ計算が狂い、下寄りに配置される)。
-  // 一枚絵が無いトークンやBW初期化失敗時はfalseのまま=従来DOM表現で進行(§8.10フォールバック)
+  // 一枚絵が無いトークン・BW初期化失敗・Canvasサイズ0時はfalse=従来DOM表現で進行(§8.10フォールバック)
   let bwOn = false;
   if (renderModeActive === 'phaser' && typeof BW !== 'undefined' && !BW.hasFailed()) {
     const bidA = b.atkCreature.replace(/_f$/, ''), bidD = b.defCreature.replace(/_f$/, '');
@@ -2266,7 +2267,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.83' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.84' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
