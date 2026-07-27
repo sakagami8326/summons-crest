@@ -171,8 +171,10 @@ const BW = (() => {
       scene.tweens.add({ targets: s, alpha: 1, duration: 280 });
       return s;
     };
-    sprs.atk = mk(ka, W * 0.30, false);
-    sprs.def = mk(kd, W * 0.70, true);
+    // クリーチャーの一枚絵は左向き基準 → 左に立つ攻撃側を反転して右(相手)を向かせ、
+    // 右に立つ防衛側はそのまま左(相手)を向かせる(v0.85: 向きが逆との指摘で入替)
+    sprs.atk = mk(ka, W * 0.30, true);
+    sprs.def = mk(kd, W * 0.70, false);
     return true;
   }
 
