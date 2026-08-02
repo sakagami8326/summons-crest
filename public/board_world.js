@@ -610,23 +610,25 @@ const PW = (() => {
     await wait(200);
   }
 
-  // 連鎖(§8.2): 実際の連鎖対象タイルだけを盤面順に弱く順次発光。減少(§8.3)はさらに弱く
-  // (全対象の同時強点滅・赤フラッシュは使わない)
+  // 連鎖(§8.2): 実対象を盤面順に強く発光させ、粒子と二重リングで成立を明示する。
+  // 減少(§8.3)は従来どおり控えめにする。
   async function fx2dChain(ev) {
     const tiles = (ev.tiles || []).filter(i => GEO[i]);
     if (!tiles.length) return;
     const col = elemCol(ev.element);
-    const peak = ev.dim ? 0.28 : 0.55;
+    const peak = ev.dim ? 0.28 : 0.9;
     for (const i of tiles) {
       const { x, y } = proj(GEO[i][0], GEO[i][1]);
       const g = scene.add.graphics().setDepth(298);
-      scene.tweens.addCounter({ from: 0, to: 1, duration: 620, ease: 'Sine.easeOut',
+      scene.tweens.addCounter({ from: 0, to: 1, duration: ev.dim ? 620 : 820, ease: 'Sine.easeOut',
         onUpdate: tw => { const v = tw.getValue(); g.clear();
           const a = peak * Math.sin(Math.PI * v);
-          g.fillStyle(col, a * 0.5); g.fillEllipse(x, y, 122, 66);
-          g.lineStyle(3, col, a); g.strokeEllipse(x, y, 128 + 26 * v, (128 + 26 * v) * 0.55); },
+          g.fillStyle(col, a * (ev.dim ? 0.5 : 0.72)); g.fillEllipse(x, y, 130, 72);
+          g.lineStyle(ev.dim ? 3 : 5, col, a); g.strokeEllipse(x, y, 128 + 42 * v, (128 + 42 * v) * 0.55);
+          if (!ev.dim) { g.lineStyle(2, 0xffffff, a * 0.8); g.strokeEllipse(x, y, 96 + 58 * v, (96 + 58 * v) * 0.55); } },
         onComplete: () => g.destroy() });
-      await wait(140);
+      if (!ev.dim) elemBurst(x, y - 3, col, 7, true, 320, ev.element);
+      await wait(ev.dim ? 140 : 110);
     }
     await wait(480);
   }
@@ -800,6 +802,7 @@ const PW = (() => {
       await new Promise(res => scene.tweens.add({ targets: old, alpha: 0, duration: 500, delay: 250,
         onComplete: () => { old.destroy(); res(); } }));
     } else { await wait(750); }
+    shake(6, 280);
     const spr = await waitCreature(ev.tile, 8);
     if (spr) await popSprite(spr, 450);
     await wait(300);

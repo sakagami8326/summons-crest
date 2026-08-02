@@ -1946,10 +1946,10 @@ function renderPawnsDom(layout) {
   }
 }
 
-function summonCardHTML(cid) {
-  const bid = cid.replace(/_f$/, ''), evolved = bid !== cid;
+function summonCardHTML(cid, forceEvolved = false) {
+  const bid = cid.replace(/_f$/, ''), evolved = forceEvolved || bid !== cid;
   const base = state.catalog.CREATURES[bid], cr = state.catalog.CREATURES[cid] || base;
-  const name = evolved ? cr.name : base.name;
+  const name = evolved ? (base.evo || cr.name) : base.name;
   const elem = base.elem || 'neutral';
   const fx = String(base.fx || ''), m = fx.match(/^【([^】]+)】\s*(.*)$/);
   const title = m ? m[1] : '特殊能力', body = m ? m[2] : (fx || '効果なし');
@@ -1959,8 +1959,8 @@ function summonCardHTML(cid) {
     <img class="scArt" src="/assets/cards/${evolved ? 'e_' : 'c_'}${bid}.webp">
     <div class="scCost"><img class="frame" src="/assets/cards/cost-frame.svg"><img class="coin" src="/assets/cards/cost-coin.svg"><b>${base.cost || 0}G</b></div>
     <div class="scBrush"></div><div class="scInfo"><div class="scStats">
-      <div class="scStat"><img src="/assets/cards/stat-at-icon.svg"><b>${cr.st}</b></div>
-      <div class="scStat"><img src="/assets/cards/stat-hp-icon.svg"><b>${cr.hp}</b></div>
+      <div class="scStat"><img src="/assets/cards/stat-at-icon.svg"><b>${evolved && base.evoSt != null ? base.evoSt : cr.st}</b></div>
+      <div class="scStat"><img src="/assets/cards/stat-hp-icon.svg"><b>${evolved && base.evoHp != null ? base.evoHp : cr.hp}</b></div>
     </div><div class="scRule"></div><div class="scEffect"><h3>${title}</h3><p>${body}</p></div></div>`;
 }
 async function playSummonPresentation(tile, owner) {
@@ -1979,6 +1979,30 @@ async function playSummonPresentation(tile, owner) {
     if (renderModeActive === 'phaser')
       await PW.play({ type:'summon', tile, element:state.tiles[tile].e, timeoutMs:2200 });
     else fxAt(tile, 'fxRing', RUNE[state.tiles[tile].e]);
+    await wait(1550);
+  } finally {
+    $('summonCut').classList.remove('on');
+    hideLogo(false);
+    cutBusy = Math.max(0, cutBusy - 1);
+  }
+}
+
+async function playEvolvePresentation(tile, owner) {
+  const base = state.catalog.CREATURES[owner.creature.replace(/_f$/, '')];
+  cutBusy++;
+  bannerUntil = Math.max(bannerUntil, Date.now() + 5600);
+  try {
+    hideLogo(true);
+    $('scCard').innerHTML = summonCardHTML(owner.creature, true);
+    $('scText').textContent = base.name + 'が' + base.evo + 'に進化!';
+    $('summonCut').classList.remove('on'); void $('summonCut').offsetWidth; $('summonCut').classList.add('on');
+    await wait(2050);
+    $('summonCut').classList.remove('on');
+    await wait(180);
+    tileCloseup(tile, `${base.name}が<b style="color:#F2D062">${base.evo}</b>に進化!`, 2900);
+    if (renderModeActive === 'phaser')
+      await PW.play({ type:'evolve-fx', tile, bid:owner.creature.replace(/_f$/, ''), element:state.tiles[tile].e, level:owner.level, timeoutMs:2500 });
+    else fxAt(tile, 'fxPillar', player(owner.player).color, 20);
     await wait(1550);
   } finally {
     $('summonCut').classList.remove('on');
@@ -2478,14 +2502,9 @@ function render() {
         const isEvo = now.level >= (state.evoLevel || 3) && !/_f$/.test(now.creature) &&
             state.catalog.CREATURES[now.creature].evo && now.level - 1 < (state.evoLevel || 3);
         if (isEvo) {
-          // 進化(2C plan§7.3): ズーム+光柱+旧姿→新姿切替+中央下メッセージ(設計思想: マス変化は必ず見せる)
-          const ei = i, cr0 = state.catalog.CREATURES[now.creature], bid = now.creature, lv = now.level;
-          queueFx(2, () => {   // 盤面変化
-            tileCloseup(ei, `${cr0.name}が<b style="color:#F2D062">${cr0.evo}</b>に進化!`);
-            if (renderModeActive === 'phaser')
-              PW.play({ type: 'evolve-fx', tile: ei, bid, element: state.tiles[ei].e, level: lv });
-            else fxAt(ei, 'fxPillar', col, 20);
-          });
+          // 進化カード提示→マスズーム→画面振動を伴う進化配置。
+          const ei = i;
+          queueFx(2, () => playEvolvePresentation(ei, now));
         } else if (renderModeActive === 'phaser') {
           // 強化(2C plan§7.2): リング+短い発光+上昇粒子。カメラは動かさない
           PW.play({ type: 'upgrade-sparks', tile: i, color: col });

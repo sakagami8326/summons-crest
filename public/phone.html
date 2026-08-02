@@ -442,9 +442,12 @@
   .creatureCard .ccStat span { font:700 10.8cqw/1 Marudeco,sans-serif; letter-spacing:-.035em; }
   .creatureCard .ccRule { height:1.5%; min-height:3px; background:url("/assets/cards/rule-brush.svg") center/100% 100% no-repeat; }
   .creatureCard .ccEffect { padding:4.2% 3% 0; text-align:center; }
-  .creatureCard .ccEffect h2 { margin:0 0 2.2%; font:700 5.2cqw/1.1 Marudeco,sans-serif; letter-spacing:.04em; }
+  .creatureCard .ccEffect h2 { margin:0 0 2.2%; color:var(--cardInk); font:700 5.2cqw/1.1 Marudeco,sans-serif; letter-spacing:.04em; }
   .creatureCard .ccEffect h2::before { content:"【"; } .creatureCard .ccEffect h2::after { content:"】"; }
   .creatureCard .ccEffect p { margin:0; font-size:3.25cqw; font-weight:700; line-height:1.4; letter-spacing:.01em; }
+  .creatureCard .ccEffect.long { padding-top:2.4%; }
+  .creatureCard .ccEffect.long h2 { margin-bottom:1.2%; font-size:4.7cqw; }
+  .creatureCard .ccEffect.long p { font-size:2.75cqw; line-height:1.28; }
   #cardZoomCard .face.creatureCard .ccArt { height:69% !important; margin-top:0 !important; }
   #cardZoomCard .face.creatureCard .ccName { margin-top:0 !important; }
   /* ULT確認 */
@@ -989,7 +992,7 @@ function creatureFaceBody(cid, cr, evolved) {
     <div class="ccInfo"><div class="ccStats">
       <div class="ccStat"><img src="/assets/cards/stat-at-icon.svg" alt="AT"><span>${at}</span></div>
       <div class="ccStat"><img src="/assets/cards/stat-hp-icon.svg" alt="HP"><span>${hp}</span></div>
-    </div><div class="ccRule"></div><div class="ccEffect"><h2>${effect.title}</h2><p>${effect.body}</p></div></div>`;
+    </div><div class="ccRule"></div><div class="ccEffect ${effect.body.length > 28 ? 'long' : ''}"><h2>${effect.title}</h2><p>${effect.body}</p></div></div>`;
 }
 function fitCreatureNames(root) {
   (root || document).querySelectorAll('[data-card-name]').forEach(el => {
