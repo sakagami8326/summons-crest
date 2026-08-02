@@ -12,6 +12,7 @@
 <title>Summons Crest — 手元</title>
 <style>
   :root { --ink:#141227; --ink2:#1E1B3C; --gold:#C9A227; --gold-soft:#EFD98F; --parchment:#F1E8D0; }
+  html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
   * { box-sizing:border-box; margin:0; -webkit-tap-highlight-color:transparent; }
   body { background:radial-gradient(ellipse at 50% 0%, #2A2650 0%, var(--ink) 70%);
          height:100dvh; overflow:hidden; color:var(--parchment);
@@ -268,21 +269,49 @@
       flex-direction:column; align-items:center; justify-content:center; gap:1.2dvh;
       padding:2.5dvh 0 3dvh; }
   #charSel.on { display:flex; }
-  #csRow { display:flex; gap:1.5vw; width:100%; justify-content:center; align-items:center;
-      min-height:0;
+  #csRow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1.2vw; width:100%; align-items:center;
+      min-height:0; flex:1;
       padding-left:calc(1.5vw + env(safe-area-inset-left));
-      padding-right:calc(1.5vw + env(safe-area-inset-right)); overflow-x:auto; }
-  .csCard { flex:none;
-      width:calc((100vw - env(safe-area-inset-left) - env(safe-area-inset-right) - 7.5vw) / 4);
-      min-width:0; height:auto; max-height:88dvh; border-radius:1.6dvh; border:2px solid var(--cc);
-      background:rgba(0,0,0,.35); display:flex; flex-direction:column; align-items:center;
-      padding:1.2dvh 1dvh; cursor:pointer; transition:transform .15s; overflow:hidden; }
+      padding-right:calc(1.5vw + env(safe-area-inset-right)); overflow:hidden; }
+  .csCard { position:relative; min-width:0; height:min(76dvh,calc((100vw - 7vw) * 470 / 1200));
+      border-radius:1.6dvh; border:0; background:#16364f; cursor:pointer; transition:transform .15s;
+      overflow:hidden; isolation:isolate; box-shadow:0 5px 16px rgba(0,0,0,.5); }
   .csCard:active { transform:scale(.97); }
-  .csCard img { height:31dvh; max-width:100%; object-fit:contain; filter:drop-shadow(0 4px 8px rgba(0,0,0,.5)); }
-  .csCard .csName { font-size:2.6dvh; letter-spacing:2px; margin-top:.6dvh; }
-  .csCard .csState { font-size:1.6dvh; color:rgba(241,232,208,.75); min-height:1.4em; }
+  .csCard .csBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-3; }
+  .csCard .csArt { position:absolute; z-index:2; inset:13% 2% 15%; width:96%; height:72%; object-fit:contain;
+      filter:drop-shadow(0 0 5px rgba(255,255,255,.5)) drop-shadow(0 5px 8px rgba(0,0,0,.45)); }
+  .csCard .csTop { position:absolute; z-index:5; top:4%; left:5%; right:5%; height:10%; display:grid;
+      grid-template-columns:15% 1fr 15%; align-items:center; }
+  .csCard .csElem { width:100%; height:100%; display:grid; place-items:center; }
+  .csCard .csElem svg { width:88%; height:88%; } .csCard .csElem svg * { fill:#fff !important; }
+  .csCard .csName { grid-column:2; min-width:0; color:#fff4d5; font:700 clamp(14px,3dvh,24px)/1 Marudeco,sans-serif;
+      letter-spacing:.02em; text-align:center; white-space:nowrap; text-shadow:0 2px 4px rgba(0,0,0,.65); }
+  .csCard .csBottom { position:absolute; z-index:5; inset:auto 0 0; min-height:17%; padding:5% 5% 4%;
+      display:flex; align-items:center; justify-content:center; background:#f6e9c8; color:#172536;
+      font-size:clamp(13px,2dvh,17px); font-weight:700; text-align:center; line-height:1.25; }
+  .csCard .csBottom::before { content:""; position:absolute; left:0; bottom:99%; width:100%; height:42%;
+      background:url('/assets/cards/brush-boundary-b-paper.png') center/100% 100% no-repeat; }
+  .csCard .csState { position:absolute; z-index:8; inset:auto 4% 3%; padding:.5dvh 1dvh; border-radius:999px;
+      background:rgba(20,18,39,.88); color:#fff4d5; font-size:clamp(13px,1.8dvh,16px); text-align:center; }
   .csCard.mine { box-shadow:0 0 0 3px #F2D062, 0 0 20px rgba(242,208,98,.5); }
   .csCard.dim { filter:brightness(.5) saturate(.5); cursor:default; }
+  #charDetail { position:fixed; inset:0; display:none; z-index:36; background:rgba(10,8,25,.98);
+      padding:2dvh calc(3vw + env(safe-area-inset-right)) 2dvh calc(3vw + env(safe-area-inset-left)); }
+  #charDetail.on { display:grid; grid-template-columns:minmax(24dvh,31vw) 1fr; gap:3vw; }
+  .cdHero { position:relative; min-height:0; overflow:hidden; border-radius:2dvh; isolation:isolate; }
+  .cdHero .csBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-2; }
+  .cdHero .cdArt { position:absolute; inset:10% 2% 2%; width:96%; height:88%; object-fit:contain;
+      filter:drop-shadow(0 0 7px rgba(255,255,255,.48)) drop-shadow(0 7px 12px rgba(0,0,0,.55)); }
+  .cdHero .cdName { position:absolute; z-index:3; top:3%; left:5%; right:5%; color:#fff4d5;
+      font:700 clamp(18px,4dvh,34px)/1 Marudeco,sans-serif; text-align:center; text-shadow:0 2px 5px #000; }
+  .cdBody { min-width:0; min-height:0; display:flex; flex-direction:column; gap:1.2dvh; }
+  .cdInfo { flex:1; min-height:0; overflow-y:auto; background:#f6e9c8; color:#172536; border-radius:1.6dvh;
+      padding:2dvh 2.5vw; font-size:clamp(13px,2dvh,18px); line-height:1.5; }
+  .cdInfo h2 { margin:0 0 .5dvh; font:700 clamp(16px,2.8dvh,24px)/1.2 Marudeco,sans-serif; }
+  .cdInfo .cdSec { padding:1dvh 0; border-bottom:2px solid rgba(23,37,54,.18); }
+  .cdDeck { display:flex; gap:1dvh; overflow-x:auto; padding:.6dvh .3dvh 1dvh; }
+  .cdDeck .dkCard { width:12dvh; flex:none; }
+  .cdActions { flex:none; display:flex; justify-content:flex-end; gap:1.5dvh; }
   /* ダイス画像ボタン */
   .diceImgBtn { background:none; border:none; cursor:pointer; padding:0; height:100%;
         display:flex; align-items:center; justify-content:center; }
@@ -422,13 +451,13 @@
   .creatureCard .ccElem svg { width:100%; height:100%; }
   .creatureCard .ccElem svg * { fill:#fff !important; }
   .creatureCard .ccElem.none { font:700 8cqw/1 Marudeco,sans-serif; }
-  .creatureCard .ccName { grid-column:2; margin:0; color:#fff4d5; font:700 10cqw/1 Marudeco,sans-serif;
+  .creatureCard .ccName { grid-column:2; margin:0; color:#fff4d5; font:700 clamp(14px,10cqw,30px)/1 Marudeco,sans-serif;
       text-align:center; letter-spacing:.02em; white-space:nowrap; text-shadow:0 2px 0 rgba(14,45,78,.24); }
   .creatureCard .ccCost { position:absolute; z-index:8; top:65.2%; left:3.2%; width:24%; aspect-ratio:320/112; }
   .creatureCard .ccCostFrame { position:absolute; inset:0; width:100%; height:100%; }
   .creatureCard .ccCoin { position:absolute; left:7.5%; top:17.8%; width:22.5%; height:64.3%; }
   .creatureCard .ccCostValue { position:absolute; inset:0 5% 0 33%; display:grid; place-items:center;
-      font:700 4.6cqw/1 Marudeco,sans-serif; letter-spacing:-.025em; }
+      font:700 clamp(16px,4.6cqw,22px)/1 Marudeco,sans-serif; letter-spacing:-.025em; }
   .creatureCard .ccArt { position:absolute; z-index:7; top:8.3%; left:1.5%; width:97%; height:69%;
       display:grid; place-items:center; margin:0; }
   .creatureCard .ccArt img { width:100%; height:100%; max-height:none; object-fit:contain;
@@ -440,15 +469,15 @@
   .creatureCard .ccStat { display:grid; grid-template-columns:36% max-content; align-items:center; justify-content:center;
       column-gap:1.5%; min-width:0; }
   .creatureCard .ccStat img { width:100%; max-height:100%; }
-  .creatureCard .ccStat span { font:700 10.8cqw/1 Marudeco,sans-serif; letter-spacing:-.035em; }
+  .creatureCard .ccStat span { font:700 clamp(16px,10.8cqw,34px)/1 Marudeco,sans-serif; letter-spacing:-.035em; }
   .creatureCard .ccRule { height:1.5%; min-height:3px; background:url("/assets/cards/rule-brush.svg") center/100% 100% no-repeat; }
   .creatureCard .ccEffect { padding:4.2% 3% 0; text-align:center; }
-  .creatureCard .ccEffect h2 { margin:0 0 2.2%; color:var(--cardInk); font:700 5.2cqw/1.1 Marudeco,sans-serif; letter-spacing:.04em; }
+  .creatureCard .ccEffect h2 { margin:0 0 2.2%; color:var(--cardInk); font:700 clamp(14px,5.2cqw,19px)/1.1 Marudeco,sans-serif; letter-spacing:.04em; }
   .creatureCard .ccEffect h2::before { content:"【"; } .creatureCard .ccEffect h2::after { content:"】"; }
-  .creatureCard .ccEffect p { margin:0; font-size:3.65cqw; font-weight:700; line-height:1.32; letter-spacing:.01em; }
+  .creatureCard .ccEffect p { margin:0; font-size:clamp(12px,3.65cqw,16px); font-weight:700; line-height:1.32; letter-spacing:.01em; }
   .creatureCard .ccEffect.long { padding-top:2.4%; }
-  .creatureCard .ccEffect.long h2 { margin-bottom:1.2%; font-size:4.7cqw; }
-  .creatureCard .ccEffect.long p { font-size:3.05cqw; line-height:1.2; }
+  .creatureCard .ccEffect.long h2 { margin-bottom:1.2%; font-size:clamp(14px,4.7cqw,18px); }
+  .creatureCard .ccEffect.long p { font-size:clamp(12px,3.05cqw,14px); line-height:1.2; }
   #cardZoomCard .face.creatureCard .ccArt { height:69% !important; margin-top:0 !important; }
   #cardZoomCard .face.creatureCard .ccName { margin-top:0 !important; }
   /* スペルカード: 専用一枚絵 + クリーチャーカード共通座標の名称/コスト/境界 */
@@ -460,26 +489,26 @@
   .spellCard .spFallback img { width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 5px 12px rgba(0,0,0,.55)); }
   .spellCard .spHeader { position:absolute; z-index:8; top:3.1%; left:4.7%; right:4.7%; height:9.5%;
       display:grid; grid-template-columns:11.5% 1fr 11.5%; align-items:center; }
-  .spellCard .spName { grid-column:2; margin:0; color:#fff4d5; font:900 9.2cqw/1 'Yu Mincho','Hiragino Mincho ProN',serif;
+  .spellCard .spName { grid-column:2; margin:0; color:#fff4d5; font:900 clamp(14px,9.2cqw,28px)/1 'Yu Mincho','Hiragino Mincho ProN',serif;
       text-align:center; letter-spacing:.02em; white-space:nowrap; text-shadow:0 2px 4px rgba(10,5,25,.8); }
   .spellCard .ccCost { position:absolute; z-index:12; top:65.2%; left:3.2%; width:24%; aspect-ratio:320/112; }
   .spellCard .ccCostFrame { position:absolute; inset:0; width:100%; height:100%; }
   .spellCard .ccCoin { position:absolute; left:7.5%; top:17.8%; width:22.5%; height:64.3%; }
   .spellCard .ccCostValue { position:absolute; inset:0 5% 0 33%; display:grid; place-items:center;
-      font:700 4.6cqw/1 Marudeco,sans-serif; letter-spacing:-.025em; }
+      font:700 clamp(16px,4.6cqw,22px)/1 Marudeco,sans-serif; letter-spacing:-.025em; }
   .spellCard .ccBrush { position:absolute; z-index:5; top:61.8%; left:0; width:100%; height:10.42%;
       background:url("/assets/cards/brush-boundary-b-paper.png") center/100% 100% no-repeat; }
   .spellCard .spInfo { position:absolute; z-index:6; inset:70.8% 0 0; padding:4.2% 7% 5%;
       background:var(--paper); text-align:center; display:flex; flex-direction:column; justify-content:flex-start; }
-  .spellCard .spText { margin:0; font-size:4.15cqw; font-weight:700; line-height:1.38; letter-spacing:.01em; }
-  .spellCard .spInfo.long .spText { font-size:3.55cqw; line-height:1.3; }
+  .spellCard .spText { margin:0; font-size:clamp(12px,4.15cqw,17px); font-weight:700; line-height:1.38; letter-spacing:.01em; }
+  .spellCard .spInfo.long .spText { font-size:clamp(12px,3.55cqw,15px); line-height:1.3; }
   /* 装備・支援カード: 全種共通のマゼンタ背景 */
   .face.supportCard { --paper:#f6e9c8; --cardInk:#172536; padding:0; border:0; border-radius:8px;
       background:#b51666; color:var(--cardInk); isolation:isolate; container-type:inline-size; overflow:hidden; }
   .supportCard .suBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-3; }
   .supportCard .suHead { position:absolute; z-index:8; top:3.1%; left:4.7%; right:4.7%; height:9.5%;
       display:grid; grid-template-columns:11.5% 1fr 11.5%; align-items:center; }
-  .supportCard .suName { grid-column:2; color:#fff4d5; font:700 10cqw/1 Marudeco,sans-serif; text-align:center;
+  .supportCard .suName { grid-column:2; color:#fff4d5; font:900 clamp(14px,9.2cqw,28px)/1 'Yu Mincho','Hiragino Mincho ProN',serif; text-align:center;
       white-space:nowrap; text-shadow:0 2px 5px rgba(30,0,20,.85); }
   .supportCard .suArt { position:absolute; z-index:4; top:14%; left:16%; width:68%; height:47%; display:grid; place-items:center;
       color:#fff4e8; filter:drop-shadow(0 6px 10px rgba(0,0,0,.5)); }
@@ -487,12 +516,12 @@
   .supportCard .ccCost { position:absolute; z-index:12; top:65.2%; left:3.2%; width:24%; aspect-ratio:320/112; }
   .supportCard .ccCostFrame { position:absolute; inset:0; width:100%; height:100%; }
   .supportCard .ccCoin { position:absolute; left:7.5%; top:17.8%; width:22.5%; height:64.3%; }
-  .supportCard .ccCostValue { position:absolute; inset:0 5% 0 33%; display:grid; place-items:center; font:700 4.6cqw/1 Marudeco,sans-serif; }
+  .supportCard .ccCostValue { position:absolute; inset:0 5% 0 33%; display:grid; place-items:center; font:700 clamp(16px,4.6cqw,22px)/1 Marudeco,sans-serif; }
   .supportCard .ccBrush { position:absolute; z-index:5; top:61.8%; left:0; width:100%; height:10.42%;
       background:url("/assets/cards/brush-boundary-b-paper.png") center/100% 100% no-repeat; }
   .supportCard .suInfo { position:absolute; z-index:6; inset:70.8% 0 0; padding:6% 8% 5%; background:var(--paper); text-align:center; }
-  .supportCard .suPower { margin:0 0 5%; font:700 8cqw/1 Marudeco,sans-serif; color:#a32156; }
-  .supportCard .suText { margin:0; font-size:3.8cqw; font-weight:700; line-height:1.4; }
+  .supportCard .suPower { margin:0 0 5%; font:700 clamp(16px,8cqw,27px)/1 Marudeco,sans-serif; color:#a32156; }
+  .supportCard .suText { margin:0; font-size:clamp(12px,3.8cqw,16px); font-weight:700; line-height:1.4; }
   /* ULT確認 */
   #ultConfirm { position:fixed; inset:0; display:none; z-index:64; align-items:center;
       justify-content:center; background:rgba(10,8,25,.85); }
@@ -592,7 +621,8 @@
     <button class="abtn ghost" id="deckClose">閉じる</button></div>
   <div id="resultOv"><div id="resultTitle"></div><div id="resList"></div>
     <button class="abtn" id="resultBtn" style="margin-top:1.4dvh">タイトルへ戻る</button></div>
-  <div id="charSel"><div id="csMsg" style="font-size:2.2dvh;color:var(--gold-soft);letter-spacing:2px"></div><div id="csRow"></div></div>
+  <div id="charSel"><div id="csMsg" style="font-size:max(2.2dvh,14px);color:var(--gold-soft);letter-spacing:2px"></div><div id="csRow"></div></div>
+  <div id="charDetail"></div>
   <div id="draftOv"><div id="draftTitle">カードを1枚選んで獲得</div><div id="draftRow"></div><div id="draftFoot"></div></div>
   <div id="pickOv"><div id="pickTitle">手札に加えるカードを選んでください</div>
     <div id="pickRow"></div><div id="pickHint"></div></div>
@@ -623,6 +653,7 @@
 const $ = id => document.getElementById(id);
 let room = null, pid = null, state = null, selected = null, rolling = false;
 let inShopHand = false, prevHandKey = '', moveT = null;
+let charPreview = null, charSubmitting = false, fitResizeT = null;
 // v0.61 選択ドロー・カード追加演出
 let pdLock = false, pickAnimUntil = 0, pickTickT = null;
 let lastDrawSeen = 0, lastGainSeen = 0, drawModalT = null, gainT = null;
@@ -1061,12 +1092,16 @@ function supportFaceBody(cid, sup) {
 function fitCreatureNames(root) {
   (root || document).querySelectorAll('[data-card-name]').forEach(el => {
     el.style.fontSize = '';
-    const max = el.parentElement.clientWidth * .78;
+    const max = el.parentElement.clientWidth * .86;
     let px = parseFloat(getComputedStyle(el).fontSize);
-    while (el.scrollWidth > max && px > 10) { px -= .5; el.style.fontSize = px + 'px'; }
+    while (el.scrollWidth > max && px > 14) { px -= .5; el.style.fontSize = Math.max(14, px) + 'px'; }
   });
 }
 const afterUiPaint = fn => typeof requestAnimationFrame === 'function' ? requestAnimationFrame(fn) : setTimeout(fn, 0);
+window.addEventListener('resize', () => {
+  clearTimeout(fitResizeT);
+  fitResizeT = setTimeout(() => fitCreatureNames(document), 120);
+});
 function galleryFace(cid, cr, evo) {
   return `<div class="face ${evo ? 'back' : 'front'} creatureCard"${evo ? ' style="transform:rotateY(180deg)"' : ''}>${creatureFaceBody(cid, cr, evo)}</div>`;
 }
@@ -1130,6 +1165,66 @@ function bigCardHTML(c) {
 
 const me = () => state.players.find(p => p.id === pid);
 const pend = () => state.pending[pid];
+
+function charDeckCards(id) {
+  const deck = (state.catalog.STARTER_DECKS && state.catalog.STARTER_DECKS[id]) || [];
+  const counts = new Map();
+  deck.forEach(c => counts.set(c, (counts.get(c) || 0) + 1));
+  return [...counts.entries()].map(([c, n]) => dkCard(c, n)).join('');
+}
+function closeCharDetail() {
+  charPreview = null;
+  charSubmitting = false;
+  $('charDetail').classList.remove('on');
+  $('charDetail').innerHTML = '';
+}
+function confirmCharacter(id) {
+  if (charSubmitting) return;
+  const p = pend();
+  if (!p || p.type !== 'select_char' || !p.options.some(o => o.id === id)) return;
+  charSubmitting = true;
+  const btn = $('charChoose');
+  if (btn) { btn.disabled = true; btn.textContent = '確定中…'; }
+  choose(id);
+}
+function openCharDetail(id) {
+  const c = state.catalog.CHARS[id], u = state.catalog.ULTS && state.catalog.ULTS[id];
+  const p = pend(), enabled = !!(p && p.type === 'select_char' && p.options.some(o => o.id === id));
+  if (!c || !enabled) return;
+  charPreview = id;
+  const elemJa = { fire:'火', water:'水', earth:'土', wind:'風' }[c.elem] || '';
+  $('charDetail').innerHTML = `<div class="cdHero"><img class="csBg" src="/assets/cards/bg-${c.elem}.webp" alt="">
+      <div class="cdName">${c.name}</div><img class="cdArt" src="/assets/full_${id}.png" alt="${c.name}"></div>
+    <div class="cdBody"><div class="cdInfo">
+      <div class="cdSec"><h2>${sic('ult','2.5dvh')}【${u ? u.name : '固有スキル'}】</h2>${u ? u.desc : ''}</div>
+      <div class="cdSec"><h2>属性親和：${elemJa}</h2>同属性の土地の強化費を20%軽減する。</div>
+      <div class="cdSec"><h2>プレイスタイル</h2>${c.style || ''}<br>${c.deckNote || ''}</div>
+      <div class="cdSec"><h2>初期デッキ</h2><div class="cdDeck">${charDeckCards(id)}</div></div>
+    </div><div class="cdActions"><button class="abtn ghost" onclick="closeCharDetail()">戻る</button>
+      <button class="abtn" id="charChoose" onclick="confirmCharacter('${id}')">選ぶ</button></div></div>`;
+  $('charDetail').classList.add('on');
+  afterUiPaint(() => fitCreatureNames($('charDetail')));
+}
+
+function renderCharSelection(m, C, p) {
+  const opts = p && p.type === 'select_char' ? p.options.map(o => o.id) : [];
+  $('charSel').classList.add('on');
+  $('csMsg').textContent = p ? '使用する召喚士を選んでください'
+    : (m.charId ? C.CHARS[m.charId].name + ' で決定 ─ 他のプレイヤーを待っています' : '…');
+  $('csRow').innerHTML = Object.entries(C.CHARS).map(([id, c]) => {
+    const taken = state.players.find(x => x.confirmed && x.charId === id && x.id !== pid);
+    const mine = m.charId === id;
+    const enabled = opts.includes(id);
+    const elemIcon = `<span class="csElem"><svg viewBox="-34 -36 68 72">${ELEM_MINI[c.elem]}</svg></span>`;
+    return `<div class="csCard ${mine ? 'mine' : ''} ${(!enabled && !mine) ? 'dim' : ''}" data-id="${id}">
+      <img class="csBg" src="/assets/cards/bg-${c.elem}.webp" alt=""><div class="csTop">${elemIcon}<div class="csName">${c.name}</div></div>
+      <img class="csArt" src="/assets/full_${id}.png" alt="${c.name}"><div class="csBottom">${c.style || ''}</div>
+      ${(mine || taken) ? `<div class="csState">${mine ? '選択済み' : taken.name + 'が使用中'}</div>` : ''}</div>`;
+  }).join('');
+  document.querySelectorAll('.csCard:not(.dim)').forEach(el => el.onclick = () => openCharDetail(el.dataset.id));
+  if (charPreview && opts.includes(charPreview)) openCharDetail(charPreview);
+  else if (charPreview) closeCharDetail();
+}
 
 // 手札の各カードが「今どの選択肢に対応するか」
 function cardOption(c) {
@@ -1311,26 +1406,8 @@ function render() {
 
   // キャラ選択オーバーレイ
   if (state.phase === 'select') {
-    const opts = p && p.type === 'select_char' ? p.options.map(o => o.id) : [];
-    $('charSel').classList.add('on');
-    $('csMsg').textContent = p ? '使用するキャラクターをタップ'
-      : (m.charId ? C.CHARS[m.charId].name + ' で決定 ─ 他のプレイヤーを待っています' : '…');
-    $('csRow').innerHTML = Object.entries(C.CHARS).map(([id, c]) => {
-      const taken = state.players.find(x => x.confirmed && x.charId === id && x.id !== pid);
-      const mine = m.charId === id;
-      const enabled = opts.includes(id);
-      return `<div class="csCard ${mine ? 'mine' : ''} ${(!enabled && !mine) ? 'dim' : ''}"
-        style="--cc:${c.color}" data-id="${id}">
-        <img src="/assets/full_${id}.png">
-        <div class="csName">${c.name}</div>
-        <div class="csUlt"><b>${sic('ult', '2dvh')}【${(C.ULTS && C.ULTS[id]) ? C.ULTS[id].name : ''}】</b>${(C.ULTS && C.ULTS[id]) ? C.ULTS[id].desc : ''}<span class="csAff"><svg viewBox="-34 -36 68 72" style="width:1.9dvh;height:1.9dvh;vertical-align:-0.3dvh">${ELEM_MINI[c.elem]}</svg> 親和:${ { fire: '火', water: '水', earth: '土', wind: '風' }[c.elem] } ─ 同属性の土地の強化費-20%</span><span class="csAff">${c.style || ''} ─ ${c.deckNote || ''}</span></div>
-        <div class="csState">${mine ? 'あなた' : taken ? taken.name + 'が使用' : ''}</div></div>`;
-    }).join('');
-    document.querySelectorAll('.csCard').forEach(el => el.onclick = () => {
-      const oid = el.dataset.id;
-      if ((pend() && pend().type === 'select_char') && pend().options.some(o => o.id === oid)) choose(oid);
-    });
-  } else $('charSel').classList.remove('on');
+    renderCharSelection(m, C, p);
+  } else { $('charSel').classList.remove('on'); closeCharDetail(); }
   if (!p || p.type !== 'draft') $('draftOv').classList.remove('on');
   if (!p || p.type !== 'gate') $('gateOv').classList.remove('on');
   // 選択ドロー: 選択後の飛翔演出が終わるまでは閉じない(操作ロック)

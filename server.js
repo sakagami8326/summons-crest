@@ -1713,7 +1713,7 @@ function publicState(r, viewerId) {
           ? [k, { type: v.type, prompt: v.prompt, options: [], until: v.until }]  // 候補カードは本人だけに見せる
           : [k, v])),
     lastDraw: r.lastDraw || null, lastGain: r.lastGain || null,
-    catalog: { CREATURES, SUPPORTS, ITEMS, CHARS, ULTS, SPELLS, artIds: ART_IDS },
+    catalog: { CREATURES, SUPPORTS, ITEMS, CHARS, ULTS, SPELLS, STARTER_DECKS: CHAR_DECKS, artIds: ART_IDS },
     players: r.players.map(p => ({
       id: p.id, name: p.name, charId: p.charId || null, confirmed: !!p.confirmed,
       color: p.color || '#888', pos: p.pos || 0, gold: p.gold ?? 0,
