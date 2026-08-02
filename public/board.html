@@ -251,6 +251,40 @@
   #scCard .scEffect p { margin:0; font-size:2.05vh; line-height:1.4; font-weight:700; }
   #scText { position:absolute; bottom:5vh; width:100%; text-align:center; font-size:3vh;
       letter-spacing:6px; color:var(--gold-soft); text-shadow:0 2px 10px rgba(0,0,0,.9); }
+  /* スペル使用カットイン: カード提示 + 効果説明ウィンドウ */
+  #spellCut { position:fixed; inset:0; display:none; z-index:67; align-items:center; justify-content:center;
+      gap:4vw; perspective:1400px; background:radial-gradient(circle,rgba(45,24,70,.66),rgba(8,7,20,.92)); }
+  #spellCut.on { display:flex; }
+  #spellCard { position:relative; height:min(72vh,720px); aspect-ratio:2/3; overflow:hidden; isolation:isolate;
+      border-radius:2.8vh; background:#24143f; box-shadow:0 3vh 7vh rgba(0,0,0,.6); transform-style:preserve-3d; }
+  #spellCut.on #spellCard { animation:scCardIn 1s cubic-bezier(.16,.86,.2,1) both; }
+  #spellCard::before { content:""; position:absolute; z-index:12; inset:1.5%; border:2px solid #d6b65b;
+      border-radius:2vh; box-shadow:inset 0 0 0 3px rgba(52,22,78,.9),inset 0 0 0 5px rgba(214,182,91,.72); }
+  #spellCard .spBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-3; }
+  #spellCard .spFallback { position:absolute; z-index:2; top:14%; left:15%; width:70%; height:46%; object-fit:contain;
+      filter:drop-shadow(0 8px 18px rgba(0,0,0,.65)); }
+  #spellCard .spHead { position:absolute; z-index:8; top:3.1%; left:4.7%; right:4.7%; height:9.5%;
+      display:grid; grid-template-columns:11.5% 1fr 11.5%; align-items:center; }
+  #spellCard .spName { grid-column:2; color:#fff4d5; font:700 6.2vh/1 Marudeco,sans-serif; text-align:center;
+      white-space:nowrap; text-shadow:0 2px 6px rgba(10,5,25,.9); }
+  #spellCard .scCost { position:absolute; z-index:13; top:65.2%; left:3.2%; width:24%; aspect-ratio:320/112; }
+  #spellCard .scCost .frame { position:absolute; inset:0; width:100%; height:100%; }
+  #spellCard .scCost .coin { position:absolute; left:7.5%; top:17.8%; width:22.5%; height:64.3%; }
+  #spellCard .scCost b { position:absolute; inset:0 5% 0 33%; display:grid; place-items:center; font:700 3.2vh/1 Marudeco,sans-serif; }
+  #spellCard .scBrush { position:absolute; z-index:5; top:61.8%; left:0; width:100%; height:10.42%;
+      background:url('/assets/cards/brush-boundary-b-paper.png') center/100% 100% no-repeat; }
+  #spellCard .spInfo { position:absolute; z-index:6; inset:70.8% 0 0; padding:8% 8% 5%; background:#f6e9c8;
+      color:#172536; text-align:center; }
+  #spellCard .spInfo h3 { margin:0 0 5%; font:700 3.2vh/1.1 Marudeco,sans-serif; }
+  #spellCard .spInfo p { margin:0; font-size:1.8vh; line-height:1.45; font-weight:700; }
+  #spellEffectBox { width:min(34vw,500px); padding:3vh 2.4vw; color:#172536; background:#f6e9c8;
+      border:3px solid #d6b65b; border-radius:2vh; box-shadow:0 2vh 5vh rgba(0,0,0,.55); opacity:0; }
+  #spellCut.on #spellEffectBox { animation:spellBoxIn .48s .55s ease both; }
+  #spellEffectBox h2 { margin:0 0 2vh; font:700 4.2vh/1.15 Marudeco,sans-serif; text-align:center; }
+  #spellEffectBox p { margin:0; font:700 2.5vh/1.65 'Reggae One','Yu Mincho',serif; }
+  #spellEffectCaster { margin-top:2.2vh; padding-top:1.5vh; border-top:4px solid transparent;
+      border-image:url('/assets/cards/rule-brush.svg') 4 stretch; text-align:center; font-size:2vh; color:#654b74; }
+  @keyframes spellBoxIn { from{transform:translateX(4vw);opacity:0} to{transform:none;opacity:1} }
   @keyframes vpop { from { transform:scale(1.7); opacity:0; } to { transform:scale(1); opacity:1; } }
   #vicImg { width:min(46vw, 620px); animation:vpop .55s ease; }
 
@@ -634,6 +668,7 @@
     <div id="shopAction"></div>
   </div>
   <div id="summonCut"><div id="scCard"></div><div id="scText"></div></div>
+  <div id="spellCut"><div id="spellCard"></div><div id="spellEffectBox"><h2 id="spellEffectName"></h2><p id="spellEffectText"></p><div id="spellEffectCaster"></div></div></div>
 
   <div id="battle">
     <div id="bwHost"></div>
@@ -2011,6 +2046,46 @@ async function playEvolvePresentation(tile, owner) {
   }
 }
 
+function spellCardHTML(sid) {
+  const sp = state.catalog.SPELLS[sid] || { name:sid, cost:0, desc:'' };
+  const dedicated = sid === 'sp_weaken';
+  const bg = dedicated ? '/assets/cards/spell-weaken-art-v1.webp' : '/assets/cards/bg-spell-v1.webp';
+  const fallback = dedicated ? '' : `<img class="spFallback" src="/assets/c_${sid}.png" onerror="this.style.display='none'">`;
+  const nameSize = sp.name.length <= 6 ? '6.2vh' : sp.name.length <= 9 ? '5.1vh' : '4.2vh';
+  return `<img class="spBg" src="${bg}">${fallback}<div class="spHead"><div class="spName" style="font-size:${nameSize}">${sp.name}</div></div>
+    <div class="scCost"><img class="frame" src="/assets/cards/cost-frame.svg"><img class="coin" src="/assets/cards/cost-coin.svg"><b>${sp.cost || 0}G</b></div>
+    <div class="scBrush"></div><div class="spInfo"><h3>【呪文効果】</h3><p>${sp.desc}</p></div>`;
+}
+
+async function playSpellPresentation(sf, desc) {
+  const sp = state.catalog.SPELLS[sf.spell] || { name:sf.spell, desc:desc || '' };
+  const caster = player(sf.caster);
+  cutBusy++;
+  bannerUntil = Math.max(bannerUntil, Date.now() + 5600);
+  try {
+    hideLogo(true);
+    $('spellCard').innerHTML = spellCardHTML(sf.spell);
+    $('spellEffectName').textContent = sp.name;
+    $('spellEffectText').textContent = desc || sp.desc || '';
+    $('spellEffectCaster').textContent = caster ? caster.name + 'が使用' : 'スペル発動';
+    $('spellCut').classList.remove('on'); void $('spellCut').offsetWidth; $('spellCut').classList.add('on');
+    await wait(2400);
+    $('spellCut').classList.remove('on');
+    await wait(180);
+    if (sf.tiles && sf.tiles.length === 1) tileCloseup(sf.tiles[0], iconize(desc || sp.desc || ''), 2800);
+    if (renderModeActive === 'phaser')
+      await PW.play({ type:'spell-fx', spell:sf.spell, tiles:sf.tiles, caster:sf.caster,
+        cid:sf.cid, elem:sf.elem, battle:sf.battle, n:sf.n, timeoutMs:3000 });
+    else if (sf.tiles) sf.tiles.forEach(ti => fxAt(ti, 'fxRing', '#C8BAE8'));
+    if (sf.spell === 'sp_insight') flyCardBacks(sf.caster, sf.n || 2);
+    await wait(900);
+  } finally {
+    $('spellCut').classList.remove('on');
+    hideLogo(false);
+    cutBusy = Math.max(0, cutBusy - 1);
+  }
+}
+
 // ===== HUD =====
 function renderHUD() {
   const hud = $('hud');
@@ -2490,7 +2565,7 @@ function render() {
     $('shopOv').classList.add('on');
     hideLogo(true);
     $('shopWho').textContent = player(shopping[0]).name + ' が買い物中';
-  } else { $('shopOv').classList.remove('on'); if (!$('battle').classList.contains('on') && !$('summonCut').classList.contains('on')) hideLogo(false); }
+  } else { $('shopOv').classList.remove('on'); if (!$('battle').classList.contains('on') && !$('summonCut').classList.contains('on') && !$('spellCut').classList.contains('on')) hideLogo(false); }
   prev.shop = shopOpen;
   // ===== 召喚カットイン(前はnull→今は所有、のマスを検出) =====
   if (state.phase === 'playing' && prev.ownersArr) {
@@ -2500,7 +2575,7 @@ function render() {
       if (was && now && now.level > was.level) {
         const col = player(now.player).color;
         const isEvo = now.level >= (state.evoLevel || 3) && !/_f$/.test(now.creature) &&
-            state.catalog.CREATURES[now.creature].evo && now.level - 1 < (state.evoLevel || 3);
+            state.catalog.CREATURES[now.creature].evo && was.level < (state.evoLevel || 3);
         if (isEvo) {
           // 進化カード提示→マスズーム→画面振動を伴う進化配置。
           const ei = i;
@@ -2659,10 +2734,9 @@ function render() {
       bannerUntil = Math.max(bannerUntil, Date.now() + 4200);
       setTimeout(() => $('bankruptCut').classList.remove('on'), 4000);
     }
-    else if (state.lastEvent.type === 'spell')
-      // スペルはpri2(発注書§2.2)─ 直後の盤面FXと同じ優先度にして「バナー→FX」の順を保つ
-      queueBanner(sic('spell') + ' 呪文「' + state.lastEvent.name + '」 ─ ' + player(state.lastEvent.player).name,
-        state.lastEvent.desc || (player(state.lastEvent.player).name + 'が唱えた'), 3600, 2);
+    else if (state.lastEvent.type === 'spell') {
+      // カード提示と効果説明はlastSpellFx側で盤面FXと一続きに再生する。
+    }
     else if (state.lastEvent.type === 'gate') {
       const gl = { g_up: sic('up') + ' 領地を強化', g_draft: sic('draft') + ' カードを引く',
                    g_forge: sic('forge') + ' 鍛錬 ─ クリーチャー進化', pass: '─ 何もしない' }[state.lastEvent.choice];
@@ -2681,20 +2755,12 @@ function render() {
         <div class="tcGold">城まで持ち帰ると一周ボーナス</div>`, 2400);
     });
   }
-  // スペルの盤面演出(発注書§7 ─ M3第1群)。バナー(pri2)の後にズーム+FXを直列再生
+  // スペルカード提示→効果説明→対象ズーム→盤面FXをpri2で直列再生。
   if (state.lastSpellFx && state.lastSpellFx.at !== prev.spellFxAt) {
     prev.spellFxAt = state.lastSpellFx.at;
     const sf = state.lastSpellFx;
     const sfMsg = state.lastEvent && state.lastEvent.type === 'spell' ? (state.lastEvent.desc || '') : '';
-    queueFx(2, () => {
-      // 対象マス表示: 単一対象はズーム+中央下メッセージ(既存原則)。複数対象・術者中心はFXのみ
-      if (sf.tiles && sf.tiles.length === 1) tileCloseup(sf.tiles[0], iconize(sfMsg), 2600);
-      if (renderModeActive === 'phaser')
-        PW.play({ type: 'spell-fx', spell: sf.spell, tiles: sf.tiles, caster: sf.caster,
-                  cid: sf.cid, elem: sf.elem, battle: sf.battle, n: sf.n });
-      else if (sf.tiles) sf.tiles.forEach(ti2 => fxAt(ti2, 'fxRing', '#C8BAE8'));
-      if (sf.spell === 'sp_insight') flyCardBacks(sf.caster, sf.n || 2);   // カード裏だけ飛ばす(中身は非表示)
-    });
+    queueFx(2, () => playSpellPresentation(sf, sfMsg));
   }
   // 結界が侵略を阻んだ瞬間 ─ クローズアップ+衝撃時発光(v0.73 plan§8.4)
   if (state.lastBarrierHit && state.lastBarrierHit.at !== prev.barrierHitAt) {

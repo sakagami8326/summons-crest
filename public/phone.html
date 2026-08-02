@@ -381,6 +381,7 @@
   .draftCard.rar-L .face { border-color:#F2D062;
       box-shadow:0 0 20px rgba(242,208,98,.85), 0 0 44px rgba(242,208,98,.4), 0 3px 8px rgba(0,0,0,.45); }
   .draftCard.rar-L .face::after { content:""; position:absolute; inset:0; border-radius:8px; pointer-events:none;
+      z-index:2;
       background:linear-gradient(115deg, transparent 30%, rgba(255,230,160,.35) 42%,
         rgba(160,220,255,.3) 50%, rgba(255,180,230,.3) 58%, transparent 70%);
       background-size:280% 280%; animation:holo 2.2s linear infinite; }
@@ -450,6 +451,30 @@
   .creatureCard .ccEffect.long p { font-size:2.75cqw; line-height:1.28; }
   #cardZoomCard .face.creatureCard .ccArt { height:69% !important; margin-top:0 !important; }
   #cardZoomCard .face.creatureCard .ccName { margin-top:0 !important; }
+  /* スペルカード: 専用一枚絵 + クリーチャーカード共通座標の名称/コスト/境界 */
+  .face.spellCard { --paper:#f6e9c8; --cardInk:#172536; padding:0; border:0; border-radius:8px;
+      background:#24143f; color:var(--cardInk); isolation:isolate; container-type:inline-size; overflow:hidden; }
+  .spellCard::before { content:""; position:absolute; z-index:10; inset:1.5%; border:2px solid #d6b65b;
+      border-radius:6px; box-shadow:inset 0 0 0 3px rgba(52,22,78,.9), inset 0 0 0 5px rgba(214,182,91,.72); pointer-events:none; }
+  .spellCard .spArt { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-3; }
+  .spellCard .spFallback { position:absolute; z-index:1; top:13%; left:13%; width:74%; height:48%; display:grid; place-items:center; }
+  .spellCard .spFallback .art,.spellCard .spFallback .glyph { width:100%; height:100% !important; display:grid; place-items:center; margin:0; }
+  .spellCard .spFallback img { width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 5px 12px rgba(0,0,0,.55)); }
+  .spellCard .spHeader { position:absolute; z-index:8; top:3.1%; left:4.7%; right:4.7%; height:9.5%;
+      display:grid; grid-template-columns:11.5% 1fr 11.5%; align-items:center; }
+  .spellCard .spName { grid-column:2; margin:0; color:#fff4d5; font:700 10cqw/1 Marudeco,sans-serif;
+      text-align:center; letter-spacing:.02em; white-space:nowrap; text-shadow:0 2px 4px rgba(10,5,25,.8); }
+  .spellCard .ccCost { position:absolute; z-index:12; top:65.2%; left:3.2%; width:24%; aspect-ratio:320/112; }
+  .spellCard .ccCostFrame { position:absolute; inset:0; width:100%; height:100%; }
+  .spellCard .ccCoin { position:absolute; left:7.5%; top:17.8%; width:22.5%; height:64.3%; }
+  .spellCard .ccCostValue { position:absolute; inset:0 5% 0 33%; display:grid; place-items:center;
+      font:700 4.6cqw/1 Marudeco,sans-serif; letter-spacing:-.025em; }
+  .spellCard .ccBrush { position:absolute; z-index:5; top:61.8%; left:0; width:100%; height:10.42%;
+      background:url("/assets/cards/brush-boundary-b-paper.png") center/100% 100% no-repeat; }
+  .spellCard .spInfo { position:absolute; z-index:6; inset:70.8% 0 0; padding:7% 8% 5%;
+      background:var(--paper); text-align:center; display:flex; flex-direction:column; justify-content:center; }
+  .spellCard .spType { margin:0 0 4%; font:700 5cqw/1.1 Marudeco,sans-serif; color:var(--cardInk); }
+  .spellCard .spText { margin:0; font-size:3.35cqw; font-weight:700; line-height:1.42; letter-spacing:.01em; }
   /* ULT確認 */
   #ultConfirm { position:fixed; inset:0; display:none; z-index:64; align-items:center;
       justify-content:center; background:rgba(10,8,25,.85); }
@@ -753,6 +778,7 @@ function buildPickOv(title, sections, cancelId) {
           ${bigCardHTML(e.card)}${e.n > 1 ? `<div class="dkN">×${e.n}</div>` : ''}
           ${e.zone ? `<div class="dkZoneTag">${e.zone}</div>` : ''}</div>`).join('') + '</div>';
   }).join('');
+  afterUiPaint(() => fitCreatureNames($('deckScroll')));
   $('deckClose').textContent = cancelId ? 'やめる' : '';
   $('deckClose').style.display = cancelId ? '' : 'none';
   ov.classList.add('on');
@@ -994,6 +1020,15 @@ function creatureFaceBody(cid, cr, evolved) {
       <div class="ccStat"><img src="/assets/cards/stat-hp-icon.svg" alt="HP"><span>${hp}</span></div>
     </div><div class="ccRule"></div><div class="ccEffect ${effect.body.length > 28 ? 'long' : ''}"><h2>${effect.title}</h2><p>${effect.body}</p></div></div>`;
 }
+function spellFaceBody(cid, spl) {
+  const dedicated = cid === 'sp_weaken';
+  const art = dedicated
+    ? `<img class="spArt" src="/assets/cards/spell-weaken-art-v1.webp" alt="">`
+    : `<img class="spArt" src="/assets/cards/bg-spell-v1.webp" alt=""><div class="spFallback">${spellArt(cid, '100%')}</div>`;
+  return `${art}<div class="spHeader"><div class="spName" data-card-name>${spl.name}</div></div>
+    <div class="ccCost"><img class="ccCostFrame" src="/assets/cards/cost-frame.svg" alt=""><img class="ccCoin" src="/assets/cards/cost-coin.svg" alt=""><span class="ccCostValue">${spl.cost || 0}G</span></div>
+    <div class="ccBrush"></div><div class="spInfo"><h2 class="spType">【呪文効果】</h2><p class="spText">${spl.desc}</p></div>`;
+}
 function fitCreatureNames(root) {
   (root || document).querySelectorAll('[data-card-name]').forEach(el => {
     el.style.fontSize = '';
@@ -1068,13 +1103,7 @@ function bigCardHTML(c) {
       <div class="type">支援</div></div>`;
   }
   const spl = state.catalog.SPELLS && state.catalog.SPELLS[c];
-  if (spl) return `<div class="face front">
-    <div class="cost">${spl.cost || 0}G</div>
-    ${spellArt(c, '55%')}
-    <div class="nm" style="font-size:3dvh">${spl.name}</div>
-    <div class="fx" style="font-size:2.1dvh; padding:0 12px">${spl.desc}</div>
-    <div class="rarBadge ${spl.rarity || 'N'}">${spl.rarity || 'N'}</div>
-    <div class="type">呪文 ─ 手番開始時に使用</div></div>`;
+  if (spl) return `<div class="face front spellCard">${spellFaceBody(c, spl)}</div>`;
   const cr = state.catalog.CREATURES[c];
   return `<div class="face front creatureCard">${creatureFaceBody(c, cr, /_f$/.test(c))}</div>`;
 }
@@ -1126,11 +1155,8 @@ function cardHTML(c, i) {
     }
   } else if (C.SPELLS && C.SPELLS[c]) {
     const spl = C.SPELLS[c];
-    front = `<div class="cost">${spl.cost || 0}G</div>${spellArt(c)}
-      <div class="nm">${spl.name}</div>
-      <div class="stats" style="font-size:max(1.5dvh, 10px); text-align:center; padding:0 6px; line-height:1.4">${spl.desc}</div>
-      <div class="rarBadge ${spl.rarity || 'N'}">${spl.rarity || 'N'}</div>
-      <div class="type">呪文 ─ 手番開始時に使用</div>`;
+    frontClass = ' spellCard';
+    front = spellFaceBody(c, spl);
   } else if (C.ITEMS && C.ITEMS[c]) {
     const it = C.ITEMS[c];
     front = `<div class="glyph" style="color:#5A2E6E">☠</div><div class="nm">${it.name}</div>
@@ -1394,10 +1420,10 @@ function render() {
       pov.dataset.k = pkey;
       pdLock = false;
       $('pickRow').style.gap = p.options.length >= 3 ? '3.5vw' : '6vw';  // 祠は3枚(v0.72)
-      $('pickRow').innerHTML = p.options.map(o => {
-        const rr = (C.CREATURES[o.card] || C.SPELLS[o.card] || {}).rarity || 'N';
-        return `<div class="draftCard rar-${rr}" data-pd="${o.id}" onclick="pdChoose('${o.id}')">${bigCardHTML(o.card)}</div>`;
-      }).join('');
+    $('pickRow').innerHTML = p.options.map(o =>
+        `<div class="draftCard" data-pd="${o.id}" onclick="pdChoose('${o.id}')">${bigCardHTML(o.card)}</div>`
+      ).join('');
+      afterUiPaint(() => fitCreatureNames($('pickRow')));
       document.querySelectorAll('#pickRow .draftCard').forEach((el, i) => {
         const o = p.options[i];
         if (o) armLongPress(el, () => openCardZoom(o.card));  // 長押しで拡大は選択中も使える
@@ -1504,9 +1530,9 @@ function render() {
     $('draftRow').dataset.k = dk;
     $('draftRow').innerHTML = p.options.filter(o => o.id.startsWith('take:')).map(o => {
       const cid = o.id.slice(5);
-      const rr = (state.catalog.CREATURES[cid] || state.catalog.SPELLS[cid] || {}).rarity || 'N';
-      return `<div class="draftCard rar-${rr}" data-o="${o.id}">${bigCardHTML(cid)}</div>`;
+      return `<div class="draftCard" data-o="${o.id}">${bigCardHTML(cid)}</div>`;
     }).join('');
+    afterUiPaint(() => fitCreatureNames($('draftRow')));
     $('draftFoot').innerHTML = p.options.some(o => o.id === 'skip')
       ? `<button class="abtn ghost" id="draftSkipBtn">カードを加えない</button>` : '';
     document.querySelectorAll('.draftCard').forEach(el =>
