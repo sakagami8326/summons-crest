@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <!-- Angular tarot crest for attack. One-color silhouette plus negative icon. -->
+  <path d="M64 4L82 18L106 16L108 42L124 64L108 86L106 112L82 110L64 124L46 110L22 112L20 86L4 64L20 42L22 16L46 18L64 4Z" fill="#C83E2B"/>
+  <path d="M64 14L79 26L98 25L100 45L113 64L100 83L98 103L79 102L64 114L49 102L30 103L28 83L15 64L28 45L30 25L49 26L64 14Z" stroke="#8F281F" stroke-width="4"/>
+  <path d="M38 77L76 39L91 34L86 49L48 87L38 77Z" fill="#FFF3D6"/>
+  <path d="M35 66L59 90L51 98L27 74L35 66Z" fill="#FFF3D6"/>
+  <path d="M33 88L43 98L32 109L22 99L33 88Z" fill="#FFF3D6"/>
+</svg>

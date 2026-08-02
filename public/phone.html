@@ -410,6 +410,47 @@
       border:1px solid var(--gold); display:flex; align-items:center; justify-content:center; z-index:2; }
   .face .elemIc svg { width:70%; height:70%; }
   .face .elemIc.none { color:#9AA0B0; font-size:1.7dvh; font-family:serif; }
+
+  /* v0.87 クリーチャーカード刷新 ─ 背景/アート/UIをコードで合成 */
+  @font-face { font-family:"Marudeco"; src:url("/assets/cards/Marudeco-Bold.otf") format("opentype");
+      font-weight:700; font-style:normal; font-display:swap; }
+  .face.creatureCard { --paper:#f6e9c8; --cardInk:#172536; padding:0; border:0; border-radius:8px;
+      background:#1b6f9c; color:var(--cardInk); isolation:isolate; container-type:inline-size; }
+  .creatureCard .ccBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-3; }
+  .creatureCard .ccHeader { position:absolute; z-index:5; top:3.1%; left:4.7%; right:4.7%; height:9.5%;
+      display:grid; grid-template-columns:11.5% 1fr 11.5%; align-items:center; }
+  .creatureCard .ccElem { width:100%; max-height:100%; display:grid; place-items:center; color:#fff4d5;
+      filter:drop-shadow(0 2px 1px rgba(0,0,0,.16)); }
+  .creatureCard .ccElem svg { width:100%; height:100%; }
+  .creatureCard .ccElem.none { font:700 8cqw/1 Marudeco,sans-serif; }
+  .creatureCard .ccName { grid-column:2; margin:0; color:#fff4d5; font:700 10cqw/1 Marudeco,sans-serif;
+      text-align:center; letter-spacing:.02em; white-space:nowrap; text-shadow:0 2px 0 rgba(14,45,78,.24); }
+  .creatureCard .ccCost { position:absolute; z-index:6; top:15.2%; left:4.7%; width:27.5%; aspect-ratio:320/112; }
+  .creatureCard .ccCostFrame { position:absolute; inset:0; width:100%; height:100%; }
+  .creatureCard .ccCoin { position:absolute; left:7.5%; top:17.8%; width:22.5%; height:64.3%; }
+  .creatureCard .ccCostValue { position:absolute; inset:0 5% 0 33%; display:grid; place-items:center;
+      font:700 4.6cqw/1 Marudeco,sans-serif; letter-spacing:-.025em; }
+  .creatureCard .ccArt { position:absolute; z-index:7; top:8.3%; left:1.5%; width:97%; height:69%;
+      display:grid; place-items:center; margin:0; }
+  .creatureCard .ccArt img { width:100%; height:100%; max-height:none; object-fit:contain;
+      filter:drop-shadow(0 0 1px rgba(255,255,255,.98)) drop-shadow(0 0 5px rgba(255,255,255,.72)) drop-shadow(0 0 11px rgba(255,255,255,.32)); }
+  .creatureCard .ccBrush { position:absolute; z-index:3; top:63.3%; left:0; width:100%; height:10.42%;
+      background:url("/assets/cards/brush-boundary-b-paper.png") center/100% 100% no-repeat; }
+  .creatureCard .ccInfo { position:absolute; z-index:4; inset:72.3% 0 0; padding:0 6.3% 4.2%; background:var(--paper); }
+  .creatureCard .ccStats { height:36%; display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:6%; }
+  .creatureCard .ccStat { display:grid; grid-template-columns:36% max-content; align-items:center; justify-content:center;
+      column-gap:1.5%; min-width:0; }
+  .creatureCard .ccStat img { width:100%; max-height:100%; }
+  .creatureCard .ccStat span { font:700 10.8cqw/1 Marudeco,sans-serif; letter-spacing:-.035em; }
+  .creatureCard .ccRule { height:1.5%; min-height:3px; background:url("/assets/cards/rule-brush.svg") center/100% 100% no-repeat; }
+  .creatureCard .ccEffect { padding:4.2% 3% 0; text-align:center; }
+  .creatureCard .ccEffect h2 { margin:0 0 2.2%; font:700 5.2cqw/1.1 Marudeco,sans-serif; letter-spacing:.04em; }
+  .creatureCard .ccEffect h2::before { content:"【"; } .creatureCard .ccEffect h2::after { content:"】"; }
+  .creatureCard .ccEffect p { margin:0; font-size:3.25cqw; font-weight:700; line-height:1.4; letter-spacing:.01em; }
+  .creatureCard .rarBadge { z-index:8; }
+  .creatureCard .flipBtn { z-index:9; }
+  #cardZoomCard .face.creatureCard .ccArt { height:69% !important; margin-top:0 !important; }
+  #cardZoomCard .face.creatureCard .ccName { margin-top:0 !important; }
   /* ULT確認 */
   #ultConfirm { position:fixed; inset:0; display:none; z-index:64; align-items:center;
       justify-content:center; background:rgba(10,8,25,.85); }
@@ -928,19 +969,45 @@ function artOrToken(cid, cr, evo, tokSize) {
   const nm = evo && cr.evo ? cr.evo : cr.name;
   return `<div class="tok2" style="background:${RUNE[cr.elem] || '#6E7288'};width:${tokSize};height:${tokSize}">${nm.slice(0,4)}</div>`;
 }
+function creatureEffectParts(fx) {
+  const m = String(fx || '').match(/^【([^】]+)】\s*(.*)$/);
+  return m ? { title:m[1], body:m[2] } : { title:'特殊能力', body:fx || '効果なし' };
+}
+function creatureFaceBody(cid, cr, evolved, controls) {
+  const bid = cid.replace(/_f$/, '');
+  const isEvo = evolved || /_f$/.test(cid);
+  const name = isEvo ? (cr.evo || cr.name) : cr.name;
+  const at = isEvo && cr.evoSt != null ? cr.evoSt : cr.st;
+  const hp = isEvo && cr.evoHp != null ? cr.evoHp : cr.hp;
+  const elem = cr.elem || 'neutral';
+  const effect = creatureEffectParts(cr.fx);
+  const art = HAS_ART.has(bid)
+    ? `<div class="ccArt"><img src="/assets/cards/${isEvo ? 'e_' : 'c_'}${bid}.webp" alt=""></div>`
+    : `<div class="ccArt"><div class="tok2" style="background:${RUNE[cr.elem] || '#6E7288'}">${name.slice(0,4)}</div></div>`;
+  const elemIcon = cr.elem
+    ? `<span class="ccElem"><svg viewBox="-34 -36 68 72">${ELEM_MINI[cr.elem]}</svg></span>`
+    : `<span class="ccElem none">◇</span>`;
+  return `<img class="ccBg" src="/assets/cards/bg-${elem}.webp" alt="">
+    <div class="ccHeader">${elemIcon}<div class="ccName" data-card-name>${name}</div></div>
+    <div class="ccCost"><img class="ccCostFrame" src="/assets/cards/cost-frame.svg" alt=""><img class="ccCoin" src="/assets/cards/cost-coin.svg" alt=""><span class="ccCostValue">${cr.cost || 0}G</span></div>
+    ${art}<div class="ccBrush"></div>
+    <div class="ccInfo"><div class="ccStats">
+      <div class="ccStat"><img src="/assets/cards/stat-at-icon.svg" alt="AT"><span>${at}</span></div>
+      <div class="ccStat"><img src="/assets/cards/stat-hp-icon.svg" alt="HP"><span>${hp}</span></div>
+    </div><div class="ccRule"></div><div class="ccEffect"><h2>${effect.title}</h2><p>${effect.body}</p></div></div>
+    <div class="rarBadge ${cr.rarity || 'N'}">${cr.rarity || 'N'}</div>${controls || ''}`;
+}
+function fitCreatureNames(root) {
+  (root || document).querySelectorAll('[data-card-name]').forEach(el => {
+    el.style.fontSize = '';
+    const max = el.parentElement.clientWidth * .78;
+    let px = parseFloat(getComputedStyle(el).fontSize);
+    while (el.scrollWidth > max && px > 10) { px -= .5; el.style.fontSize = px + 'px'; }
+  });
+}
+const afterUiPaint = fn => typeof requestAnimationFrame === 'function' ? requestAnimationFrame(fn) : setTimeout(fn, 0);
 function galleryFace(cid, cr, evo) {
-  if (evo) return `<div class="face back" style="transform:rotateY(180deg)">
-    ${cr.elem ? `<div class="elemIc"><svg viewBox="-34 -36 68 72">${ELEM_MINI[cr.elem]}</svg></div>` : `<div class="elemIc none">無</div>`}${artOrToken(cid, cr, true, '9dvh')}
-    <div class="nm">${cr.evo}</div>
-    <div class="stats"><span>AT <b>${cr.evoSt}</b></span><span>HP <i>${cr.evoHp}</i></span></div>
-    <div class="fx">${cr.fx || ''}</div><div class="type">進化形</div></div>`;
-  return `<div class="face front"><div class="cost">${cr.cost}G</div>
-    ${cr.elem ? `<div class="elemIc"><svg viewBox="-34 -36 68 72">${ELEM_MINI[cr.elem]}</svg></div>` : `<div class="elemIc none">無</div>`}${artOrToken(cid, cr, false, '9dvh')}
-    <div class="nm">${cr.name}</div>
-    <div class="stats"><span>AT <b>${cr.st}</b></span><span>HP <i>${cr.hp}</i></span></div>
-    <div class="fx">${cr.fx || ''}</div>
-    <div class="rarBadge ${cr.rarity || 'N'}">${cr.rarity || 'N'}</div>
-    <div class="type">クリーチャー</div></div>`;
+  return `<div class="face ${evo ? 'back' : 'front'} creatureCard"${evo ? ' style="transform:rotateY(180deg)"' : ''}>${creatureFaceBody(cid, cr, evo, '')}</div>`;
 }
 function buildGallery() {
   const C = state.catalog.CREATURES;
@@ -952,10 +1019,12 @@ function buildGallery() {
       </div>
     </div>`).join('');
   applyGalleryFlip(false);
+  afterUiPaint(() => fitCreatureNames($('gGrid')));
   document.querySelectorAll('.gCard').forEach(el => el.onclick = () => {
     const cid = el.dataset.cid, cr = state.catalog.CREATURES[cid];
     $('galZoomCard').innerHTML = galleryFace(cid, cr, galleryEvo && !!cr.evo)
       .replace('rotateY(180deg)', 'none');
+    afterUiPaint(() => fitCreatureNames($('galZoomCard')));
     $('galZoom').classList.add('on');
   });
 }
@@ -975,6 +1044,7 @@ let lpFired = false;
 function openCardZoom(c) {
   $('cardZoomCard').innerHTML = bigCardHTML(c);
   $('cardZoom').classList.add('on');
+  afterUiPaint(() => fitCreatureNames($('cardZoomCard')));
 }
 $('cardZoom').onclick = () => $('cardZoom').classList.remove('on');
 function armLongPress(el, fn) {
@@ -1009,17 +1079,7 @@ function bigCardHTML(c) {
     <div class="rarBadge ${spl.rarity || 'N'}">${spl.rarity || 'N'}</div>
     <div class="type">呪文 ─ 手番開始時に使用</div></div>`;
   const cr = state.catalog.CREATURES[c];
-  const bid0 = c.replace(/_f$/, '');
-  const art = HAS_ART.has(bid0)
-    ? `<div class="art" style="height:60%"><img src="/assets/${bid0 !== c ? 'e_' : 'c_'}${bid0}.png"></div>`
-    : `<div class="tok2" style="background:${RUNE[cr.elem] || '#6E7288'};width:20dvh;height:20dvh;font-size:3dvh">${cr.name.slice(0,4)}</div>`;
-  return `<div class="face front">
-    <div class="cost">${cr.cost}G</div>${cr.elem ? `<div class="elemIc"><svg viewBox="-34 -36 68 72">${ELEM_MINI[cr.elem]}</svg></div>` : `<div class="elemIc none">無</div>`}${art}
-    <div class="nm" style="font-size:3dvh">${cr.name}</div>
-    <div class="stats" style="font-size:2.4dvh"><span>AT <b>${cr.st}</b></span><span>HP <i>${cr.hp}</i></span></div>
-    <div class="fx" style="font-size:2dvh">${cr.fx || ''}</div>
-    <div class="rarBadge ${cr.rarity || 'N'}">${cr.rarity || 'N'}</div>
-    <div class="type">クリーチャー</div></div>`;
+  return `<div class="face front creatureCard">${creatureFaceBody(c, cr, /_f$/.test(c), '')}</div>`;
 }
 
 const me = () => state.players.find(p => p.id === pid);
@@ -1060,30 +1120,12 @@ function cardHTML(c, i) {
   const cr = C.CREATURES[c], sp = C.SUPPORTS[c];
   const dim = cardDim(c);
   const sel = selected === i;
-  let front, back = '';
+  let front, back = '', frontClass = '';
   if (cr) {
-    const bid = c.replace(/_f$/, '');
-    const art = HAS_ART.has(bid)
-      ? `<div class="art"><img src="/assets/${bid !== c ? 'e_' : 'c_'}${bid}.png"></div>`
-      : `<div class="tok2" style="background:${RUNE[cr.elem] || '#6E7288'}">${cr.name.slice(0,4)}</div>`;
-    front = `<div class="cost">${cr.cost}G</div>${cr.elem ? `<div class="elemIc"><svg viewBox="-34 -36 68 72">${ELEM_MINI[cr.elem]}</svg></div>` : `<div class="elemIc none">無</div>`}${art}
-      <div class="nm">${cr.name}</div>
-      <div class="stats"><span>AT <b>${cr.st}</b></span><span>HP <i>${cr.hp}</i></span></div>
-      <div class="fx">${cr.fx || ''}</div>
-      <div class="rarBadge ${cr.rarity || 'N'}">${cr.rarity || 'N'}</div>
-      <div class="type">クリーチャー</div>
-      ${cr.evo ? `<button class="flipBtn" data-i="${i}">進化 ⟳</button>` : ''}`;
+    frontClass = ' creatureCard';
+    front = creatureFaceBody(c, cr, false, cr.evo ? `<button class="flipBtn" data-i="${i}">進化 ⟳</button>` : '');
     if (cr.evo) {
-      const eart = HAS_ART.has(c)
-        ? `<div class="art"><img src="/assets/e_${c}.png"></div>`
-        : `<div class="tok2" style="background:${RUNE[cr.elem] || '#6E7288'}">${cr.evo.slice(0,4)}</div>`;
-      back = `<div class="face back">${cr.elem ? `<div class="elemIc"><svg viewBox="-34 -36 68 72">${ELEM_MINI[cr.elem]}</svg></div>` : `<div class="elemIc none">無</div>`}${eart}
-        <div class="nm">${cr.evo}</div>
-        <div class="stats"><span>AT ${cr.st}<span class="up">→${cr.evoSt}</span></span>
-          <span>HP ${cr.hp}<span class="up">→${cr.evoHp}</span></span></div>
-        <div class="fx">${cr.fx || ''}</div>
-        <div class="type">進化形</div>
-        <button class="flipBtn" data-i="${i}">もどす ⟲</button></div>`;
+      back = `<div class="face back creatureCard">${creatureFaceBody(c, cr, true, `<button class="flipBtn" data-i="${i}">もどす ⟲</button>`)}</div>`;
     }
   } else if (C.SPELLS && C.SPELLS[c]) {
     const spl = C.SPELLS[c];
@@ -1103,7 +1145,7 @@ function cardHTML(c, i) {
       <div class="type">支援</div>`;
   }
   return `<div class="card" data-i="${i}" data-c="${c}">
-    <div class="flip ${flipped.has(i) ? 'flipped' : ''}"><div class="face front">${front}</div>${back}</div></div>`;
+    <div class="flip ${flipped.has(i) ? 'flipped' : ''}"><div class="face front${frontClass}">${front}</div>${back}</div></div>`;
 }
 
 let handListKey = '';
@@ -1114,6 +1156,7 @@ function renderHand() {
     const oldArr = handListKey ? handListKey.split(',') : [];
     handListKey = list;
     $('hand').innerHTML = me().hand.map((c, i) => cardHTML(c, i)).join('');
+    afterUiPaint(() => fitCreatureNames($('hand')));
     document.querySelectorAll('#hand .card').forEach((el, i) => {
       el.style.animationDelay = (i * 80) + 'ms';  // ドローアニメの時間差
     });

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="112" viewBox="0 0 320 112" fill="none">
+  <!-- Fixed-width tarot-style cost frame. Runtime text goes in x=104..286. -->
+  <path d="M18 4H302L316 18V94L302 108H18L4 94V18L18 4Z" fill="#F6E9C8" stroke="#C79232" stroke-width="6"/>
+  <path d="M24 13H296L307 24V88L296 99H24L13 88V24L24 13Z" stroke="#233449" stroke-width="2.5"/>
+  <path d="M30 20H290" stroke="#D9B567" stroke-width="2" stroke-linecap="round"/>
+  <path d="M30 92H290" stroke="#D9B567" stroke-width="2" stroke-linecap="round"/>
+  <path d="M18 32V80M302 32V80" stroke="#C79232" stroke-width="3" stroke-linecap="round"/>
+</svg>

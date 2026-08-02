@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72" fill="none">
+  <!-- Simple single-purpose cost coin icon. -->
+  <circle cx="36" cy="36" r="32" fill="#D9A53A" stroke="#233449" stroke-width="4"/>
+  <circle cx="36" cy="36" r="24" fill="#E8BC55" stroke="#A86F1F" stroke-width="3"/>
+  <path d="M36 21L51 36L36 51L21 36L36 21Z" fill="#C78927"/>
+  <path d="M36 27L45 36L36 45L27 36L36 27Z" fill="#F6D477"/>
+</svg>
