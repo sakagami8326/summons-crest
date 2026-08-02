@@ -416,13 +416,13 @@ const PW = (() => {
             g.strokePath();
           } },
         onComplete: () => { g.destroy(); res(); } }));
-      pulseAt(x, y, 0xC8A85B, 500);
+      pulseAt(x, y, 0xD9B64F, 500);
       await wait(300);
     } else if (sid === 'sp_bedrock_uplift') {
       crackAt(x, y, 550);
       elemBurst(x, y, 0x8A7350, 8, true, 331, 'earth');          // 岩片が下から上へ
       await wait(350);
-      await pulseAt(x, y, 0xC8A85B, 600);                        // 回復pulse
+      await pulseAt(x, y, 0xD9B64F, 600);                        // 回復pulse
     } else if (sid === 'sp_quake') {
       await crackAt(x, y, 750);                                  // 亀裂→岩片・砂煙→段が沈む(SVGはstateで切替済み)
       dustBurst(x, y, 8, 0x9A8B6E, 331);
@@ -632,7 +632,7 @@ const PW = (() => {
   }
 
   // ---- 2C共通ヘルパー ----
-  const ELEM_COL = { fire: 0xFF7A45, water: 0x56A8E8, earth: 0xC8A85B, wind: 0x5BE0D0 };
+  const ELEM_COL = { fire: 0xFF7A45, water: 0x56A8E8, earth: 0xD9B64F, wind: 0x5BE0D0 };
   const elemCol = e => ELEM_COL[e] || 0xD8D2E8;
   const wait = ms => new Promise(res => setTimeout(res, ms));
   // 属性色の粒子を放射(pool再利用。上方向up=trueで立ち上る)
@@ -1030,7 +1030,7 @@ const PW = (() => {
       } else {
         // アート無しは色トークン(DOMの.tokと同等)
         const c = st.catalog.CREATURES[o.creature];
-        const colHex = ({ fire: 0xFF7A45, water: 0x56A8E8, earth: 0xC8A85B, wind: 0x5BE0D0 })[c.elem] || 0x6E7288;
+        const colHex = ({ fire: 0xFF7A45, water: 0x56A8E8, earth: 0xD9B64F, wind: 0x5BE0D0 })[c.elem] || 0x6E7288;
         makers.push(() => {
           const g = scene.add.graphics().setDepth(d);
           g.fillStyle(colHex, 1); g.fillCircle(x, y - lift + 6 - 32, 32);

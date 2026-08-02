@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '0.88';
+const VERSION = '0.89';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -167,7 +167,7 @@ const CHARS = {
             style: '侵略・攻撃', deckNote: 'ゲッコー2+武器2 ─ 衰弱で崩して攻める' },
   linnei: { name: 'リンネイ', color: '#378ADD', elem: 'water',
             style: '経済・通行料', deckNote: 'オルフェ2+黄金2 ─ 資金と収入を伸ばす' },
-  grease: { name: 'グリース', color: '#B89447', elem: 'earth',
+  grease: { name: 'グリース', color: '#C69A32', elem: 'earth',
             style: '防衛・領地育成', deckNote: 'ノーム2+盾2+加護 ─ 守って育てる' },
   mio:    { name: 'ミオ',     color: '#4FA69C', elem: 'wind',
             style: '移動・機動侵略', deckNote: 'ガストン2+疾風2 ─ 動き回って仕掛ける' },

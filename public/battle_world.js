@@ -10,7 +10,7 @@ const BW = (() => {
   let initP = null;
   let sprs = { atk: null, def: null };
   const texP = {};
-  const ELEM_COL = { fire: 0xFF7A45, water: 0x56A8E8, earth: 0xC8A85B, wind: 0x5BE0D0 };
+  const ELEM_COL = { fire: 0xFF7A45, water: 0x56A8E8, earth: 0xD9B64F, wind: 0x5BE0D0 };
   const qLite = () => { try { return localStorage.getItem('sc_quality') === 'lite'; } catch (e) { return false; } };
 
   function init() {
