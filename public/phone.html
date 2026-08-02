@@ -312,7 +312,16 @@
   .cdInfo h2 { margin:0 0 .5dvh; font:700 clamp(16px,2.8dvh,24px)/1.2 Marudeco,sans-serif; }
   .cdInfo .cdSec { padding:1dvh 0; border-bottom:2px solid rgba(23,37,54,.18); }
   .cdDeck { display:flex; gap:1dvh; overflow-x:auto; padding:.6dvh .3dvh 1dvh; }
-  .cdDeck .dkCard { width:12dvh; flex:none; }
+  .cdDeckThumb { position:relative; flex:none; width:15dvh; aspect-ratio:300/470; overflow:hidden;
+      border-radius:1.2dvh; background:#24203d; box-shadow:0 3px 8px rgba(0,0,0,.35); isolation:isolate; }
+  .cdDeckThumb .cdtBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-2; }
+  .cdDeckThumb .cdtArt { position:absolute; inset:8% 4% 5%; width:92%; height:87%; display:grid; place-items:center;
+      color:#fff4d5; filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)); }
+  .cdDeckThumb .cdtArt img { width:100%; height:100%; object-fit:contain; }
+  .cdDeckThumb .cdtArt svg { width:58%; height:58%; }
+  .cdDeckThumb .cdtCount { position:absolute; z-index:3; right:6%; bottom:4%; min-width:3.8dvh; height:3.8dvh;
+      display:grid; place-items:center; padding:0 .8dvh; border-radius:999px; background:#f6e9c8; color:#172536;
+      border:2px solid #C9A227; font:700 max(2dvh,13px)/1 Marudeco,sans-serif; }
   .cdActions { flex:none; display:flex; justify-content:flex-end; gap:1.5dvh; }
   /* ダイス画像ボタン */
   .diceImgBtn { background:none; border:none; cursor:pointer; padding:0; height:100%;
@@ -354,7 +363,7 @@
   #draftTitle { font-size:max(2.4dvh, 14px); letter-spacing:3px; color:var(--gold-soft);  font-family:'Reggae One','Yu Mincho',serif; }
   #draftRow { display:flex; gap:2.4vw; flex:1; align-items:center; }
   #draftFoot { padding:1dvh 0 2.4dvh; display:flex; justify-content:center; }
-  .draftCard { width:36dvh; height:56dvh; cursor:pointer; transition:transform .15s; position:relative; }
+  .draftCard { height:72dvh; aspect-ratio:300/470; width:auto; cursor:pointer; transition:transform .15s; position:relative; }
   .draftCard .face .art img { max-width:100%; object-fit:contain; }
   .draftCard:active { transform:scale(.96); }
   .draftCard .face { position:relative; height:100%; }
@@ -398,7 +407,8 @@
   #galZoom { position:fixed; inset:0; display:none; z-index:62; align-items:center;
       justify-content:center; background:rgba(10,8,25,.88); }
   #galZoom.on { display:flex; }
-  #galZoomCard { position:relative; width:38dvh; height:58dvh; animation:drawIn .4s ease; }
+  #galZoomCard { position:relative; height:min(92dvh, calc(58vw * 470 / 300)); aspect-ratio:300/470;
+      width:auto; animation:drawIn .4s ease; }
   #galZoom .tap { position:absolute; bottom:5dvh; width:100%; text-align:center;
       font-size:2dvh; letter-spacing:3px; color:rgba(241,232,208,.8); }
 
@@ -455,10 +465,10 @@
   .creatureCard .ccElem.none { font:700 8cqw/1 Marudeco,sans-serif; }
   .creatureCard .ccName { grid-column:2; margin:0; color:#fff4d5; font:700 clamp(14px,10cqw,30px)/1 Marudeco,sans-serif;
       text-align:center; letter-spacing:.02em; white-space:nowrap; text-shadow:0 2px 0 rgba(14,45,78,.24); }
-  .creatureCard .ccCost { position:absolute; z-index:8; top:65.2%; left:3.2%; width:24%; aspect-ratio:320/112; }
+  .creatureCard .ccCost { position:absolute; z-index:8; top:65.2%; left:3.2%; width:31%; aspect-ratio:320/112; }
   .creatureCard .ccCostFrame { position:absolute; inset:0; width:100%; height:100%; }
-  .creatureCard .ccCoin { position:absolute; left:7.5%; top:17.8%; width:22.5%; height:64.3%; }
-  .creatureCard .ccCostValue { position:absolute; inset:0 5% 0 33%; display:grid; place-items:center;
+  .creatureCard .ccCoin { position:absolute; left:6%; top:19%; width:19%; height:62%; }
+  .creatureCard .ccCostValue { position:absolute; inset:0 4% 0 27%; display:grid; place-items:center;
       font:700 clamp(16px,4.6cqw,22px)/1 Marudeco,sans-serif; letter-spacing:-.025em; }
   .creatureCard .ccArt { position:absolute; z-index:7; top:8.3%; left:1.5%; width:97%; height:69%;
       display:grid; place-items:center; margin:0; }
@@ -473,13 +483,10 @@
   .creatureCard .ccStat img { width:100%; max-height:100%; }
   .creatureCard .ccStat span { font:700 clamp(16px,10.8cqw,34px)/1 Marudeco,sans-serif; letter-spacing:-.035em; }
   .creatureCard .ccRule { height:1.5%; min-height:3px; background:url("/assets/cards/rule-brush.svg") center/100% 100% no-repeat; }
-  .creatureCard .ccEffect { padding:4.2% 3% 0; text-align:center; }
-  .creatureCard .ccEffect h2 { margin:0 0 2.2%; color:var(--cardInk); font:700 clamp(14px,5.2cqw,19px)/1.1 Marudeco,sans-serif; letter-spacing:.04em; }
-  .creatureCard .ccEffect h2::before { content:"【"; } .creatureCard .ccEffect h2::after { content:"】"; }
+  .creatureCard .ccEffect { padding:6.5% 4% 0; text-align:center; }
   .creatureCard .ccEffect p { margin:0; font-size:clamp(12px,3.65cqw,16px); font-weight:700; line-height:1.32; letter-spacing:.01em; }
-  .creatureCard .ccEffect.long { padding-top:2.4%; }
-  .creatureCard .ccEffect.long h2 { margin-bottom:1.2%; font-size:clamp(14px,4.7cqw,18px); }
-  .creatureCard .ccEffect.long p { font-size:clamp(12px,3.05cqw,14px); line-height:1.2; }
+  .creatureCard .ccEffect.long { padding-top:4%; }
+  .creatureCard .ccEffect.long p { font-size:clamp(12px,3.35cqw,15px); line-height:1.28; }
   #cardZoomCard .face.creatureCard .ccArt { height:69% !important; margin-top:0 !important; }
   #cardZoomCard .face.creatureCard .ccName { margin-top:0 !important; }
   /* スペルカード: 専用一枚絵 + クリーチャーカード共通座標の名称/コスト/境界 */
@@ -493,10 +500,10 @@
       display:grid; grid-template-columns:11.5% 1fr 11.5%; align-items:center; }
   .spellCard .spName { grid-column:2; margin:0; color:#fff4d5; font:900 clamp(14px,9.2cqw,28px)/1 'Yu Mincho','Hiragino Mincho ProN',serif;
       text-align:center; letter-spacing:.02em; white-space:nowrap; text-shadow:0 2px 4px rgba(10,5,25,.8); }
-  .spellCard .ccCost { position:absolute; z-index:12; top:65.2%; left:3.2%; width:24%; aspect-ratio:320/112; }
+  .spellCard .ccCost { position:absolute; z-index:12; top:65.2%; left:3.2%; width:31%; aspect-ratio:320/112; }
   .spellCard .ccCostFrame { position:absolute; inset:0; width:100%; height:100%; }
-  .spellCard .ccCoin { position:absolute; left:7.5%; top:17.8%; width:22.5%; height:64.3%; }
-  .spellCard .ccCostValue { position:absolute; inset:0 5% 0 33%; display:grid; place-items:center;
+  .spellCard .ccCoin { position:absolute; left:6%; top:19%; width:19%; height:62%; }
+  .spellCard .ccCostValue { position:absolute; inset:0 4% 0 27%; display:grid; place-items:center;
       font:700 clamp(16px,4.6cqw,22px)/1 Marudeco,sans-serif; letter-spacing:-.025em; }
   .spellCard .ccBrush { position:absolute; z-index:5; top:61.8%; left:0; width:100%; height:10.42%;
       background:url("/assets/cards/brush-boundary-b-paper.png") center/100% 100% no-repeat; }
@@ -515,10 +522,10 @@
   .supportCard .suArt { position:absolute; z-index:4; top:14%; left:16%; width:68%; height:47%; display:grid; place-items:center;
       color:#fff4e8; filter:drop-shadow(0 6px 10px rgba(0,0,0,.5)); }
   .supportCard .suArt svg { width:62%; height:62%; } .supportCard .suArt img { max-width:58%; max-height:72%; object-fit:contain; }
-  .supportCard .ccCost { position:absolute; z-index:12; top:65.2%; left:3.2%; width:24%; aspect-ratio:320/112; }
+  .supportCard .ccCost { position:absolute; z-index:12; top:65.2%; left:3.2%; width:31%; aspect-ratio:320/112; }
   .supportCard .ccCostFrame { position:absolute; inset:0; width:100%; height:100%; }
-  .supportCard .ccCoin { position:absolute; left:7.5%; top:17.8%; width:22.5%; height:64.3%; }
-  .supportCard .ccCostValue { position:absolute; inset:0 5% 0 33%; display:grid; place-items:center; font:700 clamp(16px,4.6cqw,22px)/1 Marudeco,sans-serif; }
+  .supportCard .ccCoin { position:absolute; left:6%; top:19%; width:19%; height:62%; }
+  .supportCard .ccCostValue { position:absolute; inset:0 4% 0 27%; display:grid; place-items:center; font:700 clamp(16px,4.6cqw,22px)/1 Marudeco,sans-serif; }
   .supportCard .ccBrush { position:absolute; z-index:5; top:61.8%; left:0; width:100%; height:10.42%;
       background:url("/assets/cards/brush-boundary-b-paper.png") center/100% 100% no-repeat; }
   .supportCard .suInfo { position:absolute; z-index:6; inset:70.8% 0 0; padding:6% 8% 5%; background:var(--paper); text-align:center; }
@@ -1080,7 +1087,7 @@ function creatureFaceBody(cid, cr, evolved) {
     <div class="ccInfo"><div class="ccStats">
       <div class="ccStat"><img src="/assets/cards/stat-at-icon.svg" alt="AT"><span>${at}</span></div>
       <div class="ccStat"><img src="/assets/cards/stat-hp-icon.svg" alt="HP"><span>${hp}</span></div>
-    </div><div class="ccRule"></div><div class="ccEffect ${effect.body.length > 28 ? 'long' : ''}"><h2>${effect.title}</h2><p>${effect.body}</p></div></div>`;
+    </div><div class="ccRule"></div><div class="ccEffect ${effect.body.length > 34 ? 'long' : ''}"><p>${effect.body}</p></div></div>`;
 }
 function spellFaceBody(cid, spl) {
   const dedicated = cid === 'sp_weaken';
@@ -1183,7 +1190,24 @@ function charDeckCards(id) {
   const deck = (state.catalog.STARTER_DECKS && state.catalog.STARTER_DECKS[id]) || [];
   const counts = new Map();
   deck.forEach(c => counts.set(c, (counts.get(c) || 0) + 1));
-  return [...counts.entries()].map(([c, n]) => dkCard(c, n)).join('');
+  return [...counts.entries()].map(([c, n]) => charDeckThumb(c, n)).join('');
+}
+function charDeckThumb(c, n) {
+  const C = state.catalog, cr = C.CREATURES[c], spl = C.SPELLS && C.SPELLS[c], sup = C.SUPPORTS && C.SUPPORTS[c];
+  let bg = '/assets/cards/bg-neutral.webp', art = '';
+  if (cr) {
+    const bid = c.replace(/_f$/, '');
+    bg = `/assets/cards/bg-${cr.elem || 'neutral'}.webp`;
+    art = HAS_ART.has(bid) ? `<img src="/assets/cards/c_${bid}.webp" alt="">`
+      : `<div class="tok2" style="background:${RUNE[cr.elem] || '#6E7288'}">${cr.name.slice(0,4)}</div>`;
+  } else if (spl) {
+    bg = '/assets/cards/bg-spell-v1.webp';
+    art = SPELL_ART.has(c) ? `<img src="/assets/c_${c}.png" alt="">` : sic('spell','8dvh');
+  } else if (sup) {
+    bg = '/assets/cards/bg-weapon-v1.webp';
+    art = c === 'jinx' ? '<img src="/assets/ic_curse.png" alt="">' : (GLYPH[c] ? GLYPH[c]() : sic('sword','8dvh'));
+  }
+  return `<div class="cdDeckThumb" title="${n}枚"><img class="cdtBg" src="${bg}" alt=""><div class="cdtArt">${art}</div><span class="cdtCount">×${n}</span></div>`;
 }
 function closeCharDetail() {
   charPreview = null;
