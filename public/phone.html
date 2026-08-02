@@ -37,8 +37,11 @@
         color:#241C05; border:1px solid #F2D062; border-radius:10px; cursor:pointer; }
   #err { color:#F09595; font-size:13px; min-height:1.2em; }
 
-  header { flex:none; display:flex; align-items:center; gap:10px;
-        padding:6px calc(12px + env(safe-area-inset-right)) 6px calc(12px + env(safe-area-inset-left)); }
+  header { flex:none; height:25dvh; display:grid; grid-template-columns:minmax(0,auto) minmax(15dvh,1fr) auto;
+        align-items:center; gap:1.4vw; padding:1dvh calc(12px + env(safe-area-inset-right)) 1dvh calc(12px + env(safe-area-inset-left)); }
+  #diceDock { min-width:0; height:100%; display:flex; align-items:center; justify-content:center; position:relative; }
+  #topTools { display:flex; align-items:center; justify-content:flex-end; gap:.8vw; white-space:nowrap; }
+  #contextBtn { display:none; }
   .me { display:flex; align-items:center; gap:8px; background:rgba(0,0,0,.35);
         border:1px solid var(--gold); border-radius:10px; padding:4px 14px 4px 5px; flex:none; }
   .dirBtn { font-family:'Reggae One','Yu Mincho',serif; display:flex; flex-direction:column;
@@ -56,8 +59,7 @@
   .me .st .assetBig small { font-size:.55em; font-weight:400; opacity:.8; }
   #msg.big { font-size:max(4dvh, 20px); }
   /* 中段: 左=行動メッセージ / 右=アクション(フロー配置なので重ならない) */
-  #midRow { flex:1; min-height:0; display:flex; align-items:stretch; gap:10px;
-        padding:2px calc(12px + env(safe-area-inset-right)) 2px calc(12px + env(safe-area-inset-left)); }
+  #midRow { display:none !important; }
   #msg { flex:none; width:26vw; display:flex; align-items:center; justify-content:center; text-align:center;
         font-size:max(2.2dvh, 13px); letter-spacing:1px; color:var(--gold-soft); line-height:1.4;
         text-shadow:0 1px 4px rgba(0,0,0,.6); font-family:'Reggae One','Yu Mincho',serif;
@@ -104,17 +106,17 @@
   .f5{transform:rotateX(-90deg) translateZ(5.5dvh)} .f6{transform:rotateY(180deg) translateZ(5.5dvh)}
 
   /* 手札 */
-  #handWrap { flex:none; height:56dvh; position:relative; padding:0 calc(10px + env(safe-area-inset-right))
+  #handWrap { flex:1; min-height:0; height:auto; position:relative; padding:0 calc(10px + env(safe-area-inset-right))
         calc(6px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left)); }
   #lpHint { position:absolute; right:calc(14px + env(safe-area-inset-right)); bottom:calc(2px + env(safe-area-inset-bottom));
         font-size:11px; color:rgba(241,232,208,.45); letter-spacing:1px; pointer-events:none; z-index:5; }
   #hand .card { animation:dealIn .45s cubic-bezier(.2,.85,.3,1) backwards; }
   @keyframes dealIn { from { transform:translateX(16dvh) translateY(2dvh) rotate(6deg); opacity:0; } }
-  #hand { display:flex; gap:10px; height:100%; overflow-x:auto; padding:14px 6px 4px;
+  #hand { display:flex; gap:12px; height:100%; overflow-x:auto; padding:10px 6px 4px;
         align-items:flex-end; -webkit-overflow-scrolling:touch; }
   .card { flex:none; height:100%; aspect-ratio:300/470; width:auto; position:relative;
         perspective:700px; cursor:pointer; transition:transform .15s; }
-  .card.sel { transform:translateY(-12px); }
+  .card.sel { transform:translateY(-7px); }
   .card.sel .face { border-color:#F2D062; box-shadow:0 0 0 2px #F2D062, 0 8px 20px rgba(242,208,98,.4); }
   .card.dim { filter:brightness(.6) saturate(.6); cursor:default; }
   .flip { position:absolute; inset:0; transform-style:preserve-3d;
@@ -544,6 +546,13 @@
       flex-direction:column; align-items:center; justify-content:center; gap:2.6dvh;
       padding:2dvh calc(4vw + env(safe-area-inset-right)) 2dvh calc(4vw + env(safe-area-inset-left)); }
   #gateOv.on { display:flex; }
+  #actionOv { position:fixed; inset:0; display:none; z-index:57; background:rgba(10,8,25,.94);
+      flex-direction:column; align-items:center; justify-content:center; gap:2.6dvh;
+      padding:2dvh calc(4vw + env(safe-area-inset-right)) 2dvh calc(4vw + env(safe-area-inset-left)); }
+  #actionOv.on { display:flex; }
+  #actionOvTitle { font-size:max(2.8dvh,16px); letter-spacing:3px; color:var(--gold-soft);
+      font-family:'Reggae One','Yu Mincho',serif; text-align:center; }
+  #actionOvHint { font-size:max(1.8dvh,12px); color:rgba(241,232,208,.72); min-height:1.4em; }
   #gateTitle { font-size:max(2.8dvh, 16px); letter-spacing:3px; color:var(--gold-soft);
       font-family:'Reggae One','Yu Mincho',serif; }
   .gateBtns { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:2dvh;
@@ -591,10 +600,12 @@
   <header style="display:none" id="hdr">
     <div class="me"><img id="myFace" src=""><div><div class="nm" id="myName"></div>
       <div class="st" id="myStat"></div></div></div>
-    <button id="mapBtn">領地を見る</button>
-    <button id="galleryBtn">クリーチャー一覧</button>
-    <button id="deckBtn" style="font-family:inherit; font-size:13px; padding:6px 10px; background:rgba(0,0,0,.4); color:rgba(241,232,208,.85); border:1px solid rgba(201,162,39,.5); border-radius:8px;">デッキ</button>
-    <button id="fsBtn">⛶ 全画面</button>
+    <div id="diceDock"></div>
+    <div id="topTools"><button class="abtn" id="contextBtn">行動</button>
+      <button id="mapBtn">領地を見る</button>
+      <button id="galleryBtn">クリーチャー一覧</button>
+      <button id="deckBtn" style="font-family:inherit; font-size:13px; padding:6px 10px; background:rgba(0,0,0,.4); color:rgba(241,232,208,.85); border:1px solid rgba(201,162,39,.5); border-radius:8px;">デッキ</button>
+      <button id="fsBtn">⛶ 全画面</button></div>
   </header>
   <div id="midRow"><div id="msg" style="display:none"></div>
   <div id="action" style="display:none"></div></div>
@@ -627,6 +638,7 @@
   <div id="pickOv"><div id="pickTitle">手札に加えるカードを選んでください</div>
     <div id="pickRow"></div><div id="pickHint"></div></div>
   <div id="gateOv"><div id="gateTitle">変化の門 ─ 恩恵を選べ</div><div id="gateBtnsWrap" class="gateBtns"></div></div>
+  <div id="actionOv"><div id="actionOvTitle"></div><div id="actionOvBtns" class="gateBtns"></div><div id="actionOvHint"></div></div>
   <div id="gainToast"></div>
   <div id="galleryOv">
     <div class="gTop">
@@ -654,6 +666,7 @@ const $ = id => document.getElementById(id);
 let room = null, pid = null, state = null, selected = null, rolling = false;
 let inShopHand = false, prevHandKey = '', moveT = null;
 let charPreview = null, charSubmitting = false, fitResizeT = null;
+let actionOverlayKey = '', actionSubmitting = false;
 // v0.61 選択ドロー・カード追加演出
 let pdLock = false, pickAnimUntil = 0, pickTickT = null;
 let lastDrawSeen = 0, lastGainSeen = 0, drawModalT = null, gainT = null;
@@ -1320,8 +1333,9 @@ function bindHand() {
       if (lpFired) return;  // 長押し直後のclickは選択扱いにしない
       const i = +el.dataset.i, c = el.dataset.c;
       if (!cardOption(c)) return;
-      selected = selected === i ? null : i;
-      render();
+      selected = i;
+      renderHand();
+      showCardActionConfirm(c, cardOption(c));
     };
     armLongPress(el, () => {
       const c = el.dataset.c;
@@ -1346,7 +1360,7 @@ function showUltConfirm() {
 }
 function startRoll() {
   rolling = true;
-  $('action').innerHTML = `<div class="diceStage drop"><div class="dice3d" id="die3d">${DICE_FACES}</div></div>`;
+  $('diceDock').innerHTML = `<div class="diceStage drop"><div class="dice3d" id="die3d">${DICE_FACES}</div></div>`;
   const die = $('die3d');
   die.style.transition = 'none';
   die.style.transform = 'rotateX(-30deg) rotateY(25deg)';
@@ -1369,6 +1383,57 @@ function settleDice(n) {
   setTimeout(() => { rolling = false; render(); }, 1400);
 }
 
+function closeActionOverlay(force) {
+  if (actionSubmitting && !force) return;
+  $('actionOv').classList.remove('on');
+  $('actionOv').dataset.key = '';
+  actionOverlayKey = '';
+}
+function submitAction(id) {
+  if (actionSubmitting) return;
+  actionSubmitting = true;
+  document.querySelectorAll('#actionOv button').forEach(b => b.disabled = true);
+  choose(id);
+}
+function actionDescription(id) {
+  if (id === 'pass') return '何もせず、この行動を終了します';
+  if (id === 'cancel' || id.endsWith(':cancel')) return '選択をやめて前の状態へ戻ります';
+  if (id === 'sup:none') return '支援カードを使用せずに戦闘を進めます';
+  if (id === 'invade') return 'この領地へ侵略を仕掛けます';
+  if (id.startsWith('up:')) return '選択したレベルまで土地を強化します';
+  return '';
+}
+function showActionOverlay(title, options, config) {
+  const cfg = config || {}, key = cfg.key || `${pend() ? pend().type : ''}|${options.map(o => o.id).join(',')}`;
+  if ($('actionOv').classList.contains('on') && $('actionOv').dataset.key === key) return;
+  actionSubmitting = false;
+  actionOverlayKey = key;
+  $('actionOv').dataset.key = key;
+  $('actionOvTitle').textContent = iconize(title || '行動を選んでください');
+  $('actionOvBtns').innerHTML = options.map(o => `<button class="gateBtn ${o.cls || ((o.id === 'pass' || o.id === 'cancel' || o.id.endsWith(':cancel') || o.id === 'sup:none') ? 'ghost' : '')}"
+      onclick="submitAction('${o.id}')"><div class="gbT">${iconize(o.label)}</div><div class="gbD">${o.desc || actionDescription(o.id)}</div></button>`).join('')
+    + (cfg.closeable ? `<button class="gateBtn ghost" onclick="closeActionOverlay(true)"><div class="gbT">閉じる</div><div class="gbD">手札の選択へ戻ります</div></button>` : '');
+  $('actionOvHint').textContent = cfg.hint || '';
+  $('actionOv').classList.add('on');
+}
+function showCardActionConfirm(c, optionId) {
+  const C = state.catalog;
+  const item = C.CREATURES[c] || (C.SPELLS && C.SPELLS[c]) || (C.SUPPORTS && C.SUPPORTS[c]);
+  const p = pend();
+  const opt = p && p.options.find(o => o.id === optionId);
+  if (!item || !opt) return;
+  showActionOverlay(`${item.name}を選択`, [
+    { id:optionId, label:iconize(opt.label), desc:'このカードで行動を確定します' }
+  ], { key:`card|${p.type}|${optionId}`, closeable:true, hint:'長押しするとカードを拡大できます' });
+}
+function setContextActions(title, options) {
+  const btn = $('contextBtn');
+  if (!options.length) { btn.style.display = 'none'; btn.onclick = null; return; }
+  btn.style.display = '';
+  btn.textContent = options.length === 1 ? iconize(options[0].label) : '行動';
+  btn.onclick = () => showActionOverlay(title, options, { closeable:true, hint:'カードを使う場合は手札をタップしてください' });
+}
+
 function render() {
   if (!state) return;
   const m = me(), C = state.catalog, p = pend();
@@ -1378,6 +1443,7 @@ function render() {
   $('deckBtn').style.display = showGui ? '' : 'none';
   $('mapBtn').style.display = showGui ? '' : 'none';
   $('msg').classList.toggle('big', !showGui);
+  setContextActions('', []);
   $('myFace').src = m.charId ? '/assets/f_' + m.charId + '.png' : '';
   $('myName').textContent = m.name + (m.charId ? '(' + C.CHARS[m.charId].name + ')' : '');
   const elemN = ['fire','water','earth','wind'].map(e => {
@@ -1395,7 +1461,6 @@ function render() {
   // ダイスの出目が自分のものなら着地させる
   if (rolling && state.lastDice && state.lastDice.player === pid && state.lastDice.at !== lastDiceAt) {
     lastDiceAt = state.lastDice.at;
-    $('msg').textContent = state.lastDice.value + ' が出た!';
     settleDice(state.lastDice.value);
     renderHand();
     return;
@@ -1450,6 +1515,8 @@ function render() {
     const pk = p ? p.type + '|' + p.prompt : '';
     if (pk !== lastPendKey) {
       lastPendKey = pk; pendSince = Date.now();
+      actionSubmitting = false;
+      closeActionOverlay(true);
       if (mapView && p) { mapView = false; hideMapOv(); }  // 新しい選択が来たら閲覧モードを閉じる
     }
     const ld = state.lastDice;
@@ -1471,8 +1538,7 @@ function render() {
       // サーバーとの時計ズレで「移動中…」から抜けなくなるのを防ぐ(最大8秒で強制解除)
       doneAt = Math.min(doneAt, pendSince + 8000);
       if (Date.now() < doneAt) {
-        $('msg').textContent = '移動中…';
-        $('action').innerHTML = '<div class="waitDots">● ● ●</div>';
+        $('diceDock').innerHTML = '<div style="text-align:center"><div class="waitDots">● ● ●</div><div style="font-size:max(1.8dvh,12px);color:var(--gold-soft)">移動中</div></div>';
         $('shopScene').classList.remove('on');
         clearTimeout(moveT);
         moveT = setTimeout(render, doneAt - Date.now() + 40);
@@ -1483,24 +1549,26 @@ function render() {
   }
   const A = $('action');
   const sel = selected !== null ? m.hand[selected] : null;
+  $('diceDock').innerHTML = p
+    ? `<div style="font-size:max(1.8dvh,12px);color:var(--gold-soft);text-align:center">${['tile','pick_creature','support'].includes(p.type) ? 'カードを選択' : '行動選択中'}</div>`
+    : '<div class="waitDots">● ● ●</div>';
 
   const pnow = pend();
   if (!pnow || !['forget', 'overflow', 'forge', 'swap_pick'].includes(pnow.type)) closePickOv();
   if (m.bankrupt) {
-    $('msg').innerHTML = '破産 ─ 脱落しました(観戦中)';
+    $('diceDock').innerHTML = '<div style="color:var(--gold-soft);font-size:max(2dvh,13px)">破産 ─ 観戦中</div>';
     A.innerHTML = '';
     renderHand();
     return;
   }
   if (state.phase === 'ended') {
-    $('msg').textContent = state.winner === pid ? 'あなたの勝利!'
-      : state.players.find(x => x.id === state.winner).name + 'の勝利…';
+    $('diceDock').textContent = state.winner === pid ? 'あなたの勝利!' : state.players.find(x => x.id === state.winner).name + 'の勝利…';
     A.innerHTML = '';
     renderResult();
   } else if (!p) {
     const t = state.players[state.turn];
     const otherSupport = Object.values(state.pending).some(x => x.type === 'support');
-    $('msg').textContent = state.phase === 'lobby' ? '開始を待っています…'
+    $('diceDock').textContent = state.phase === 'lobby' ? '開始を待っています…'
       : state.phase === 'select' ? '他のプレイヤーの選択待ち…'
       : otherSupport ? '相手の支援カードを待っています…'
       : (t ? t.name + 'の手番です' : '…');
@@ -1531,19 +1599,11 @@ function render() {
     return;
   } else if (p.type === 'roll') {
     const hasSp = p.options.some(o => o.id.startsWith('sp:'));
-    $('msg').innerHTML = iconize(p.prompt) + (hasSp ? ` <span style="opacity:.75">─ ${sic('spell','2dvh')} 呪文カードをタップで使用</span>` : '');
     const ultIc = sic('ult', '2.4dvh') + ' ';
-    const selC = selected !== null && me().hand[selected];
-    const castOpt = selC && cardOption(selC);
-    const extra = p.options.filter(o => o.id !== 'roll' && !o.id.startsWith('sp:')).map(o =>
-      `<button class="${o.id === 'ult' ? 'ultBtn' : 'abtn ghost'}" onclick="${o.id === 'ult' ? 'showUltConfirm()' : `choose('${o.id}')`}" style="font-size:1.9dvh">${o.id === 'ult' ? ultIc : ''}${iconize(o.label)}</button>`).join('')
-      + (castOpt ? `<button class="abtn" onclick="choose('${castOpt}'); selected=null;" style="font-size:2dvh">${sic('spell', '2.2dvh')} 「${state.catalog.SPELLS[selC].name}」を唱える</button>` : '');
-    A.innerHTML = `<div style="position:relative; width:100%; height:100%">
-      <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%)">
-        <button class="diceImgBtn" id="diceBtn"><img src="/assets/dice_btn.png"></button></div>
-      <div style="position:absolute; right:calc(2vw + env(safe-area-inset-right)); top:50%;
-        transform:translateY(-50%); display:flex; flex-direction:column; gap:1.2dvh; max-width:34vw;">${extra}</div>
-    </div>`;
+    const extraOpts = p.options.filter(o => o.id !== 'roll' && !o.id.startsWith('sp:')).map(o => ({
+      id:o.id, label:(o.id === 'ult' ? '固有スキル ' : '') + iconize(o.label), desc:o.id === 'ult' ? '1ゲームに1度の固有スキルを確認します' : '' }));
+    $('diceDock').innerHTML = `<button class="diceImgBtn" id="diceBtn"><img src="/assets/dice_btn.png"></button>`;
+    setContextActions(p.prompt, extraOpts);
     $('diceBtn').onclick = startRoll;
   } else if (p.type === 'forget') {
     $('msg').innerHTML = iconize(p.prompt);
@@ -1569,15 +1629,9 @@ function render() {
              p.type === 'spell_target' || p.type === 'wc_a' || p.type === 'wc_b') {
     renderMiniMap(p);
   } else if (p.type === 'direction') {
-    $('msg').innerHTML = iconize(p.prompt);
-    A.innerHTML = `<div style="display:flex; height:100%; align-items:center; justify-content:center; gap:12vw">
-      <button class="dirBtn" onclick="choose('dir:1')">
-        <svg viewBox="0 0 24 24" width="9dvh" height="9dvh"><path d="M15.5 4 8 12l7.5 8" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <span>左回り</span></button>
-      <button class="dirBtn" onclick="choose('dir:-1')">
-        <svg viewBox="0 0 24 24" width="9dvh" height="9dvh"><path d="M8.5 4 16 12l-7.5 8" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <span>右回り</span></button>
-    </div>`;
+    $('diceDock').innerHTML = `<div style="font-size:max(2dvh,13px);color:var(--gold-soft)">${state.lastDice ? state.lastDice.value + ' が出た' : ''}</div>`;
+    A.innerHTML = '';
+    showActionOverlay(p.prompt, p.options.map(o => ({ id:o.id, label:iconize(o.label), desc:'進む方向を決定します' })), { key:`direction|${p.prompt}` });
   } else if (p.type === 'swap_pick') {
     // 交代: 配置するクリーチャーをカードタップで選ぶ(直接タップの設計思想)
     $('msg').innerHTML = iconize(p.prompt);
@@ -1665,21 +1719,17 @@ function render() {
     A.innerHTML = '<button class="abtn ghost" onclick="inShopHand=false; render()">店にもどる</button>';
   } else {
     // tile / pick_creature / support: カード選択+ボタン
-    $('msg').innerHTML = iconize(p.prompt);
     const btns = [];
-    if (sel && cardOption(sel)) {
-      const opt = p.options.find(o => o.id === cardOption(sel));
-      btns.push(`<button class="abtn" onclick="choose('${opt.id}')">${opt.label}</button>`);
-    }
-    const NUM = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
-    let upN = 0;
+    const actionOpts = [];
     for (const o of p.options) {
       if (o.id.startsWith('summon:') || o.id.startsWith('atk:') || (o.id.startsWith('sup:') && o.id !== 'sup:none')) continue;
       const cls = o.id === 'invade' ? 'danger' : (o.id === 'pass' || o.id === 'cancel' || o.id === 'sup:none') ? 'ghost' : '';
-      const prefix = p.type === 'upgrade' && o.id.startsWith('up:') ? (NUM[upN++] || '') + ' ' : '';
-      btns.push(`<button class="abtn ${cls}" onclick="choose('${o.id}'); selected=null;">${prefix}${iconize(o.label)}</button>`);
+      actionOpts.push({ id:o.id, label:iconize(o.label), cls, desc:actionDescription(o.id) });
     }
-    A.innerHTML = btns.join('');
+    A.innerHTML = '';
+    const hasCardChoices = p.options.some(o => o.id.startsWith('summon:') || o.id.startsWith('atk:') || (o.id.startsWith('sup:') && o.id !== 'sup:none'));
+    if (hasCardChoices) setContextActions(p.prompt, actionOpts);
+    else if (actionOpts.length) showActionOverlay(p.prompt, actionOpts, { key:`auto|${p.type}|${actionOpts.map(o => o.id).join(',')}` });
   }
   renderHand();
 }

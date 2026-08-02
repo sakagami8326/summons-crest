@@ -21,8 +21,7 @@ const scripts = timingSrc + '\n' +
   [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n');
 
 // ===== レイアウト不変条件 =====
-// HUD(header)・メッセージ・アクション・手札は「フロー配置」でなければならない。
-// position:fixedで帯を重ねると、小さい画面でHUDとメッセージが重なる/はみ出す(v0.59で実際に発生)。
+// 通常画面はHUD(header)+手札の2段フロー。判断ボタンだけ固定オーバーレイへ逃がす。
 {
   const css = (html.match(/<style>([\s\S]*?)<\/style>/) || ['', ''])[1];
   const ruleOf = sel => {
@@ -32,15 +31,17 @@ const scripts = timingSrc + '\n' +
   const bodyRule = ruleOf('body');
   if (!bodyRule || !/flex-direction:\s*column/.test(bodyRule))
     throw new Error('レイアウト検査: bodyがflex縦積みでない(帯の重なり防止が壊れている)');
-  for (const sel of ['header', '#midRow', '#msg', '#action', '#handWrap']) {
+  for (const sel of ['header', '#handWrap']) {
     const rule = ruleOf(sel);
     if (rule === null) throw new Error(`レイアウト検査: ${sel} のCSSルールが見つからない`);
     if (/position:\s*fixed/.test(rule))
       throw new Error(`レイアウト検査: ${sel} がposition:fixed ─ フロー配置に戻すこと(HUDと重なる)`);
   }
-  if (!/<div id="midRow"><div id="msg"[\s\S]{0,200}?<div id="action"/.test(html))
-    throw new Error('レイアウト検査: #msgと#actionが#midRow内に並んでいない');
-  console.log('レイアウト不変条件 ✓ (HUD/メッセージ/手札はフロー配置)');
+  if (!/#midRow\s*\{[^}]*display:\s*none\s*!important/.test(css))
+    throw new Error('レイアウト検査: 旧メッセージ/アクション帯が通常フローに残っている');
+  if (!/<div id="diceDock"><\/div>[\s\S]{0,400}?<div id="topTools">/.test(html))
+    throw new Error('レイアウト検査: HUD中央のダイス領域または右側ツール群がない');
+  console.log('レイアウト不変条件 ✓ (HUD/ダイス/ツール+大型手札の2段配置)');
 }
 
 let qEls, qsaCalls;
@@ -126,7 +127,7 @@ function clearDom() {
 function affordance(pid2, st) {
   // 1) インラインonclick(choose等)がどこかに描画されたか
   for (const [id, el] of Object.entries(els)) {
-    if (/choose\(|mmTap\(|pickOvChoose\(|showUltConfirm\(/.test(el.innerHTML || '')) return 'inline:' + id;
+    if (/choose\(|submitAction\(|mmTap\(|pickOvChoose\(|showUltConfirm\(/.test(el.innerHTML || '')) return 'inline:' + id;
   }
   // 2) querySelectorAllで後付けバインドを試み、かつ対象classが実際に描画されているか
   for (const sel of qsaCalls) {
