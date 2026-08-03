@@ -102,8 +102,7 @@
   /* カード主体の戦闘画面。背景アートは同名WebPを置くだけで差し替えられる。 */
   #battle { position:fixed; inset:0; z-index:70; display:none; overflow:hidden; color:#f6edd3;
       background:
-        linear-gradient(90deg,rgba(20,10,28,.82),rgba(10,8,25,.46) 45%,rgba(20,10,28,.82)),
-        radial-gradient(circle at 50% 42%,rgba(125,65,105,.5),rgba(8,6,20,.97) 72%),
+        linear-gradient(rgba(8,6,20,.18),rgba(8,6,20,.42)),
         url('/assets/battle/battle-bg.webp') center/cover no-repeat; }
   #battle.on { display:block; animation:battleIn .45s ease both; }
   @keyframes battleIn { from{opacity:0} to{opacity:1} }
@@ -111,7 +110,7 @@
   #battle::after { content:""; position:absolute; inset:1.6vh 1.2vw; pointer-events:none; z-index:1;
       border:1px solid rgba(226,190,91,.55); border-radius:2.2vh;
       box-shadow:inset 0 0 2.4vh rgba(226,190,91,.14); }
-  #bwHost { position:absolute; inset:0; z-index:2; display:block; pointer-events:none; overflow:hidden; }
+  #bwHost { display:none; }
   #bwHost canvas { width:100%!important; height:100%!important; object-fit:cover; }
   @keyframes shake { 0%,100%{transform:none} 25%{transform:translate(12px,-7px)}
     50%{transform:translate(-10px,8px)} 75%{transform:translate(7px,4px)} }
@@ -166,15 +165,18 @@
       background:repeating-linear-gradient(45deg,#17152c 0 10px,#252140 10px 20px);
       box-shadow:0 2vh 4vh rgba(0,0,0,.65),inset 0 0 0 7px #17152c,inset 0 0 0 9px #9b7920; }
   .battleCardBack small { position:absolute; bottom:12%; left:0; right:0; font-size:1.5vh; letter-spacing:.15em; }
-  .battleStats { min-width:0; padding:1.8vh 1vw; border-top:1px solid rgba(232,197,90,.65);
-      border-bottom:1px solid rgba(232,197,90,.35); background:linear-gradient(90deg,rgba(8,7,20,.15),rgba(8,7,20,.8)); }
-  .def .battleStats { text-align:right; background:linear-gradient(270deg,rgba(8,7,20,.15),rgba(8,7,20,.8)); }
-  .bsOwner { color:#f3d06c; font:700 2vh/1.3 Marudeco,sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .bsCreature { font-size:1.6vh; letter-spacing:.08em; opacity:.9; margin:.5vh 0 1vh; }
-  .bsValues { display:flex; gap:1.2vw; align-items:baseline; font:700 3.9vh/1 Marudeco,sans-serif; }
+  .battleStats { min-width:0; padding:1.8vh 1.15vw; border:1px solid rgba(232,197,90,.72);
+      border-radius:1.4vh; background:rgba(10,8,25,.91); box-shadow:0 1vh 2.8vh rgba(0,0,0,.58),inset 0 0 2vh rgba(232,197,90,.07);
+      text-shadow:0 2px 5px #000; backdrop-filter:blur(3px); }
+  .def .battleStats { text-align:right; }
+  .bsOwner { color:#ffe596; font:700 2.2vh/1.3 Marudeco,sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .bsCreature { color:#fff9e8; font-size:1.75vh; font-weight:700; letter-spacing:.08em; margin:.5vh 0 1vh; }
+  .bsValues { display:flex; gap:.7vw; align-items:stretch; font:700 4.15vh/1 Marudeco,sans-serif; }
   .def .bsValues { justify-content:flex-end; }
-  .bsValues span { white-space:nowrap; } .bsValues small { font-size:1.35vh; margin-right:.25em; color:#e8c55a; }
-  .bsMods { margin-top:1.2vh; min-height:7vh; font-size:1.35vh; line-height:1.65; color:rgba(246,237,211,.78); }
+  .bsValues span { white-space:nowrap; min-width:4.7vw; padding:.75vh .55vw; border-radius:.8vh;
+      background:rgba(255,255,255,.075); border:1px solid rgba(255,237,181,.2); text-align:center; }
+  .bsValues small { display:block; font-size:1.25vh; margin:0 0 .4vh; color:#f3d06c; letter-spacing:.12em; }
+  .bsMods { margin-top:1.2vh; min-height:7vh; font-size:1.45vh; font-weight:700; line-height:1.65; color:rgba(255,249,232,.9); }
   .bsMods .mod { display:block; } .bsMods .mod.hot { color:#fff1a6; animation:modGlow .75s ease both; }
   @keyframes modGlow { 50%{text-shadow:0 0 14px #ffe681;transform:scale(1.03)} }
   #battleFx { position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:4; }
@@ -228,11 +230,19 @@
   @keyframes dmgPop { 0% { opacity:0; transform:translate(-50%,1.5vh) scale(1.4); }
       18% { opacity:1; transform:translate(-50%,0) scale(1); }
       80% { opacity:1; } 100% { opacity:0; transform:translate(-50%,-4vh); } }
-  #bresult { position:absolute; top:6vh; left:0; right:0; text-align:center; font-size:6vh;
+  #bresult { position:absolute; top:5vh; left:0; right:0; text-align:center; font-size:10vh;
       letter-spacing:1.2vh; color:var(--gold-soft); font-family:serif; opacity:0; pointer-events:none;
       text-shadow:0 2px 14px rgba(0,0,0,.95), 0 0 30px rgba(201,162,39,.5);  font-family:'Reggae One','Yu Mincho',serif; }
+  #bresult small { display:block; margin-top:.3vh; font:700 2vh/1 Marudeco,sans-serif; letter-spacing:.35em; color:#fff4cf; }
   #bresult.show { animation:bres .55s cubic-bezier(.2,.9,.3,1) forwards; }
   @keyframes bres { from { opacity:0; transform:scale(1.5); } to { opacity:1; transform:none; } }
+  .bside.winner { z-index:8; transform:scale(1.09); filter:brightness(1.1) drop-shadow(0 0 2.2vh rgba(255,222,116,.78)); }
+  #battleCutin { position:fixed; inset:0; z-index:69; display:none; place-items:center; pointer-events:none;
+      background:linear-gradient(110deg,rgba(8,6,20,0) 0 12%,rgba(15,9,30,.97) 30% 70%,rgba(8,6,20,0) 88%); }
+  #battleCutin.on { display:grid; animation:battleCutIn 1s ease both; }
+  #battleCutin span { font:700 10vh/1 'Reggae One','Yu Mincho',serif; letter-spacing:.18em; color:#f2d062;
+      text-shadow:0 3px 12px #000,0 0 3vh rgba(242,208,98,.55); }
+  @keyframes battleCutIn { 0%{opacity:0;transform:translateX(-12vw)} 22%,70%{opacity:1;transform:none} 100%{opacity:0;transform:translateX(12vw)} }
   #bcap { font-size:2.3vh; letter-spacing:.3em; color:var(--gold-soft); min-height:1.5em; font-family:'Reggae One','Yu Mincho',serif; }
   #bnotes { font-size:1.35vh; color:rgba(246,237,211,.78); line-height:1.45; min-height:2.2vh; }
   .supportSlot { text-align:center; perspective:500px; }
@@ -729,6 +739,7 @@
   </div>
   <div id="summonCut"><div id="scCard"></div><div id="scText"></div></div>
   <div id="spellCut"><div id="spellCard"></div><div id="spellEffectBox"><h2 id="spellEffectName"></h2><p id="spellEffectText"></p><div id="spellEffectCaster"></div></div></div>
+  <div id="battleCutin"><span>BATTLE</span></div>
 
   <div id="battle">
     <div id="bwHost"></div>
@@ -1731,9 +1742,12 @@ async function runFxHarness(name) {
   return { unknown: name };
 }
 {
-  const fxName = new URLSearchParams(location.search).get('fx');
-  if (fxName && new URLSearchParams(location.search).get('fixture'))
+  const fxQuery = new URLSearchParams(location.search);
+  const fxName = fxQuery.get('fx');
+  if (fxName && fxQuery.get('fixture')) {
     window.__fxRun = () => runFxHarness(fxName);
+    if (fxQuery.get('autorun')) setTimeout(() => window.__fxRun(), 350);
+  }
 }
 
 // ===== 停止マスへのズームと詳細ウィンドウ =====
@@ -2330,6 +2344,24 @@ function battleImpactFx(elem, target, heavy) {
 let activeBattleKey = null;
 let activeBattleAttacker = null;
 let battlePlayingKey = null;
+let battleOpeningKey = null;
+function playBattleOpening(key) {
+  if (!key || battleOpeningKey === key) return;
+  battleOpeningKey = key;
+  initAudio();
+  setBgm(null);
+  playSe(seTelop);
+  const cut = $('battleCutin');
+  cut.classList.remove('on');
+  void cut.offsetWidth;
+  cut.classList.add('on');
+  setTimeout(() => {
+    if (battleOpeningKey !== key) return;
+    cut.classList.remove('on');
+    $('battle').classList.add('on');
+    setBgm('battle');
+  }, 900);
+}
 const supportBackHTML = (status, sup) => `<div class="scardB"><div class="sflipB${sup !== undefined ? ' readyToOpen' : ''}">
   <div class="sfaceB sbackB">❖</div>
   <div class="sfaceB sfrontB">${sup === 'none'
@@ -2367,10 +2399,8 @@ function renderBattlePreview(bp) {
     $('bresult').classList.remove('show'); $('bresult').textContent = '';
     $('bnotes').textContent = '';
     hideLogo(true);
-    $('battle').classList.add('on');
-    initAudio();
-    setBgm('battle');
-    if (typeof BW !== 'undefined') BW.backgroundStart().catch(() => {});
+    $('battle').classList.remove('on');
+    playBattleOpening(bp.key);
   }
   const atkReveal = !!bp.atkCreature && activeBattleAttacker !== bp.atkCreature;
   if (isNew || atkReveal) {
@@ -2418,10 +2448,11 @@ async function playBattle(b) {
   if (!$('battle').classList.contains('on')) {
     $('bAtk').innerHTML = battleCreatureHTML(b.atkCreature, 1, true);
     $('bDef').innerHTML = battleCreatureHTML(b.defCreature, dLv, true);
-    $('battle').classList.add('on');
     initAudio();
+    if (battleOpeningKey !== battlePlayingKey) playBattleOpening(battlePlayingKey);
+    await wait(950);
+    $('battle').classList.add('on');
     setBgm('battle');
-    if (typeof BW !== 'undefined') await BW.backgroundStart();
   }
   $('bAtkSupport').innerHTML = supportBackHTML('公開待ち', b.atkSupport);
   $('bDefSupport').innerHTML = supportBackHTML('公開待ち', b.defSupport);
@@ -2438,7 +2469,6 @@ async function playBattle(b) {
   const bwOn = false; // v0.93: 通常侵略はカード主体。旧BattleWorldは削除せずフィクスチャ用に保持
   await wait(650);
   document.querySelectorAll('.sflipB').forEach(f => f.classList.add('open'));
-  if (typeof BW !== 'undefined') BW.backgroundPulse('support');
   await wait(700);
   $('bAtkStats').innerHTML = finalStatsHTML(b, 'atk');
   $('bDefStats').innerHTML = finalStatsHTML(b, 'def');
@@ -2480,7 +2510,6 @@ async function playBattle(b) {
   animateHp('hpBarD', 'hpNumD', b.hp, b.hp, b.hp, 1);
   // 攻撃アニメ1回分(BW/DOMの分岐を共通化 ─ M6)
   const strike = async (side2, elem2, heavy2, opt2) => {
-    if (typeof BW !== 'undefined') BW.backgroundPulse('attack', side2);
     if (bwOn) {
       await BW.attack(side2, elem2, Object.assign({ heavy: heavy2 }, opt2 || {}));
     } else if (side2 === 'atk') {
@@ -2503,9 +2532,11 @@ async function playBattle(b) {
   };
   const showResult = async (text, preWait) => {
     await wait(preWait);
-    if (typeof BW !== 'undefined') BW.backgroundPulse('result', b.win ? 'atk' : 'def');
+    setBgm(null);
+    const winner = $(b.win ? 'bAtk' : 'bDef');
+    winner.classList.add('winner');
     playSe(seBattleFinish);
-    $('bresult').textContent = text;
+    $('bresult').innerHTML = `WIN<small>${text}</small>`;
     $('bresult').classList.add('show');
     await wait(text === '侵略成功' ? 1800 : 1700);
   };
@@ -2599,6 +2630,9 @@ async function playBattle(b) {
     activeBattleKey = null;
     activeBattleAttacker = null;
     battlePlayingKey = null;
+    battleOpeningKey = null;
+    $('battleCutin').classList.remove('on');
+    ['bAtk','bDef'].forEach(id => $(id).classList.remove('winner'));
     restoreBoardBgm();
     cutBusy = Math.max(0, cutBusy - 1);
   }
@@ -2607,7 +2641,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.95' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.96' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
@@ -3092,6 +3126,8 @@ function render() {
     restoreBoardBgm();
     activeBattleKey = null;
     activeBattleAttacker = null;
+    battleOpeningKey = null;
+    $('battleCutin').classList.remove('on');
   }
   // 戦闘結果
   if (state.lastBattle && state.lastBattle.at !== prev.battleAt) {

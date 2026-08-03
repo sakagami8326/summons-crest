@@ -29,6 +29,7 @@ ok(actual === recorded.toUpperCase(), 'VERSION.txt: 記録SHA256が実ファイ�
 const world = fs.readFileSync(path.join(__dirname, 'public/board_world.js'), 'utf8')
   + '\n' + fs.readFileSync(path.join(__dirname, 'public/battle_world.js'), 'utf8');  // v0.80: 戦闘Canvasも検査対象
 const board = fs.readFileSync(path.join(__dirname, 'public/board.html'), 'utf8');
+const phone = fs.readFileSync(path.join(__dirname, 'public/phone.html'), 'utf8');
 const BANNED = [
   ['setTintFill', /setTintFill/],
   ['独自Pipeline登録', /addPipeline|WebGLPipeline|PostFXPipeline/],
@@ -77,17 +78,17 @@ ok(/document\.querySelectorAll\('\.sflipB'\).*classList\.add\('open'\)/s.test(bo
 ok(/const bwOn = false/.test(board), 'board.html: 通常侵略で旧BattleWorldを起動しない');
 ok(/battle-bg\.webp/.test(board), 'board.html: 差し替え可能な戦闘背景パスを使用している');
 
-// 7) v0.94 Phaser戦闘背景レイヤー+BGM/決着SE
-const battleLayers = path.join(__dirname, 'public/assets/battle/layers');
-for (const file of ['battle-base.webp','battle-red.webp','battle-blue.webp','battle-rings.webp','battle-crest.webp','battle-foreground.webp'])
-  ok(fs.existsSync(path.join(battleLayers, file)), `戦闘背景レイヤー: ${file}`);
+// 7) v0.96 静止画戦闘背景+BGM/決着SE/支援なし操作
 for (const file of ['bgm_battle.mp3','se_battle_finish.mp3'])
   ok(fs.existsSync(path.join(__dirname, 'public/assets', file)), `戦闘音声素材: ${file}`);
-ok(/async function backgroundStart\(/.test(world), 'battle_world: 背景レイヤー開始処理がある');
-ok(/function backgroundPulse\(/.test(world), 'battle_world: 戦闘イベント連動背景がある');
-ok(/BW\.backgroundPulse\('support'\)/.test(board), 'board.html: 支援公開を背景演出へ接続している');
+ok(fs.existsSync(path.join(__dirname, 'public/assets/battle/battle-bg.webp')), '静止画戦闘背景がある');
+ok(/#bwHost \{ display:none; \}/.test(board), 'board.html: 戦闘背景アニメーションを停止している');
+ok(!/BW\.backgroundPulse\(/.test(board), 'board.html: 背景イベントアニメーションを呼ばない');
 ok(/playSe\(seBattleFinish\)/.test(board), 'board.html: 決着SEを再生する');
 ok(/setBgm\('battle'\)/.test(board), 'board.html: 侵略中に戦闘BGMへ切り替える');
+ok(/setBgm\(null\);[\s\S]{0,180}playSe\(seBattleFinish\)/.test(board), 'board.html: 決着SE前に戦闘BGMを停止する');
+ok(/WIN<small>/.test(board), 'board.html: 勝者カードと同時にWINを表示する');
+ok(/supportNoneBtn[\s\S]{0,500}id:'sup:none'/.test(phone), 'phone.html: 支援カードを使用しないボタンがある');
 ok(fs.existsSync(path.join(__dirname, 'public/assets/se_castle_bonus.mp3')), '城通過ボーナスSE素材がある');
 ok(/playSe\(seCastleBonus\)/.test(board), 'board.html: 城通過ボーナス確定時にSEを再生する');
 

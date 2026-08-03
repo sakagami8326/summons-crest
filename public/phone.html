@@ -1593,8 +1593,14 @@ function render() {
   const A = $('action');
   const sel = selected !== null ? m.hand[selected] : null;
   $('diceDock').innerHTML = p
-    ? `<div style="font-size:max(1.8dvh,12px);color:var(--gold-soft);text-align:center">${['tile','pick_creature','support'].includes(p.type) ? 'カードを選択' : '行動選択中'}</div>`
+    ? (p.type === 'support'
+      ? `<button class="abtn ghost" id="supportNoneBtn" style="font-size:max(2.3dvh,14px);padding:1.5dvh 2.5dvh">支援カードを使用しない</button>`
+      : `<div style="font-size:max(1.8dvh,12px);color:var(--gold-soft);text-align:center">${['tile','pick_creature'].includes(p.type) ? 'カードを選択' : '行動選択中'}</div>`)
     : '<div class="waitDots">● ● ●</div>';
+  const supportNoneBtn = $('supportNoneBtn');
+  if (supportNoneBtn) supportNoneBtn.onclick = () => showActionOverlay('支援カードを使用しませんか？', [
+    { id:'sup:none', label:'支援なしで戦闘を開始', cls:'ghost', desc:'支援カードを消費せずに選択を確定します' }
+  ], { key:'support-none-confirm', closeable:true });
 
   const pnow = pend();
   if (!pnow || !['forget', 'overflow', 'forge', 'swap_pick'].includes(pnow.type)) closePickOv();
