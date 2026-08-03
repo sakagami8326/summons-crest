@@ -41,6 +41,11 @@ const scripts = timingSrc + '\n' +
     throw new Error('レイアウト検査: 旧メッセージ/アクション帯が通常フローに残っている');
   if (!/<div id="diceDock"><\/div>[\s\S]{0,400}?<div id="topTools">/.test(html))
     throw new Error('レイアウト検査: HUD中央のダイス領域または右側ツール群がない');
+  if (!/p\.type \+ '\|' \+ p\.prompt \+ '\|' \+ p\.options\.map\(o => o\.id\)/.test(html))
+    throw new Error('操作ロック検査: pendingキーに選択肢が含まれていない(即時スペル後にボタンが固まる)');
+  if (!/-webkit-line-clamp:\s*3/.test(css) || !/-webkit-line-clamp:\s*5/.test(css) ||
+      !/#cardZoomCard \.ccEffect p/.test(css))
+    throw new Error('カード本文検査: 通常表示の省略または拡大時の全文表示がない');
   console.log('レイアウト不変条件 ✓ (HUD/ダイス/ツール+大型手札の2段配置)');
 }
 

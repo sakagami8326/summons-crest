@@ -487,6 +487,10 @@
   .creatureCard .ccEffect p { margin:0; font-size:clamp(12px,3.65cqw,16px); font-weight:700; line-height:1.32; letter-spacing:.01em; }
   .creatureCard .ccEffect.long { padding-top:4%; }
   .creatureCard .ccEffect.long p { font-size:clamp(12px,3.35cqw,15px); line-height:1.28; }
+  /* 通常表示はカード枠を越えない行数で省略し、長押し拡大では全文を表示する */
+  .creatureCard .ccEffect p,.spellCard .spText,.supportCard .suText {
+      display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden; text-overflow:ellipsis; }
+  .creatureCard .ccEffect p { -webkit-line-clamp:3; line-clamp:3; }
   #cardZoomCard .face.creatureCard .ccArt { height:69% !important; margin-top:0 !important; }
   #cardZoomCard .face.creatureCard .ccName { margin-top:0 !important; }
   /* スペルカード: 専用一枚絵 + クリーチャーカード共通座標の名称/コスト/境界 */
@@ -511,6 +515,7 @@
       background:var(--paper); text-align:center; display:flex; flex-direction:column; justify-content:flex-start; }
   .spellCard .spText { margin:0; font-size:clamp(12px,4.15cqw,17px); font-weight:700; line-height:1.38; letter-spacing:.01em; }
   .spellCard .spInfo.long .spText { font-size:clamp(12px,3.55cqw,15px); line-height:1.3; }
+  .spellCard .spText { -webkit-line-clamp:5; line-clamp:5; }
   /* 装備・支援カード: 全種共通のマゼンタ背景 */
   .face.supportCard { --paper:#f6e9c8; --cardInk:#172536; padding:0; border:0; border-radius:8px;
       background:#b51666; color:var(--cardInk); isolation:isolate; container-type:inline-size; overflow:hidden; }
@@ -531,6 +536,10 @@
   .supportCard .suInfo { position:absolute; z-index:6; inset:70.8% 0 0; padding:6% 8% 5%; background:var(--paper); text-align:center; }
   .supportCard .suPower { margin:0 0 5%; font:700 clamp(16px,8cqw,27px)/1 Marudeco,sans-serif; color:#a32156; }
   .supportCard .suText { margin:0; font-size:clamp(12px,3.8cqw,16px); font-weight:700; line-height:1.4; }
+  .supportCard .suText { -webkit-line-clamp:3; line-clamp:3; }
+  #cardZoomCard .ccEffect p,#cardZoomCard .spText,#cardZoomCard .suText,
+  #galZoomCard .ccEffect p,#drawCard .ccEffect p,#drawCard .spText,#drawCard .suText {
+      display:block; overflow:visible; text-overflow:clip; -webkit-line-clamp:unset; line-clamp:unset; }
   /* ULT確認 */
   #ultConfirm { position:fixed; inset:0; display:none; z-index:64; align-items:center;
       justify-content:center; background:rgba(10,8,25,.85); }
@@ -1051,9 +1060,10 @@ function renderResult() {
   $('resultOv').classList.add('on');
 }
 $('resultBtn').onclick = () => { localStorage.removeItem('sc_session'); location.reload(); };
-const choose = optionId => {
-  fetch('/api/action', { method:'POST', body: JSON.stringify({ room, type:'choose', playerId: pid, optionId }) });
-};
+const choose = optionId => fetch('/api/action', {
+  method:'POST', headers:{ 'Content-Type':'application/json' },
+  body: JSON.stringify({ room, type:'choose', playerId: pid, optionId })
+});
 document.getElementById('drawModal').onclick = () => $('drawModal').classList.remove('on');
 let galleryEvo = false;
 function artOrToken(cid, cr, evo, tokSize) {
@@ -1417,7 +1427,14 @@ function submitAction(id) {
   if (actionSubmitting) return;
   actionSubmitting = true;
   document.querySelectorAll('#actionOv button').forEach(b => b.disabled = true);
-  choose(id);
+  choose(id).then(res => {
+    if (!res.ok) throw new Error(`action failed: ${res.status}`);
+  }).catch(err => {
+    console.error(err);
+    actionSubmitting = false;
+    document.querySelectorAll('#actionOv button').forEach(b => b.disabled = false);
+    $('actionOvHint').textContent = '通信できませんでした。もう一度お試しください';
+  });
 }
 function actionDescription(id) {
   if (id === 'pass') return '何もせず、この行動を終了します';
@@ -1536,7 +1553,9 @@ function render() {
 
   // テレビ側の移動アニメが終わるまで、到着系UIの表示を待つ
   {
-    const pk = p ? p.type + '|' + p.prompt : '';
+    // 即時発動スペル後は type/prompt が roll のままでも選択肢が変わる。
+    // 選択肢まで状態キーへ含め、無効化済みの確認ボタンを確実に閉じる。
+    const pk = p ? p.type + '|' + p.prompt + '|' + p.options.map(o => o.id).join(',') : '';
     if (pk !== lastPendKey) {
       lastPendKey = pk; pendSince = Date.now();
       actionSubmitting = false;
