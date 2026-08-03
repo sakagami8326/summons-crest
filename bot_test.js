@@ -32,6 +32,18 @@ function runGame(seed) {
       const pend = view.pending[pid];
       if (!pend) continue;
       seen.add(pend.type);
+      if (pend.type === 'pick_creature' || pend.type === 'support') {
+        const bp = view.battlePreview;
+        if (!bp) throw new Error(`${pend.type}中にbattlePreviewが公開されていない`);
+        if (pend.type === 'pick_creature' && (bp.phase !== 'pick_attacker' || bp.atkCreature !== null))
+          throw new Error('侵略直後の攻撃側カード裏面状態が不正');
+        if (pend.type === 'support' && (bp.phase !== 'support' || !bp.atkCreature))
+          throw new Error('支援選択中の攻撃クリーチャー公開状態が不正');
+        if ('supports' in bp || 'atkSupport' in bp || 'defSupport' in bp)
+          throw new Error('支援選択内容がbattlePreviewへ漏洩している');
+        if (typeof bp.supportReady.attacker !== 'boolean' || typeof bp.supportReady.defender !== 'boolean')
+          throw new Error('支援選択完了フラグが真偽値でない');
+      }
       if (!pend.options || pend.options.length === 0)
         throw new Error('本人視点でoptionsが空: type=' + pend.type);
       // 他人視点でドラフト/選択ドローが秘匿されているか

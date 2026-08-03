@@ -99,27 +99,84 @@
            -webkit-background-clip:text; background-clip:text; color:transparent;
            filter:drop-shadow(0 3px 0 #4A3608) drop-shadow(0 0 26px rgba(242,208,98,.6)); }
 
-  /* 戦闘オーバーレイ */
-  #battle { position:fixed; inset:0; background:rgba(10,8,25,.86); z-index:70; display:none;
-           align-items:center; justify-content:center; }
-  #battle.on { display:flex; }
+  /* カード主体の戦闘画面。背景アートは同名WebPを置くだけで差し替えられる。 */
+  #battle { position:fixed; inset:0; z-index:70; display:none; overflow:hidden; color:#f6edd3;
+      background:
+        linear-gradient(90deg,rgba(20,10,28,.82),rgba(10,8,25,.46) 45%,rgba(20,10,28,.82)),
+        radial-gradient(circle at 50% 42%,rgba(125,65,105,.5),rgba(8,6,20,.97) 72%),
+        url('/assets/battle/battle-bg.webp') center/cover no-repeat; }
+  #battle.on { display:block; animation:battleIn .45s ease both; }
+  @keyframes battleIn { from{opacity:0} to{opacity:1} }
   #battle.shake { animation:shake .4s; }
-  /* ハイブリッド戦闘のPhaser Canvas(§8.3): クリーチャーと攻撃だけを描く。文字はDOMが上に載る。
-     画面中央やや上の固定ボックスに収める(inset:0だとFITで下寄りになり足元が沈む) */
-  #bwHost { position:absolute; left:50%; top:50%; width:min(94vw, 1200px); height:min(62vh, 560px);
-      transform:translate(-50%, -56%); display:flex; align-items:center; justify-content:center;
-      pointer-events:none; }
+  #battle::after { content:""; position:absolute; inset:1.6vh 1.2vw; pointer-events:none; z-index:1;
+      border:1px solid rgba(226,190,91,.55); border-radius:2.2vh;
+      box-shadow:inset 0 0 2.4vh rgba(226,190,91,.14); }
+  #bwHost { position:absolute; inset:0; z-index:2; display:block; pointer-events:none; overflow:hidden; }
+  #bwHost canvas { width:100%!important; height:100%!important; object-fit:cover; }
   @keyframes shake { 0%,100%{transform:none} 25%{transform:translate(12px,-7px)}
     50%{transform:translate(-10px,8px)} 75%{transform:translate(7px,4px)} }
-  .bside { width:340px; text-align:center; transition:transform .35s ease-in; }
-  .bside img, .bside .tok { height:240px; width:auto !important; margin:0 auto; filter:drop-shadow(0 8px 12px rgba(0,0,0,.6)); }
-  .bside .tok { width:150px; height:150px; font-size:26px; }
-  .bside .bname { font-size:19px; letter-spacing:2px; margin-top:8px; }
-  .bside .bnum { font-size:38px; color:var(--gold-soft); font-family:sans-serif; }
-  .bside .bsub { font-size:13px; color:rgba(241,232,208,.75); }
-  .bside.lungeL { transform:translateX(90px); } .bside.lungeR { transform:translateX(-90px); }
+  #battleTitle { position:absolute; z-index:7; top:3vh; left:50%; transform:translateX(-50%);
+      font:700 3.2vh/1 Marudeco,'Yu Mincho',serif; letter-spacing:.45em; color:#f5d56f;
+      text-shadow:0 2px 12px #000; white-space:nowrap; }
+  #battleField { position:absolute; z-index:3; inset:9vh 2.5vw 10vh; display:grid;
+      grid-template-columns:1fr 1fr; gap:2vw; align-items:center; }
+  .battleTeam { min-width:0; display:grid; align-items:center; gap:1.1vw; }
+  .battleTeam.atk { grid-template-columns:11vh minmax(25vh,31vh) minmax(13vw,1fr); }
+  .battleTeam.def { grid-template-columns:minmax(13vw,1fr) minmax(25vh,31vh) 11vh; }
+  .bside { position:relative; text-align:center; transition:transform .35s ease-in,opacity .5s,filter .5s;
+      perspective:1000px; }
+  .bside.lungeL { transform:translateX(7vw) scale(1.04); }
+  .bside.lungeR { transform:translateX(-7vw) scale(1.04); }
   .bside.dead { animation:dead .7s forwards; }
   @keyframes dead { to { opacity:0; transform:translateY(50px) rotate(-12deg); filter:brightness(3); } }
+  .battleCreatureCard { position:relative; width:100%; aspect-ratio:2/3; overflow:hidden; isolation:isolate;
+      border-radius:1.5vh; background:#18233e; box-shadow:0 2vh 4vh rgba(0,0,0,.65);
+      transform-style:preserve-3d; transition:transform .65s cubic-bezier(.2,.85,.25,1),opacity .35s; }
+  .battleCreatureCard.reveal { animation:bCreatureReveal .75s cubic-bezier(.16,.86,.2,1) both; }
+  @keyframes bCreatureReveal { from{transform:rotateY(-90deg);opacity:0} to{transform:none;opacity:1} }
+  .battleCreatureCard .scBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-3; }
+  .battleCreatureCard .scHead { position:absolute; z-index:5; top:3.1%; left:4.7%; right:4.7%; height:9.5%;
+      display:grid; grid-template-columns:11.5% 1fr 11.5%; align-items:center; }
+  .battleCreatureCard .scElem { width:100%; height:100%; display:grid; place-items:center; }
+  .battleCreatureCard .scElem svg { width:100%; height:100%; }
+  .battleCreatureCard .scElem svg * { fill:#fff!important; }
+  .battleCreatureCard .scName { grid-column:2; color:#fff4d5; font:700 2.55vh/1 Marudeco,sans-serif!important;
+      text-align:center; white-space:nowrap; text-shadow:0 2px 5px #000; }
+  .battleCreatureCard .scArt { position:absolute; z-index:7; top:8.3%; left:1.5%; width:97%; height:69%;
+      object-fit:contain; filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 8px rgba(255,255,255,.55)); }
+  .battleCreatureCard .scBrush { position:absolute; z-index:3; top:61.8%; left:0; width:100%; height:10.42%;
+      background:url('/assets/cards/brush-boundary-b-paper.png') center/100% 100% no-repeat; }
+  .battleCreatureCard .scInfo { position:absolute; z-index:4; inset:70.8% 0 0; padding:0 6.3% 4.2%;
+      background:#f6e9c8; color:#172536; }
+  .battleCreatureCard .scCost { position:absolute; z-index:8; top:65.2%; left:3.2%; width:27%; aspect-ratio:320/112; }
+  .battleCreatureCard .scCost .frame { position:absolute; inset:0; width:100%; height:100%; }
+  .battleCreatureCard .scCost .coin { position:absolute; left:7.5%; top:17.8%; width:22.5%; height:64.3%; }
+  .battleCreatureCard .scCost b { position:absolute; inset:0 4% 0 31%; display:grid; place-items:center;
+      font:700 1.6vh/1 Marudeco,sans-serif; color:#172536; }
+  .battleCreatureCard .scStats { height:36%; display:grid; grid-template-columns:1fr 1fr; gap:6%; align-items:center; }
+  .battleCreatureCard .scStat { display:grid; grid-template-columns:36% max-content; align-items:center; justify-content:center; gap:2%; }
+  .battleCreatureCard .scStat img { width:100%; } .battleCreatureCard .scStat b { font:700 2.8vh/1 Marudeco,sans-serif; }
+  .battleCreatureCard .scRule { height:4px; background:url('/assets/cards/rule-brush.svg') center/100% 100% no-repeat; }
+  .battleCreatureCard .scEffect { padding:3% 3% 0; text-align:center; }
+  .battleCreatureCard .scEffect h3 { margin:0 0 1%; font:700 1.4vh/1.1 Marudeco,sans-serif; }
+  .battleCreatureCard .scEffect h3::before{content:'【'} .battleCreatureCard .scEffect h3::after{content:'】'}
+  .battleCreatureCard .scEffect p { margin:0; font-size:1vh; line-height:1.35; font-weight:700; }
+  .battleCardBack { position:relative; width:100%; aspect-ratio:2/3; border-radius:1.5vh;
+      display:grid; place-items:center; color:#e8c55a; font-size:7vh; border:2px solid #c9a227;
+      background:repeating-linear-gradient(45deg,#17152c 0 10px,#252140 10px 20px);
+      box-shadow:0 2vh 4vh rgba(0,0,0,.65),inset 0 0 0 7px #17152c,inset 0 0 0 9px #9b7920; }
+  .battleCardBack small { position:absolute; bottom:12%; left:0; right:0; font-size:1.5vh; letter-spacing:.15em; }
+  .battleStats { min-width:0; padding:1.8vh 1vw; border-top:1px solid rgba(232,197,90,.65);
+      border-bottom:1px solid rgba(232,197,90,.35); background:linear-gradient(90deg,rgba(8,7,20,.15),rgba(8,7,20,.8)); }
+  .def .battleStats { text-align:right; background:linear-gradient(270deg,rgba(8,7,20,.15),rgba(8,7,20,.8)); }
+  .bsOwner { color:#f3d06c; font:700 2vh/1.3 Marudeco,sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .bsCreature { font-size:1.6vh; letter-spacing:.08em; opacity:.9; margin:.5vh 0 1vh; }
+  .bsValues { display:flex; gap:1.2vw; align-items:baseline; font:700 3.9vh/1 Marudeco,sans-serif; }
+  .def .bsValues { justify-content:flex-end; }
+  .bsValues span { white-space:nowrap; } .bsValues small { font-size:1.35vh; margin-right:.25em; color:#e8c55a; }
+  .bsMods { margin-top:1.2vh; min-height:7vh; font-size:1.35vh; line-height:1.65; color:rgba(246,237,211,.78); }
+  .bsMods .mod { display:block; } .bsMods .mod.hot { color:#fff1a6; animation:modGlow .75s ease both; }
+  @keyframes modGlow { 50%{text-shadow:0 0 14px #ffe681;transform:scale(1.03)} }
   #battleFx { position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:4; }
   .battleFxImg { position:absolute; display:block; pointer-events:none; object-fit:contain;
       filter:drop-shadow(0 0 12px rgba(255,255,255,.32)); }
@@ -151,7 +208,7 @@
     0% { opacity:0; transform:translate(-50%,-10%) scale(.25); }
     22% { opacity:.8; } 100% { opacity:0; transform:translate(-50%,-10%) scale(1.25); }
   }
-  #bmid { width:230px; text-align:center; }
+  #battleFooter { position:absolute; z-index:6; left:12vw; right:12vw; bottom:2.6vh; text-align:center; }
   #bankruptCut { position:fixed; inset:0; z-index:88; display:none; align-items:center; justify-content:center;
       background:rgba(8,4,10,.82); }
   #bankruptCut.on { display:flex; animation:bkIn .4s ease; }
@@ -176,12 +233,15 @@
       text-shadow:0 2px 14px rgba(0,0,0,.95), 0 0 30px rgba(201,162,39,.5);  font-family:'Reggae One','Yu Mincho',serif; }
   #bresult.show { animation:bres .55s cubic-bezier(.2,.9,.3,1) forwards; }
   @keyframes bres { from { opacity:0; transform:scale(1.5); } to { opacity:1; transform:none; } }
-  #bcap { font-size:22px; letter-spacing:4px; color:var(--gold-soft); min-height:2em;  font-family:'Reggae One','Yu Mincho',serif; }
-  .scardB { display:inline-block; width:74px; height:104px; margin:10px 8px; perspective:400px; }
+  #bcap { font-size:2.3vh; letter-spacing:.3em; color:var(--gold-soft); min-height:1.5em; font-family:'Reggae One','Yu Mincho',serif; }
+  #bnotes { font-size:1.35vh; color:rgba(246,237,211,.78); line-height:1.45; min-height:2.2vh; }
+  .supportSlot { text-align:center; perspective:500px; }
+  .supportStatus { font-size:1.25vh; color:#f1ddb0; letter-spacing:.08em; margin-top:.7vh; min-height:1.5em; }
+  .scardB { display:inline-block; width:9vh; height:13vh; perspective:500px; }
   .sflipB { position:relative; width:100%; height:100%; transform-style:preserve-3d; transition:transform .5s; }
   .sflipB.open { transform:rotateY(180deg); }
   .sfaceB { position:absolute; inset:0; border-radius:8px; backface-visibility:hidden;
-           display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:13px;
+           display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; font-size:1.15vh;
            background:url('/assets/card_bg.jpg') center / cover; color:#3A2B18; }
   .sbackB { background:linear-gradient(160deg,#2C2A4A,#1E1B3C); border:2px solid var(--gold);
            color:var(--gold); font-size:28px; }
@@ -674,9 +734,20 @@
     <div id="bwHost"></div>
     <div id="battleFx"></div>
     <div id="bresult"></div>
-    <div class="bside" id="bAtk"></div>
-    <div id="bmid"><div id="bcap"></div><div id="bcards"></div><div id="bnotes" style="font-size:1.9vh; color:var(--gold-soft); line-height:1.8; min-height:6vh; text-shadow:0 1px 4px rgba(0,0,0,.8)"></div></div>
-    <div class="bside" id="bDef"></div>
+    <div id="battleTitle">侵略戦闘</div>
+    <div id="battleField">
+      <section class="battleTeam atk">
+        <div class="supportSlot" id="bAtkSupport"></div>
+        <div class="bside" id="bAtk"></div>
+        <div class="battleStats" id="bAtkStats"></div>
+      </section>
+      <section class="battleTeam def">
+        <div class="battleStats" id="bDefStats"></div>
+        <div class="bside" id="bDef"></div>
+        <div class="supportSlot" id="bDefSupport"></div>
+      </section>
+    </div>
+    <div id="battleFooter"><div id="bcap"></div><div id="bnotes"></div></div>
   </div>
   <div id="bflash"></div>
 
@@ -868,6 +939,7 @@ function hopStep() {
   pawnAnim[hopState.id] = idx;
   renderPawns();
   if (idx === 0 && hopState.castleEv) {
+    playSe(seCastleBonus);
     showBanner(`+${hopState.castleEv.gold}G${hopState.castleEv.landBonus ? ` +領地ボーナス${hopState.castleEv.landBonus}G` : ''}`,
       '刻印を使用' + ((hopState.castleEv.healed || []).length ? ' ｜ 領地のクリーチャー回復(負傷-10)' : '') + ' ─ カードを1枚選んで獲得!', 2800);
     for (const hi of (hopState.castleEv.healed || [])) fxAt(hi, 'fxRing', '#8FE08A');
@@ -1173,17 +1245,26 @@ document.getElementById('titleCreate').onclick = () => {
   document.getElementById('titleOv').classList.remove('on');
   boot();
 };
-let bgmN = null, bgmR = null, bgmMuted = false, bgmCur = null, seTelop = null;
+let bgmN = null, bgmR = null, bgmBattle = null, bgmMuted = false, bgmCur = null;
+let seTelop = null, seSummon = null, seEvolve = null, seBattleFinish = null, seCastleBonus = null;
 function initAudio() {
   if (bgmN) return;
   bgmN = new Audio('/assets/bgm_normal.mp3');
   bgmR = new Audio('/assets/bgm_reach.mp3');
+  bgmBattle = new Audio('/assets/bgm_battle.mp3');
   seTelop = new Audio('/assets/se_telop.mp3');
-  seTelop.volume = 0.6;
-  seTelop.muted = true;
-  seTelop.play().then(() => { seTelop.pause(); seTelop.currentTime = 0; seTelop.muted = false; })
-    .catch(() => { seTelop.muted = false; });
-  [bgmN, bgmR].forEach(a => {
+  seSummon = new Audio('/assets/se_summon.mp3');
+  seEvolve = new Audio('/assets/se_evolve.mp3');
+  seBattleFinish = new Audio('/assets/se_battle_finish.mp3');
+  seCastleBonus = new Audio('/assets/se_castle_bonus.mp3');
+  seTelop.volume = 0.6; seSummon.volume = 0.72; seEvolve.volume = 0.76;
+  seBattleFinish.volume = 0.82; seCastleBonus.volume = 0.78;
+  [seTelop, seSummon, seEvolve, seBattleFinish, seCastleBonus].forEach(a => {
+    a.preload = 'auto'; a.muted = true;
+    a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; })
+      .catch(() => { a.muted = false; });
+  });
+  [bgmN, bgmR, bgmBattle].forEach(a => {
     a.loop = true; a.volume = 0.35;
     a.muted = true;
     a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; })
@@ -1197,13 +1278,22 @@ function initAudio() {
     if (bgmCur) { bgmMuted ? bgmCur.pause() : bgmCur.play().catch(() => {}); }
   };
 }
+function playSe(a) {
+  if (!a || bgmMuted) return;
+  try { a.pause(); a.currentTime = 0; a.play().catch(() => {}); } catch (e) {}
+}
 function setBgm(which) {
   if (!bgmN) return;
-  const t = which === 'reach' ? bgmR : which === 'normal' ? bgmN : null;
+  const t = which === 'battle' ? bgmBattle : which === 'reach' ? bgmR : which === 'normal' ? bgmN : null;
   if (bgmCur === t) return;
   if (bgmCur) { bgmCur.pause(); bgmCur.currentTime = 0; }
   bgmCur = t;
   if (t && !bgmMuted) t.play().catch(() => {});
+}
+function restoreBoardBgm() {
+  if (!state || state.phase !== 'playing') return setBgm(null);
+  const reach = state.players.some(p => !p.bankrupt && p.points >= (state.reachAt || state.target - 1));
+  setBgm(reach ? 'reach' : 'normal');
 }
 // BGMが不意に止まった場合の自動復帰(3秒ごとの見張り+タブ復帰時)
 function bgmHeal() {
@@ -2010,6 +2100,7 @@ async function playSummonPresentation(tile, owner) {
     await wait(2050);
     $('summonCut').classList.remove('on');
     await wait(180);
+    playSe(seSummon);
     tileCloseup(tile, `${pl.name}が<b style="color:#F2D062">${cr.name}</b>を召喚!`, 2700);
     if (renderModeActive === 'phaser')
       await PW.play({ type:'summon', tile, element:state.tiles[tile].e, timeoutMs:2200 });
@@ -2034,6 +2125,7 @@ async function playEvolvePresentation(tile, owner) {
     await wait(2050);
     $('summonCut').classList.remove('on');
     await wait(180);
+    playSe(seEvolve);
     tileCloseup(tile, `${base.name}が<b style="color:#F2D062">${base.evo}</b>に進化!`, 2900);
     if (renderModeActive === 'phaser')
       await PW.play({ type:'evolve-fx', tile, bid:owner.creature.replace(/_f$/, ''), element:state.tiles[tile].e, level:owner.level, timeoutMs:2500 });
@@ -2235,6 +2327,85 @@ function battleImpactFx(elem, target, heavy) {
   if (heavy && common) battleFxImage(common.shockwave, 'battleFxShock ' + at);
 }
 
+let activeBattleKey = null;
+let activeBattleAttacker = null;
+let battlePlayingKey = null;
+const supportBackHTML = (status, sup) => `<div class="scardB"><div class="sflipB${sup !== undefined ? ' readyToOpen' : ''}">
+  <div class="sfaceB sbackB">❖</div>
+  <div class="sfaceB sfrontB">${sup === 'none'
+    ? '<div style="font-size:2.5vh">─</div><div>支援なし</div>'
+    : sup ? '<div style="font-size:2.5vh">⚔</div><div>' + state.catalog.SUPPORTS[sup].name + '</div>' : ''}</div>
+  </div></div><div class="supportStatus">${status}</div>`;
+
+function battleCreatureHTML(cid, level, reveal) {
+  if (!cid) return `<div class="battleCardBack"><div>❖</div><small>攻撃クリーチャー選択中</small></div>`;
+  const evolved = /_f$/.test(cid) || level >= (state.evoLevel || 3);
+  return `<div class="battleCreatureCard${reveal ? ' reveal' : ''}">${summonCardHTML(cid, evolved)}</div>`;
+}
+
+function previewStatsHTML(pid, cid, level, damage, side) {
+  const pl = player(pid), bid = cid ? cid.replace(/_f$/, '') : null;
+  const c = bid ? state.catalog.CREATURES[bid] : null;
+  if (!c) return `<div class="bsOwner">${pl ? pl.name : ''}</div><div class="bsCreature">選択待ち</div>
+    <div class="bsValues"><span><small>AT</small>—</span><span><small>HP</small>—</span><span><small>DF</small>—</span></div>`;
+  const evolved = /_f$/.test(cid) || level >= (state.evoLevel || 3);
+  const at = evolved && c.evoSt != null ? c.evoSt : c.st;
+  const hp0 = evolved && c.evoHp != null ? c.evoHp : c.hp;
+  const name = evolved && c.evo ? c.evo : c.name;
+  return `<div class="bsOwner">${pl.name}</div><div class="bsCreature">${name}</div>
+    <div class="bsValues"><span><small>AT</small>${at}</span><span><small>HP</small>${Math.max(1,hp0-(damage||0))}</span><span><small>DF</small>—</span></div>
+    <div class="bsMods"><span class="mod">支援・地形・能力補正は公開後に反映</span></div>`;
+}
+
+function renderBattlePreview(bp) {
+  if (!bp || battlePlayingKey) return;
+  const isNew = activeBattleKey !== bp.key;
+  if (isNew) {
+    activeBattleKey = bp.key;
+    activeBattleAttacker = null;
+    $('battleFx').innerHTML = '';
+    $('bresult').classList.remove('show'); $('bresult').textContent = '';
+    $('bnotes').textContent = '';
+    hideLogo(true);
+    $('battle').classList.add('on');
+    initAudio();
+    setBgm('battle');
+    if (typeof BW !== 'undefined') BW.backgroundStart().catch(() => {});
+  }
+  const atkReveal = !!bp.atkCreature && activeBattleAttacker !== bp.atkCreature;
+  if (isNew || atkReveal) {
+    $('bAtk').innerHTML = battleCreatureHTML(bp.atkCreature, 1, atkReveal);
+    $('bAtkStats').innerHTML = previewStatsHTML(bp.attacker, bp.atkCreature, 1, 0, 'atk');
+    activeBattleAttacker = bp.atkCreature;
+  }
+  if (isNew) {
+    $('bDef').innerHTML = battleCreatureHTML(bp.defCreature, bp.defLevel || 1, false);
+    $('bDefStats').innerHTML = previewStatsHTML(bp.defender, bp.defCreature, bp.defLevel || 1, bp.defDamage || 0, 'def');
+  }
+  $('bAtkSupport').innerHTML = supportBackHTML(bp.supportReady.attacker ? '選択済み' : '選択中…');
+  $('bDefSupport').innerHTML = supportBackHTML(bp.supportReady.defender ? '選択済み' : '選択中…');
+  $('bcap').textContent = bp.phase === 'pick_attacker'
+    ? '攻撃側がクリーチャーを選択しています'
+    : '両者、支援カードを秘密裏に選択中';
+}
+
+function finalStatsHTML(b, side) {
+  const atkSide = side === 'atk';
+  const pid = atkSide ? b.attacker : b.defender;
+  const cid = atkSide ? b.atkCreature : b.defCreature;
+  const pl = player(pid), c = state.catalog.CREATURES[cid.replace(/_f$/, '')];
+  const name = atkSide ? c.name : cname(cid, b.defLevel || (state.owners[b.tile] ? state.owners[b.tile].level : 1));
+  const at = atkSide ? b.st : (b.defSt ?? c.st);
+  const hp = atkSide ? b.atkHp : b.hp;
+  const df = atkSide ? b.atkDf : b.df;
+  const mods = atkSide
+    ? [`基礎AT ${b.atkBaseAt ?? c.st}`, b.atkSupport !== 'none' ? `支援 ${state.catalog.SUPPORTS[b.atkSupport].name}` : '支援なし']
+    : [`地形補正 +${b.terrain || 0}`, b.defSupport !== 'none' ? `支援 ${state.catalog.SUPPORTS[b.defSupport].name}` : '支援なし', b.curse ? `呪い −${b.curse}` : ''];
+  return `<div class="bsOwner">${pl.name}</div><div class="bsCreature">${name}</div>
+    <div class="bsValues"><span><small>AT</small><b data-stat="at">${at}</b></span><span><small>HP</small><b data-stat="hp">${hp}</b></span><span><small>DF</small><b data-stat="df">${df}</b></span></div>
+    <div class="bsMods">${mods.filter(Boolean).map(x=>`<span class="mod hot">${x}</span>`).join('')}</div>`;
+}
+
 async function playBattle(b) {
   cutBusy++;
   try {
@@ -2242,23 +2413,20 @@ async function playBattle(b) {
   const atk = player(b.attacker), def = player(b.defender);
   const atkElem = C.CREATURES[b.atkCreature].elem || 'neutral';
   const defElem = C.CREATURES[b.defCreature].elem || 'neutral';
-  const dLv = state.owners[b.tile] ? state.owners[b.tile].level : 1;
-  $('bAtk').innerHTML = `<div class="bArtWrap">${artHTML(b.atkCreature, 1, 220)}</div>
-    <div class="bname" style="color:${atk.color}">${atk.name} ─ ${C.CREATURES[b.atkCreature].name}</div>
-    <div class="bnum">AT ${b.st}${b.atkDf ? ' <span style="font-size:2.4vh;opacity:.85">/ DF ' + b.atkDf + '</span>' : ''}</div>
-    <div class="hpBarWrap"><div class="hpBar" id="hpBarA"></div><div class="hpNum" id="hpNumA">HP ${b.atkHp}</div></div>
-    <div class="bsub">${b.atkSupport !== 'none' ? '+ ' + C.SUPPORTS[b.atkSupport].name : '&nbsp;'}</div>
-    <div class="bhpA" style="position:relative"></div>`;
-  $('bDef').innerHTML = `<div class="bArtWrap">${artHTML(b.defCreature, dLv, 220)}</div>
-    <div class="bname" style="color:${def.color}">${def.name} ─ ${cname(b.defCreature, dLv)}</div>
-    <div class="bnum">AT ${C.CREATURES[b.defCreature].st} <span style="font-size:2.4vh;opacity:.85">/ DF ${b.df}</span></div>
-    <div class="hpBarWrap"><div class="hpBar" id="hpBarD"></div><div class="hpNum" id="hpNumD">HP ${b.hp}</div></div>
-    <div class="bsub">DF内訳: 地形${b.terrain}${b.defSupport !== 'none' ? ' + ' + C.SUPPORTS[b.defSupport].name : ''}${b.curse ? ' ｜ 呪い−' + b.curse : ''}</div>`;
-  const card = (sup) => `<div class="scardB"><div class="sflipB">
-    <div class="sfaceB sbackB">❖</div>
-    <div class="sfaceB sfrontB">${sup === 'none' ? '<div>─</div><div>支援なし</div>' : '<div style="font-size:24px">⚔</div><div>' + C.SUPPORTS[sup].name + '</div>'}</div>
-  </div></div>`;
-  $('bcards').innerHTML = card(b.atkSupport) + card(b.defSupport);
+  const dLv = b.defLevel || (state.owners[b.tile] ? state.owners[b.tile].level : 1);
+  battlePlayingKey = activeBattleKey || ('result:' + b.at);
+  if (!$('battle').classList.contains('on')) {
+    $('bAtk').innerHTML = battleCreatureHTML(b.atkCreature, 1, true);
+    $('bDef').innerHTML = battleCreatureHTML(b.defCreature, dLv, true);
+    $('battle').classList.add('on');
+    initAudio();
+    setBgm('battle');
+    if (typeof BW !== 'undefined') await BW.backgroundStart();
+  }
+  $('bAtkSupport').innerHTML = supportBackHTML('公開待ち', b.atkSupport);
+  $('bDefSupport').innerHTML = supportBackHTML('公開待ち', b.defSupport);
+  $('bAtkStats').innerHTML = previewStatsHTML(b.attacker, b.atkCreature, 1, 0, 'atk');
+  $('bDefStats').innerHTML = previewStatsHTML(b.defender, b.defCreature, dLv, 0, 'def');
   $('bnotes').innerHTML = '';
   $('bcap').textContent = '支援カード ─ 同時オープン!';
   ['bAtk','bDef'].forEach(id => $(id).classList.remove('lungeL','lungeR','dead'));
@@ -2267,33 +2435,16 @@ async function playBattle(b) {
   hideLogo(true);
   bannerUntil = Math.max(bannerUntil, Date.now() + 8500); // 演出中はTURN START/バナーを待たせる
   $('battle').classList.add('on');
-  await wait(80);   // レイアウト確定を待つ(直後に起動するとCanvasがサイズ0で初期化される ─ v0.84)
-  // ハイブリッド戦闘(発注書§8 ─ M5): オーバーレイを表示して#bwHostのサイズが確定してから
-  // BWを起動する(display:none中に起動するとFITのサイズ計算が狂い、下寄りに配置される)。
-  // 一枚絵が無いトークン・BW初期化失敗・Canvasサイズ0時はfalse=従来DOM表現で進行(§8.10フォールバック)
-  let bwOn = false;
-  if (renderModeActive === 'phaser' && typeof BW !== 'undefined' && !BW.hasFailed()) {
-    const bidA = b.atkCreature.replace(/_f$/, ''), bidD = b.defCreature.replace(/_f$/, '');
-    const evoA = /_f$/.test(b.atkCreature);
-    const evoD = /_f$/.test(b.defCreature) || (dLv >= (state.evoLevel || 3) && C.CREATURES[bidD].evo);
-    if (HAS_ART.has(bidA) && HAS_ART.has(bidD)) {
-      try {
-        bwOn = await BW.start(`/assets/${evoA ? 'e_' : 'c_'}${bidA}.png`,
-                              `/assets/${evoD ? 'e_' : 'c_'}${bidD}.png`);
-      } catch (e) { bwOn = false; }
-    }
-  }
-  if (bwOn) document.querySelectorAll('#battle .bArtWrap').forEach(el => el.style.visibility = 'hidden');
-  await wait(900);
+  const bwOn = false; // v0.93: 通常侵略はカード主体。旧BattleWorldは削除せずフィクスチャ用に保持
+  await wait(650);
   document.querySelectorAll('.sflipB').forEach(f => f.classList.add('open'));
-  // 支援カード演出の連携(M6 §8.7): 装備側に属性リング、呪具は無効化された側に紫の弾け
-  if (bwOn) {
-    if (b.atkSupport !== 'none') BW.supportGlow('atk', b.atkSupport);
-    if (b.defSupport !== 'none') BW.supportGlow('def', b.defSupport);
-    if (b.atkSupport === 'jinx' && b.defSupport !== 'none' && b.defSupport !== 'jinx') BW.jinxedFlash('def');
-    if (b.defSupport === 'jinx' && b.atkSupport !== 'none' && b.atkSupport !== 'jinx') BW.jinxedFlash('atk');
-  }
-  await wait(1000);
+  if (typeof BW !== 'undefined') BW.backgroundPulse('support');
+  await wait(700);
+  $('bAtkStats').innerHTML = finalStatsHTML(b, 'atk');
+  $('bDefStats').innerHTML = finalStatsHTML(b, 'def');
+  $('bAtkSupport').querySelector('.supportStatus').textContent = b.atkSupport === 'none' ? '支援なし' : '支援公開';
+  $('bDefSupport').querySelector('.supportStatus').textContent = b.defSupport === 'none' ? '支援なし' : '支援公開';
+  await wait(850);
   if (b.notes && b.notes.length)
     $('bnotes').innerHTML = b.notes.map(n => '✦ ' + n).join('<br>');
   $('bcap').textContent = '';
@@ -2307,7 +2458,9 @@ async function playBattle(b) {
   };
   // HPゲージ+カウントダウン(数字だけでは減少量が分かりにくい)
   const animateHp = (barId, numId, from, to, max, ms = 900) => {
-    const bar = $(barId), num = $(numId);
+    const bar = $(barId);
+    const modernNum = $(numId) ? null : $(numId.endsWith('A') ? 'bAtkStats' : 'bDefStats').querySelector('[data-stat="hp"]');
+    const num = $(numId) || modernNum;
     const t0 = performance.now();
     const step = now => {
       const k = Math.min(1, (now - t0) / ms);
@@ -2318,7 +2471,7 @@ async function playBattle(b) {
         bar.style.background = pct > 50 ? 'linear-gradient(90deg,#7FD08A,#4E9E5C)'
           : pct > 25 ? 'linear-gradient(90deg,#E8C55A,#B8901F)' : 'linear-gradient(90deg,#D96A50,#A3402B)';
       }
-      if (num) num.textContent = 'HP ' + Math.max(0, v);
+      if (num) num.textContent = modernNum ? Math.max(0, v) : 'HP ' + Math.max(0, v);
       if (k < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
@@ -2327,6 +2480,7 @@ async function playBattle(b) {
   animateHp('hpBarD', 'hpNumD', b.hp, b.hp, b.hp, 1);
   // 攻撃アニメ1回分(BW/DOMの分岐を共通化 ─ M6)
   const strike = async (side2, elem2, heavy2, opt2) => {
+    if (typeof BW !== 'undefined') BW.backgroundPulse('attack', side2);
     if (bwOn) {
       await BW.attack(side2, elem2, Object.assign({ heavy: heavy2 }, opt2 || {}));
     } else if (side2 === 'atk') {
@@ -2349,6 +2503,8 @@ async function playBattle(b) {
   };
   const showResult = async (text, preWait) => {
     await wait(preWait);
+    if (typeof BW !== 'undefined') BW.backgroundPulse('result', b.win ? 'atk' : 'def');
+    playSe(seBattleFinish);
     $('bresult').textContent = text;
     $('bresult').classList.add('show');
     await wait(text === '侵略成功' ? 1800 : 1700);
@@ -2440,6 +2596,10 @@ async function playBattle(b) {
   } finally {
     // ハイブリッド戦闘の後始末(§11.4: 一時オブジェクト・Tweenを残さない。stopは冪等)
     try { if (typeof BW !== 'undefined') BW.stop(); } catch (e) {}
+    activeBattleKey = null;
+    activeBattleAttacker = null;
+    battlePlayingKey = null;
+    restoreBoardBgm();
     cutBusy = Math.max(0, cutBusy - 1);
   }
 }
@@ -2447,7 +2607,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.91' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.95' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
@@ -2627,8 +2787,9 @@ function render() {
   // (TURN STARTテロップはバナーキュー処理の後で判定する ─ 祠バナー等を先に消化)
   // BGM(リーチ者がいれば疾走曲へ)
   if (state.phase === 'playing') {
-    const reach = state.players.some(p => !p.bankrupt && p.points >= (state.reachAt || state.target - 1));
-    setBgm(reach ? 'reach' : 'normal');
+    const battleNow = !!state.battlePreview || !!battlePlayingKey ||
+      !!(state.lastBattle && state.lastBattle.at !== prev.battleAt);
+    if (battleNow) setBgm('battle'); else restoreBoardBgm();
   } else if (state.phase === 'ended') setBgm(null);
   // 実況吹き出し(何を待っているか)
   {
@@ -2919,7 +3080,20 @@ function render() {
     if (state.lastDice.multi) showDiceMulti(state.lastDice.multi);
     else showDice3D(state.lastDice.value);
   }
-  // 戦闘
+  // 侵略確定直後から戦闘待機画面を同期。支援内容はbattlePreviewに含まれない。
+  if (state.battlePreview) {
+    renderBattlePreview(state.battlePreview);
+  } else if (activeBattleKey && !battlePlayingKey &&
+             (!state.lastBattle || state.lastBattle.at === prev.battleAt)) {
+    // 侵略キャンセル時は結果演出を待たず盤面へ戻る。
+    $('battle').classList.remove('on');
+    hideLogo(false);
+    try { if (typeof BW !== 'undefined') BW.stop(); } catch (e) {}
+    restoreBoardBgm();
+    activeBattleKey = null;
+    activeBattleAttacker = null;
+  }
+  // 戦闘結果
   if (state.lastBattle && state.lastBattle.at !== prev.battleAt) {
     prev.battleAt = state.lastBattle.at;
     playBattle(state.lastBattle);

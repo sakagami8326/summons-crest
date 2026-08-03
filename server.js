@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '0.91';
+const VERSION = '0.95';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -725,7 +725,7 @@ function startBattle(r, attacker, tileIdx) {
     .map(c => ({ id: 'atk:' + c, label: `${CREATURES[c].name}(AT${CREATURES[c].st})で攻める` }));
   opts.push({ id: 'cancel', label: 'やめて通行料を払う' });
   r.battle = { tile: tileIdx, attacker: attacker.id, defender: r.owners[tileIdx].player,
-               atkCreature: null, supports: {} };
+               atkCreature: null, supports: {}, startedAt: stamp(r) };
   ask(r, attacker.id, 'pick_creature', '侵略! 手札からクリーチャーを選べ', opts);
 }
 function askSupports(r) {
@@ -860,8 +860,11 @@ function resolveBattle(r) {
 
   r.lastBattle = { tile: b.tile, attacker: atk.id, defender: def.id,
     atkCreature: b.atkCreature, defCreature: o.creature,
+    defLevel: o.level,
     atkSupport: b.supports[atk.id], defSupport: b.supports[def.id],
     st: atkDmg, hp: effHp, df: defDF, dealt,
+    atkBaseAt: aBase.st, atkBaseHp: atkEffHp,
+    defBaseAt: dBase.st, defBaseHp: effHp, defSt,
     atkHp: atkEffHp, atkDf: atkDF, counterSt, counterDealt, atkSurvived,
     hits: hitsDone, preempt,
     moveFrom: b.moveFrom,
@@ -1309,7 +1312,8 @@ function handleChoose(r, playerId, optionId) {
       log(r, `🌬 風の回廊から侵略開始! ${CREATURES[c].name}が${pById(r, dest.player).name}の領地へ攻め込む(通行料なし)`);
       spellFx(r, 'sp_wind_corridor', [i, j], p.id, { battle: true });
       r.battle = { tile: j, attacker: p.id, defender: dest.player,
-                   atkCreature: c, corridor: true, atkCarry: carry, atkShade: carryShade, supports: {} };
+                   atkCreature: c, corridor: true, atkCarry: carry, atkShade: carryShade,
+                   supports: {}, startedAt: stamp(r) };
       return askSupports(r);
     }
     p.stepI = null;
@@ -1356,7 +1360,7 @@ function handleChoose(r, playerId, optionId) {
       log(r, `📜 ${p.name}の移動の呪文! ${CREATURES[src.creature].name}が隣の${pById(r, dest.player).name}の領地へ攻め込む!(通行料なし)`);
       spellFx(r, 'sp_step', [i, j], p.id, { battle: true });
       r.battle = { tile: j, attacker: p.id, defender: dest.player,
-                   atkCreature: src.creature, moveFrom: i, supports: {} };
+                   atkCreature: src.creature, moveFrom: i, supports: {}, startedAt: stamp(r) };
       return askSupports(r);
     }
     p.stepI = null;
@@ -1690,6 +1694,29 @@ function startGame(r) {
 }
 
 // ===== 公開状態とHTTP =====
+// 進行中の戦闘はテレビ画面へ段階だけを公開する。
+// 支援カードIDと「支援なし」の区別は、両者が回答してlastBattleになるまで秘匿する。
+function publicBattle(r) {
+  const b = r.battle;
+  if (!b) return null;
+  const owner = r.owners[b.tile];
+  const hasSupport = pid => Object.prototype.hasOwnProperty.call(b.supports || {}, pid);
+  return {
+    key: b.startedAt || `${b.tile}:${b.attacker}:${b.defender}`,
+    phase: b.atkCreature ? 'support' : 'pick_attacker',
+    tile: b.tile,
+    attacker: b.attacker,
+    defender: b.defender,
+    atkCreature: b.atkCreature || null,
+    defCreature: owner ? owner.creature : null,
+    defLevel: owner ? owner.level : 1,
+    defDamage: owner ? (owner.dmg || 0) : 0,
+    supportReady: {
+      attacker: hasSupport(b.attacker),
+      defender: hasSupport(b.defender),
+    },
+  };
+}
 function publicState(r, viewerId) {
   return {
     ver: VERSION, code: r.code, phase: r.phase, evoLevel: RULES.evoLevel, turn: r.turn, round: r.round, target: ASSET_GOAL, reachAt: ASSET_REACH,
@@ -1698,7 +1725,8 @@ function publicState(r, viewerId) {
     tileFx: r.tileFx,
     owners: r.owners, market: r.market, log: r.log,
     titles: r.titles, duel: r.duel, curses: r.curses, lastEvent: r.lastEvent || null,
-    barrier: r.barrier || {}, lastUlt: r.lastUlt || null, lastBattle: r.lastBattle, lastDice: r.lastDice || null,
+    barrier: r.barrier || {}, lastUlt: r.lastUlt || null, battlePreview: publicBattle(r),
+    lastBattle: r.lastBattle, lastDice: r.lastDice || null,
     lastSeal: r.lastSeal || null, lastRuin: r.lastRuin || null,
     lastBarrierHit: r.lastBarrierHit || null,
     upgradePreview: r.upgradePreview || null,   // 強化候補プレビュー(揮発 ─ v0.75)

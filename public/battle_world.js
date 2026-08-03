@@ -5,10 +5,11 @@
 // start()がfalseを返したら呼び出し側(board.htmlのplayBattle)は従来DOM表現のまま進行する。
 // 依存: グローバルPhaser(vendor/phaser.min.js)。盤面のPWとは別Gameインスタンス(§8.3)。
 const BW = (() => {
-  const W = 1100, H = 460;
+  const W = 1920, H = 1080;
   let game = null, scene = null, ready = false, failed = false;
   let initP = null;
   let sprs = { atk: null, def: null };
+  let bgSprs = {};
   const texP = {};
   const ELEM_COL = { fire: 0xFF7A45, water: 0x56A8E8, earth: 0xD9B64F, wind: 0x5BE0D0 };
   const qLite = () => { try { return localStorage.getItem('sc_quality') === 'lite'; } catch (e) { return false; } };
@@ -57,6 +58,56 @@ const BW = (() => {
     scene.tweens.add(Object.assign({}, props, { targets: t, duration, ease: ease || 'Sine.easeInOut', onComplete: res }));
   });
   const waitMs = ms => new Promise(res => setTimeout(res, ms));
+
+  // v0.93 カード戦闘用の背景レイヤー。UIはDOMのまま、背景だけをPhaserで穏やかに動かす。
+  async function backgroundStart() {
+    if (!(await init())) return false;
+    stop();
+    try { if (game && game.scale && game.scale.refresh) game.scale.refresh(); } catch (e) {}
+    const root = '/assets/battle/layers/battle-';
+    const names = ['base', 'red', 'blue', 'rings', 'crest', 'foreground'];
+    const keys = await Promise.all(names.map(n => tex(root + n + '.webp')));
+    if (keys.some(k => !k) || !scene) return false;
+    names.forEach((n, i) => {
+      const s = scene.add.image(W / 2, H / 2, keys[i]).setDepth(i);
+      s.setDisplaySize(W, H);
+      bgSprs[n] = s;
+    });
+    // 待機中はカードの可読性を優先し、移動量と明滅を最小限にする。
+    scene.tweens.add({ targets:bgSprs.red, x:W/2+10, scaleX:1.012, scaleY:1.006,
+      duration:4300, yoyo:true, repeat:-1, ease:'Sine.easeInOut' });
+    scene.tweens.add({ targets:bgSprs.blue, x:W/2-10, scaleX:1.012, scaleY:1.006,
+      duration:4700, yoyo:true, repeat:-1, ease:'Sine.easeInOut' });
+    scene.tweens.add({ targets:bgSprs.rings, angle:360, duration:90000, repeat:-1, ease:'Linear' });
+    scene.tweens.add({ targets:bgSprs.crest, y:H/2-8, alpha:.88,
+      duration:2600, yoyo:true, repeat:-1, ease:'Sine.easeInOut' });
+    scene.tweens.add({ targets:bgSprs.foreground, x:W/2+6,
+      duration:5200, yoyo:true, repeat:-1, ease:'Sine.easeInOut' });
+    return true;
+  }
+
+  function backgroundPulse(kind, side) {
+    if (!scene || !bgSprs.crest) return;
+    if (kind === 'support') {
+      for (const s of [bgSprs.red, bgSprs.blue])
+        scene.tweens.add({ targets:s, alpha:{from:.65,to:1}, duration:220, yoyo:true, ease:'Cubic.easeOut' });
+      scene.tweens.add({ targets:bgSprs.crest, scale:1.08, alpha:1, duration:260, yoyo:true, ease:'Cubic.easeOut' });
+      return;
+    }
+    if (kind === 'attack') {
+      const s = side === 'def' ? bgSprs.blue : bgSprs.red;
+      if (s) scene.tweens.add({ targets:s, x:W/2+(side === 'def'?-42:42), scaleX:1.045,
+        alpha:1, duration:170, yoyo:true, ease:'Cubic.easeOut' });
+      return;
+    }
+    if (kind === 'result') {
+      const win = side === 'def' ? bgSprs.blue : bgSprs.red;
+      const lose = side === 'def' ? bgSprs.red : bgSprs.blue;
+      if (win) scene.tweens.add({ targets:win, alpha:1, scaleX:1.07, scaleY:1.03, duration:650, ease:'Sine.easeOut' });
+      if (lose) scene.tweens.add({ targets:lose, alpha:.28, duration:650, ease:'Sine.easeOut' });
+      scene.tweens.add({ targets:bgSprs.crest, scale:1.12, alpha:1, duration:420, yoyo:true, ease:'Cubic.easeOut' });
+    }
+  }
 
   // 命中フラッシュ(§2.4: 強い白発光は100ms前後の瞬間のみ)
   function flash(x, y, col) {
@@ -342,6 +393,7 @@ const BW = (() => {
     if (scene.tweens) scene.tweens.timeScale = 1;
     for (const c of [...scene.children.list]) c.destroy();
     sprs = { atk: null, def: null };
+    bgSprs = {};
   }
   // 非表示タブでの検証用(PW.pumpと同じ ─ Phaser4のtweenは実時間基準)
   let pumpT = 0;
@@ -356,6 +408,7 @@ const BW = (() => {
       tweens: scene && scene.tweens && scene.tweens.getTweens ? scene.tweens.getTweens().length : 0 };
   }
   return { start, attack, defeat, returnHome, stop, pump, debug,
+           backgroundStart, backgroundPulse,
            supportGlow, jinxedFlash,
            isReady: () => ready, hasFailed: () => failed };
 })();

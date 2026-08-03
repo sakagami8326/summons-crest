@@ -63,5 +63,32 @@ ok(/function battleImpactFx\(/.test(board), 'board.html: 戦闘画面の属性�
 ok(/group\.trailHeavy/.test(board) && /group\.impactLarge/.test(board),
   'board.html: 強攻撃用の軌跡・着弾素材を使用している');
 ok(/common\.shockwave/.test(board), 'board.html: 強打時に共通衝撃波を使用している');
+for (const file of ['se_summon.mp3', 'se_evolve.mp3'])
+  ok(fs.existsSync(path.join(__dirname, 'public/assets', file)), `盤面SE素材: ${file}`);
+ok(/playSe\(seSummon\)/.test(board), 'board.html: 召喚配置時に召喚SEを再生する');
+ok(/playSe\(seEvolve\)/.test(board), 'board.html: 進化配置時に進化SEを再生する');
+
+// 6) v0.93 カード主体の侵略戦闘
+ok(/function renderBattlePreview\(/.test(board), 'board.html: 侵略直後の戦闘待機画面を実装している');
+ok(/battlePreview/.test(board), 'board.html: 公開戦闘プレビューを描画へ接続している');
+ok(/攻撃クリーチャー選択中/.test(board), 'board.html: 攻撃側未選択時のカード裏面がある');
+ok(/document\.querySelectorAll\('\.sflipB'\).*classList\.add\('open'\)/s.test(board),
+  'board.html: 両支援カードを同時に公開する');
+ok(/const bwOn = false/.test(board), 'board.html: 通常侵略で旧BattleWorldを起動しない');
+ok(/battle-bg\.webp/.test(board), 'board.html: 差し替え可能な戦闘背景パスを使用している');
+
+// 7) v0.94 Phaser戦闘背景レイヤー+BGM/決着SE
+const battleLayers = path.join(__dirname, 'public/assets/battle/layers');
+for (const file of ['battle-base.webp','battle-red.webp','battle-blue.webp','battle-rings.webp','battle-crest.webp','battle-foreground.webp'])
+  ok(fs.existsSync(path.join(battleLayers, file)), `戦闘背景レイヤー: ${file}`);
+for (const file of ['bgm_battle.mp3','se_battle_finish.mp3'])
+  ok(fs.existsSync(path.join(__dirname, 'public/assets', file)), `戦闘音声素材: ${file}`);
+ok(/async function backgroundStart\(/.test(world), 'battle_world: 背景レイヤー開始処理がある');
+ok(/function backgroundPulse\(/.test(world), 'battle_world: 戦闘イベント連動背景がある');
+ok(/BW\.backgroundPulse\('support'\)/.test(board), 'board.html: 支援公開を背景演出へ接続している');
+ok(/playSe\(seBattleFinish\)/.test(board), 'board.html: 決着SEを再生する');
+ok(/setBgm\('battle'\)/.test(board), 'board.html: 侵略中に戦闘BGMへ切り替える');
+ok(fs.existsSync(path.join(__dirname, 'public/assets/se_castle_bonus.mp3')), '城通過ボーナスSE素材がある');
+ok(/playSe\(seCastleBonus\)/.test(board), 'board.html: 城通過ボーナス確定時にSEを再生する');
 
 console.log(`PHASER ALL ${pass} CHECKS PASSED (Phaser ${EXPECT_VER})`);
