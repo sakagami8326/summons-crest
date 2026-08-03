@@ -12,6 +12,6 @@
     "test:phaser": "node phaser_test.js"
   },
   "engines": {
-    "node": ">=18"
+    "node": "22.x"
   }
 }
