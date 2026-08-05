@@ -725,7 +725,8 @@ const GLYPH = { weapon: () => sic('sword', '7.5dvh'), gweapon: () => sic('sword'
 // アートが存在するスペル(無いものは呪文アイコンで代用)
 const SPELL_ART = new Set(['sp_gold','sp_weaken','sp_gale','sp_quake','sp_volcanic_core','sp_abyssal_pearl',
   'sp_earth_mother_stone','sp_sky_crystal','sp_flame_vortex','sp_bloodstained_blade','sp_high_tide',
-  'sp_cornucopia','sp_bedrock_uplift','sp_root_prison','sp_wind_corridor','sp_wind_shift','sp_feather_rest','sp_ward']);
+  'sp_cornucopia','sp_bedrock_uplift','sp_root_prison','sp_wind_corridor','sp_wind_shift','sp_feather_rest','sp_ward',
+  'sp_dice_1','sp_dice_2','sp_dice_3','sp_dice_4','sp_dice_5','sp_dice_6']);
 const spellArt = (c, h) => SPELL_ART.has(c)
   ? `<div class="art"${h ? ` style="height:${h}"` : ''}><img src="/assets/c_${c}.png"></div>`
   : `<div class="glyph"${h ? ` style="height:${h}"` : ''}>${sic('spell', '9dvh')}</div>`;
@@ -1100,9 +1101,10 @@ function creatureFaceBody(cid, cr, evolved) {
     </div><div class="ccRule"></div><div class="ccEffect ${effect.body.length > 34 ? 'long' : ''}"><p>${effect.body}</p></div></div>`;
 }
 function spellFaceBody(cid, spl) {
-  const dedicated = cid === 'sp_weaken';
+  const die = /^sp_dice_([1-6])$/.exec(cid);
+  const dedicated = cid === 'sp_weaken' || die;
   const art = dedicated
-    ? `<img class="spArt" src="/assets/cards/spell-weaken-art-v1.webp" alt="">`
+    ? `<img class="spArt" src="${die ? `/assets/cards/spell-dice-${die[1]}.webp` : '/assets/cards/spell-weaken-art-v1.webp'}" alt="">`
     : `<img class="spArt" src="/assets/cards/bg-spell-v1.webp" alt=""><div class="spFallback">${spellArt(cid, '100%')}</div>`;
   return `${art}<div class="spHeader"><div class="spName" data-card-name>${spl.name}</div></div>
     <div class="ccCost"><img class="ccCostFrame" src="/assets/cards/cost-frame.svg" alt=""><img class="ccCoin" src="/assets/cards/cost-coin.svg" alt=""><span class="ccCostValue">${spl.cost || 0}G</span></div>

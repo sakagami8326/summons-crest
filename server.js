@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '0.96';
+const VERSION = '0.97';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -154,6 +154,18 @@ const SPELLS = {
                desc: 'カードを2枚引く' },
   sp_swap:   { name: '交代の呪文', rarity: 'R', cost: 30,
                desc: '自分の領地のクリーチャーを手札のクリーチャーと交代する(召喚コスト別途。元のクリーチャーは捨て札へ・負傷は回復)' },
+  sp_dice_1: { name: 'ダイス1', rarity: 'R', cost: 50, fixedDice: 1,
+               desc: 'このターン、ダイスの出目を1に固定する' },
+  sp_dice_2: { name: 'ダイス2', rarity: 'R', cost: 50, fixedDice: 2,
+               desc: 'このターン、ダイスの出目を2に固定する' },
+  sp_dice_3: { name: 'ダイス3', rarity: 'R', cost: 50, fixedDice: 3,
+               desc: 'このターン、ダイスの出目を3に固定する' },
+  sp_dice_4: { name: 'ダイス4', rarity: 'R', cost: 50, fixedDice: 4,
+               desc: 'このターン、ダイスの出目を4に固定する' },
+  sp_dice_5: { name: 'ダイス5', rarity: 'R', cost: 50, fixedDice: 5,
+               desc: 'このターン、ダイスの出目を5に固定する' },
+  sp_dice_6: { name: 'ダイス6', rarity: 'R', cost: 50, fixedDice: 6,
+               desc: 'このターン、ダイスの出目を6に固定する' },
 };
 const SUPPORTS = {
   weapon:  { name: '武器',   st: 20, hp: 0,  cost: 60 },
@@ -364,7 +376,7 @@ function ask(r, playerId, type, prompt, options) {
 }
 function askRoll(r, p) {
   const opts = [{ id: 'roll', label: '🎲 サイコロを振る' }];
-  if (!p.ultUsed && ULTS[p.charId])
+  if (!p.fixedDice && !p.ultUsed && ULTS[p.charId])
     opts.push({ id: 'ult', label: `固有スキル【${ULTS[p.charId].name}】` });
   // v0.60: 呪文は1ターンに1回まで(黄金+ひらめきの無限ループ対策)
   for (const sid of p.spellCast ? [] : [...new Set(p.hand.filter(c => SPELLS[c]))]) {
@@ -445,6 +457,7 @@ function beginTurn(r) {
   const p = cur(r);
   p.spellCast = false;  // 呪文は1ターンに1回まで
   p.gale = false;
+  p.fixedDice = null;
   p.blade = false;  // 血染めの刃: 次の手番開始まで侵略しなければ解除
   for (const fx of Object.values(r.tileFx))
     if (fx.tide && fx.tide.by === p.id) delete fx.tide;  // 満ち潮: 次の手番開始で解除
@@ -570,6 +583,11 @@ function performMove(r, p, steps, meta, moveLabel) {
   resolveTile(r, p);
 }
 function doRoll(r, p) {
+  if (p.fixedDice) {
+    const dice = p.fixedDice;
+    p.fixedDice = null;
+    return performMove(r, p, dice, { value: dice, fixed: true }, `呪文で${dice}に固定した`);
+  }
   if (p.gale) {
     p.gale = false;
     const d = [0, 0].map(() => 1 + Math.floor(Math.random() * 6));
@@ -1070,6 +1088,14 @@ function handleChoose(r, playerId, optionId) {
       p.gale = true;
       log(r, `${p.name}に追い風が吹く…(このターンはダイス2個)`);
       spellFx(r, 'sp_gale', [], p.id);
+      return askRoll(r, p);
+    }
+    if (SPELLS[sid].fixedDice) {
+      castLog();
+      p.fixedDice = SPELLS[sid].fixedDice;
+      r.lastEvent.desc = `このターンのダイスを${p.fixedDice}に固定`;
+      log(r, `${p.name}の次のダイスは${p.fixedDice}に固定された`);
+      spellFx(r, sid, [], p.id, { fixedDice: p.fixedDice });
       return askRoll(r, p);
     }
     if (sid === 'sp_ward') {

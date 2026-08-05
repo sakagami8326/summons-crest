@@ -9,8 +9,26 @@ const fs = require('fs');
 // ===== サーバー(in-process) =====
 let ssrc = fs.readFileSync('server.js', 'utf8').replace(/server\.listen\([\s\S]*?\}\);\s*$/, '');
 const S = new Function('require', '__dirname', 'process', 'console', 'setInterval',
-  ssrc + ';return {makeRoom,startSelect,handleChoose,publicState};')(
+  ssrc + ';return {makeRoom,startSelect,handleChoose,publicState,SPELLS,doRoll};')(
   require, __dirname, process, { log: () => {}, error: console.error }, () => 0);
+
+// ===== ダイス固定スペル =====
+for (let n = 1; n <= 6; n++) {
+  const sid = 'sp_dice_' + n;
+  const sp = S.SPELLS[sid];
+  if (!sp || sp.name !== 'ダイス' + n || sp.fixedDice !== n)
+    throw new Error(`ダイス固定スペル検査: ${sid} の定義が不正`);
+  const r = S.makeRoom();
+  r.phase = 'playing';
+  const p = { id:'dice-test', name:'テスト', charId:'redani', pos:0, dir:1, gold:300,
+    hand:[], deck:[], discard:[], exile:[], gems:0, treasures:0, battleWins:0,
+    shrineVisits:0, lap:1, seal:false, fixedDice:n };
+  r.players = [p]; r.turn = 0;
+  S.doRoll(r, p);
+  if (p.pos !== n || !r.lastDice || r.lastDice.value !== n || !r.lastDice.fixed || p.fixedDice !== null)
+    throw new Error(`ダイス固定スペル検査: 出目${n}が移動へ正しく反映されない`);
+}
+console.log('ダイス固定スペル1〜6 ✓');
 
 // ===== phone.html → DOMスタブ環境で実行 =====
 const html = fs.readFileSync('public/phone.html', 'utf8');

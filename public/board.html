@@ -2154,8 +2154,10 @@ async function playEvolvePresentation(tile, owner) {
 
 function spellCardHTML(sid) {
   const sp = state.catalog.SPELLS[sid] || { name:sid, cost:0, desc:'' };
-  const dedicated = sid === 'sp_weaken';
-  const bg = dedicated ? '/assets/cards/spell-weaken-art-v1.webp' : '/assets/cards/bg-spell-v1.webp';
+  const die = /^sp_dice_([1-6])$/.exec(sid);
+  const dedicated = sid === 'sp_weaken' || die;
+  const bg = die ? `/assets/cards/spell-dice-${die[1]}.webp`
+    : dedicated ? '/assets/cards/spell-weaken-art-v1.webp' : '/assets/cards/bg-spell-v1.webp';
   const fallback = dedicated ? '' : `<img class="spFallback" src="/assets/c_${sid}.png" onerror="this.style.display='none'">`;
   const nameSize = sp.name.length <= 6 ? '6.2vh' : sp.name.length <= 9 ? '5.1vh' : '4.2vh';
   return `<img class="spBg" src="${bg}">${fallback}<div class="spHead"><div class="spName" style="font-size:${nameSize}">${sp.name}</div></div>
@@ -2641,7 +2643,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.96' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.97' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
