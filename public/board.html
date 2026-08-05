@@ -112,22 +112,23 @@
       box-shadow:inset 0 0 2.4vh rgba(226,190,91,.14); }
   #bwHost { display:none; }
   #bwHost canvas { width:100%!important; height:100%!important; object-fit:cover; }
-  @keyframes shake { 0%,100%{transform:none} 25%{transform:translate(12px,-7px)}
-    50%{transform:translate(-10px,8px)} 75%{transform:translate(7px,4px)} }
+  @keyframes shake { 0%,100%{transform:none} 15%{transform:translate(12px,-7px) scale(1.035)}
+    50%{transform:translate(-10px,8px) scale(1.035)} 75%{transform:translate(7px,4px) scale(1.035)} }
   #battleTitle { position:absolute; z-index:7; top:3vh; left:50%; transform:translateX(-50%);
       font:700 3.2vh/1 Marudeco,'Yu Mincho',serif; letter-spacing:.45em; color:#f5d56f;
       text-shadow:0 2px 12px #000; white-space:nowrap; }
   #battleField { position:absolute; z-index:3; inset:9vh 2.5vw 10vh; display:grid;
       grid-template-columns:1fr 1fr; gap:2vw; align-items:center; }
   .battleTeam { min-width:0; display:grid; align-items:center; gap:1.1vw; }
-  .battleTeam.atk { grid-template-columns:11vh minmax(25vh,31vh) minmax(13vw,1fr); }
-  .battleTeam.def { grid-template-columns:minmax(13vw,1fr) minmax(25vh,31vh) 11vh; }
+  .battleTeam.atk { grid-template-columns:14vh minmax(25vh,31vh) minmax(10vw,14vw); }
+  .battleTeam.def { grid-template-columns:minmax(10vw,14vw) minmax(25vh,31vh) 14vh; }
   .bside { position:relative; text-align:center; transition:transform .35s ease-in,opacity .5s,filter .5s;
       perspective:1000px; }
   .bside.lungeL { transform:translateX(7vw) scale(1.04); }
   .bside.lungeR { transform:translateX(-7vw) scale(1.04); }
   .bside.dead { animation:dead .7s forwards; }
-  @keyframes dead { to { opacity:0; transform:translateY(50px) rotate(-12deg); filter:brightness(3); } }
+  @keyframes dead { 55% { filter:brightness(2.2); transform:translateY(1.5vh) rotate(-3deg) scale(.98); }
+    to { opacity:.42; transform:translateY(1.5vh) rotate(-3deg) scale(.98); filter:grayscale(.85) brightness(.55); } }
   .battleCreatureCard { position:relative; width:100%; aspect-ratio:2/3; overflow:hidden; isolation:isolate;
       border-radius:1.5vh; background:#18233e; box-shadow:0 2vh 4vh rgba(0,0,0,.65);
       transform-style:preserve-3d; transition:transform .65s cubic-bezier(.2,.85,.25,1),opacity .35s; }
@@ -165,18 +166,18 @@
       background:repeating-linear-gradient(45deg,#17152c 0 10px,#252140 10px 20px);
       box-shadow:0 2vh 4vh rgba(0,0,0,.65),inset 0 0 0 7px #17152c,inset 0 0 0 9px #9b7920; }
   .battleCardBack small { position:absolute; bottom:12%; left:0; right:0; font-size:1.5vh; letter-spacing:.15em; }
-  .battleStats { min-width:0; padding:1.8vh 1.15vw; border:1px solid rgba(232,197,90,.72);
+  .battleStats { min-width:0; width:min(12.8vw,24vh); justify-self:center; padding:1.45vh .75vw; border:1px solid rgba(232,197,90,.72);
       border-radius:1.4vh; background:rgba(10,8,25,.91); box-shadow:0 1vh 2.8vh rgba(0,0,0,.58),inset 0 0 2vh rgba(232,197,90,.07);
       text-shadow:0 2px 5px #000; backdrop-filter:blur(3px); }
   .def .battleStats { text-align:right; }
   .bsOwner { color:#ffe596; font:700 2.2vh/1.3 Marudeco,sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .bsCreature { color:#fff9e8; font-size:1.75vh; font-weight:700; letter-spacing:.08em; margin:.5vh 0 1vh; }
-  .bsValues { display:flex; gap:.7vw; align-items:stretch; font:700 4.15vh/1 Marudeco,sans-serif; }
+  .bsValues { display:flex; gap:.35vw; align-items:stretch; font:700 3.65vh/1 Marudeco,sans-serif; }
   .def .bsValues { justify-content:flex-end; }
-  .bsValues span { white-space:nowrap; min-width:4.7vw; padding:.75vh .55vw; border-radius:.8vh;
+  .bsValues span { white-space:nowrap; min-width:3.55vw; padding:.65vh .35vw; border-radius:.8vh;
       background:rgba(255,255,255,.075); border:1px solid rgba(255,237,181,.2); text-align:center; }
   .bsValues small { display:block; font-size:1.25vh; margin:0 0 .4vh; color:#f3d06c; letter-spacing:.12em; }
-  .bsMods { margin-top:1.2vh; min-height:7vh; font-size:1.45vh; font-weight:700; line-height:1.65; color:rgba(255,249,232,.9); }
+  .bsMods { margin-top:.9vh; min-height:5.6vh; font-size:1.25vh; font-weight:700; line-height:1.5; color:rgba(255,249,232,.9); }
   .bsMods .mod { display:block; } .bsMods .mod.hot { color:#fff1a6; animation:modGlow .75s ease both; }
   @keyframes modGlow { 50%{text-shadow:0 0 14px #ffe681;transform:scale(1.03)} }
   #battleFx { position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:4; }
@@ -247,7 +248,7 @@
   #bnotes { font-size:1.35vh; color:rgba(246,237,211,.78); line-height:1.45; min-height:2.2vh; }
   .supportSlot { text-align:center; perspective:500px; }
   .supportStatus { font-size:1.25vh; color:#f1ddb0; letter-spacing:.08em; margin-top:.7vh; min-height:1.5em; }
-  .scardB { display:inline-block; width:9vh; height:13vh; perspective:500px; }
+  .scardB { display:inline-block; width:12vh; height:17.3vh; perspective:500px; }
   .sflipB { position:relative; width:100%; height:100%; transform-style:preserve-3d; transition:transform .5s; }
   .sflipB.open { transform:rotateY(180deg); }
   .sfaceB { position:absolute; inset:0; border-radius:8px; backface-visibility:hidden;
@@ -258,7 +259,7 @@
   .sfrontB { transform:rotateY(180deg); background:url('/assets/cards/bg-weapon-v1.webp') center / cover;
            border:2px solid #2C2A4A; color:#fff4d5; gap:2px; overflow:hidden; padding:.5vh; box-sizing:border-box;
            text-shadow:0 1px 3px rgba(0,0,0,.9); }
-  .sfrontB img { width:78%; height:68%; object-fit:contain; filter:drop-shadow(0 .3vh .35vh rgba(0,0,0,.65)); }
+  .sfrontB img { width:78%; height:68%; object-fit:contain; transform:translateY(-.7vh); filter:drop-shadow(0 .3vh .35vh rgba(0,0,0,.65)); }
   #bflash { position:fixed; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:75; }
   #bflash.go { animation:bflash .45s; }
   @keyframes bflash { 15% { opacity:.95; } 100% { opacity:0; } }
@@ -2450,9 +2451,10 @@ async function playBattle(b) {
   const defElem = C.CREATURES[b.defCreature].elem || 'neutral';
   const dLv = b.defLevel || (state.owners[b.tile] ? state.owners[b.tile].level : 1);
   battlePlayingKey = activeBattleKey || ('result:' + b.at);
+  // SSEの更新や再接続で待機画面のDOMが欠けても、結果再生前に両カードを必ず復元する。
+  $('bAtk').innerHTML = battleCreatureHTML(b.atkCreature, 1, true);
+  $('bDef').innerHTML = battleCreatureHTML(b.defCreature, dLv, true);
   if (!$('battle').classList.contains('on')) {
-    $('bAtk').innerHTML = battleCreatureHTML(b.atkCreature, 1, true);
-    $('bDef').innerHTML = battleCreatureHTML(b.defCreature, dLv, true);
     initAudio();
     if (battleOpeningKey !== battlePlayingKey) playBattleOpening(battlePlayingKey);
     await wait(950);

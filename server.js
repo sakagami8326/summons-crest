@@ -596,7 +596,7 @@ function resolveTile(r, p) {
   if (!o) {
     const opts = p.hand.filter(c => CREATURES[c] && CREATURES[c].cost <= p.gold)
       .map(c => ({ id: 'summon:' + c, label: `${CREATURES[c].name}を召喚(−${CREATURES[c].cost}G)` }));
-    opts.push({ id: 'pass', label: '見送る' });
+    opts.push({ id: 'pass', label: '配置しない' });
     return ask(r, p.id, 'tile', `空き地(${tileElem(r, p.pos)})に到着`, opts);
   }
   if (o.player === p.id) return askUpgrade(r, p, '自領地');

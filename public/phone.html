@@ -524,7 +524,7 @@
       display:grid; grid-template-columns:11.5% 1fr 11.5%; align-items:center; }
   .supportCard .suName { grid-column:2; color:#fff4d5; font:900 clamp(14px,9.2cqw,28px)/1 'Yu Mincho','Hiragino Mincho ProN',serif; text-align:center;
       white-space:nowrap; text-shadow:0 2px 5px rgba(30,0,20,.85); }
-  .supportCard .suArt { position:absolute; z-index:4; top:14%; left:16%; width:68%; height:47%; display:grid; place-items:center;
+  .supportCard .suArt { position:absolute; z-index:4; top:10.5%; left:16%; width:68%; height:49%; display:grid; place-items:center;
       color:#fff4e8; filter:drop-shadow(0 6px 10px rgba(0,0,0,.5)); }
   .supportCard .suArt svg { width:62%; height:62%; }
   .supportCard .suArt img { max-width:88%; max-height:88%; object-fit:contain; }
@@ -1464,7 +1464,8 @@ function showActionOverlay(title, options, config) {
   $('actionOvTitle').textContent = iconize(title || '行動を選んでください');
   $('actionOvBtns').innerHTML = options.map(o => `<button class="gateBtn ${o.cls || ((o.id === 'pass' || o.id === 'cancel' || o.id.endsWith(':cancel') || o.id === 'sup:none') ? 'ghost' : '')}"
       onclick="submitAction('${o.id}')"><div class="gbT">${iconize(o.label)}</div><div class="gbD">${o.desc || actionDescription(o.id)}</div></button>`).join('')
-    + (cfg.closeable ? `<button class="gateBtn ghost" onclick="closeActionOverlay(true)"><div class="gbT">閉じる</div><div class="gbD">手札の選択へ戻ります</div></button>` : '');
+    + (cfg.browseHand ? `<button class="gateBtn ghost" onclick="closeActionOverlay(true)"><div class="gbT">手札を確認する</div><div class="gbD">行動を決める前に手札へ戻ります</div></button>` : '')
+    + (cfg.closeable && !cfg.browseHand ? `<button class="gateBtn ghost" onclick="closeActionOverlay(true)"><div class="gbT">閉じる</div><div class="gbD">手札の選択へ戻ります</div></button>` : '');
   $('actionOvHint').textContent = cfg.hint || '';
   $('actionOv').classList.add('on');
 }
@@ -1603,15 +1604,22 @@ function render() {
   }
   const A = $('action');
   const sel = selected !== null ? m.hand[selected] : null;
+  const canSkipPlacement = p && p.type === 'tile' && p.options.some(o => o.id.startsWith('summon:')) && p.options.some(o => o.id === 'pass');
   $('diceDock').innerHTML = p
     ? (p.type === 'support'
       ? `<button class="abtn ghost" id="supportNoneBtn" style="font-size:max(2.3dvh,14px);padding:1.5dvh 2.5dvh">支援カードを使用しない</button>`
+      : canSkipPlacement
+        ? `<button class="abtn ghost" id="skipPlacementBtn" style="font-size:max(2.3dvh,14px);padding:1.5dvh 2.5dvh">配置しない</button>`
       : `<div style="font-size:max(1.8dvh,12px);color:var(--gold-soft);text-align:center">${['tile','pick_creature'].includes(p.type) ? 'カードを選択' : '行動選択中'}</div>`)
     : '<div class="waitDots">● ● ●</div>';
   const supportNoneBtn = $('supportNoneBtn');
   if (supportNoneBtn) supportNoneBtn.onclick = () => showActionOverlay('支援カードを使用しませんか？', [
     { id:'sup:none', label:'支援なしで戦闘を開始', cls:'ghost', desc:'支援カードを消費せずに選択を確定します' }
   ], { key:'support-none-confirm', closeable:true });
+  const skipPlacementBtn = $('skipPlacementBtn');
+  if (skipPlacementBtn) skipPlacementBtn.onclick = () => showActionOverlay('この空き地に配置しませんか？', [
+    { id:'pass', label:'配置しない', cls:'ghost', desc:'クリーチャーを配置せずに手番を終了します' }
+  ], { key:'skip-placement-confirm', closeable:true });
 
   const pnow = pend();
   if (!pnow || !['forget', 'overflow', 'forge', 'swap_pick'].includes(pnow.type)) closePickOv();
@@ -1789,7 +1797,14 @@ function render() {
     A.innerHTML = '';
     const hasCardChoices = p.options.some(o => o.id.startsWith('summon:') || o.id.startsWith('atk:') || (o.id.startsWith('sup:') && o.id !== 'sup:none'));
     if (hasCardChoices) setContextActions(p.prompt, actionOpts);
-    else if (actionOpts.length) showActionOverlay(p.prompt, actionOpts, { key:`auto|${p.type}|${actionOpts.map(o => o.id).join(',')}` });
+    else if (actionOpts.length) {
+      const enemyTileActions = p.type === 'tile' && actionOpts.some(o => o.id === 'toll');
+      if (enemyTileActions) setContextActions(p.prompt, actionOpts);
+      showActionOverlay(p.prompt, actionOpts, {
+        key:`auto|${p.type}|${actionOpts.map(o => o.id).join(',')}`,
+        browseHand:enemyTileActions
+      });
+    }
   }
   renderHand();
 }
