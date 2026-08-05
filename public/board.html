@@ -255,8 +255,10 @@
            background:url('/assets/card_bg.jpg') center / cover; color:#3A2B18; }
   .sbackB { background:linear-gradient(160deg,#2C2A4A,#1E1B3C); border:2px solid var(--gold);
            color:var(--gold); font-size:28px; }
-  .sfrontB { transform:rotateY(180deg); background:url('/assets/card_bg.jpg') center / cover;
-           border:2px solid #2C2A4A; color:#3A2B18; gap:4px; }
+  .sfrontB { transform:rotateY(180deg); background:url('/assets/cards/bg-weapon-v1.webp') center / cover;
+           border:2px solid #2C2A4A; color:#fff4d5; gap:2px; overflow:hidden; padding:.5vh; box-sizing:border-box;
+           text-shadow:0 1px 3px rgba(0,0,0,.9); }
+  .sfrontB img { width:78%; height:68%; object-fit:contain; filter:drop-shadow(0 .3vh .35vh rgba(0,0,0,.65)); }
   #bflash { position:fixed; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:75; }
   #bflash.go { animation:bflash .45s; }
   @keyframes bflash { 15% { opacity:.95; } 100% { opacity:0; } }
@@ -1793,9 +1795,7 @@ function tileInfoHTML(i) {
         ${(() => { const fx = (state.tileFx || {})[i]; if (!fx) return '';
           const b2 = [];
           if (fx.vortex) b2.push('炎の渦(侵略者AT+10)');
-          if (fx.roots) b2.push('根の牢獄(侵略者AT-20)');
           if (fx.uplift) b2.push('岩盤隆起(防衛DF+10)');
-          if (fx.tide) b2.push('満ち潮(通行料+50%)');
           return b2.length ? `<div class="tiSub" style="color:#F2D062">${b2.join(' / ')}</div>` : ''; })()}
         ${cr.fx ? `<div class="tiFx">${cr.fx}</div>` : ''}
         <div class="tiToll">通行料 ${Math.round(toll)}G</div>
@@ -2364,11 +2364,14 @@ function playBattleOpening(key) {
     setBgm('battle');
   }, 900);
 }
+const battleSupportArt = sup => ({ weapon:'support-weapon-v1.webp', gweapon:'support-weapon-v1.webp',
+  shield:'support-shield-v1.webp', gshield:'support-shield-v1.webp' })[sup];
 const supportBackHTML = (status, sup) => `<div class="scardB"><div class="sflipB${sup !== undefined ? ' readyToOpen' : ''}">
   <div class="sfaceB sbackB">❖</div>
   <div class="sfaceB sfrontB">${sup === 'none'
     ? '<div style="font-size:2.5vh">─</div><div>支援なし</div>'
-    : sup ? '<div style="font-size:2.5vh">⚔</div><div>' + state.catalog.SUPPORTS[sup].name + '</div>' : ''}</div>
+    : sup ? (battleSupportArt(sup) ? `<img src="/assets/cards/${battleSupportArt(sup)}" alt="">` : '<div style="font-size:2.5vh">⚔</div>')
+      + '<div>' + state.catalog.SUPPORTS[sup].name + '</div>' : ''}</div>
   </div></div><div class="supportStatus">${status}</div>`;
 
 function battleCreatureHTML(cid, level, reveal) {

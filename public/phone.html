@@ -526,7 +526,8 @@
       white-space:nowrap; text-shadow:0 2px 5px rgba(30,0,20,.85); }
   .supportCard .suArt { position:absolute; z-index:4; top:14%; left:16%; width:68%; height:47%; display:grid; place-items:center;
       color:#fff4e8; filter:drop-shadow(0 6px 10px rgba(0,0,0,.5)); }
-  .supportCard .suArt svg { width:62%; height:62%; } .supportCard .suArt img { max-width:58%; max-height:72%; object-fit:contain; }
+  .supportCard .suArt svg { width:62%; height:62%; }
+  .supportCard .suArt img { max-width:88%; max-height:88%; object-fit:contain; }
   .supportCard .ccCost { position:absolute; z-index:12; top:65.2%; left:3.2%; width:31%; aspect-ratio:320/112; }
   .supportCard .ccCostFrame { position:absolute; inset:0; width:100%; height:100%; }
   .supportCard .ccCoin { position:absolute; left:6%; top:19%; width:19%; height:62%; }
@@ -722,10 +723,20 @@ const ELEM_MINI = {"fire": "<g transform=\"scale(0.0636) translate(-364.2,-542.7
 // 支援カードのグリフ(アート未着の代用)。絵文字ではなくSVGアイコンを使う
 const GLYPH = { weapon: () => sic('sword', '7.5dvh'), gweapon: () => sic('sword', '7.5dvh'),
   shield: () => sic('up', '7.5dvh'), gshield: () => sic('up', '7.5dvh'), jinx: () => '❂' };
+const SUPPORT_ART = {
+  weapon: '/assets/cards/support-weapon-v1.webp',
+  gweapon: '/assets/cards/support-weapon-v1.webp',
+  shield: '/assets/cards/support-shield-v1.webp',
+  gshield: '/assets/cards/support-shield-v1.webp'
+};
+const supportArt = cid => SUPPORT_ART[cid]
+  ? `<img src="${SUPPORT_ART[cid]}" alt="">`
+  : (cid === 'jinx' ? '<img src="/assets/ic_curse.png" alt="">'
+    : (GLYPH[cid] ? GLYPH[cid]() : sic('sword', '7.5dvh')));
 // アートが存在するスペル(無いものは呪文アイコンで代用)
 const SPELL_ART = new Set(['sp_gold','sp_weaken','sp_gale','sp_quake','sp_volcanic_core','sp_abyssal_pearl',
-  'sp_earth_mother_stone','sp_sky_crystal','sp_flame_vortex','sp_bloodstained_blade','sp_high_tide',
-  'sp_cornucopia','sp_bedrock_uplift','sp_root_prison','sp_wind_corridor','sp_wind_shift','sp_feather_rest','sp_ward',
+  'sp_earth_mother_stone','sp_sky_crystal','sp_flame_vortex','sp_bloodstained_blade',
+  'sp_cornucopia','sp_bedrock_uplift','sp_wind_corridor','sp_wind_shift','sp_ward',
   'sp_dice_1','sp_dice_2','sp_dice_3','sp_dice_4','sp_dice_5','sp_dice_6']);
 const spellArt = (c, h) => SPELL_ART.has(c)
   ? `<div class="art"${h ? ` style="height:${h}"` : ''}><img src="/assets/c_${c}.png"></div>`
@@ -1013,7 +1024,7 @@ function tileDetailHTML(i) {
     ? `<img class="tdArt" src="/assets/${evo && HAS_ART.has(bid) ? 'e_' : 'c_'}${bid}.png">`
     : `<div class="tdTok" style="background:${RUNE[cr.elem] || '#6E7288'}">${nm.slice(0, 4)}</div>`;
   const fx = state.tileFx && state.tileFx[i];
-  const fxLine = fx ? [fx.vortex && '炎の渦', fx.tide && '満ち潮', fx.uplift && '岩盤隆起', fx.roots && '根の牢獄']
+  const fxLine = fx ? [fx.vortex && '炎の渦', fx.uplift && '岩盤隆起']
     .filter(Boolean).join('・') : '';
   const curse = state.curses && state.curses[i];
   return `<div class="tdRow"><img class="tdFace" style="--tdc:${pl.color || '#888'}" src="/assets/f_${pl.charId}.png">
@@ -1111,9 +1122,7 @@ function spellFaceBody(cid, spl) {
     <div class="ccBrush"></div><div class="spInfo ${spl.desc.length > 42 ? 'long' : ''}"><p class="spText">${spl.desc}</p></div>`;
 }
 function supportFaceBody(cid, sup) {
-  const art = cid === 'jinx'
-    ? `<img src="/assets/ic_curse.png" alt="">`
-    : (GLYPH[cid] ? GLYPH[cid]() : sic('sword', '7.5dvh'));
+  const art = supportArt(cid);
   const power = sup.jinx ? '呪具' : sup.st ? `AT＋${sup.st}` : `DF＋${sup.hp}`;
   const text = sup.jinx ? '相手の支援カードを無効化する。戦闘時に使用し、使用後は捨て札へ送る。'
     : `${sup.st ? '攻撃力' : '防御力'}を${sup.st || sup.hp}上昇させる。戦闘時に使用し、使用後は捨て札へ送る。`;
@@ -1217,7 +1226,7 @@ function charDeckThumb(c, n) {
     art = SPELL_ART.has(c) ? `<img src="/assets/c_${c}.png" alt="">` : sic('spell','8dvh');
   } else if (sup) {
     bg = '/assets/cards/bg-weapon-v1.webp';
-    art = c === 'jinx' ? '<img src="/assets/ic_curse.png" alt="">' : (GLYPH[c] ? GLYPH[c]() : sic('sword','8dvh'));
+    art = supportArt(c);
   }
   return `<div class="cdDeckThumb" title="${n}枚"><img class="cdtBg" src="${bg}" alt=""><div class="cdtArt">${art}</div><span class="cdtCount">×${n}</span></div>`;
 }

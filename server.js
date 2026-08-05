@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '0.97';
+const VERSION = '0.98';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -132,20 +132,14 @@ const SPELLS = {
     desc: '敵領地に10ダメージを与える。次にその領地へ侵略するクリーチャーはAT+10' },
   sp_bloodstained_blade:{ name: '血染めの刃', rarity: 'R', cost: 40,
     desc: '次の侵略でAT+10。侵略成功時、相手から30Gを奪う' },
-  sp_high_tide:         { name: '満ち潮', rarity: 'R', cost: 50,
-    desc: '選んだ水領地で次に受け取る通行料+50%。次の手番まで有効' },
   sp_cornucopia:        { name: '豊穣の角', rarity: 'R', cost: 0,
     desc: '自分の領地1つにつき20Gを得る' },
   sp_bedrock_uplift:    { name: '岩盤隆起', rarity: 'R', cost: 50,
     desc: '自分の土領地の負傷を20回復し、次の戦闘でDF+10' },
-  sp_root_prison:       { name: '根の牢獄', rarity: 'R', cost: 40,
-    desc: '次にこの領地へ侵略するクリーチャーはAT-20' },
   sp_wind_corridor:     { name: '風の回廊', rarity: 'R', cost: 40,
     desc: '自分の領地のクリーチャーを隣接する土地へ移動する。敵領地なら侵略する(通行料なし)。生き残れば全快して手札へ戻る' },
   sp_wind_shift:        { name: '風向転換', rarity: 'R', cost: 30,
     desc: 'このターンだけ、通常とは逆方向へ移動する' },
-  sp_feather_rest:      { name: '羽休め', rarity: 'N', cost: 20,
-    desc: '自分の領地のクリーチャーを全回復して手札へ戻す。土地は空き地になる' },
   sp_ward:   { name: '加護の呪文', rarity: 'R', cost: 80,
                desc: 'あなたの次の手番まで、自分の領地は侵略されない' },
   sp_move:   { name: '転移の呪文', rarity: 'R', cost: 40,
@@ -290,7 +284,6 @@ function tollOf(r, i) {
   const o = r.owners[i];
   let rate = 1;
   if (baseId(o.creature) === 'orphe') rate += 0.2;                       // 清流
-  if (r.tileFx[i] && r.tileFx[i].tide) rate += 0.5;                      // 満ち潮
   return Math.round(landValue(r, i) * 0.25 * rate);
 }
 // スペルの直接ダメージ処理: 不動(ベデベロ-10)・死影(ベルーフAT+10/最大+30)・撃破は捨て札
@@ -318,11 +311,6 @@ function spellDamage(r, i, raw, srcName) {
     log(r, `【死影】${cE.name}は受けた痛みを影に変えた(AT+${o.shade * 10})`);
   }
   return false;
-}
-// 通行料を実際に受け取った時に満ち潮を消費
-function consumeTide(r, i) {
-  const fx = r.tileFx[i];
-  if (fx && fx.tide) { delete fx.tide; log(r, `満ち潮が引いていく…(効果を消費)`); }
 }
 function kingBonus(r, receiver, tileIdx) {
   const o = r.owners[tileIdx];
@@ -394,12 +382,8 @@ function askRoll(r, p) {
          sid === 'sp_earth_mother_stone' || sid === 'sp_sky_crystal') &&
         !r.owners.some((o, i) => o && o.player === p.id && tileElem(r, i) !== ELEM_OF_SPELL[sid])) continue;
     if (sid === 'sp_flame_vortex' && !r.owners.some(o => o && o.player !== p.id)) continue;
-    if (sid === 'sp_high_tide' &&
-        !r.owners.some((o, i) => o && o.player === p.id && tileElem(r, i) === 'water')) continue;
     if (sid === 'sp_bedrock_uplift' &&
         !r.owners.some((o, i) => o && o.player === p.id && tileElem(r, i) === 'earth')) continue;
-    if ((sid === 'sp_root_prison' || sid === 'sp_feather_rest') &&
-        !r.owners.some(o => o && o.player === p.id)) continue;
     if (sid === 'sp_swap' &&
         (!r.owners.some(o => o && o.player === p.id) ||
          !p.hand.some(c => CREATURES[c] && CREATURES[c].cost + SPELLS.sp_swap.cost <= p.gold))) continue;
@@ -459,8 +443,6 @@ function beginTurn(r) {
   p.gale = false;
   p.fixedDice = null;
   p.blade = false;  // 血染めの刃: 次の手番開始まで侵略しなければ解除
-  for (const fx of Object.values(r.tileFx))
-    if (fx.tide && fx.tide.by === p.id) delete fx.tide;  // 満ち潮: 次の手番開始で解除
   // この人が掛けた呪いは効果終了(「あなたの次の手番まで」)
   for (const [ti, c] of Object.entries(r.curses))
     if (c.by === p.id) { delete r.curses[ti]; log(r, `衰弱の呪い(${ti}番の土地)の効果が切れた`); }
@@ -488,8 +470,6 @@ function bankrupt(r, p) {
   p.bankrupt = true;
   p.gold = 0;
   p.blade = false; p.windShift = false;
-  for (const fx of Object.values(r.tileFx))
-    if (fx.tide && fx.tide.by === p.id) delete fx.tide;
   r.lastEvent = { type: 'bankrupt', player: p.id, at: stamp(r) };
   log(r, `💥 ${p.name}は破産した! ゲームから脱落…`);
   delete r.pending[p.id];
@@ -799,7 +779,6 @@ function resolveBattle(r) {
   if (atkShade) { st += atkShade; notes.push(`【死影】蓄えた影がATを${atkShade}高める!`); }
   if (atk.blade) { st += 10; notes.push('血染めの刃が侵略者のATを10高めた!'); }
   if (bFx.vortex) { st += 10; notes.push('炎の渦が侵略者を後押し!(AT+10)'); }
-  if (bFx.roots) { st -= 20; notes.push('根の牢獄が侵略者を縛る!(AT-20)'); }
   st = Math.max(0, st);
 
   // --- 防衛側HP(地形・女王・呪い) ---
@@ -951,7 +930,6 @@ function resolveBattle(r) {
     if (!mvSrc && !corridor) {
       const toll = tollOf(r, b.tile);
       payTo(r, atk, def, toll);
-      consumeTide(r, b.tile);
       log(r, `${def.name}が防衛成功! 通行料${toll}Gも支払わせた`);
       kingBonus(r, def, b.tile);
     } else {
@@ -970,7 +948,7 @@ function resolveBattle(r) {
   }
   atk.blade = false;                                  // 侵略したら成否問わず解除
   const endFx = r.tileFx[b.tile];
-  if (endFx) { delete endFx.vortex; delete endFx.roots; delete endFx.uplift; }  // 戦闘終了で解除
+  if (endFx) { delete endFx.vortex; delete endFx.uplift; }  // 戦闘終了で解除
   r.battle = null;
   // v0.74: 戦勝報酬は共通山札から3枚ドラフト(勝者=攻守どちらでも)。
   // ドラフト完了後にsettleAll→endTurnへ続く(進行を直列化し、r.draftの競合を防ぐ)
@@ -1150,13 +1128,11 @@ function handleChoose(r, playerId, optionId) {
       spellFx(r, 'sp_wind_shift', [], p.id);
       return askRoll(r, p);
     }
-    if (ELEM_OF_SPELL[sid] || sid === 'sp_flame_vortex' || sid === 'sp_high_tide' ||
-        sid === 'sp_bedrock_uplift' || sid === 'sp_root_prison' || sid === 'sp_feather_rest') {
+    if (ELEM_OF_SPELL[sid] || sid === 'sp_flame_vortex' || sid === 'sp_bedrock_uplift') {
       p.pendSpell = sid;
       let cond;
       if (ELEM_OF_SPELL[sid]) cond = (o, i) => o.player === p.id && tileElem(r, i) !== ELEM_OF_SPELL[sid];
       else if (sid === 'sp_flame_vortex') cond = o => o.player !== p.id;
-      else if (sid === 'sp_high_tide') cond = (o, i) => o.player === p.id && tileElem(r, i) === 'water';
       else if (sid === 'sp_bedrock_uplift') cond = (o, i) => o.player === p.id && tileElem(r, i) === 'earth';
       else cond = o => o.player === p.id;
       const opts = r.owners.map((o, i) => o && cond(o, i)
@@ -1256,13 +1232,6 @@ function handleChoose(r, playerId, optionId) {
       log(r, `🔥 炎の渦がマス${i}を包む。${CREATURES[o.creature].name}に10ダメージ! 次の侵略者はAT+10`);
       spellFx(r, 'sp_flame_vortex', [i], p.id);
       spellDamage(r, i, 10, '炎の渦');
-    } else if (sid === 'sp_high_tide') {
-      if (o.player !== p.id || tileElem(r, i) !== 'water') return askRoll(r, p);
-      pay();
-      fx().tide = { by: p.id };
-      r.lastEvent.desc = `${p.name}の水領地(${i}番)で次に受け取る通行料+50%(次の手番まで)`;
-      log(r, `🌊 満ち潮! マス${i}で次に受け取る通行料+50%(次の手番まで)`);
-      spellFx(r, 'sp_high_tide', [i], p.id);
     } else if (sid === 'sp_bedrock_uplift') {
       if (o.player !== p.id || tileElem(r, i) !== 'earth') return askRoll(r, p);
       pay();
@@ -1272,24 +1241,6 @@ function handleChoose(r, playerId, optionId) {
       r.lastEvent.desc = `${CREATURES[o.creature].name}の負傷${before}→${o.dmg}。次の戦闘でDF+10`;
       log(r, `⛰ 岩盤隆起! ${CREATURES[o.creature].name}の負傷${before}→${o.dmg}。次の戦闘でDF+10`);
       spellFx(r, 'sp_bedrock_uplift', [i], p.id);
-    } else if (sid === 'sp_root_prison') {
-      if (o.player !== p.id) return askRoll(r, p);
-      pay();
-      fx().roots = true;
-      r.lastEvent.desc = `${p.name}の領地(${i}番)を守る。次に侵略するクリーチャーはAT-20`;
-      log(r, `🌿 根の牢獄がマス${i}を守る。次にこの領地へ侵略するクリーチャーはAT-20`);
-      spellFx(r, 'sp_root_prison', [i], p.id);
-    } else if (sid === 'sp_feather_rest') {
-      if (o.player !== p.id) return askRoll(r, p);
-      pay();
-      let c = o.creature;
-      if (isEvolved(o) && CREATURES[baseId(c)].evo && !/_f$/.test(c)) c = baseId(c) + '_f';  // 進化状態を維持
-      p.hand.push(c);
-      r.owners[i] = null;
-      delete r.tileFx[i];
-      r.lastEvent.desc = `${CREATURES[c].name}は全回復して${p.name}の手札へ。マス${i}は空き地に`;
-      log(r, `🪶 羽休め ─ ${CREATURES[c].name}は全回復して${p.name}の手札へ戻った。マス${i}は空き地に`);
-      spellFx(r, 'sp_feather_rest', [i], p.id, { cid: c });
     }
     return askRoll(r, p);
   }
@@ -1604,7 +1555,6 @@ function handleChoose(r, playerId, optionId) {
       const enemy = pById(r, o.player);
       const toll = tollOf(r, i);
       const paid = payTo(r, p, enemy, toll);
-      consumeTide(r, i);
       kingBonus(r, enemy, i);
       r.lastEvent = { type: 'toll', from: p.id, to: enemy.id, amount: paid,
                       fromGold: p.gold, toGold: enemy.gold, at: stamp(r) };
@@ -1621,7 +1571,6 @@ function handleChoose(r, playerId, optionId) {
       const enemy = pById(r, o.player);
       const toll = tollOf(r, p.pos);
       payTo(r, p, enemy, toll); r.battle = null;
-      consumeTide(r, p.pos);
       kingBonus(r, enemy, p.pos);
       log(r, `${p.name}は侵略を取りやめ、通行料${toll}Gを支払った`);
       return endTurn(r);
