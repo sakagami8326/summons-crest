@@ -758,8 +758,8 @@
       -webkit-backface-visibility:hidden; }
   .scFront { transform:rotateY(0deg); }
   .scBack { transform:rotateY(180deg); background:#090a12; }
-  .scStill { position:absolute; left:50%; top:0; width:108%; max-width:none; height:100%;
-      transform:translateX(-50%); object-fit:cover; object-position:center top;
+  #selectOv .selCard img.scStill { position:absolute; inset:0; width:100%; max-width:none; height:100%;
+      transform:none; object-fit:cover; object-position:center top;
       filter:saturate(.98) contrast(1.02); }
   .scBack::after { content:""; position:absolute; inset:0; pointer-events:none;
       background:linear-gradient(180deg,transparent 54%,rgba(4,6,15,.18) 64%,rgba(4,6,15,.96) 100%); }
