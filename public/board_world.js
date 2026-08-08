@@ -1040,7 +1040,7 @@ const PW = (() => {
           g.lineStyle(3, 0x2C2A4A, 1); g.strokeCircle(x, y - lift + 6 - 32, 32);
           boardObjs.push(g);
           boardObjs.push(scene.add.text(x, y - lift + 6 - 32, c.name.slice(0, 4),
-            { fontFamily: 'sans-serif', fontSize: '15px', color: '#F6EFDD' }).setOrigin(0.5, 0.5).setDepth(d));
+            { fontFamily: '"Yu Mincho", "Hiragino Mincho ProN", serif', fontSize: '15px', color: '#F6EFDD' }).setOrigin(0.5, 0.5).setDepth(d));
         });
       }
     }
@@ -1067,7 +1067,7 @@ const PW = (() => {
   function makeBadge(b) {
     const cont = scene.add.container(b.x, b.y).setDepth(b.z);
     const txt = scene.add.text(b.icon ? 8 : 0, 0, b.text,
-      { fontFamily: 'sans-serif', fontSize: '13px', fontStyle: '700', color: '#fff' }).setOrigin(0.5, 0.5);
+      { fontFamily: '"Yu Mincho", "Hiragino Mincho ProN", serif', fontSize: '13px', fontStyle: '700', color: '#fff' }).setOrigin(0.5, 0.5);
     txt.setShadow(0, 1, 'rgba(0,0,0,.45)', 2);
     const w = txt.width + (b.icon ? 34 : 22), h = 19, sk = 2;  // skewX(-6deg)相当の平行四辺形
     const col = hexInt(b.color);

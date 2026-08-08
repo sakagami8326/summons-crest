@@ -2,22 +2,21 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Reggae+One&display=swap" rel="stylesheet">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#141227">
 <title>Summons Crest — 手元</title>
 <style>
-  :root { --ink:#141227; --ink2:#1E1B3C; --gold:#C9A227; --gold-soft:#EFD98F; --parchment:#F1E8D0; }
+  :root { --ink:#141227; --ink2:#1E1B3C; --gold:#C9A227; --gold-soft:#EFD98F; --parchment:#F1E8D0;
+      --font-mincho:"Yu Mincho","Hiragino Mincho ProN","Hiragino Mincho Pro","Noto Serif JP",serif; }
   html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
   * { box-sizing:border-box; margin:0; -webkit-tap-highlight-color:transparent; }
   body { background:radial-gradient(ellipse at 50% 0%, #2A2650 0%, var(--ink) 70%);
          height:100dvh; overflow:hidden; color:var(--parchment);
-         font-family:"Hiragino Mincho ProN","Yu Mincho",serif; user-select:none;
+         font-family:var(--font-mincho); font-weight:400; user-select:none;
          display:flex; flex-direction:column; }  /* フロー配置: HUD/メッセージ/手札が重ならない */
+  body *,button,input,select,textarea { font-family:var(--font-mincho)!important; }
   #rotate { display:none; position:fixed; inset:0; z-index:99; background:var(--ink);
         align-items:center; justify-content:center; flex-direction:column; gap:14px;
         font-size:17px; letter-spacing:3px; }
@@ -470,8 +469,6 @@
   .face .elemIc.none { color:#9AA0B0; font-size:1.7dvh; font-family:serif; }
 
   /* v0.87 クリーチャーカード刷新 ─ 背景/アート/UIをコードで合成 */
-  @font-face { font-family:"Marudeco"; src:url("/assets/cards/Marudeco-Bold.otf") format("opentype");
-      font-weight:700; font-style:normal; font-display:swap; }
   .face.creatureCard { --paper:#f6e9c8; --cardInk:#172536; padding:0; border:0; border-radius:8px;
       background:#1b6f9c; color:var(--cardInk); isolation:isolate; container-type:inline-size; }
   .creatureCard .ccBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-3; }

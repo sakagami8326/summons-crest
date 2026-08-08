@@ -72,6 +72,12 @@ const scripts = timingSrc + '\n' +
       !/class="csUpcoming" aria-disabled="true"/.test(html))
     throw new Error('召喚士選択検査: 4人カード+準備中アーデル枠の固定レイアウトがない');
   const boardHtml = fs.readFileSync('public/board.html', 'utf8');
+  const boardWorldSrc = fs.readFileSync('public/board_world.js', 'utf8');
+  if (!/--font-mincho:/.test(html) || !/--font-mincho:/.test(boardHtml) ||
+      !/body \*,button,input,select,textarea\s*\{\s*font-family:var\(--font-mincho\)!important/.test(html) ||
+      !/body \*,button,input,select,textarea\s*\{\s*font-family:var\(--font-mincho\)!important/.test(boardHtml) ||
+      !/Yu Mincho/.test(boardWorldSrc) || /fonts\.googleapis\.com/.test(html + boardHtml))
+    throw new Error('フォント検査: テレビ・スマホ・Phaserが明朝体へ統一されていない');
   if (!/summonerSelect/.test(boardHtml) || !/class="scLocked">準備中/.test(boardHtml) ||
       !/selectable === false/.test(boardHtml))
     throw new Error('テレビ召喚士選択検査: 5本パネルまたは準備中表示がない');
@@ -79,6 +85,9 @@ const scripts = timingSrc + '\n' +
       !/function playGameEntryTransition\(\)/.test(boardHtml) ||
       !/class="entryRing"/.test(boardHtml) || !/zoomTile = 0; applyZoom\(\)/.test(boardHtml))
     throw new Error('ゲーム開始演出検査: 選択BGM・回転リング・円形ワイプ・城ズームが不足');
+  if (/\.selCard\.chosen\s*\{[^}]*flex-grow/.test(boardHtml) ||
+      /\.selCard[^\n]*\.chosen\s*\{[^}]*scale\(/.test(boardHtml))
+    throw new Error('召喚士選択検査: 選択済みパネルが拡大されている');
   console.log('レイアウト不変条件 ✓ (HUD/ダイス/ツール+大型手札の2段配置)');
 }
 

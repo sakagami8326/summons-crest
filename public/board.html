@@ -2,18 +2,15 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Reggae+One&display=swap" rel="stylesheet">
 <title>Summons Crest — 盤面</title>
 <style>
-  @font-face { font-family:"Marudeco"; src:url("/assets/cards/Marudeco-Bold.otf") format("opentype");
-      font-weight:700; font-style:normal; font-display:swap; }
-  :root { --ink:#141227; --ink2:#1E1B3C; --gold:#C9A227; --gold-soft:#EFD98F; --parchment:#F1E8D0; }
+  :root { --ink:#141227; --ink2:#1E1B3C; --gold:#C9A227; --gold-soft:#EFD98F; --parchment:#F1E8D0;
+      --font-mincho:"Yu Mincho","Hiragino Mincho ProN","Hiragino Mincho Pro","Noto Serif JP",serif; }
   * { box-sizing:border-box; margin:0; }
   body { background:url('/assets/bg.jpg') center / cover no-repeat fixed, #1E1B3C;
-         min-height:100vh; overflow:hidden; font-family:"Hiragino Mincho ProN","Yu Mincho",serif;
+         min-height:100vh; overflow:hidden; font-family:var(--font-mincho); font-weight:400;
          color:var(--parchment); }
+  body *,button,input,select,textarea { font-family:var(--font-mincho)!important; }
   #world { position:fixed; left:50%; top:0; width:1280px; height:905px; transform-origin:top center;
       transition:transform .85s cubic-bezier(.25,.85,.3,1); }
   #stage { position:absolute; inset:0; }
@@ -140,7 +137,7 @@
   .battleCreatureCard .scElem { width:100%; height:100%; display:grid; place-items:center; }
   .battleCreatureCard .scElem svg { width:100%; height:100%; }
   .battleCreatureCard .scElem svg * { fill:#fff!important; }
-  .battleCreatureCard .scName { grid-column:2; color:#fff4d5; font:700 2.55vh/1 Marudeco,sans-serif!important;
+  .battleCreatureCard .scName { grid-column:2; color:#fff4d5; font:700 2.55vh/1 var(--font-mincho)!important;
       text-align:center; white-space:nowrap; text-shadow:0 2px 5px #000; }
   .battleCreatureCard .scArt { position:absolute; z-index:7; top:8.3%; left:1.5%; width:97%; height:69%;
       object-fit:contain; filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 8px rgba(255,255,255,.55)); }
@@ -600,7 +597,7 @@
   .plate.turn { filter:drop-shadow(0 0 9px var(--hud-color,#F2D062)) brightness(1.08); }
   .plate .pname { font-family:'Reggae One','Yu Mincho',serif; font-weight:700; color:#fff7df;
       text-shadow:0 2px 5px rgba(0,0,0,.9); }
-  .plate .pts,.plate .row2,.plate .row3,.plate .rankBadge { font-family:Marudeco,sans-serif !important; }
+  .plate .pts,.plate .row2,.plate .row3,.plate .rankBadge { font-family:var(--font-mincho)!important; }
   .plate .pts { color:#fff7df !important; text-shadow:0 2px 6px rgba(0,0,0,.9) !important; }
   .plate .pts small,.plate .row2 { color:rgba(255,247,223,.9) !important; text-shadow:0 1px 4px rgba(0,0,0,.9); }
   .titleChip { display:inline-block; background:linear-gradient(180deg,#E8C55A,#B8901F); color:#241C05;
@@ -677,11 +674,9 @@
       transform:translateY(-4vh); transition:opacity .35s ease,transform .45s ease; }
   #selectOv .selCard:nth-child(even) { transform:translateY(2.4vh); }
   #selectOv .selCard:nth-child(3) { transform:translateY(.8vh); }
-  #selectOv .selCard.chosen { flex-grow:1.15; z-index:3;
+  #selectOv .selCard.chosen { z-index:3;
       border-color:#d1a735; box-shadow:0 0 0 3px rgba(255,235,157,.8),0 0 2.4vh var(--panel-color),
       0 1.4vh 2.8vh rgba(27,34,51,.28); }
-  #selectOv .selCard:nth-child(even).chosen { transform:translateY(1.1vh) scale(1.018); }
-  #selectOv .selCard:nth-child(odd).chosen { transform:translateY(-.7vh) scale(1.018); }
   #selectOv .selCard.contested { border-color:#d64d42; box-shadow:0 0 0 3px rgba(214,77,66,.28),
       0 0 2.5vh rgba(214,77,66,.72); }
   .scBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-4;
