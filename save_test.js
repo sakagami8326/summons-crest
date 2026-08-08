@@ -8,7 +8,7 @@ const { spawn } = require('child_process');
 let src = fs.readFileSync(path.join(__dirname, 'server.js'), 'utf8');
 src = src.replace(/server\.listen\([\s\S]*?\}\);\s*$/, '');
 const G = new Function('require', '__dirname', 'process', 'console', 'setInterval',
-  src + '\n;return { makeRoom, startSelect, handleChoose, publicState, rooms, CHARS,' +
+  src + '\n;return { makeRoom, startSelect, handleChoose, publicState, startGame, rooms, CHARS,' +
   ' serializeRoom, restoreRoom, validateSave,' +
   ' ROOM_PERSIST_KEYS, ROOM_RUNTIME_KEYS, SAVE_VER };')(
   require, __dirname, process, console, () => {});
@@ -32,6 +32,7 @@ function setupGame() {
   G.startSelect(r);
   const chars = Object.entries(G.CHARS).filter(([, c]) => c.selectable !== false).map(([id]) => id);
   r.players.forEach((p, i) => G.handleChoose(r, p.id, chars[i % chars.length]));
+  G.startGame(r); // テレビの「ゲーム開始」操作を再現
   return r;
 }
 

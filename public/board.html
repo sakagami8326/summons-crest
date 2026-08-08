@@ -730,9 +730,9 @@
   .summonerHint { position:relative; z-index:1; margin:0 0 1.4vh; color:#66543c;
       font:600 clamp(11px,1.45vh,16px)/1.4 "Yu Mincho","Hiragino Mincho ProN",serif;
       letter-spacing:.18em; text-shadow:0 1px 0 rgba(255,255,255,.85); }
-  #selectOv #selRow { width:min(94vw,1720px); height:76vh; margin:0 auto; display:flex;
+  #selectOv #selRow { width:min(94vw,1720px); height:68vh; margin:0 auto; display:flex;
       align-items:stretch; justify-content:center; gap:.72vw; overflow:visible; }
-  #selectOv .selCard { --panel-color:#7da4cc; flex:1 1 0; min-width:0; width:auto; height:71.5vh;
+  #selectOv .selCard { --panel-color:#7da4cc; flex:1 1 0; min-width:0; width:auto; height:64.5vh;
       padding:0; margin:0; border:2px solid color-mix(in srgb,var(--panel-color) 58%,#fff);
       border-radius:0; overflow:hidden; isolation:isolate; background:#1a2131;
       perspective:1400px;
@@ -742,7 +742,7 @@
   #selectOv.departing .selCard:nth-child(-n+2) { transform:translateX(-32vw) scale(.94); }
   #selectOv.departing .selCard:nth-child(3) { transform:translateY(30vh) scale(.94); }
   #selectOv.departing .selCard:nth-child(n+4) { transform:translateX(32vw) scale(.94); }
-  #selectOv.departing .summonerHead,#selectOv.departing .summonerHint { opacity:0;
+  #selectOv.departing .summonerHead,#selectOv.departing .summonerHint,#selectOv.departing .selectionStart { opacity:0;
       transform:translateY(-4vh); transition:opacity .35s ease,transform .45s ease; }
   #selectOv .selCard:nth-child(even) { transform:translateY(2.4vh); }
   #selectOv .selCard:nth-child(3) { transform:translateY(.8vh); }
@@ -761,13 +761,30 @@
   .scStill { position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
       object-position:center top; filter:saturate(.98) contrast(1.02); }
   .scBack::after { content:""; position:absolute; inset:0; pointer-events:none;
-      background:linear-gradient(180deg,transparent 55%,rgba(4,5,12,.12) 72%,rgba(4,5,12,.84) 100%); }
-  .scBackMeta { position:absolute; z-index:2; left:.7vw; right:.7vw; bottom:1.15vh;
-      color:#fff9e8; text-align:center; text-shadow:0 2px 8px #000; }
+      background:linear-gradient(180deg,transparent 54%,rgba(4,6,15,.18) 64%,rgba(4,6,15,.96) 100%); }
+  .scBackMeta { position:absolute; z-index:2; left:0; right:0; bottom:0; min-height:35%;
+      padding:7vh .8vw 1.7vh; display:flex; flex-direction:column; justify-content:flex-end;
+      color:#fff9e8; text-align:center; text-shadow:0 2px 9px #000,0 0 2px #000; }
   .scBackMeta strong { display:block; font:700 clamp(18px,2.7vh,31px)/1.08 Marudeco,sans-serif;
       letter-spacing:.1em; }
   .scBackMeta span { display:block; margin-top:.55vh; font-size:clamp(10px,1.2vh,14px);
       letter-spacing:.08em; color:#ffe9a4; }
+  .selectionStart { width:min(94vw,1720px); min-height:7.2vh; margin:.35vh auto 0;
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.45vh;
+      opacity:0; pointer-events:none; transform:translateY(1.5vh); transition:.32s ease; }
+  .selectionStart.on { opacity:1; pointer-events:auto; transform:none; }
+  .selectionStart .gbtn { min-width:clamp(220px,22vw,360px); padding:1.05vh 3vw;
+      color:#33220d; border:2px solid #9a6c20; background:linear-gradient(180deg,#fff2a7,#d9a92f);
+      box-shadow:inset 0 0 0 2px rgba(255,255,255,.55),0 .6vh 1.5vh rgba(64,38,7,.28);
+      font:700 clamp(17px,2.25vh,27px)/1.1 "Yu Mincho","Hiragino Mincho ProN",serif; }
+  .selectionStart .gbtn:disabled { filter:saturate(.5); cursor:wait; }
+  #selectionStartMsg { color:#8e241d; font-size:clamp(11px,1.25vh,14px); min-height:1.3em; }
+  #audioGate { position:fixed; inset:0; z-index:200; display:none; place-items:center;
+      background:radial-gradient(circle at center,rgba(35,29,67,.72),rgba(6,5,18,.97)); }
+  #audioGate.on { display:grid; }
+  #audioGate button { min-width:min(420px,70vw); padding:20px 36px; }
+  #bgmBtn.needsAudio { display:block !important; color:#2b1b08 !important; background:#f3cf5c !important;
+      border-color:#fff0a5 !important; box-shadow:0 0 18px rgba(243,207,92,.85); }
   .scBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-4;
       filter:saturate(.88) brightness(.92); }
   .scVeil { position:absolute; inset:0; z-index:-2; background:linear-gradient(180deg,
@@ -887,6 +904,7 @@
   <div id="tileMsg"></div>
   <div id="tpBubble"></div>
   <div id="turnPortrait"><img id="tpImg"><div class="tpn" id="tpName"></div></div>
+  <div id="audioGate" class="on"><button class="gbtn" id="audioGateBtn">クリックして開始</button></div>
   <div class="overlay on" id="titleOv">
     <div class="titleCards" aria-hidden="true">
       <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-water.webp"><img class="titleCardArt" src="/assets/cards/c_cresteria.webp"></div></div>
@@ -941,6 +959,7 @@
       <div class="summonerConflict" id="selConflict" style="display:none">競合あり ─ 全員決定後にダイス勝負</div></div>
     <p class="summonerHint">各自のスマホで召喚士を選んでください</p>
     <div class="selRow" id="selRow"></div>
+    <div class="selectionStart" id="selectionStart"><button class="gbtn" id="selectionStartBtn">ゲーム開始</button><div id="selectionStartMsg"></div></div>
   </div>
   <div id="gameEntry" aria-hidden="true"><div class="entryRing"></div></div>
   <div class="overlay" id="duelOv" style="z-index:85">
@@ -1521,7 +1540,7 @@ function initAudio() {
       .catch(() => { a.muted = false; });
   });
   [bgmN, bgmR, bgmBattle, bgmSelect].forEach(a => {
-    a.loop = true; a.volume = 0.35;
+    a.loop = true; a.volume = 0.35; a.preload = 'auto';
   });
   const btn = document.getElementById('bgmBtn');
   btn.style.display = 'block';
@@ -1529,6 +1548,7 @@ function initAudio() {
     bgmMuted = !bgmMuted;
     btn.textContent = bgmMuted ? '♪ OFF' : '♪ ON';
     if (bgmCur) { bgmMuted ? bgmCur.pause() : bgmCur.play().catch(() => {}); }
+    if (!bgmMuted && bgmCur && !bgmCur.paused) btn.classList.remove('needsAudio');
   };
 }
 function playSe(a) {
@@ -1614,22 +1634,45 @@ function bgmHeal() {
       (state.phase === 'playing' || state.phase === 'lobby' || state.phase === 'select'))))
     bgmCur.play().catch(() => {});
 }
-function startTitleBgm() {
-  if (!document.getElementById('titleOv').classList.contains('on')) return;
+function unlockTitleAudio() {
   initAudio();
   setBgm('select');
-  if (bgmCur && !bgmMuted) bgmCur.play().catch(() => {});
-  document.removeEventListener('pointerdown', startTitleBgm);
-  document.removeEventListener('keydown', startTitleBgm);
+  document.getElementById('audioGate').classList.remove('on');
+  if (bgmCur && !bgmMuted) bgmCur.play()
+    .then(() => document.getElementById('bgmBtn').classList.remove('needsAudio'))
+    .catch(() => document.getElementById('bgmBtn').classList.add('needsAudio'));
 }
-// 自動再生制限に従い、タイトル画面での最初のユーザー操作から選択曲を流し続ける。
-document.addEventListener('pointerdown', startTitleBgm);
-document.addEventListener('keydown', startTitleBgm);
+document.getElementById('audioGateBtn').addEventListener('click', unlockTitleAudio);
+document.getElementById('audioGate').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') unlockTitleAudio();
+});
 setInterval(bgmHeal, 3000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) bgmHeal(); });
 let es = null, lastMsgAt = 0;
 // ===== v0.62 自動セーブ(saveRev契機・盤面のlocalStorageへ) =====
-let boardToken = null, lastSavedRev = 0, saveInFlight = false;
+let boardToken = null, lastSavedRev = 0, saveInFlight = false, startGameSubmitting = false;
+document.getElementById('selectionStartBtn').onclick = async () => {
+  if (!state || !state.selectionReady || !code || !boardToken || startGameSubmitting) return;
+  const btn = document.getElementById('selectionStartBtn');
+  const msg = document.getElementById('selectionStartMsg');
+  startGameSubmitting = true;
+  btn.disabled = true;
+  btn.textContent = 'ゲーム開始中…';
+  msg.textContent = '';
+  initAudio();
+  if (!bgmMuted && bgmCur && bgmCur.paused) bgmCur.play().catch(() => {});
+  try {
+    const res = await fetch('/api/action', { method:'POST', headers:{ 'Content-Type':'application/json' },
+      body:JSON.stringify({ room:code, type:'start_game', token:boardToken }) });
+    const out = await res.json();
+    if (!res.ok || out.error) throw new Error(out.error || 'ゲームを開始できませんでした');
+  } catch (e) {
+    startGameSubmitting = false;
+    btn.disabled = false;
+    btn.textContent = 'ゲーム開始';
+    msg.textContent = e.message || '選択状態を確認してください';
+  }
+};
 function maybeAutoSave() {
   if (!state || !boardToken || !code) return;
   const rev = state.saveRev || 0;
@@ -2561,7 +2604,8 @@ function playGameEntryTransition() {
   sel.classList.add('on', 'departing');
   wipe.classList.remove('reveal');
   wipe.classList.add('on');
-  fadeBgmTo(null, 950);
+  // 選択BGMを無音にせず、円形ワイプ中に通常BGMへ直接つなぐ。
+  crossfadeBgmTo('normal', 1150);
   gameEntryTimers.push(setTimeout(() => {
     gameEntrySelectionGone = true;
     sel.classList.remove('on', 'departing');
@@ -2574,7 +2618,7 @@ function playGameEntryTransition() {
   gameEntryTimers.push(setTimeout(() => {
     wipe.classList.remove('on', 'reveal');
     gameEntryRunning = false;
-    restoreBoardBgm();
+    bgmHeal();
     const first = state && state.players[state.turn];
     if (first) showTelop('turn', first.name + 'の手番');
   }, 3250));
@@ -3028,8 +3072,8 @@ function render() {
       const animateReveal = chosen && !locked && !revealedSummoners.has(cid);
       if (animateReveal) revealNow.push(cid);
       const pill = !who.length ? '─'
-        : who.length >= 2 ? '競合中: ' + who.map(p => p.name).join(' vs ')
-        : who[0].name + ' が使用';
+        : who.length >= 2 ? who.map(p => p.name).join(' / ') + ' が競合中'
+        : who[0].name + ' が選択';
       const elemSvg = c.elem && ELEM[c.elem] ? `<svg viewBox="-34 -36 68 72">${ELEM[c.elem]}</svg>` : '';
       const flipped = chosen && !locked && !animateReveal;
       return `<div class="selCard ${chosen ? 'chosen' : ''} ${flipped ? 'flipped' : ''} ${who.length >= 2 ? 'contested' : ''} ${locked ? 'locked' : ''}"
@@ -3061,6 +3105,14 @@ function render() {
       });
     }));
     $('selConflict').style.display = conflict ? 'block' : 'none';
+    const ready = !!state.selectionReady && !conflict;
+    $('selectionStart').classList.toggle('on', ready);
+    if (!ready) {
+      startGameSubmitting = false;
+      $('selectionStartBtn').disabled = false;
+      $('selectionStartBtn').textContent = 'ゲーム開始';
+      $('selectionStartMsg').textContent = '';
+    }
     if (state.duel && state.duel.at !== prev.duelAt) {
       prev.duelAt = state.duel.at;
       playDuel(state.duel);

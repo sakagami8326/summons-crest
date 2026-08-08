@@ -980,8 +980,8 @@ function handleChoose(r, playerId, optionId) {
   if (pend.type === 'select_char') {
     if (optionId === 'unpick') { p.charId = null; p.confirmed = false; return askSelect(r, p); }
     p.charId = optionId; p.confirmed = true;
-    if (!r.players.every(q => q.confirmed))
-      ask(r, p.id, 'select_wait', '他のプレイヤーを待っています…', [{ id: 'unpick', label: 'キャラを選び直す' }]);
+    // テレビで開始するまでは、全員がいつでも選び直せる状態を保つ。
+    ask(r, p.id, 'select_wait', '他のプレイヤーを待っています…', [{ id: 'unpick', label: 'キャラを選び直す' }]);
     log(r, `${p.name}は${CHARS[optionId].name}を選択`);
     return trySelectResolve(r);
   }
@@ -1622,12 +1622,21 @@ function askSelect(r, p) {
     .map(([id, c]) => ({ id, label: `${c.name}を使う` }));
   ask(r, p.id, 'select_char', '使用するキャラクターを選んでください', opts);
 }
+function isSelectionReady(r) {
+  if (r.phase !== 'select' || r.players.length < 2) return false;
+  if (!r.players.every(p => p.confirmed && p.charId &&
+      CHARS[p.charId]?.selectable !== false && CHAR_DECKS[p.charId])) return false;
+  return new Set(r.players.map(p => p.charId)).size === r.players.length;
+}
 function trySelectResolve(r) {
   if (!r.players.every(p => p.confirmed)) return;
   const groups = Object.entries(CHARS).filter(([, c]) => c.selectable !== false).map(([cid]) => cid)
     .map(cid => ({ cid, who: r.players.filter(p => p.charId === cid) }))
     .filter(g => g.who.length >= 2);
-  if (groups.length === 0) return startGame(r);
+  if (groups.length === 0) {
+    if (isSelectionReady(r)) log(r, '全員の召喚士が確定しました。テレビ画面からゲームを開始してください');
+    return;
+  }
   const g = groups[0];
   let rolls, winIdx;
   do {
@@ -1696,6 +1705,7 @@ function publicBattle(r) {
 function publicState(r, viewerId) {
   return {
     ver: VERSION, code: r.code, phase: r.phase, evoLevel: RULES.evoLevel, turn: r.turn, round: r.round, target: ASSET_GOAL, reachAt: ASSET_REACH,
+    selectionReady: isSelectionReady(r),
     tiles: TILES.map((t, i) => r.elemOv[i] ? Object.assign({}, t, { e: r.elemOv[i] }) : t),
     tolls: r.owners.map((o, i) => o ? tollOf(r, i) : 0),
     tileFx: r.tileFx,
@@ -2020,6 +2030,12 @@ const server = http.createServer(async (req, res) => {
     if (!r) return json(res, { error: 'no room' }, 404);
     touch(r);
     if (b.type === 'start_select' && r.phase === 'lobby' && r.players.length >= 2) startSelect(r);
+    else if (b.type === 'start_game') {
+      if (b.token !== r.boardToken) return json(res, { error: '権限がありません' }, 403);
+      if (!isSelectionReady(r))
+        return json(res, { error: '召喚士の選択状態が変わりました。全員でもう一度確認してください' }, 409);
+      startGame(r);
+    }
     else if (b.type === 'choose') handleChoose(r, b.playerId, b.optionId);
     else if (b.type === 'upgrade_preview') {
       // 発注書v0.75 §6.3: 強化選択中の候補プレビュー(揮発・非保存・ルール影響なし)。

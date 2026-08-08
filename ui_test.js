@@ -9,7 +9,7 @@ const fs = require('fs');
 // ===== サーバー(in-process) =====
 let ssrc = fs.readFileSync('server.js', 'utf8').replace(/server\.listen\([\s\S]*?\}\);\s*$/, '');
 const S = new Function('require', '__dirname', 'process', 'console', 'setInterval',
-  ssrc + ';return {makeRoom,startSelect,handleChoose,publicState,SPELLS,doRoll};')(
+  ssrc + ';return {makeRoom,startSelect,handleChoose,publicState,isSelectionReady,startGame,SPELLS,doRoll};')(
   require, __dirname, process, { log: () => {}, error: console.error }, () => 0);
 
 // ===== ダイス固定スペル =====
@@ -29,6 +29,22 @@ for (let n = 1; n <= 6; n++) {
     throw new Error(`ダイス固定スペル検査: 出目${n}が移動へ正しく反映されない`);
 }
 console.log('ダイス固定スペル1〜6 ✓');
+
+// ===== 召喚士確定後のテレビ開始待機 =====
+{
+  const r = S.makeRoom();
+  r.players = [{ id:'p1', name:'甲' }, { id:'p2', name:'乙' }];
+  S.startSelect(r);
+  S.handleChoose(r, 'p1', 'redani');
+  S.handleChoose(r, 'p2', 'linnei');
+  const pub = S.publicState(r, null);
+  if (r.phase !== 'select' || !S.isSelectionReady(r) || !pub.selectionReady)
+    throw new Error('召喚士開始待機検査: 全員確定後にselect維持/selectionReady算出ができない');
+  if (!r.pending.p1 || !r.pending.p1.options.some(o => o.id === 'unpick') ||
+      !r.pending.p2 || !r.pending.p2.options.some(o => o.id === 'unpick'))
+    throw new Error('召喚士開始待機検査: テレビ開始前の選び直しができない');
+}
+console.log('召喚士のテレビ開始待機 ✓');
 
 // ===== phone.html → DOMスタブ環境で実行 =====
 const html = fs.readFileSync('public/phone.html', 'utf8');
@@ -88,10 +104,18 @@ const scripts = timingSrc + '\n' +
       !/function playGameEntryTransition\(\)/.test(boardHtml) ||
       !/class="entryRing"/.test(boardHtml) || !/zoomTile = 0; applyZoom\(\)/.test(boardHtml))
     throw new Error('ゲーム開始演出検査: 選択BGM・回転リング・円形ワイプ・城ズームが不足');
-  if (!/function startTitleBgm\(\)/.test(boardHtml) ||
-      !/addEventListener\('pointerdown', startTitleBgm\)/.test(boardHtml) ||
-      !/setBgm\('select'\)/.test(boardHtml))
-    throw new Error('タイトルBGM検査: 初回操作から召喚士選択曲を開始できない');
+  if (!/id="audioGate" class="on"/.test(boardHtml) ||
+      !/function unlockTitleAudio\(\)/.test(boardHtml) ||
+      !/audioGateBtn.*addEventListener\('click', unlockTitleAudio\)/.test(boardHtml) ||
+      !/crossfadeBgmTo\('normal', 1150\)/.test(boardHtml))
+    throw new Error('タイトルBGM検査: 明示的な音声解放または開始時クロスフェードがない');
+  if (!/id="selectionStartBtn"/.test(boardHtml) ||
+      !/type:'start_game', token:boardToken/.test(boardHtml) ||
+      !/state\.selectionReady/.test(boardHtml))
+    throw new Error('テレビゲーム開始検査: readiness連動の管理者開始ボタンがない');
+  if (!/\.scBackMeta\s*\{[^}]*min-height:35%/.test(boardHtml) ||
+      !/\.scStill\s*\{[^}]*object-fit:cover/.test(boardHtml))
+    throw new Error('召喚士裏面検査: 全面coverまたは下部35%グラデーションがない');
   if (/\.selCard\.chosen\s*\{[^}]*flex-grow/.test(boardHtml) ||
       /\.selCard[^\n]*\.chosen\s*\{[^}]*scale\(/.test(boardHtml))
     throw new Error('召喚士選択検査: 選択済みパネルが拡大されている');
@@ -274,6 +298,8 @@ function runGame(g) {
       const atBefore = (r.lastDice || {}).at, dirBefore = (r.players.find(q => q.id === pid2) || {}).dir;
       if (opt.id === 'roll') P.setRolling(true);
       S.handleChoose(r, pid2, opt.id);
+      // 全員確定後、テレビ側の「ゲーム開始」押下を再現する。
+      if (r.phase === 'select' && S.isSelectionReady(r)) S.startGame(r);
       if (opt.id === 'roll' && P.getRolling()) {
         const ld = r.lastDice || {};
         if (ld.at === P.getLastDiceAt())

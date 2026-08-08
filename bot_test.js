@@ -6,7 +6,7 @@ let src = fs.readFileSync(path.join(__dirname, 'server.js'), 'utf8');
 // listen部を除去(ポートを占有しない)
 src = src.replace(/server\.listen\([\s\S]*?\}\);\s*$/, '');
 const load = new Function('require', '__dirname', 'process', 'console', 'setInterval',
-  src + '\n;return { makeRoom, startSelect, handleChoose, publicState, rooms, CHARS };');
+  src + '\n;return { makeRoom, startSelect, handleChoose, publicState, startGame, rooms, CHARS };');
 const G = load(require, __dirname, process, console, () => {}); // GCタイマーは無効化
 
 function runGame(seed) {
@@ -20,6 +20,7 @@ function runGame(seed) {
   G.startSelect(r);
   const chars = Object.entries(G.CHARS).filter(([, c]) => c.selectable !== false).map(([id]) => id);
   pids.forEach((pid, i) => G.handleChoose(r, pid, chars[i % chars.length]));
+  G.startGame(r); // テレビの「ゲーム開始」操作を再現
 
   let steps = 0;
   const seen = new Set();
