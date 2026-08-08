@@ -114,11 +114,12 @@
   #battleTitle { position:absolute; z-index:7; top:3vh; left:50%; transform:translateX(-50%);
       font:700 3.2vh/1 Marudeco,'Yu Mincho',serif; letter-spacing:.45em; color:#f5d56f;
       text-shadow:0 2px 12px #000; white-space:nowrap; }
-  #battleField { position:absolute; z-index:3; inset:9vh 2.5vw 10vh; display:grid;
-      grid-template-columns:1fr 1fr; gap:2vw; align-items:center; }
+  #battleField { position:absolute; z-index:3; top:9vh; bottom:10vh; left:50%; width:min(94vw,176vh);
+      transform:translateX(-50%); display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+      gap:clamp(1rem,2vw,2.5rem); align-items:center; }
   .battleTeam { min-width:0; display:grid; align-items:center; gap:1.1vw; }
-  .battleTeam.atk { grid-template-columns:14vh minmax(25vh,31vh) minmax(10vw,14vw); }
-  .battleTeam.def { grid-template-columns:minmax(10vw,14vw) minmax(25vh,31vh) 14vh; }
+  .battleTeam.atk { grid-template-columns:minmax(10vh,13vh) minmax(22vh,29vh) minmax(0,1fr); }
+  .battleTeam.def { grid-template-columns:minmax(0,1fr) minmax(22vh,29vh) minmax(10vh,13vh); }
   .bside { position:relative; text-align:center; transition:transform .35s ease-in,opacity .5s,filter .5s;
       perspective:1000px; }
   .bside.lungeL { transform:translateX(7vw) scale(1.04); }
@@ -133,11 +134,11 @@
   @keyframes bCreatureReveal { from{transform:rotateY(-90deg);opacity:0} to{transform:none;opacity:1} }
   .battleCreatureCard .scBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-3; }
   .battleCreatureCard .scHead { position:absolute; z-index:5; top:3.1%; left:4.7%; right:4.7%; height:9.5%;
-      display:grid; grid-template-columns:11.5% 1fr 11.5%; align-items:center; }
-  .battleCreatureCard .scElem { width:100%; height:100%; display:grid; place-items:center; }
+      display:grid; grid-template-columns:1fr; align-items:center; }
+  .battleCreatureCard .scElem { display:none; }
   .battleCreatureCard .scElem svg { width:100%; height:100%; }
   .battleCreatureCard .scElem svg * { fill:#fff!important; }
-  .battleCreatureCard .scName { grid-column:2; color:#fff4d5; font:700 2.55vh/1 var(--font-mincho)!important;
+  .battleCreatureCard .scName { grid-column:1; color:#fff4d5; font:700 2.55vh/1 var(--font-mincho)!important;
       text-align:center; white-space:nowrap; text-shadow:0 2px 5px #000; }
   .battleCreatureCard .scArt { position:absolute; z-index:7; top:8.3%; left:1.5%; width:97%; height:69%;
       object-fit:contain; filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 8px rgba(255,255,255,.55)); }
@@ -163,15 +164,15 @@
       background:repeating-linear-gradient(45deg,#17152c 0 10px,#252140 10px 20px);
       box-shadow:0 2vh 4vh rgba(0,0,0,.65),inset 0 0 0 7px #17152c,inset 0 0 0 9px #9b7920; }
   .battleCardBack small { position:absolute; bottom:12%; left:0; right:0; font-size:1.5vh; letter-spacing:.15em; }
-  .battleStats { min-width:0; width:min(12.8vw,24vh); justify-self:center; padding:1.45vh .75vw; border:1px solid rgba(232,197,90,.72);
+  .battleStats { min-width:0; width:100%; max-width:24vh; box-sizing:border-box; justify-self:center; padding:1.45vh .75vw; border:1px solid rgba(232,197,90,.72);
       border-radius:1.4vh; background:rgba(10,8,25,.91); box-shadow:0 1vh 2.8vh rgba(0,0,0,.58),inset 0 0 2vh rgba(232,197,90,.07);
       text-shadow:0 2px 5px #000; backdrop-filter:blur(3px); }
   .def .battleStats { text-align:right; }
   .bsOwner { color:#ffe596; font:700 2.2vh/1.3 Marudeco,sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .bsCreature { color:#fff9e8; font-size:1.75vh; font-weight:700; letter-spacing:.08em; margin:.5vh 0 1vh; }
-  .bsValues { display:flex; gap:.35vw; align-items:stretch; font:700 3.65vh/1 Marudeco,sans-serif; }
+  .bsValues { width:100%; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.35vw; align-items:stretch; font:700 clamp(2.2vh,2.8vw,3.35vh)/1 Marudeco,sans-serif; }
   .def .bsValues { justify-content:flex-end; }
-  .bsValues span { white-space:nowrap; min-width:3.55vw; padding:.65vh .35vw; border-radius:.8vh;
+  .bsValues span { white-space:nowrap; min-width:0; box-sizing:border-box; padding:.65vh .2vw; border-radius:.8vh;
       background:rgba(255,255,255,.075); border:1px solid rgba(255,237,181,.2); text-align:center; }
   .bsValues small { display:block; font-size:1.25vh; margin:0 0 .4vh; color:#f3d06c; letter-spacing:.12em; }
   .bsMods { margin-top:.9vh; min-height:5.6vh; font-size:1.25vh; font-weight:700; line-height:1.5; color:rgba(255,249,232,.9); }
@@ -235,7 +236,7 @@
   #bresult.show { animation:bres .55s cubic-bezier(.2,.9,.3,1) forwards; }
   @keyframes bres { from { opacity:0; transform:scale(1.5); } to { opacity:1; transform:none; } }
   .bside.winner { z-index:8; transform:scale(1.09); filter:brightness(1.1) drop-shadow(0 0 2.2vh rgba(255,222,116,.78)); }
-  #battleCutin { position:fixed; inset:0; z-index:69; display:none; place-items:center; pointer-events:none;
+  #battleCutin { position:fixed; inset:0; z-index:71; display:none; place-items:center; pointer-events:none;
       background:linear-gradient(110deg,rgba(8,6,20,0) 0 12%,rgba(15,9,30,.97) 30% 70%,rgba(8,6,20,0) 88%); }
   #battleCutin.on { display:grid; animation:battleCutIn 1s ease both; }
   #battleCutin span { font:700 10vh/1 'Reggae One','Yu Mincho',serif; letter-spacing:.18em; color:#f2d062;
@@ -2625,7 +2626,9 @@ function playBattleOpening(key) {
   if (!key || battleOpeningKey === key) return;
   battleOpeningKey = key;
   initAudio();
-  setBgm(null);
+  // 盤面を先に覆い、無音状態を挟まず戦闘曲へ切り替える。
+  $('battle').classList.add('on');
+  setBgm('battle');
   playSe(seTelop);
   const cut = $('battleCutin');
   cut.classList.remove('on');
@@ -2635,7 +2638,6 @@ function playBattleOpening(key) {
     if (battleOpeningKey !== key) return;
     cut.classList.remove('on');
     $('battle').classList.add('on');
-    setBgm('battle');
   }, 900);
 }
 const battleSupportArt = sup => ({ weapon:'support-weapon-v1.webp', gweapon:'support-weapon-v1.webp',
@@ -2678,7 +2680,6 @@ function renderBattlePreview(bp) {
     $('bresult').classList.remove('show'); $('bresult').textContent = '';
     $('bnotes').textContent = '';
     hideLogo(true);
-    $('battle').classList.remove('on');
     playBattleOpening(bp.key);
   }
   const atkReveal = !!bp.atkCreature && activeBattleAttacker !== bp.atkCreature;
@@ -2688,6 +2689,9 @@ function renderBattlePreview(bp) {
     activeBattleAttacker = bp.atkCreature;
   }
   if (isNew) {
+    $('bDef').classList.remove('dead','winner','lungeL','lungeR');
+    $('bDef').style.opacity = '1';
+    $('bDef').style.filter = 'none';
     $('bDef').innerHTML = battleCreatureHTML(bp.defCreature, bp.defLevel || 1, false);
     $('bDefStats').innerHTML = previewStatsHTML(bp.defender, bp.defCreature, bp.defLevel || 1, bp.defDamage || 0, 'def');
   }
@@ -2727,6 +2731,11 @@ async function playBattle(b) {
   // SSEの更新や再接続で待機画面のDOMが欠けても、結果再生前に両カードを必ず復元する。
   $('bAtk').innerHTML = battleCreatureHTML(b.atkCreature, 1, true);
   $('bDef').innerHTML = battleCreatureHTML(b.defCreature, dLv, true);
+  ['bAtk','bDef'].forEach(id => {
+    $(id).classList.remove('dead','winner','lungeL','lungeR');
+    $(id).style.opacity = '1';
+    $(id).style.filter = 'none';
+  });
   if (!$('battle').classList.contains('on')) {
     initAudio();
     if (battleOpeningKey !== battlePlayingKey) playBattleOpening(battlePlayingKey);

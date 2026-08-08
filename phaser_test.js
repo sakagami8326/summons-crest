@@ -88,7 +88,9 @@ ok(/playSe\(seBattleFinish\)/.test(board), 'board.html: 決着SEを再生する'
 ok(/setBgm\('battle'\)/.test(board), 'board.html: 侵略中に戦闘BGMへ切り替える');
 ok(/setBgm\(null\);[\s\S]{0,180}playSe\(seBattleFinish\)/.test(board), 'board.html: 決着SE前に戦闘BGMを停止する');
 ok(/WIN<small>/.test(board), 'board.html: 勝者カードと同時にWINを表示する');
-ok(/supportNoneBtn[\s\S]{0,500}id:'sup:none'/.test(phone), 'phone.html: 支援カードを使用しないボタンがある');
+ok(/id === 'sup:none'/.test(phone), 'phone.html: 支援なし選択を共通行動UIで扱う');
+ok(!/id="supportNoneBtn"/.test(phone), 'phone.html: 支援なし選択を重複表示しない');
+ok(!/id="skipPlacementBtn"/.test(phone), 'phone.html: 配置しない選択を重複表示しない');
 ok(fs.existsSync(path.join(__dirname, 'public/assets/se_castle_bonus.mp3')), '城通過ボーナスSE素材がある');
 ok(/playSe\(seCastleBonus\)/.test(board), 'board.html: 城通過ボーナス確定時にSEを再生する');
 

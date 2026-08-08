@@ -724,7 +724,6 @@ function askMarket(r, p) {
 function startBattle(r, attacker, tileIdx) {
   const opts = attacker.hand.filter(c => CREATURES[c])
     .map(c => ({ id: 'atk:' + c, label: `${CREATURES[c].name}(AT${CREATURES[c].st})で攻める` }));
-  opts.push({ id: 'cancel', label: 'やめて通行料を払う' });
   r.battle = { tile: tileIdx, attacker: attacker.id, defender: r.owners[tileIdx].player,
                atkCreature: null, supports: {}, startedAt: stamp(r) };
   ask(r, attacker.id, 'pick_creature', '侵略! 手札からクリーチャーを選べ', opts);
@@ -1569,15 +1568,6 @@ function handleChoose(r, playerId, optionId) {
   }
 
   if (pend.type === 'pick_creature') {
-    if (optionId === 'cancel') {
-      const o = r.owners[p.pos];
-      const enemy = pById(r, o.player);
-      const toll = tollOf(r, p.pos);
-      payTo(r, p, enemy, toll); r.battle = null;
-      kingBonus(r, enemy, p.pos);
-      log(r, `${p.name}は侵略を取りやめ、通行料${toll}Gを支払った`);
-      return endTurn(r);
-    }
     r.battle.atkCreature = optionId.slice(4);
     return askSupports(r);
   }
