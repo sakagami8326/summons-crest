@@ -177,6 +177,9 @@ const CHARS = {
             style: '防衛・領地育成', deckNote: 'ノーム2+盾2+加護 ─ 守って育てる' },
   mio:    { name: 'ミオ',     color: '#4FA69C', elem: 'wind',
             style: '移動・機動侵略', deckNote: 'ガストン2+疾風2 ─ 動き回って仕掛ける' },
+  // 次期召喚士の予告表示。selectable=falseの間は選択肢・ゲーム進行へ入れない。
+  adel:   { name: 'アーデル', color: '#9DDFF2', elem: 'water',
+            style: '準備中', deckNote: '', selectable: false, upcoming: true },
 };
 const ULTS = {
   redani: { name: '烈火の進軍', desc: 'サイコロを3個振って移動する' },
@@ -1625,13 +1628,13 @@ function startSelect(r) {
 }
 function askSelect(r, p) {
   const taken = r.players.filter(x => x.confirmed && x.id !== p.id).map(x => x.charId);
-  const opts = Object.entries(CHARS).filter(([id]) => !taken.includes(id))
+  const opts = Object.entries(CHARS).filter(([id, c]) => c.selectable !== false && !taken.includes(id))
     .map(([id, c]) => ({ id, label: `${c.name}を使う` }));
   ask(r, p.id, 'select_char', '使用するキャラクターを選んでください', opts);
 }
 function trySelectResolve(r) {
   if (!r.players.every(p => p.confirmed)) return;
-  const groups = Object.keys(CHARS)
+  const groups = Object.entries(CHARS).filter(([, c]) => c.selectable !== false).map(([cid]) => cid)
     .map(cid => ({ cid, who: r.players.filter(p => p.charId === cid) }))
     .filter(g => g.who.length >= 2);
   if (groups.length === 0) return startGame(r);
@@ -1651,6 +1654,14 @@ function trySelectResolve(r) {
   });
 }
 function startGame(r) {
+  const invalid = r.players.find(p => !p.charId || CHARS[p.charId]?.selectable === false || !CHAR_DECKS[p.charId]);
+  if (invalid) {
+    invalid.charId = null;
+    invalid.confirmed = false;
+    askSelect(r, invalid);
+    log(r, `${invalid.name}の召喚士選択が無効なため、選択画面へ戻した`);
+    return;
+  }
   r.phase = 'playing';
   r.pending = {};
   const order = r.players.slice().sort(() => Math.random() - 0.5);
@@ -1788,7 +1799,8 @@ function validateSave(save) {
     if (!q || typeof q.id !== 'string' || !q.id || q.id.length > 24 || ids.has(q.id)) return 'プレイヤーIDが不正です';
     ids.add(q.id);
     if (typeof q.name !== 'string' || q.name.length > 16) return 'プレイヤー名が不正です';
-    if (q.charId != null && !CHARS[q.charId]) return 'キャラクターIDが不正です';
+    if (q.charId != null && (!CHARS[q.charId] || CHARS[q.charId].selectable === false))
+      return 'キャラクターIDが不正です';
     for (const zone of ['deck', 'hand', 'discard', 'exile', 'pickCards']) {
       const z = q[zone];
       if (z == null) continue;

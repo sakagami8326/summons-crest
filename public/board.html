@@ -617,6 +617,88 @@
       padding:6px 8px; min-height:56px; }
   .selCard .scu b { color:var(--gold-soft); letter-spacing:1px; }
   .selCard .aff { font-size:10.5px; color:rgba(241,232,208,.6); margin-top:4px; }
+  /* 召喚士選択: 5本の縦長ショーケース。テレビは閲覧専用で確定状態だけを強調する。 */
+  #selectOv.summonerSelect { justify-content:flex-start; gap:0; padding:2.4vh 2.8vw 2.8vh;
+      overflow:hidden; color:#171725;
+      background:
+        linear-gradient(180deg,rgba(255,252,239,.12),rgba(228,211,167,.08)),
+        url('/assets/summoner-select-bg-v1.png') center / cover no-repeat,
+        #f3ead1; }
+  #selectOv.summonerSelect::after { content:""; position:absolute; inset:0; pointer-events:none;
+      background:radial-gradient(ellipse at center,transparent 48%,rgba(81,59,30,.1) 100%);
+      mix-blend-mode:multiply; }
+  .summonerHead { width:min(94vw,1720px); min-height:10vh; display:grid;
+      grid-template-columns:1fr auto 1fr; align-items:center; margin:0 auto 1.1vh; }
+  .summonerTitle { position:relative; grid-column:2; min-width:clamp(340px,34vw,610px);
+      padding:.5vh 3.7vw .7vh; text-align:center; color:#2c2119;
+      filter:drop-shadow(0 2px 0 rgba(255,255,255,.65)); }
+  .summonerTitle::before,.summonerTitle::after { content:""; position:absolute; top:46%;
+      width:clamp(56px,7vw,124px); height:1px;
+      background:linear-gradient(90deg,transparent,#b78a39 34%,#755226); }
+  .summonerTitle::before { right:100%; }
+  .summonerTitle::after { left:100%; transform:scaleX(-1); }
+  .summonerTitle strong { display:block;
+      font:700 clamp(30px,5.1vh,59px)/1.05 "Yu Mincho","Hiragino Mincho ProN",serif;
+      letter-spacing:.2em; text-shadow:0 1px 0 #fff7dc,0 3px 9px rgba(91,57,23,.18); }
+  .summonerTitle strong::first-letter { color:#8a6328; }
+  .summonerTitle span { display:block; margin-top:.55vh;
+      font:600 clamp(11px,1.3vh,16px)/1.2 Georgia,"Times New Roman",serif;
+      letter-spacing:.56em; color:#89652d; }
+  #selConflict.summonerConflict { justify-self:end; max-width:31vw; color:#8e241d;
+      border:1px solid #c95a4d; background:rgba(255,238,231,.94); border-radius:999px;
+      padding:.65vh 1.2vw; font-size:clamp(11px,1.4vh,15px); text-align:center; }
+  .summonerHint { position:relative; z-index:1; margin:0 0 1.4vh; color:#66543c;
+      font:600 clamp(11px,1.45vh,16px)/1.4 "Yu Mincho","Hiragino Mincho ProN",serif;
+      letter-spacing:.18em; text-shadow:0 1px 0 rgba(255,255,255,.85); }
+  #selectOv #selRow { width:min(94vw,1720px); height:76vh; margin:0 auto; display:flex;
+      align-items:stretch; justify-content:center; gap:.72vw; overflow:visible; }
+  #selectOv .selCard { --panel-color:#7da4cc; flex:1 1 0; min-width:0; width:auto; height:71.5vh;
+      padding:0; margin:0; border:2px solid color-mix(in srgb,var(--panel-color) 58%,#fff);
+      border-radius:0; overflow:hidden; isolation:isolate; background:#1a2131;
+      box-shadow:0 1.2vh 2.4vh rgba(27,34,51,.2); transition:flex-grow .34s ease,transform .34s ease,
+      box-shadow .34s ease,filter .34s ease; }
+  #selectOv .selCard:nth-child(even) { transform:translateY(2.4vh); }
+  #selectOv .selCard:nth-child(3) { transform:translateY(.8vh); }
+  #selectOv .selCard.chosen { flex-grow:1.15; z-index:3;
+      border-color:#d1a735; box-shadow:0 0 0 3px rgba(255,235,157,.8),0 0 2.4vh var(--panel-color),
+      0 1.4vh 2.8vh rgba(27,34,51,.28); }
+  #selectOv .selCard:nth-child(even).chosen { transform:translateY(1.1vh) scale(1.018); }
+  #selectOv .selCard:nth-child(odd).chosen { transform:translateY(-.7vh) scale(1.018); }
+  #selectOv .selCard.contested { border-color:#d64d42; box-shadow:0 0 0 3px rgba(214,77,66,.28),
+      0 0 2.5vh rgba(214,77,66,.72); }
+  .scBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-4;
+      filter:saturate(.88) brightness(.92); }
+  .scVeil { position:absolute; inset:0; z-index:-2; background:linear-gradient(180deg,
+      rgba(8,14,31,.1) 0%,transparent 38%,rgba(7,10,22,.86) 100%); }
+  #selectOv .selCard img.scArt { position:absolute; z-index:-1; left:-38%; bottom:5.5vh;
+      width:176%; max-width:none; height:82%; object-fit:contain; filter:drop-shadow(0 .8vh 1vh rgba(0,0,0,.55)); }
+  #selectOv .selCard.chosen img.scArt { filter:drop-shadow(0 0 1.1vh rgba(255,255,255,.7))
+      drop-shadow(0 .8vh 1vh rgba(0,0,0,.5)); }
+  .scElem { position:absolute; z-index:4; top:2.4vh; left:50%; transform:translateX(-50%);
+      width:clamp(32px,4.2vh,50px); height:clamp(32px,4.2vh,50px); }
+  .scElem svg { width:100%; height:100%; filter:drop-shadow(0 1px 4px rgba(0,0,0,.65)); }
+  .scElem svg * { fill:#fff !important; }
+  .scMeta { position:absolute; z-index:5; left:0; right:0; bottom:0; min-height:14.7vh;
+      padding:2vh .7vw 1.25vh; display:flex; flex-direction:column; justify-content:flex-end;
+      color:#fffaf0; text-align:center; background:linear-gradient(180deg,transparent,rgba(5,8,18,.92) 27%); }
+  .scMeta .scn { margin:0; font:700 clamp(17px,2.65vh,30px)/1.08 Marudeco,sans-serif;
+      letter-spacing:.08em; text-shadow:0 2px 7px #000; }
+  .scMeta .sce { margin-top:.65vh; font-size:clamp(10px,1.25vh,14px); letter-spacing:.14em;
+      color:rgba(255,255,255,.78); }
+  .scMeta .scp { margin:.8vh auto 0; min-height:0; max-width:94%; padding:.45vh .8vw;
+      border:1px solid rgba(255,255,255,.52); border-radius:999px; background:rgba(4,7,16,.68);
+      font-size:clamp(10px,1.25vh,14px); line-height:1.2; letter-spacing:.06em; }
+  .scMeta .scp.done { color:#ffeaa5; border-color:#e9ca64; }
+  #selectOv .selCard.locked { --panel-color:#a8e8fa; border-color:rgba(120,180,200,.68); }
+  #selectOv .selCard.locked .scBg { filter:saturate(.35) brightness(.72) hue-rotate(8deg); }
+  #selectOv .selCard.locked img.scArt { filter:brightness(0) saturate(0) opacity(.74)
+      drop-shadow(0 0 1.2vh rgba(151,232,255,.62)); }
+  .scLocked { position:absolute; z-index:6; inset:0; display:grid; place-items:center;
+      color:#ecfbff; font:700 clamp(15px,2.4vh,27px)/1 Marudeco,sans-serif; letter-spacing:.22em;
+      text-shadow:0 2px 7px #07121c; background:linear-gradient(180deg,transparent 20%,rgba(8,28,42,.2) 65%,transparent); }
+  @media (prefers-reduced-motion:reduce) {
+    #selectOv .selCard { transition:none; }
+  }
   #titleResumeWrap { display:none; align-items:center; gap:8px; }
   .saveSmall { background:transparent; border:1px solid rgba(201,162,39,.6); color:var(--gold-soft);
       font-family:inherit; font-size:13px; letter-spacing:1px; padding:7px 16px; border-radius:8px;
@@ -711,13 +793,10 @@
     <button class="gbtn" id="lobbyCancel" style="background:transparent; color:var(--gold-soft); border:1px solid var(--gold); font-size:14px; padding:9px 24px;">タイトルへ戻る(ルームを閉じる)</button>
   </div>
 
-  <div class="overlay" id="selectOv">
-    <div style="display:flex; align-items:center; gap:18px;">
-      <div class="goldText" style="font-size:36px; letter-spacing:8px;">プレイヤー選択</div>
-      <div id="selConflict" style="display:none; background:#5A1512; border:1px solid #E86A5A;
-        color:#F5B0A5; border-radius:999px; padding:4px 16px; font-size:13px; letter-spacing:2px;">❗ 競合あり ─ 全員決定後にダイス勝負</div>
-    </div>
-    <p class="hint">各自のスマホでキャラクターを選んでください</p>
+  <div class="overlay summonerSelect" id="selectOv">
+    <div class="summonerHead"><div class="summonerTitle"><strong>召喚士選択</strong><span>SUMMONER SELECT</span></div>
+      <div class="summonerConflict" id="selConflict" style="display:none">競合あり ─ 全員決定後にダイス勝負</div></div>
+    <p class="summonerHint">各自のスマホで召喚士を選んでください</p>
     <div class="selRow" id="selRow"></div>
   </div>
   <div class="overlay" id="duelOv" style="z-index:85">
@@ -1438,7 +1517,7 @@ async function boot() {
   const c = await (await fetch('/api/create', { method: 'POST' })).json();
   enterRoom(c.code, c.phoneUrl, c.boardToken);
 }
-['redani','linnei','grease','mio'].forEach(c => { new Image().src = '/assets/full_' + c + '.png'; });
+['redani','linnei','grease','mio','adel'].forEach(c => { new Image().src = '/assets/full_' + c + '.png'; });
 addEventListener('resize', fitWorld);
 // 前回のルームが生きていれば「戻る」ボタンを出す
 (async () => {
@@ -2660,26 +2739,26 @@ function render() {
   $('selectOv').classList.toggle('on', state.phase === 'select' && !duelPlaying);
   if (state.phase === 'select') {
     const C = state.catalog.CHARS;
-    const CBG = { redani: ['#4A1210', '#2A0B0A'], linnei: ['#10254E', '#0A1430'],
-                  grease: ['#1B3318', '#0E1D0D'], mio: ['#123A37', '#0A201E'] };
+    const elemJa = { fire:'火属性', water:'水属性', earth:'土属性', wind:'風属性' };
     let conflict = false;
     $('selRow').innerHTML = Object.entries(C).map(([cid, c]) => {
       const who = state.players.filter(p => p.charId === cid);
       if (who.length >= 2) conflict = true;
+      const locked = c.selectable === false || c.upcoming;
+      const chosen = who.some(p => p.confirmed);
       const pill = !who.length ? '─'
-        : who.length >= 2 ? '⚔ 競合中: ' + who.map(p => p.name).join(' vs ')
+        : who.length >= 2 ? '競合中: ' + who.map(p => p.name).join(' vs ')
         : who[0].name + ' が使用';
-      return `<div class="selCard ${who.length >= 2 ? 'contested' : ''}"
-        style="--cbg1:${CBG[cid][0]}; --cbg2:${CBG[cid][1]};
-        border-color:${who.length ? c.color : 'rgba(201,162,39,.55)'}">
-        <img src="/assets/full_${cid}.png" style="height:38vh">
-        <div class="scn">${c.name}</div>
-        <div class="sce">${{redani:'火属性',linnei:'水属性',grease:'土属性',mio:'風属性'}[cid]}</div>
-        <div class="scu"><b>固有【${(state.catalog.ULTS && state.catalog.ULTS[cid]) ? state.catalog.ULTS[cid].name : ''}】</b><br>
-          ${(state.catalog.ULTS && state.catalog.ULTS[cid]) ? state.catalog.ULTS[cid].desc : ''}(1ゲーム1回)</div>
-        <div class="aff">親和: ${{redani:'火',linnei:'水',grease:'土',mio:'風'}[cid]}の土地の強化費用-20%</div>
-        <div class="aff">${(state.catalog.CHARS[cid] || {}).style || ''} ─ ${(state.catalog.CHARS[cid] || {}).deckNote || ''}</div>
-        <div class="scp ${who.length === 1 && who[0].confirmed ? 'done' : ''}">${pill}</div>
+      const elemSvg = c.elem && ELEM[c.elem] ? `<svg viewBox="-34 -36 68 72">${ELEM[c.elem]}</svg>` : '';
+      return `<div class="selCard ${chosen ? 'chosen' : ''} ${who.length >= 2 ? 'contested' : ''} ${locked ? 'locked' : ''}"
+        style="--panel-color:${c.color}">
+        <img class="scBg" src="/assets/cards/bg-${c.elem || 'neutral'}.webp" alt="">
+        <div class="scVeil"></div><span class="scElem">${elemSvg}</span>
+        <img class="scArt" src="/assets/full_${cid}.png" alt="${c.name}">
+        ${locked ? '<div class="scLocked">準備中</div>' : ''}
+        <div class="scMeta"><div class="scn">${c.name}</div>
+          <div class="sce">${locked ? 'COMING SOON' : `${elemJa[c.elem] || ''} ─ ${c.style || ''}`}</div>
+          <div class="scp ${chosen && who.length === 1 ? 'done' : ''}">${locked ? '選択できません' : pill}</div></div>
       </div>`;
     }).join('');
     $('selConflict').style.display = conflict ? 'block' : 'none';
@@ -3174,7 +3253,7 @@ function render() {
   } else { $('winOv').classList.remove('on'); prev.winPlayed = null; }
 }
 fitWorld(); addEventListener('resize', fitWorld);
-['redani','linnei','grease','mio'].forEach(c => { new Image().src = '/assets/full_' + c + '.png'; });
+['redani','linnei','grease','mio','adel'].forEach(c => { new Image().src = '/assets/full_' + c + '.png'; });
 </script>
 </body>
 </html>

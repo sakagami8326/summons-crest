@@ -64,6 +64,13 @@ const scripts = timingSrc + '\n' +
   if (!/-webkit-line-clamp:\s*3/.test(css) || !/-webkit-line-clamp:\s*5/.test(css) ||
       !/#cardZoomCard \.ccEffect p/.test(css))
     throw new Error('カード本文検査: 通常表示の省略または拡大時の全文表示がない');
+  if (!/grid-template-columns:repeat\(4,minmax\(0,1fr\)\) clamp\(48px,8vw,84px\)/.test(css) ||
+      !/class="csUpcoming" aria-disabled="true"/.test(html))
+    throw new Error('召喚士選択検査: 4人カード+準備中アーデル枠の固定レイアウトがない');
+  const boardHtml = fs.readFileSync('public/board.html', 'utf8');
+  if (!/summonerSelect/.test(boardHtml) || !/class="scLocked">準備中/.test(boardHtml) ||
+      !/selectable === false/.test(boardHtml))
+    throw new Error('テレビ召喚士選択検査: 5本パネルまたは準備中表示がない');
   console.log('レイアウト不変条件 ✓ (HUD/ダイス/ツール+大型手札の2段配置)');
 }
 

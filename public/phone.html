@@ -271,7 +271,7 @@
       flex-direction:column; align-items:center; justify-content:center; gap:1.2dvh;
       padding:2.5dvh 0 3dvh; }
   #charSel.on { display:flex; }
-  #csRow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1.2vw; width:100%; align-items:center;
+  #csRow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)) clamp(48px,8vw,84px); gap:.55vw; width:100%; align-items:center;
       min-height:0; flex:1;
       padding-left:calc(1.5vw + env(safe-area-inset-left));
       padding-right:calc(1.5vw + env(safe-area-inset-right)); overflow:hidden; }
@@ -297,6 +297,25 @@
       background:rgba(20,18,39,.88); color:#fff4d5; font-size:clamp(13px,1.8dvh,16px); text-align:center; }
   .csCard.mine { box-shadow:0 0 0 3px #F2D062, 0 0 20px rgba(242,208,98,.5); }
   .csCard.dim { filter:brightness(.5) saturate(.5); cursor:default; }
+  .csUpcoming { position:relative; min-width:0; height:min(76dvh,calc((100vw - 7vw) * 470 / 1200));
+      overflow:hidden; isolation:isolate; border-radius:1.35dvh; border:1px solid rgba(168,232,250,.72);
+      background:#102f46; box-shadow:0 5px 16px rgba(0,0,0,.48); cursor:default; }
+  .csUpcoming .csuBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-3;
+      filter:saturate(.32) brightness(.66) hue-rotate(8deg); }
+  .csUpcoming .csuArt { position:absolute; z-index:-1; left:-110%; bottom:7%; width:320%; height:80%;
+      object-fit:contain; filter:brightness(0) saturate(0) opacity(.76)
+      drop-shadow(0 0 7px rgba(159,233,255,.68)); }
+  .csUpcoming .csuElem { position:absolute; top:4%; left:50%; transform:translateX(-50%);
+      width:min(4.8dvh,76%); height:min(4.8dvh,76%); }
+  .csUpcoming .csuElem svg { width:100%; height:100%; }
+  .csUpcoming .csuElem svg * { fill:#fff !important; }
+  .csUpcoming .csuName { position:absolute; top:19%; left:50%; transform:translateX(-50%);
+      writing-mode:vertical-rl; color:#effcff; font:700 clamp(14px,2.1dvh,19px)/1 Marudeco,sans-serif;
+      letter-spacing:.12em; text-shadow:0 2px 5px #06111c; }
+  .csUpcoming .csuState { position:absolute; left:7%; right:7%; bottom:4%; padding:.7dvh .2dvh;
+      color:#e9fbff; background:rgba(5,18,30,.82); border:1px solid rgba(177,235,250,.55);
+      border-radius:.7dvh; font-size:clamp(10px,1.35dvh,13px); font-weight:700; text-align:center;
+      line-height:1.15; letter-spacing:.04em; }
   #charDetail { position:fixed; inset:0; display:none; z-index:36; background:rgba(10,8,25,.98);
       padding:2dvh calc(3vw + env(safe-area-inset-right)) 2dvh calc(3vw + env(safe-area-inset-left)); }
   #charDetail.on { display:grid; grid-template-columns:minmax(24dvh,31vw) 1fr; gap:3vw; }
@@ -1270,6 +1289,13 @@ function renderCharSelection(m, C, p) {
   $('csMsg').textContent = p ? '使用する召喚士を選んでください'
     : (m.charId ? C.CHARS[m.charId].name + ' で決定 ─ 他のプレイヤーを待っています' : '…');
   $('csRow').innerHTML = Object.entries(C.CHARS).map(([id, c]) => {
+    if (c.selectable === false || c.upcoming) {
+      const elemIcon = `<span class="csuElem"><svg viewBox="-34 -36 68 72">${ELEM_MINI[c.elem]}</svg></span>`;
+      return `<div class="csUpcoming" aria-disabled="true" data-id="${id}">
+        <img class="csuBg" src="/assets/cards/bg-${c.elem || 'neutral'}.webp" alt="">
+        <img class="csuArt" src="/assets/full_${id}.png" alt="">
+        ${elemIcon}<div class="csuName">${c.name}</div><div class="csuState">準備中</div></div>`;
+    }
     const taken = state.players.find(x => x.confirmed && x.charId === id && x.id !== pid);
     const mine = m.charId === id;
     const enabled = opts.includes(id);

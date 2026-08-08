@@ -18,7 +18,7 @@ function runGame(seed) {
     return id;
   });
   G.startSelect(r);
-  const chars = Object.keys(G.CHARS);
+  const chars = Object.entries(G.CHARS).filter(([, c]) => c.selectable !== false).map(([id]) => id);
   pids.forEach((pid, i) => G.handleChoose(r, pid, chars[i % chars.length]));
 
   let steps = 0;

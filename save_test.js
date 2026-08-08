@@ -30,9 +30,23 @@ function setupGame() {
   const r = G.makeRoom();
   ['ボットA', 'ボットB', 'ボットC', 'ボットD'].forEach((n, i) => r.players.push({ id: 'bot' + i, name: n }));
   G.startSelect(r);
-  const chars = Object.keys(G.CHARS);
+  const chars = Object.entries(G.CHARS).filter(([, c]) => c.selectable !== false).map(([id]) => id);
   r.players.forEach((p, i) => G.handleChoose(r, p.id, chars[i % chars.length]));
   return r;
+}
+
+// ===== A-0: 準備中召喚士は公開表示だけで、選択候補へ入らない =====
+{
+  const r = G.makeRoom();
+  const p = { id: 'preview-test', name: '予告確認' };
+  r.players.push(p);
+  G.startSelect(r);
+  ok(G.CHARS.adel && G.CHARS.adel.upcoming && G.CHARS.adel.selectable === false,
+    'A-0: アーデルが準備中召喚士として公開される');
+  ok(!r.pending[p.id].options.some(o => o.id === 'adel'), 'A-0: アーデルは選択候補へ入らない');
+  G.handleChoose(r, p.id, 'adel');
+  ok(!p.charId && r.pending[p.id].type === 'select_char', 'A-0: アーデルの直接選択を無視する');
+  G.rooms.delete(r.code);
 }
 
 // ===== A-1: フィールド分類表(未分類キーの検出)+ 途中復元しながらフルゲーム完走 =====
@@ -118,6 +132,7 @@ function setupGame() {
     ['不正コード', s => { s.room.code = 'ab'; }, /コード/],
     ['トークンなし', s => { delete s.room.boardToken; }, /トークン/],
     ['未知カードID', s => { s.room.players[0].hand = ['hacked_card']; }, /不明なカード/],
+    ['準備中キャラクターID', s => { s.room.players[0].charId = 'adel'; }, /キャラクターID/],
     ['重複プレイヤーID', s => { s.room.players[1].id = s.room.players[0].id; }, /プレイヤーID/],
     ['盤面長不正', s => { s.room.owners = []; }, /盤面/],
     ['位置範囲外', s => { s.room.players[0].pos = 99; }, /位置/],
