@@ -500,17 +500,25 @@
       transform:translate(-50%,-50%); animation:titleOrbitReverse 38s linear infinite; }
   @keyframes titleOrbit { to { transform:translate(-50%,-50%) rotate(360deg); } }
   @keyframes titleOrbitReverse { to { transform:translate(-50%,-50%) rotate(-360deg); } }
-  .titleCards { position:absolute; inset:0; z-index:1; pointer-events:none; }
-  .titleCardSlot { --r:0deg; --delay:0s; --dur:6s; position:absolute; width:clamp(105px,10.8vw,198px);
-      aspect-ratio:2/3; transform:rotate(var(--r)); transform-origin:center; }
-  .titleCardSlot:nth-child(1) { left:2.5%; top:9%; --r:-11deg; --delay:-1.2s; --dur:6.4s; }
-  .titleCardSlot:nth-child(2) { left:18%; top:1%; --r:6deg; --delay:-3.7s; --dur:7.1s; }
-  .titleCardSlot:nth-child(3) { right:18%; top:1%; --r:-6deg; --delay:-2.1s; --dur:6.7s; }
-  .titleCardSlot:nth-child(4) { right:2.5%; top:9%; --r:11deg; --delay:-4.4s; --dur:7.5s; }
-  .titleCardSlot:nth-child(5) { left:1.5%; bottom:-4%; --r:-7deg; --delay:-2.8s; --dur:6.9s; }
-  .titleCardSlot:nth-child(6) { left:19%; bottom:-10%; --r:8deg; --delay:-.6s; --dur:7.7s; }
-  .titleCardSlot:nth-child(7) { right:19%; bottom:-10%; --r:-8deg; --delay:-3.4s; --dur:7.2s; }
-  .titleCardSlot:nth-child(8) { right:1.5%; bottom:-4%; --r:7deg; --delay:-1.7s; --dur:6.5s; }
+  .titleCards { position:absolute; inset:0; z-index:1; pointer-events:none; perspective:1200px; }
+  .titleCardSlot { --r:0deg; --delay:0s; --dur:6s; position:absolute; aspect-ratio:2/3;
+      transform:rotate(var(--r)); transform-origin:center; }
+  .titleCardSlot:nth-child(1) { left:7%; top:13%; width:clamp(116px,11.5vw,210px); z-index:2;
+      --r:-10deg; --delay:-1.2s; --dur:6.4s; }
+  .titleCardSlot:nth-child(2) { left:23%; top:1%; width:clamp(92px,8.7vw,160px); z-index:1;
+      opacity:.78; filter:saturate(.78); --r:7deg; --delay:-3.7s; --dur:7.1s; }
+  .titleCardSlot:nth-child(3) { right:23%; top:1%; width:clamp(92px,8.7vw,160px); z-index:1;
+      opacity:.78; filter:saturate(.78); --r:-7deg; --delay:-2.1s; --dur:6.7s; }
+  .titleCardSlot:nth-child(4) { right:7%; top:13%; width:clamp(116px,11.5vw,210px); z-index:2;
+      --r:10deg; --delay:-4.4s; --dur:7.5s; }
+  .titleCardSlot:nth-child(5) { left:5%; bottom:-11%; width:clamp(138px,13.5vw,248px); z-index:3;
+      --r:-7deg; --delay:-2.8s; --dur:6.9s; }
+  .titleCardSlot:nth-child(6) { left:23%; bottom:-12%; width:clamp(108px,10.4vw,190px); z-index:2;
+      opacity:.9; --r:9deg; --delay:-.6s; --dur:7.7s; }
+  .titleCardSlot:nth-child(7) { right:23%; bottom:-12%; width:clamp(108px,10.4vw,190px); z-index:2;
+      opacity:.9; --r:-9deg; --delay:-3.4s; --dur:7.2s; }
+  .titleCardSlot:nth-child(8) { right:5%; bottom:-11%; width:clamp(138px,13.5vw,248px); z-index:3;
+      --r:7deg; --delay:-1.7s; --dur:6.5s; }
   .titleCardShadow { position:absolute; left:8%; right:8%; bottom:-5%; height:10%; border-radius:50%;
       background:rgba(63,44,22,.28); filter:blur(9px); animation:titleShadow var(--dur) ease-in-out var(--delay) infinite; }
   .titleCard { position:absolute; inset:0; overflow:hidden; border:2px solid #b5903c; border-radius:1.1vh;
@@ -519,14 +527,8 @@
   .titleCard::after { content:""; position:absolute; inset:3.5%; border:1px solid rgba(250,224,144,.75);
       border-radius:.65vh; pointer-events:none; }
   .titleCardBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:saturate(.88); }
-  .titleCardArt { position:absolute; z-index:1; left:4%; top:14%; width:92%; height:68%; object-fit:contain;
+  .titleCardArt { position:absolute; z-index:1; left:3%; top:4%; width:94%; height:92%; object-fit:contain;
       filter:drop-shadow(0 .7vh .8vh rgba(0,0,0,.42)); }
-  .titleCardName { position:absolute; z-index:3; left:5%; right:5%; top:4%; color:#fff8df; font-weight:700;
-      font-size:clamp(11px,1.35vw,22px); line-height:1; letter-spacing:.04em; text-shadow:0 2px 5px #07111e;
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .titleCardElem { position:absolute; z-index:3; left:7%; bottom:5%; width:2.2vw; min-width:21px; aspect-ratio:1;
-      display:grid; place-items:center; border:1px solid rgba(255,234,165,.75); border-radius:50%;
-      background:rgba(10,24,44,.78); color:#fff5d2; font-size:clamp(9px,.8vw,14px); font-weight:700; }
   @keyframes titleCardFloat { 0%,100% { transform:translateY(0); }
       50% { transform:translateY(-1.25vh); } }
   @keyframes titleShadow { 0%,100% { transform:translateY(0) scaleX(.92); opacity:.24; }
@@ -854,14 +856,14 @@
   <div id="turnPortrait"><img id="tpImg"><div class="tpn" id="tpName"></div></div>
   <div class="overlay on" id="titleOv">
     <div class="titleCards" aria-hidden="true">
-      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-water.webp"><div class="titleCardName">クレステリア</div><img class="titleCardArt" src="/assets/cards/c_cresteria.webp"><span class="titleCardElem">水</span></div></div>
-      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-wind.webp"><div class="titleCardName">ガストン</div><img class="titleCardArt" src="/assets/cards/c_gaston.webp"><span class="titleCardElem">風</span></div></div>
-      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-earth.webp"><div class="titleCardName">ボーンレックス</div><img class="titleCardArt" src="/assets/cards/c_bonerex.webp"><span class="titleCardElem">土</span></div></div>
-      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-fire.webp"><div class="titleCardName">マガドー</div><img class="titleCardArt" src="/assets/cards/c_magado.webp"><span class="titleCardElem">火</span></div></div>
-      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-earth.webp"><div class="titleCardName">ノーム</div><img class="titleCardArt" src="/assets/cards/c_nome.webp"><span class="titleCardElem">土</span></div></div>
-      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-neutral.webp"><div class="titleCardName">ベルーフ・シェイド</div><img class="titleCardArt" src="/assets/cards/c_beruf.webp"><span class="titleCardElem"></span></div></div>
-      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-fire.webp"><div class="titleCardName">クイーンベビー</div><img class="titleCardArt" src="/assets/cards/c_qbaby.webp"><span class="titleCardElem">火</span></div></div>
-      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-wind.webp"><div class="titleCardName">ガーブル</div><img class="titleCardArt" src="/assets/cards/c_garble.webp"><span class="titleCardElem">風</span></div></div>
+      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-water.webp"><img class="titleCardArt" src="/assets/cards/c_cresteria.webp"></div></div>
+      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-wind.webp"><img class="titleCardArt" src="/assets/cards/c_gaston.webp"></div></div>
+      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-earth.webp"><img class="titleCardArt" src="/assets/cards/c_bonerex.webp"></div></div>
+      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-fire.webp"><img class="titleCardArt" src="/assets/cards/c_magado.webp"></div></div>
+      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-earth.webp"><img class="titleCardArt" src="/assets/cards/c_nome.webp"></div></div>
+      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-neutral.webp"><img class="titleCardArt" src="/assets/cards/c_beruf.webp"></div></div>
+      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-fire.webp"><img class="titleCardArt" src="/assets/cards/c_qbaby.webp"></div></div>
+      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-wind.webp"><img class="titleCardArt" src="/assets/cards/c_garble.webp"></div></div>
     </div>
     <div class="titleCenter">
       <img class="tlogo" src="/assets/logo.png">

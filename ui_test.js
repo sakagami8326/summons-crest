@@ -92,6 +92,10 @@ const scripts = timingSrc + '\n' +
       !/@keyframes titleCardFloat/.test(boardHtml) || !/@keyframes titleShadow/.test(boardHtml) ||
       !/id="titleSettings"/.test(boardHtml) || !/id="titleSoundToggle"/.test(boardHtml))
     throw new Error('タイトル画面検査: 実カード8枚・浮遊影・タロット風メニューが不足');
+  if (/class="titleCardName"|class="titleCardElem"/.test(boardHtml) ||
+      !/nth-child\(2\)[^}]*width:clamp\(92px,8\.7vw,160px\)/.test(boardHtml) ||
+      !/nth-child\(5\)[^}]*width:clamp\(138px,13\.5vw,248px\)/.test(boardHtml))
+    throw new Error('タイトル画面検査: カード文字が残っているか、奥行き用のサイズ差がない');
   console.log('レイアウト不変条件 ✓ (HUD/ダイス/ツール+大型手札の2段配置)');
 }
 
