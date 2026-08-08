@@ -1630,6 +1630,23 @@ function bgmHeal() {
       (state.phase === 'playing' || state.phase === 'lobby' || state.phase === 'select'))))
     bgmCur.play().catch(() => {});
 }
+function startTitleBgm() {
+  initAudio();
+  if (bgmMuted) return;
+  setBgm('select');
+  if (!bgmCur) return;
+  bgmCur.play()
+    .then(() => document.getElementById('bgmBtn').classList.remove('needsAudio'))
+    .catch(() => document.getElementById('bgmBtn').classList.add('needsAudio'));
+}
+// まずタイトル表示時に再生を試す。自動再生が拒否された環境では、
+// 専用ゲートを挟まず最初の通常操作を再生許可の契機にする。
+startTitleBgm();
+const resumeTitleBgmFromGesture = () => {
+  if (document.getElementById('titleOv').classList.contains('on')) startTitleBgm();
+};
+document.addEventListener('pointerdown', resumeTitleBgmFromGesture, { once:true, capture:true });
+document.addEventListener('keydown', resumeTitleBgmFromGesture, { once:true, capture:true });
 setInterval(bgmHeal, 3000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) bgmHeal(); });
 let es = null, lastMsgAt = 0;
