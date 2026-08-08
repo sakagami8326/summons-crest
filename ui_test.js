@@ -104,11 +104,9 @@ const scripts = timingSrc + '\n' +
       !/function playGameEntryTransition\(\)/.test(boardHtml) ||
       !/class="entryRing"/.test(boardHtml) || !/zoomTile = 0; applyZoom\(\)/.test(boardHtml))
     throw new Error('ゲーム開始演出検査: 選択BGM・回転リング・円形ワイプ・城ズームが不足');
-  if (!/id="audioGate" class="on"/.test(boardHtml) ||
-      !/function unlockTitleAudio\(\)/.test(boardHtml) ||
-      !/audioGateBtn.*addEventListener\('click', unlockTitleAudio\)/.test(boardHtml) ||
+  if (/id="audioGate"/.test(boardHtml) || /function unlockTitleAudio\(\)/.test(boardHtml) ||
       !/crossfadeBgmTo\('normal', 1150\)/.test(boardHtml))
-    throw new Error('タイトルBGM検査: 明示的な音声解放または開始時クロスフェードがない');
+    throw new Error('タイトルBGM検査: 検証用の音声解放削除または開始時クロスフェードが不正');
   if (!/id="selectionStartBtn"/.test(boardHtml) ||
       !/type:'start_game', token:boardToken/.test(boardHtml) ||
       !/state\.selectionReady/.test(boardHtml))

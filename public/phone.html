@@ -36,12 +36,12 @@
         color:#241C05; border:1px solid #F2D062; border-radius:10px; cursor:pointer; }
   #err { color:#F09595; font-size:13px; min-height:1.2em; }
 
-  header { flex:none; height:25dvh; display:grid; grid-template-columns:minmax(0,auto) minmax(15dvh,1fr) auto;
+  header { flex:none; height:25dvh; display:grid; grid-template-columns:minmax(0,1fr) 18dvh minmax(0,1fr);
         align-items:center; gap:1.4vw; padding:1dvh calc(12px + env(safe-area-inset-right)) 1dvh calc(12px + env(safe-area-inset-left)); }
   #diceDock { min-width:0; height:100%; display:flex; align-items:center; justify-content:center; position:relative; }
-  #topTools { display:flex; align-items:center; justify-content:flex-end; gap:.8vw; white-space:nowrap; }
+  #topTools { min-width:0; display:flex; align-items:center; justify-content:flex-end; gap:.8vw; white-space:nowrap; }
   #contextBtn { display:none; }
-  .me { display:flex; align-items:center; gap:8px; background:rgba(0,0,0,.35);
+  .me { min-width:0; justify-self:start; display:flex; align-items:center; gap:8px; background:rgba(0,0,0,.35);
         border:1px solid var(--gold); border-radius:10px; padding:4px 14px 4px 5px; flex:none; }
   .dirBtn { font-family:'Reggae One','Yu Mincho',serif; display:flex; flex-direction:column;
         align-items:center; gap:.6dvh; background:linear-gradient(170deg,#2E2A52,#1B1838);
