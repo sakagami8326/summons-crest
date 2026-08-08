@@ -702,7 +702,7 @@ const $ = id => document.getElementById(id);
 let room = null, pid = null, state = null, selected = null, rolling = false;
 let inShopHand = false, prevHandKey = '', moveT = null;
 let charPreview = null, charSubmitting = false, fitResizeT = null;
-let actionOverlayKey = '', actionSubmitting = false;
+let actionOverlayKey = '', actionSubmitting = false, browsingActionHand = false;
 // v0.61 選択ドロー・カード追加演出
 let pdLock = false, pickAnimUntil = 0, pickTickT = null;
 let lastDrawSeen = 0, lastGainSeen = 0, drawModalT = null, gainT = null;
@@ -1460,6 +1460,13 @@ function closeActionOverlay(force) {
   $('actionOv').dataset.key = '';
   actionOverlayKey = '';
 }
+function browseActionHand() {
+  browsingActionHand = true;
+  closeActionOverlay(true);
+  const btn = $('contextBtn');
+  btn.style.display = 'inline-flex';
+  btn.textContent = '選択肢に戻る';
+}
 function submitAction(id) {
   if (actionSubmitting) return;
   actionSubmitting = true;
@@ -1485,12 +1492,13 @@ function showActionOverlay(title, options, config) {
   const cfg = config || {}, key = cfg.key || `${pend() ? pend().type : ''}|${options.map(o => o.id).join(',')}`;
   if ($('actionOv').classList.contains('on') && $('actionOv').dataset.key === key) return;
   actionSubmitting = false;
+  browsingActionHand = false;
   actionOverlayKey = key;
   $('actionOv').dataset.key = key;
   $('actionOvTitle').textContent = iconize(title || '行動を選んでください');
   $('actionOvBtns').innerHTML = options.map(o => `<button class="gateBtn ${o.cls || ((o.id === 'pass' || o.id === 'cancel' || o.id.endsWith(':cancel') || o.id === 'sup:none') ? 'ghost' : '')}"
       onclick="submitAction('${o.id}')"><div class="gbT">${iconize(o.label)}</div><div class="gbD">${o.desc || actionDescription(o.id)}</div></button>`).join('')
-    + (cfg.browseHand ? `<button class="gateBtn ghost" onclick="closeActionOverlay(true)"><div class="gbT">手札を確認する</div><div class="gbD">行動を決める前に手札へ戻ります</div></button>` : '')
+    + (cfg.browseHand ? `<button class="gateBtn ghost" onclick="browseActionHand()"><div class="gbT">手札を確認する</div><div class="gbD">行動を決める前に手札へ戻ります</div></button>` : '')
     + (cfg.closeable && !cfg.browseHand ? `<button class="gateBtn ghost" onclick="closeActionOverlay(true)"><div class="gbT">閉じる</div><div class="gbD">手札の選択へ戻ります</div></button>` : '');
   $('actionOvHint').textContent = cfg.hint || '';
   $('actionOv').classList.add('on');
@@ -1508,9 +1516,12 @@ function showCardActionConfirm(c, optionId) {
 function setContextActions(title, options) {
   const btn = $('contextBtn');
   if (!options.length) { btn.style.display = 'none'; btn.onclick = null; return; }
-  btn.style.display = '';
-  btn.textContent = options.length === 1 ? iconize(options[0].label) : '行動';
-  btn.onclick = () => showActionOverlay(title, options, { closeable:true, hint:'カードを使う場合は手札をタップしてください' });
+  btn.style.display = 'inline-flex';
+  btn.textContent = browsingActionHand ? '選択肢に戻る' : (options.length === 1 ? iconize(options[0].label) : '行動');
+  btn.onclick = () => {
+    browsingActionHand = false;
+    showActionOverlay(title, options, { closeable:true, hint:'カードを使う場合は手札をタップしてください' });
+  };
 }
 
 function render() {
@@ -1597,6 +1608,7 @@ function render() {
     if (pk !== lastPendKey) {
       lastPendKey = pk; pendSince = Date.now();
       actionSubmitting = false;
+      browsingActionHand = false;
       closeActionOverlay(true);
       if (mapView && p) { mapView = false; hideMapOv(); }  // 新しい選択が来たら閲覧モードを閉じる
     }

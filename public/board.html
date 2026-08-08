@@ -626,7 +626,19 @@
         #f3ead1; }
   #selectOv.summonerSelect::after { content:""; position:absolute; inset:0; pointer-events:none;
       background:radial-gradient(ellipse at center,transparent 48%,rgba(81,59,30,.1) 100%);
-      mix-blend-mode:multiply; }
+      mix-blend-mode:multiply; z-index:1; }
+  #selectOv.summonerSelect > :not(.summonerOrbit) { position:relative; z-index:2; }
+  .summonerOrbit { position:absolute; z-index:0; left:50%; top:52%; width:min(72vw,1040px);
+      aspect-ratio:1; transform:translate(-50%,-50%); border:1px solid rgba(137,101,45,.24);
+      border-radius:50%; pointer-events:none; animation:summonerOrbit 42s linear infinite; }
+  .summonerOrbit::before { content:""; position:absolute; inset:8%; border-radius:50%;
+      border:2px dashed rgba(137,101,45,.23); animation:summonerOrbitReverse 31s linear infinite; }
+  .summonerOrbit::after { content:""; position:absolute; inset:17%; border-radius:50%;
+      background:repeating-conic-gradient(from 0deg,rgba(117,82,38,.3) 0deg 1deg,transparent 1deg 11.25deg);
+      -webkit-mask:radial-gradient(circle,transparent 0 72%,#000 72.5% 74%,transparent 74.5%);
+      mask:radial-gradient(circle,transparent 0 72%,#000 72.5% 74%,transparent 74.5%); }
+  @keyframes summonerOrbit { to { transform:translate(-50%,-50%) rotate(360deg); } }
+  @keyframes summonerOrbitReverse { to { transform:rotate(-360deg); } }
   .summonerHead { width:min(94vw,1720px); min-height:10vh; display:grid;
       grid-template-columns:1fr auto 1fr; align-items:center; margin:0 auto 1.1vh; }
   .summonerTitle { position:relative; grid-column:2; min-width:clamp(340px,34vw,610px);
@@ -656,7 +668,13 @@
       padding:0; margin:0; border:2px solid color-mix(in srgb,var(--panel-color) 58%,#fff);
       border-radius:0; overflow:hidden; isolation:isolate; background:#1a2131;
       box-shadow:0 1.2vh 2.4vh rgba(27,34,51,.2); transition:flex-grow .34s ease,transform .34s ease,
-      box-shadow .34s ease,filter .34s ease; }
+      box-shadow .34s ease,filter .34s ease,opacity .46s ease; }
+  #selectOv.departing .selCard { opacity:0; }
+  #selectOv.departing .selCard:nth-child(-n+2) { transform:translateX(-32vw) scale(.94); }
+  #selectOv.departing .selCard:nth-child(3) { transform:translateY(30vh) scale(.94); }
+  #selectOv.departing .selCard:nth-child(n+4) { transform:translateX(32vw) scale(.94); }
+  #selectOv.departing .summonerHead,#selectOv.departing .summonerHint { opacity:0;
+      transform:translateY(-4vh); transition:opacity .35s ease,transform .45s ease; }
   #selectOv .selCard:nth-child(even) { transform:translateY(2.4vh); }
   #selectOv .selCard:nth-child(3) { transform:translateY(.8vh); }
   #selectOv .selCard.chosen { flex-grow:1.15; z-index:3;
@@ -698,6 +716,25 @@
       text-shadow:0 2px 7px #07121c; background:linear-gradient(180deg,transparent 20%,rgba(8,28,42,.2) 65%,transparent); }
   @media (prefers-reduced-motion:reduce) {
     #selectOv .selCard { transition:none; }
+    .summonerOrbit,.summonerOrbit::before { animation:none; }
+  }
+  @property --entry-wipe { syntax:"<percentage>"; inherits:false; initial-value:0%; }
+  #gameEntry { --entry-wipe:0%; position:fixed; inset:0; z-index:79; display:none; pointer-events:none;
+      background:url('/assets/summoner-select-bg-v1.png') center/cover no-repeat,#f3ead1;
+      -webkit-mask:radial-gradient(circle at center,transparent 0 var(--entry-wipe),#000 calc(var(--entry-wipe) + .8%));
+      mask:radial-gradient(circle at center,transparent 0 var(--entry-wipe),#000 calc(var(--entry-wipe) + .8%)); }
+  #gameEntry.on { display:block; }
+  #gameEntry.reveal { animation:gameEntryReveal 1.05s cubic-bezier(.55,.02,.28,1) forwards; }
+  #gameEntry .entryRing { position:absolute; left:50%; top:50%; width:10vmin; aspect-ratio:1;
+      border:2px solid rgba(205,160,62,.9); border-radius:50%; opacity:0;
+      transform:translate(-50%,-50%) scale(.2); box-shadow:0 0 18px rgba(255,230,150,.75); }
+  #gameEntry.reveal .entryRing { animation:entryRingExpand 1.05s cubic-bezier(.3,.7,.2,1) forwards; }
+  @keyframes gameEntryReveal { to { --entry-wipe:145%; } }
+  @keyframes entryRingExpand { 0% { opacity:0; transform:translate(-50%,-50%) scale(.2); }
+      18% { opacity:1; } 100% { opacity:0; transform:translate(-50%,-50%) scale(17); } }
+  @media (prefers-reduced-motion:reduce) {
+    #gameEntry.reveal { animation-duration:.18s; }
+    #gameEntry.reveal .entryRing { display:none; }
   }
   #titleResumeWrap { display:none; align-items:center; gap:8px; }
   .saveSmall { background:transparent; border:1px solid rgba(201,162,39,.6); color:var(--gold-soft);
@@ -794,11 +831,13 @@
   </div>
 
   <div class="overlay summonerSelect" id="selectOv">
+    <div class="summonerOrbit" aria-hidden="true"></div>
     <div class="summonerHead"><div class="summonerTitle"><strong>召喚士選択</strong><span>SUMMONER SELECT</span></div>
       <div class="summonerConflict" id="selConflict" style="display:none">競合あり ─ 全員決定後にダイス勝負</div></div>
     <p class="summonerHint">各自のスマホで召喚士を選んでください</p>
     <div class="selRow" id="selRow"></div>
   </div>
+  <div id="gameEntry" aria-hidden="true"><div class="entryRing"></div></div>
   <div class="overlay" id="duelOv" style="z-index:85">
     <div class="goldText" style="font-size:30px; letter-spacing:6px;">ダイス勝負!</div>
     <div id="duelChar" class="hint" style="font-size:17px;"></div>
@@ -1338,13 +1377,15 @@ document.getElementById('titleCreate').onclick = () => {
   document.getElementById('titleOv').classList.remove('on');
   boot();
 };
-let bgmN = null, bgmR = null, bgmBattle = null, bgmMuted = false, bgmCur = null;
+let bgmN = null, bgmR = null, bgmBattle = null, bgmSelect = null, bgmMuted = false, bgmCur = null;
+let bgmFadeTimer = null;
 let seTelop = null, seSummon = null, seEvolve = null, seBattleFinish = null, seCastleBonus = null;
 function initAudio() {
   if (bgmN) return;
   bgmN = new Audio('/assets/bgm_normal.mp3');
   bgmR = new Audio('/assets/bgm_reach.mp3');
   bgmBattle = new Audio('/assets/bgm_battle.mp3');
+  bgmSelect = new Audio('/assets/bgm_select.mp3');
   seTelop = new Audio('/assets/se_telop.mp3');
   seSummon = new Audio('/assets/se_summon.mp3');
   seEvolve = new Audio('/assets/se_evolve.mp3');
@@ -1357,7 +1398,7 @@ function initAudio() {
     a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; })
       .catch(() => { a.muted = false; });
   });
-  [bgmN, bgmR, bgmBattle].forEach(a => {
+  [bgmN, bgmR, bgmBattle, bgmSelect].forEach(a => {
     a.loop = true; a.volume = 0.35;
     a.muted = true;
     a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; })
@@ -1377,11 +1418,28 @@ function playSe(a) {
 }
 function setBgm(which) {
   if (!bgmN) return;
-  const t = which === 'battle' ? bgmBattle : which === 'reach' ? bgmR : which === 'normal' ? bgmN : null;
+  clearInterval(bgmFadeTimer); bgmFadeTimer = null;
+  const t = which === 'battle' ? bgmBattle : which === 'reach' ? bgmR
+    : which === 'normal' ? bgmN : which === 'select' ? bgmSelect : null;
   if (bgmCur === t) return;
-  if (bgmCur) { bgmCur.pause(); bgmCur.currentTime = 0; }
+  if (bgmCur) { bgmCur.pause(); bgmCur.currentTime = 0; bgmCur.volume = 0.35; }
   bgmCur = t;
   if (t && !bgmMuted) t.play().catch(() => {});
+}
+function fadeBgmTo(which, duration) {
+  if (!bgmCur || bgmMuted || duration <= 0) return setBgm(which);
+  clearInterval(bgmFadeTimer);
+  const from = bgmCur, startVolume = from.volume, started = Date.now();
+  bgmFadeTimer = setInterval(() => {
+    const k = Math.min(1, (Date.now() - started) / duration);
+    from.volume = startVolume * (1 - k);
+    if (k >= 1) {
+      clearInterval(bgmFadeTimer); bgmFadeTimer = null;
+      from.pause(); from.currentTime = 0; from.volume = 0.35;
+      bgmCur = null;
+      setBgm(which);
+    }
+  }, 40);
 }
 function restoreBoardBgm() {
   if (!state || state.phase !== 'playing') return setBgm(null);
@@ -1390,7 +1448,8 @@ function restoreBoardBgm() {
 }
 // BGMが不意に止まった場合の自動復帰(3秒ごとの見張り+タブ復帰時)
 function bgmHeal() {
-  if (bgmCur && !bgmMuted && bgmCur.paused && state && state.phase === 'playing')
+  if (bgmCur && !bgmMuted && bgmCur.paused && state &&
+      (state.phase === 'playing' || state.phase === 'lobby' || state.phase === 'select'))
     bgmCur.play().catch(() => {});
 }
 setInterval(bgmHeal, 3000);
@@ -2318,6 +2377,36 @@ function renderHUD() {
 
 // ===== テロップ・ダイス・戦闘 =====
 let tcT1 = null, tcT2 = null;
+let gameEntryRunning = false, gameEntrySelectionGone = false;
+const gameEntryTimers = [];
+function playGameEntryTransition() {
+  if (gameEntryRunning) return;
+  gameEntryRunning = true;
+  gameEntrySelectionGone = false;
+  const sel = $('selectOv'), wipe = $('gameEntry');
+  gameEntryTimers.splice(0).forEach(clearTimeout);
+  sel.classList.add('on', 'departing');
+  wipe.classList.remove('reveal');
+  wipe.classList.add('on');
+  fadeBgmTo(null, 950);
+  gameEntryTimers.push(setTimeout(() => {
+    gameEntrySelectionGone = true;
+    sel.classList.remove('on', 'departing');
+    zoomTile = null; applyZoom();
+    void wipe.offsetWidth;
+    wipe.classList.add('reveal');
+  }, 560));
+  // 円形ワイプ後は盤面全景を見せてから開始地点の城へ寄る。
+  gameEntryTimers.push(setTimeout(() => { zoomTile = 0; applyZoom(); }, 2250));
+  gameEntryTimers.push(setTimeout(() => {
+    wipe.classList.remove('on', 'reveal');
+    gameEntryRunning = false;
+    restoreBoardBgm();
+    const first = state && state.players[state.turn];
+    if (first) showTelop('turn', first.name + 'の手番');
+  }, 3250));
+  gameEntryTimers.push(setTimeout(() => { zoomTile = null; applyZoom(); }, 4150));
+}
 function playTurnCutin(pl) {
   if (!pl || !pl.charId) return;
   const el = $('turnCutin');
@@ -2727,6 +2816,8 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
+  const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
+  if (enteringFromSelect) playGameEntryTransition();
   $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.97' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
@@ -2736,7 +2827,8 @@ function render() {
     $('startBtn').disabled = state.players.length < 2;
   }
   // キャラ選択
-  $('selectOv').classList.toggle('on', state.phase === 'select' && !duelPlaying);
+  $('selectOv').classList.toggle('on',
+    (state.phase === 'select' || (gameEntryRunning && !gameEntrySelectionGone)) && !duelPlaying);
   if (state.phase === 'select') {
     const C = state.catalog.CHARS;
     const elemJa = { fire:'火属性', water:'水属性', earth:'土属性', wind:'風属性' };
@@ -2901,16 +2993,19 @@ function render() {
     prev.cursesKey = ck;
   }
   // テロップ(移動アニメ中は保留し、完了後に1回だけ表示)
-  if (state.phase === 'playing' && prev.phase !== 'playing') showTelop('game');
+  if (state.phase === 'playing' && prev.phase !== 'playing' && !enteringFromSelect) showTelop('game');
   else if (state.phase === 'playing' && state.turn !== prev.turn) queuedTurn = state.turn;
   prev.phase = state.phase; prev.turn = state.turn;
   // (TURN STARTテロップはバナーキュー処理の後で判定する ─ 祠バナー等を先に消化)
   // BGM(リーチ者がいれば疾走曲へ)
-  if (state.phase === 'playing') {
+  if (gameEntryRunning) {
+    // 選択曲のフェードアウトと盤面公開が終わるまで通常曲を開始しない。
+  } else if (state.phase === 'playing') {
     const battleNow = !!state.battlePreview || !!battlePlayingKey ||
       !!(state.lastBattle && state.lastBattle.at !== prev.battleAt);
     if (battleNow) setBgm('battle'); else restoreBoardBgm();
-  } else if (state.phase === 'ended') setBgm(null);
+  } else if (state.phase === 'lobby' || state.phase === 'select') setBgm('select');
+  else if (state.phase === 'ended') setBgm(null);
   // 実況吹き出し(何を待っているか)
   {
     const pe = Object.entries(state.pending);

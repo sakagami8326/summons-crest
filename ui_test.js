@@ -61,6 +61,10 @@ const scripts = timingSrc + '\n' +
     throw new Error('レイアウト検査: HUD中央のダイス領域または右側ツール群がない');
   if (!/p\.type \+ '\|' \+ p\.prompt \+ '\|' \+ p\.options\.map\(o => o\.id\)/.test(html))
     throw new Error('操作ロック検査: pendingキーに選択肢が含まれていない(即時スペル後にボタンが固まる)');
+  if (!/function browseActionHand\(\)/.test(html) ||
+      !/btn\.style\.display\s*=\s*'inline-flex'/.test(html) ||
+      !/btn\.textContent\s*=\s*'選択肢に戻る'/.test(html))
+    throw new Error('敵領地手札確認検査: 手札から選択肢へ戻る導線が表示されない');
   if (!/-webkit-line-clamp:\s*3/.test(css) || !/-webkit-line-clamp:\s*5/.test(css) ||
       !/#cardZoomCard \.ccEffect p/.test(css))
     throw new Error('カード本文検査: 通常表示の省略または拡大時の全文表示がない');
@@ -71,6 +75,10 @@ const scripts = timingSrc + '\n' +
   if (!/summonerSelect/.test(boardHtml) || !/class="scLocked">準備中/.test(boardHtml) ||
       !/selectable === false/.test(boardHtml))
     throw new Error('テレビ召喚士選択検査: 5本パネルまたは準備中表示がない');
+  if (!/bgm_select\.mp3/.test(boardHtml) || !/summonerOrbit/.test(boardHtml) ||
+      !/function playGameEntryTransition\(\)/.test(boardHtml) ||
+      !/class="entryRing"/.test(boardHtml) || !/zoomTile = 0; applyZoom\(\)/.test(boardHtml))
+    throw new Error('ゲーム開始演出検査: 選択BGM・回転リング・円形ワイプ・城ズームが不足');
   console.log('レイアウト不変条件 ✓ (HUD/ダイス/ツール+大型手札の2段配置)');
 }
 
@@ -125,6 +133,7 @@ const sandboxSrc = scripts + `
   setState: s => { state = s; }, setPid: x => { pid = x; }, setRoom: x => { room = x; },
   getLastDiceAt: () => lastDiceAt, getSettleT: () => settleT,
   getRolling: () => rolling, setRolling: v => { rolling = v; },
+  setContextActions, browseActionHand,
 };`;
 let skew = 0;
 const FakeDate = new Proxy(Date, {
@@ -146,6 +155,15 @@ try {
   console.error('スクリプト初期化で例外(スタブ不足の可能性):', e.message);
   process.exit(1);
 }
+// 敵領地の選択肢から手札へ移動しても、上部ボタンで必ず選択肢へ戻れる。
+P.setContextActions('敵領地', [
+  { id:'toll', label:'通行料を払う' }, { id:'invade', label:'侵略する' }
+]);
+if (els.contextBtn.style.display !== 'inline-flex')
+  throw new Error('敵領地手札確認検査: 選択肢を開く上部ボタンが非表示');
+P.browseActionHand();
+if (els.contextBtn.style.display !== 'inline-flex' || els.contextBtn.textContent !== '選択肢に戻る')
+  throw new Error('敵領地手札確認検査: 手札確認後の戻るボタンが表示されない');
 // ===== 操作可能性の判定 =====
 function clearDom() {
   for (const el of Object.values(els)) {
