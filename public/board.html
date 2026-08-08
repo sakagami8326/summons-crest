@@ -801,6 +801,14 @@
       font-family:inherit; font-size:13px; letter-spacing:1px; padding:7px 16px; border-radius:8px;
       cursor:pointer; }
   .saveSmall:hover { background:rgba(201,162,39,.15); }
+  #titleOv .saveSmall { min-width:clamp(150px,12vw,205px); min-height:4.2vh; padding:.8vh 1.2vw;
+      border:1px solid #b6903d; border-radius:4px; background:linear-gradient(180deg,#213858,#122440);
+      color:#fff3d0; font-size:clamp(13px,1vw,16px); font-weight:700; letter-spacing:.06em;
+      text-shadow:0 1px 2px rgba(0,0,0,.7); box-shadow:inset 0 0 0 2px rgba(232,204,126,.13),
+      0 .35vh .8vh rgba(58,40,19,.2); white-space:nowrap; }
+  #titleOv .saveSmall:hover { background:linear-gradient(180deg,#2c496e,#172d4e); color:#fff8e4;
+      border-color:#d2ad55; box-shadow:inset 0 0 0 2px rgba(255,225,139,.22),0 0 1.1vh rgba(169,126,39,.32); }
+  #titleOv .saveSmall:focus-visible { outline:3px solid rgba(45,87,139,.35); outline-offset:2px; }
   #resumeClose { background:transparent; border:1px solid #E86A5A; color:#F5B0A5;
       border-radius:8px; font-size:15px; padding:8px 13px; cursor:pointer; font-family:inherit; }
 
@@ -1488,9 +1496,6 @@ function initAudio() {
   });
   [bgmN, bgmR, bgmBattle, bgmSelect].forEach(a => {
     a.loop = true; a.volume = 0.35;
-    a.muted = true;
-    a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; })
-      .catch(() => { a.muted = false; });
   });
   const btn = document.getElementById('bgmBtn');
   btn.style.display = 'block';
@@ -1536,10 +1541,22 @@ function restoreBoardBgm() {
 }
 // BGMが不意に止まった場合の自動復帰(3秒ごとの見張り+タブ復帰時)
 function bgmHeal() {
-  if (bgmCur && !bgmMuted && bgmCur.paused && state &&
-      (state.phase === 'playing' || state.phase === 'lobby' || state.phase === 'select'))
+  const titleOpen = document.getElementById('titleOv').classList.contains('on');
+  if (bgmCur && !bgmMuted && bgmCur.paused && (titleOpen || (state &&
+      (state.phase === 'playing' || state.phase === 'lobby' || state.phase === 'select'))))
     bgmCur.play().catch(() => {});
 }
+function startTitleBgm() {
+  if (!document.getElementById('titleOv').classList.contains('on')) return;
+  initAudio();
+  setBgm('select');
+  if (bgmCur && !bgmMuted) bgmCur.play().catch(() => {});
+  document.removeEventListener('pointerdown', startTitleBgm);
+  document.removeEventListener('keydown', startTitleBgm);
+}
+// 自動再生制限に従い、タイトル画面での最初のユーザー操作から選択曲を流し続ける。
+document.addEventListener('pointerdown', startTitleBgm);
+document.addEventListener('keydown', startTitleBgm);
 setInterval(bgmHeal, 3000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) bgmHeal(); });
 let es = null, lastMsgAt = 0;

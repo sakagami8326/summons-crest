@@ -85,6 +85,10 @@ const scripts = timingSrc + '\n' +
       !/function playGameEntryTransition\(\)/.test(boardHtml) ||
       !/class="entryRing"/.test(boardHtml) || !/zoomTile = 0; applyZoom\(\)/.test(boardHtml))
     throw new Error('ゲーム開始演出検査: 選択BGM・回転リング・円形ワイプ・城ズームが不足');
+  if (!/function startTitleBgm\(\)/.test(boardHtml) ||
+      !/addEventListener\('pointerdown', startTitleBgm\)/.test(boardHtml) ||
+      !/setBgm\('select'\)/.test(boardHtml))
+    throw new Error('タイトルBGM検査: 初回操作から召喚士選択曲を開始できない');
   if (/\.selCard\.chosen\s*\{[^}]*flex-grow/.test(boardHtml) ||
       /\.selCard[^\n]*\.chosen\s*\{[^}]*scale\(/.test(boardHtml))
     throw new Error('召喚士選択検査: 選択済みパネルが拡大されている');
@@ -96,6 +100,9 @@ const scripts = timingSrc + '\n' +
       !/nth-child\(2\)[^}]*width:clamp\(92px,8\.7vw,160px\)/.test(boardHtml) ||
       !/nth-child\(5\)[^}]*width:clamp\(138px,13\.5vw,248px\)/.test(boardHtml))
     throw new Error('タイトル画面検査: カード文字が残っているか、奥行き用のサイズ差がない');
+  if (!/#titleOv \.saveSmall\s*\{[^}]*background:linear-gradient\(180deg,#213858,#122440\)/.test(boardHtml) ||
+      !/#titleOv \.saveSmall\s*\{[^}]*color:#fff3d0/.test(boardHtml))
+    throw new Error('タイトル画面検査: セーブ操作ボタンのコントラストが不足');
   console.log('レイアウト不変条件 ✓ (HUD/ダイス/ツール+大型手札の2段配置)');
 }
 
