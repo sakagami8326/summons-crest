@@ -81,6 +81,9 @@ const scripts = timingSrc + '\n' +
   if (!/summonerSelect/.test(boardHtml) || !/class="scLocked">準備中/.test(boardHtml) ||
       !/selectable === false/.test(boardHtml))
     throw new Error('テレビ召喚士選択検査: 5本パネルまたは準備中表示がない');
+  if (!/class="scFlip"/.test(boardHtml) || !/rotateY\(180deg\)/.test(boardHtml) ||
+      !/summoner-still-\$\{cid\}\.webp/.test(boardHtml) || !/revealedSummoners/.test(boardHtml))
+    throw new Error('テレビ召喚士選択検査: 選択確定時のイメージアート反転表示がない');
   if (!/bgm_select\.mp3/.test(boardHtml) || !/summonerOrbit/.test(boardHtml) ||
       !/function playGameEntryTransition\(\)/.test(boardHtml) ||
       !/class="entryRing"/.test(boardHtml) || !/zoomTile = 0; applyZoom\(\)/.test(boardHtml))

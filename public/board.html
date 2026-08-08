@@ -735,6 +735,7 @@
   #selectOv .selCard { --panel-color:#7da4cc; flex:1 1 0; min-width:0; width:auto; height:71.5vh;
       padding:0; margin:0; border:2px solid color-mix(in srgb,var(--panel-color) 58%,#fff);
       border-radius:0; overflow:hidden; isolation:isolate; background:#1a2131;
+      perspective:1400px;
       box-shadow:0 1.2vh 2.4vh rgba(27,34,51,.2); transition:flex-grow .34s ease,transform .34s ease,
       box-shadow .34s ease,filter .34s ease,opacity .46s ease; }
   #selectOv.departing .selCard { opacity:0; }
@@ -750,6 +751,23 @@
       0 1.4vh 2.8vh rgba(27,34,51,.28); }
   #selectOv .selCard.contested { border-color:#d64d42; box-shadow:0 0 0 3px rgba(214,77,66,.28),
       0 0 2.5vh rgba(214,77,66,.72); }
+  .scFlip { position:absolute; inset:0; transform-style:preserve-3d;
+      transition:transform .78s cubic-bezier(.2,.72,.18,1); will-change:transform; }
+  .selCard.flipped .scFlip { transform:rotateY(180deg); }
+  .scFace { position:absolute; inset:0; overflow:hidden; backface-visibility:hidden;
+      -webkit-backface-visibility:hidden; }
+  .scFront { transform:rotateY(0deg); }
+  .scBack { transform:rotateY(180deg); background:#090a12; }
+  .scStill { position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+      object-position:center top; filter:saturate(.98) contrast(1.02); }
+  .scBack::after { content:""; position:absolute; inset:0; pointer-events:none;
+      background:linear-gradient(180deg,transparent 55%,rgba(4,5,12,.12) 72%,rgba(4,5,12,.84) 100%); }
+  .scBackMeta { position:absolute; z-index:2; left:.7vw; right:.7vw; bottom:1.15vh;
+      color:#fff9e8; text-align:center; text-shadow:0 2px 8px #000; }
+  .scBackMeta strong { display:block; font:700 clamp(18px,2.7vh,31px)/1.08 Marudeco,sans-serif;
+      letter-spacing:.1em; }
+  .scBackMeta span { display:block; margin-top:.55vh; font-size:clamp(10px,1.2vh,14px);
+      letter-spacing:.08em; color:#ffe9a4; }
   .scBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-4;
       filter:saturate(.88) brightness(.92); }
   .scVeil { position:absolute; inset:0; z-index:-2; background:linear-gradient(180deg,
@@ -781,7 +799,7 @@
       color:#ecfbff; font:700 clamp(15px,2.4vh,27px)/1 Marudeco,sans-serif; letter-spacing:.22em;
       text-shadow:0 2px 7px #07121c; background:linear-gradient(180deg,transparent 20%,rgba(8,28,42,.2) 65%,transparent); }
   @media (prefers-reduced-motion:reduce) {
-    #selectOv .selCard { transition:none; }
+    #selectOv .selCard,.scFlip { transition:none; }
     .summonerOrbit,.summonerOrbit::before { animation:none; }
   }
   @property --entry-wipe { syntax:"<percentage>"; inherits:false; initial-value:0%; }
@@ -1138,6 +1156,7 @@ function syncHasArt() {
 }
 
 let code = null, state = null, prev = { phase: null, turn: -1, battleAt: 0, diceAt: 0 };
+const revealedSummoners = new Set();
 const pawnAnim = {}, prevPos = {};
 const prevGold = {};
 let queuedTurn = null, firedTurn = -1, lastMoveEnd = 0, shopWaitT = null, lastUpKey = '';
@@ -2998,26 +3017,49 @@ function render() {
     const C = state.catalog.CHARS;
     const elemJa = { fire:'火属性', water:'水属性', earth:'土属性', wind:'風属性' };
     let conflict = false;
+    const revealNow = [];
+    const activeReveals = new Set();
     $('selRow').innerHTML = Object.entries(C).map(([cid, c]) => {
       const who = state.players.filter(p => p.charId === cid);
       if (who.length >= 2) conflict = true;
       const locked = c.selectable === false || c.upcoming;
       const chosen = who.some(p => p.confirmed);
+      if (chosen && !locked) activeReveals.add(cid);
+      const animateReveal = chosen && !locked && !revealedSummoners.has(cid);
+      if (animateReveal) revealNow.push(cid);
       const pill = !who.length ? '─'
         : who.length >= 2 ? '競合中: ' + who.map(p => p.name).join(' vs ')
         : who[0].name + ' が使用';
       const elemSvg = c.elem && ELEM[c.elem] ? `<svg viewBox="-34 -36 68 72">${ELEM[c.elem]}</svg>` : '';
-      return `<div class="selCard ${chosen ? 'chosen' : ''} ${who.length >= 2 ? 'contested' : ''} ${locked ? 'locked' : ''}"
+      const flipped = chosen && !locked && !animateReveal;
+      return `<div class="selCard ${chosen ? 'chosen' : ''} ${flipped ? 'flipped' : ''} ${who.length >= 2 ? 'contested' : ''} ${locked ? 'locked' : ''}"
+        data-summoner="${cid}"
         style="--panel-color:${c.color}">
-        <img class="scBg" src="/assets/cards/bg-${c.elem || 'neutral'}.webp" alt="">
-        <div class="scVeil"></div><span class="scElem">${elemSvg}</span>
-        <img class="scArt" src="/assets/full_${cid}.png" alt="${c.name}">
-        ${locked ? '<div class="scLocked">準備中</div>' : ''}
-        <div class="scMeta"><div class="scn">${c.name}</div>
-          <div class="sce">${locked ? 'COMING SOON' : `${elemJa[c.elem] || ''} ─ ${c.style || ''}`}</div>
-          <div class="scp ${chosen && who.length === 1 ? 'done' : ''}">${locked ? '選択できません' : pill}</div></div>
+        <div class="scFlip">
+          <div class="scFace scFront">
+            <img class="scBg" src="/assets/cards/bg-${c.elem || 'neutral'}.webp" alt="">
+            <div class="scVeil"></div><span class="scElem">${elemSvg}</span>
+            <img class="scArt" src="/assets/full_${cid}.png" alt="${c.name}">
+            ${locked ? '<div class="scLocked">準備中</div>' : ''}
+            <div class="scMeta"><div class="scn">${c.name}</div>
+              <div class="sce">${locked ? 'COMING SOON' : `${elemJa[c.elem] || ''} ─ ${c.style || ''}`}</div>
+              <div class="scp ${chosen && who.length === 1 ? 'done' : ''}">${locked ? '選択できません' : pill}</div></div>
+          </div>
+          ${locked ? '' : `<div class="scFace scBack">
+            <img class="scStill" src="/assets/summoner-still-${cid}.webp" alt="${c.name} イメージアート">
+            <div class="scBackMeta"><strong>${c.name}</strong><span>${pill}</span></div>
+          </div>`}
+        </div>
       </div>`;
     }).join('');
+    [...revealedSummoners].forEach(cid => { if (!activeReveals.has(cid)) revealedSummoners.delete(cid); });
+    if (revealNow.length) requestAnimationFrame(() => requestAnimationFrame(() => {
+      revealNow.forEach(cid => {
+        const card = $('selRow').querySelector(`[data-summoner="${cid}"]`);
+        if (card) card.classList.add('flipped');
+        revealedSummoners.add(cid);
+      });
+    }));
     $('selConflict').style.display = conflict ? 'block' : 'none';
     if (state.duel && state.duel.at !== prev.duelAt) {
       prev.duelAt = state.duel.at;
