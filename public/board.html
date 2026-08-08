@@ -103,7 +103,8 @@
         url('/assets/battle/battle-bg.webp') center/cover no-repeat; }
   #battle.on { display:block; animation:battleIn .45s ease both; }
   @keyframes battleIn { from{opacity:0} to{opacity:1} }
-  #battle.shake { animation:shake .4s; }
+  /* 背景レイヤー自体は動かさない。全画面背景をtransformすると一部GPUで盤面が一瞬露出する。 */
+  #battle.shake #battleField { animation:shakeField .4s; }
   #battle::after { content:""; position:absolute; inset:1.6vh 1.2vw; pointer-events:none; z-index:1;
       border:1px solid rgba(226,190,91,.55); border-radius:2.2vh;
       box-shadow:inset 0 0 2.4vh rgba(226,190,91,.14); }
@@ -111,6 +112,10 @@
   #bwHost canvas { width:100%!important; height:100%!important; object-fit:cover; }
   @keyframes shake { 0%,100%{transform:none} 15%{transform:translate(12px,-7px) scale(1.035)}
     50%{transform:translate(-10px,8px) scale(1.035)} 75%{transform:translate(7px,4px) scale(1.035)} }
+  @keyframes shakeField { 0%,100%{transform:translateX(-50%)}
+    15%{transform:translate(calc(-50% + 10px),-6px) scale(1.012)}
+    50%{transform:translate(calc(-50% - 8px),6px) scale(1.012)}
+    75%{transform:translate(calc(-50% + 6px),3px) scale(1.008)} }
   #battleTitle { position:absolute; z-index:7; top:3vh; left:50%; transform:translateX(-50%);
       font:700 3.2vh/1 Marudeco,'Yu Mincho',serif; letter-spacing:.45em; color:#f5d56f;
       text-shadow:0 2px 12px #000; white-space:nowrap; }
@@ -131,7 +136,7 @@
       border-radius:1.5vh; background:#18233e; box-shadow:0 2vh 4vh rgba(0,0,0,.65);
       transform-style:preserve-3d; transition:transform .65s cubic-bezier(.2,.85,.25,1),opacity .35s; }
   .battleCreatureCard.reveal { animation:bCreatureReveal .75s cubic-bezier(.16,.86,.2,1) both; }
-  @keyframes bCreatureReveal { from{transform:rotateY(-90deg);opacity:0} to{transform:none;opacity:1} }
+  @keyframes bCreatureReveal { from{transform:rotateY(-90deg);opacity:1} to{transform:none;opacity:1} }
   .battleCreatureCard .scBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-3; }
   .battleCreatureCard .scHead { position:absolute; z-index:5; top:3.1%; left:4.7%; right:4.7%; height:9.5%;
       display:grid; grid-template-columns:1fr; align-items:center; }
@@ -299,7 +304,7 @@
   #scCard .scBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-3; }
   #scCard .scHead { position:absolute; z-index:5; top:3.1%; left:4.7%; right:4.7%; height:9.5%;
       display:grid; grid-template-columns:11.5% 1fr 11.5%; align-items:center; }
-  #scCard .scElem { width:100%; height:100%; display:grid; place-items:center; color:#fff; }
+  #scCard .scElem { position:static; transform:none; width:100%; height:100%; display:grid; place-items:center; color:#fff; }
   #scCard .scElem svg { width:100%; height:100%; } #scCard .scElem svg * { fill:#fff !important; }
   #scCard .scName { grid-column:2; color:#fff4d5; font:700 6.8vh/1 Marudeco,sans-serif; text-align:center;
       white-space:nowrap; text-shadow:0 3px 0 rgba(14,45,78,.24); }
@@ -311,7 +316,8 @@
   #scCard .scCost { position:absolute; z-index:8; top:65.2%; left:3.2%; width:24%; aspect-ratio:320/112; }
   #scCard .scCost .frame { position:absolute; inset:0; width:100%; height:100%; }
   #scCard .scCost .coin { position:absolute; left:7.5%; top:17.8%; width:22.5%; height:64.3%; }
-  #scCard .scCost b { position:absolute; inset:0 5% 0 33%; display:grid; place-items:center; font:700 3.2vh/1 Marudeco,sans-serif; }
+  #scCard .scCost b { position:absolute; inset:0 5% 0 33%; display:grid; place-items:center;
+      font:700 3.2vh/1 Marudeco,sans-serif; color:#172536; text-shadow:none; white-space:nowrap; }
   #scCard .scStats { height:36%; display:grid; grid-template-columns:1fr 1fr; gap:6%; align-items:center; }
   #scCard .scStat { display:grid; grid-template-columns:36% max-content; align-items:center; justify-content:center; gap:1.5%; }
   #scCard .scStat img { width:100%; } #scCard .scStat b { font:700 7.3vh/1 Marudeco,sans-serif; }
@@ -1475,7 +1481,7 @@ document.getElementById('titleSoundToggle').onclick = e => {
   else { setBgm('select'); if (bgmCur) bgmCur.play().catch(() => {}); }
 };
 let bgmN = null, bgmR = null, bgmBattle = null, bgmSelect = null, bgmMuted = false, bgmCur = null;
-let bgmFadeTimer = null;
+let bgmFadeTimer = null, bgmFadeFrom = null;
 let seTelop = null, seSummon = null, seEvolve = null, seBattleFinish = null, seCastleBonus = null;
 function initAudio() {
   if (bgmN) return;
@@ -1512,17 +1518,58 @@ function playSe(a) {
 }
 function setBgm(which) {
   if (!bgmN) return;
-  clearInterval(bgmFadeTimer); bgmFadeTimer = null;
   const t = which === 'battle' ? bgmBattle : which === 'reach' ? bgmR
     : which === 'normal' ? bgmN : which === 'select' ? bgmSelect : null;
   if (bgmCur === t) return;
+  clearInterval(bgmFadeTimer); bgmFadeTimer = null;
+  if (bgmFadeFrom && bgmFadeFrom !== bgmCur) {
+    bgmFadeFrom.pause(); bgmFadeFrom.currentTime = 0; bgmFadeFrom.volume = 0.35;
+  }
+  bgmFadeFrom = null;
   if (bgmCur) { bgmCur.pause(); bgmCur.currentTime = 0; bgmCur.volume = 0.35; }
   bgmCur = t;
   if (t && !bgmMuted) t.play().catch(() => {});
 }
+function crossfadeBgmTo(which, duration = 650) {
+  if (!bgmN || bgmMuted || duration <= 0) return setBgm(which);
+  const to = which === 'battle' ? bgmBattle : which === 'reach' ? bgmR
+    : which === 'normal' ? bgmN : which === 'select' ? bgmSelect : null;
+  if (!to) return fadeBgmTo(null, duration);
+  if (bgmCur === to) {
+    to.volume = 0.35;
+    if (to.paused) to.play().catch(() => {});
+    return;
+  }
+  clearInterval(bgmFadeTimer);
+  if (bgmFadeFrom && bgmFadeFrom !== bgmCur) {
+    bgmFadeFrom.pause(); bgmFadeFrom.currentTime = 0; bgmFadeFrom.volume = 0.35;
+  }
+  const from = bgmCur;
+  bgmFadeFrom = from;
+  to.currentTime = 0;
+  to.volume = 0;
+  bgmCur = to;
+  to.play().catch(() => {});
+  const started = Date.now(), fromVolume = from ? from.volume : 0;
+  bgmFadeTimer = setInterval(() => {
+    const k = Math.min(1, (Date.now() - started) / duration);
+    to.volume = 0.35 * k;
+    if (from) from.volume = fromVolume * (1 - k);
+    if (k >= 1) {
+      clearInterval(bgmFadeTimer); bgmFadeTimer = null;
+      if (from) { from.pause(); from.currentTime = 0; from.volume = 0.35; }
+      bgmFadeFrom = null;
+      to.volume = 0.35;
+    }
+  }, 40);
+}
 function fadeBgmTo(which, duration) {
   if (!bgmCur || bgmMuted || duration <= 0) return setBgm(which);
   clearInterval(bgmFadeTimer);
+  if (bgmFadeFrom && bgmFadeFrom !== bgmCur) {
+    bgmFadeFrom.pause(); bgmFadeFrom.currentTime = 0; bgmFadeFrom.volume = 0.35;
+  }
+  bgmFadeFrom = null;
   const from = bgmCur, startVolume = from.volume, started = Date.now();
   bgmFadeTimer = setInterval(() => {
     const k = Math.min(1, (Date.now() - started) / duration);
@@ -1535,10 +1582,11 @@ function fadeBgmTo(which, duration) {
     }
   }, 40);
 }
-function restoreBoardBgm() {
+function restoreBoardBgm(duration = 0) {
   if (!state || state.phase !== 'playing') return setBgm(null);
   const reach = state.players.some(p => !p.bankrupt && p.points >= (state.reachAt || state.target - 1));
-  setBgm(reach ? 'reach' : 'normal');
+  const next = reach ? 'reach' : 'normal';
+  if (duration > 0) crossfadeBgmTo(next, duration); else setBgm(next);
 }
 // BGMが不意に止まった場合の自動復帰(3秒ごとの見張り+タブ復帰時)
 function bgmHeal() {
@@ -2676,6 +2724,11 @@ function renderBattlePreview(bp) {
   if (isNew) {
     activeBattleKey = bp.key;
     activeBattleAttacker = null;
+    ['bAtk','bDef'].forEach(id => {
+      $(id).classList.remove('dead','winner','lungeL','lungeR');
+      $(id).style.opacity = '1';
+      $(id).style.filter = 'none';
+    });
     $('battleFx').innerHTML = '';
     $('bresult').classList.remove('show'); $('bresult').textContent = '';
     $('bnotes').textContent = '';
@@ -2689,9 +2742,6 @@ function renderBattlePreview(bp) {
     activeBattleAttacker = bp.atkCreature;
   }
   if (isNew) {
-    $('bDef').classList.remove('dead','winner','lungeL','lungeR');
-    $('bDef').style.opacity = '1';
-    $('bDef').style.filter = 'none';
     $('bDef').innerHTML = battleCreatureHTML(bp.defCreature, bp.defLevel || 1, false);
     $('bDefStats').innerHTML = previewStatsHTML(bp.defender, bp.defCreature, bp.defLevel || 1, bp.defDamage || 0, 'def');
   }
@@ -2821,7 +2871,8 @@ async function playBattle(b) {
   };
   const showResult = async (text, preWait) => {
     await wait(preWait);
-    setBgm(null);
+    // 決着SEのために戦闘曲を弱めるが、音声ストリーム自体は切断しない。
+    if (bgmBattle && bgmCur === bgmBattle) bgmBattle.volume = 0.08;
     const winner = $(b.win ? 'bAtk' : 'bDef');
     winner.classList.add('winner');
     playSe(seBattleFinish);
@@ -2922,7 +2973,7 @@ async function playBattle(b) {
     battleOpeningKey = null;
     $('battleCutin').classList.remove('on');
     ['bAtk','bDef'].forEach(id => $(id).classList.remove('winner'));
-    restoreBoardBgm();
+    restoreBoardBgm(650);
     cutBusy = Math.max(0, cutBusy - 1);
   }
 }

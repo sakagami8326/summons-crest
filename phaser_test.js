@@ -86,7 +86,12 @@ ok(/#bwHost \{ display:none; \}/.test(board), 'board.html: 戦闘背景アニメ
 ok(!/BW\.backgroundPulse\(/.test(board), 'board.html: 背景イベントアニメーションを呼ばない');
 ok(/playSe\(seBattleFinish\)/.test(board), 'board.html: 決着SEを再生する');
 ok(/setBgm\('battle'\)/.test(board), 'board.html: 侵略中に戦闘BGMへ切り替える');
-ok(/setBgm\(null\);[\s\S]{0,180}playSe\(seBattleFinish\)/.test(board), 'board.html: 決着SE前に戦闘BGMを停止する');
+ok(/bgmBattle\.volume = 0\.08[\s\S]{0,240}playSe\(seBattleFinish\)/.test(board), 'board.html: 決着時は戦闘BGMを停止せずダッキングする');
+ok(/restoreBoardBgm\(650\)/.test(board), 'board.html: 戦闘終了後は盤面BGMへクロスフェードする');
+ok(/#battle\.shake #battleField/.test(board) && !/#battle\.shake \{ animation/.test(board),
+  'board.html: 攻撃時も戦闘背景レイヤーを固定する');
+ok(/#scCard \.scElem \{ position:static/.test(board), 'board.html: 召喚カード属性アイコンを名前左へ固定する');
+ok(/#scCard \.scCost b[\s\S]{0,180}color:#172536/.test(board), 'board.html: 召喚カードのコスト数値を表示する');
 ok(/WIN<small>/.test(board), 'board.html: 勝者カードと同時にWINを表示する');
 ok(/id === 'sup:none'/.test(phone), 'phone.html: 支援なし選択を共通行動UIで扱う');
 ok(!/id="supportNoneBtn"/.test(phone), 'phone.html: 支援なし選択を重複表示しない');
