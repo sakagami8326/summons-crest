@@ -88,6 +88,10 @@ const scripts = timingSrc + '\n' +
   if (/\.selCard\.chosen\s*\{[^}]*flex-grow/.test(boardHtml) ||
       /\.selCard[^\n]*\.chosen\s*\{[^}]*scale\(/.test(boardHtml))
     throw new Error('召喚士選択検査: 選択済みパネルが拡大されている');
+  if ((boardHtml.match(/class="titleCardSlot"/g) || []).length !== 8 ||
+      !/@keyframes titleCardFloat/.test(boardHtml) || !/@keyframes titleShadow/.test(boardHtml) ||
+      !/id="titleSettings"/.test(boardHtml) || !/id="titleSoundToggle"/.test(boardHtml))
+    throw new Error('タイトル画面検査: 実カード8枚・浮遊影・タロット風メニューが不足');
   console.log('レイアウト不変条件 ✓ (HUD/ダイス/ツール+大型手札の2段配置)');
 }
 

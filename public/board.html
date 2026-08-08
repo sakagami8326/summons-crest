@@ -489,10 +489,72 @@
       padding:.5vh 2.4vh; font-size:1.9vh; letter-spacing:2px; color:var(--gold-soft); white-space:nowrap; }
   .plate { height:80px !important; }
   .plate .row3 { display:flex; gap:10px; margin:2px 0 0 58px; font-size:11px; font-family:sans-serif; }
-  #titleOv { z-index:95; background:radial-gradient(ellipse at 50% 20%, #2E2A58 0%, var(--ink) 65%); }
-  #titleOv .cast { position:absolute; bottom:-4vh; height:58vh; opacity:.85;
-      filter:brightness(.8) drop-shadow(0 0 24px rgba(0,0,0,.6)); }
-  #titleOv img.tlogo { height:23vh; filter:drop-shadow(0 6px 20px rgba(0,0,0,.7)); z-index:2; }
+  #titleOv { z-index:95; overflow:hidden; gap:1.5vh; color:#172139;
+      background:url('/assets/summoner-select-bg-v1.png') center/cover no-repeat,#f3ead1; }
+  #titleOv::before { content:""; position:absolute; left:50%; top:49%; width:min(70vw,1040px);
+      aspect-ratio:1; border:1px solid rgba(142,105,45,.27); border-radius:50%; pointer-events:none;
+      transform:translate(-50%,-50%); box-shadow:0 0 0 3.7vw rgba(143,105,45,.035),
+      0 0 0 7.8vw rgba(143,105,45,.025); animation:titleOrbit 52s linear infinite; }
+  #titleOv::after { content:""; position:absolute; left:50%; top:49%; width:min(56vw,820px);
+      aspect-ratio:1; border:2px dashed rgba(142,105,45,.22); border-radius:50%; pointer-events:none;
+      transform:translate(-50%,-50%); animation:titleOrbitReverse 38s linear infinite; }
+  @keyframes titleOrbit { to { transform:translate(-50%,-50%) rotate(360deg); } }
+  @keyframes titleOrbitReverse { to { transform:translate(-50%,-50%) rotate(-360deg); } }
+  .titleCards { position:absolute; inset:0; z-index:1; pointer-events:none; }
+  .titleCardSlot { --r:0deg; --delay:0s; --dur:6s; position:absolute; width:clamp(105px,10.8vw,198px);
+      aspect-ratio:2/3; transform:rotate(var(--r)); transform-origin:center; }
+  .titleCardSlot:nth-child(1) { left:2.5%; top:9%; --r:-11deg; --delay:-1.2s; --dur:6.4s; }
+  .titleCardSlot:nth-child(2) { left:18%; top:1%; --r:6deg; --delay:-3.7s; --dur:7.1s; }
+  .titleCardSlot:nth-child(3) { right:18%; top:1%; --r:-6deg; --delay:-2.1s; --dur:6.7s; }
+  .titleCardSlot:nth-child(4) { right:2.5%; top:9%; --r:11deg; --delay:-4.4s; --dur:7.5s; }
+  .titleCardSlot:nth-child(5) { left:1.5%; bottom:-4%; --r:-7deg; --delay:-2.8s; --dur:6.9s; }
+  .titleCardSlot:nth-child(6) { left:19%; bottom:-10%; --r:8deg; --delay:-.6s; --dur:7.7s; }
+  .titleCardSlot:nth-child(7) { right:19%; bottom:-10%; --r:-8deg; --delay:-3.4s; --dur:7.2s; }
+  .titleCardSlot:nth-child(8) { right:1.5%; bottom:-4%; --r:7deg; --delay:-1.7s; --dur:6.5s; }
+  .titleCardShadow { position:absolute; left:8%; right:8%; bottom:-5%; height:10%; border-radius:50%;
+      background:rgba(63,44,22,.28); filter:blur(9px); animation:titleShadow var(--dur) ease-in-out var(--delay) infinite; }
+  .titleCard { position:absolute; inset:0; overflow:hidden; border:2px solid #b5903c; border-radius:1.1vh;
+      background:#12233d; box-shadow:inset 0 0 0 2px rgba(255,240,184,.45),0 1.2vh 2.4vh rgba(55,38,20,.24);
+      animation:titleCardFloat var(--dur) ease-in-out var(--delay) infinite; }
+  .titleCard::after { content:""; position:absolute; inset:3.5%; border:1px solid rgba(250,224,144,.75);
+      border-radius:.65vh; pointer-events:none; }
+  .titleCardBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:saturate(.88); }
+  .titleCardArt { position:absolute; z-index:1; left:4%; top:14%; width:92%; height:68%; object-fit:contain;
+      filter:drop-shadow(0 .7vh .8vh rgba(0,0,0,.42)); }
+  .titleCardName { position:absolute; z-index:3; left:5%; right:5%; top:4%; color:#fff8df; font-weight:700;
+      font-size:clamp(11px,1.35vw,22px); line-height:1; letter-spacing:.04em; text-shadow:0 2px 5px #07111e;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .titleCardElem { position:absolute; z-index:3; left:7%; bottom:5%; width:2.2vw; min-width:21px; aspect-ratio:1;
+      display:grid; place-items:center; border:1px solid rgba(255,234,165,.75); border-radius:50%;
+      background:rgba(10,24,44,.78); color:#fff5d2; font-size:clamp(9px,.8vw,14px); font-weight:700; }
+  @keyframes titleCardFloat { 0%,100% { transform:translateY(0); }
+      50% { transform:translateY(-1.25vh); } }
+  @keyframes titleShadow { 0%,100% { transform:translateY(0) scaleX(.92); opacity:.24; }
+      50% { transform:translateY(.7vh) scaleX(.72); opacity:.13; } }
+  .titleCenter { position:relative; z-index:4; width:min(40vw,620px); display:flex; flex-direction:column;
+      align-items:center; gap:1.25vh; padding:2.3vh 3vw 2.6vh; }
+  #titleOv img.tlogo { width:min(35vw,560px); max-height:22vh; object-fit:contain;
+      filter:drop-shadow(0 3px 0 rgba(255,255,255,.72)) drop-shadow(0 8px 18px rgba(79,53,19,.25)); }
+  .titleMenu { display:flex; flex-direction:column; align-items:center; gap:1vh; width:min(29vw,430px); }
+  #titleOv .gbtn { position:relative; width:100%; min-height:5.5vh; border-radius:3px; color:#f8edcd;
+      border:1px solid #b6903d; background:linear-gradient(180deg,#172b49,#0d1c34); font-weight:700;
+      font-size:clamp(15px,1.25vw,21px); box-shadow:inset 0 0 0 2px rgba(230,199,110,.18),
+      0 .45vh 1vh rgba(70,48,20,.2); transition:transform .18s ease,box-shadow .18s ease,filter .18s ease; }
+  #titleOv .gbtn::before,#titleOv .gbtn::after { content:"◇"; position:absolute; top:50%; transform:translateY(-50%);
+      color:#d4b45b; font-size:.85em; }
+  #titleOv .gbtn::before { left:1.2em; } #titleOv .gbtn::after { right:1.2em; }
+  #titleOv .gbtn:hover { transform:translateY(-2px); filter:brightness(1.14);
+      box-shadow:inset 0 0 0 2px rgba(255,224,133,.3),0 0 1.5vh rgba(174,129,39,.4); }
+  #titleOv .gbtn:active { transform:translateY(1px); }
+  #titleOv .hint { position:relative; z-index:4; color:rgba(39,42,53,.68); font-size:clamp(11px,.9vw,14px); }
+  #titleSettingsPanel { display:none; color:#3a2c18; font-size:13px; padding:.7vh 1.2vw;
+      border-top:1px solid rgba(135,96,34,.38); }
+  #titleSettingsPanel.on { display:block; }
+  #titleSoundToggle { border:1px solid #9f7a31; background:#f4e8c9; color:#352914; padding:.6vh 1.4vw;
+      cursor:pointer; font-weight:700; }
+  @media (prefers-reduced-motion:reduce) {
+    #titleOv::before,#titleOv::after,.titleCard,.titleCardShadow { animation:none; }
+  }
 
   /* 実況吹き出し(手番立ち絵の横) */
   #tpBubble { position:fixed; right:calc(12px + 22vh); bottom:26vh; z-index:33; max-width:300px;
@@ -731,7 +793,8 @@
     #gameEntry.reveal { animation-duration:.18s; }
     #gameEntry.reveal .entryRing { display:none; }
   }
-  #titleResumeWrap { display:none; align-items:center; gap:8px; }
+  #titleResumeWrap { display:none; align-items:center; gap:8px; width:100%; }
+  #titleResumeWrap .gbtn { flex:1; min-width:0; }
   .saveSmall { background:transparent; border:1px solid rgba(201,162,39,.6); color:var(--gold-soft);
       font-family:inherit; font-size:13px; letter-spacing:1px; padding:7px 16px; border-radius:8px;
       cursor:pointer; }
@@ -790,26 +853,38 @@
   <div id="tpBubble"></div>
   <div id="turnPortrait"><img id="tpImg"><div class="tpn" id="tpName"></div></div>
   <div class="overlay on" id="titleOv">
-    <img class="cast" style="left:0vw; height:48vh" src="/assets/full_mio.png">
-    <img class="cast" style="left:12vw; height:56vh" src="/assets/full_grease.png">
-    <img class="cast" style="right:12vw; height:56vh" src="/assets/full_redani.png">
-    <img class="cast" style="right:0vw; height:48vh" src="/assets/full_linnei.png">
-    <img class="tlogo" src="/assets/logo.png">
-    <button class="gbtn" id="titleCreate">ルームを作る</button>
-    <div id="titleResumeWrap">
-      <button class="gbtn" id="titleResume" style="filter:hue-rotate(-18deg)"></button>
-      <button id="resumeClose" title="このルームを閉じる">✕ 閉じる</button>
+    <div class="titleCards" aria-hidden="true">
+      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-water.webp"><div class="titleCardName">クレステリア</div><img class="titleCardArt" src="/assets/cards/c_cresteria.webp"><span class="titleCardElem">水</span></div></div>
+      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-wind.webp"><div class="titleCardName">ガストン</div><img class="titleCardArt" src="/assets/cards/c_gaston.webp"><span class="titleCardElem">風</span></div></div>
+      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-earth.webp"><div class="titleCardName">ボーンレックス</div><img class="titleCardArt" src="/assets/cards/c_bonerex.webp"><span class="titleCardElem">土</span></div></div>
+      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-fire.webp"><div class="titleCardName">マガドー</div><img class="titleCardArt" src="/assets/cards/c_magado.webp"><span class="titleCardElem">火</span></div></div>
+      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-earth.webp"><div class="titleCardName">ノーム</div><img class="titleCardArt" src="/assets/cards/c_nome.webp"><span class="titleCardElem">土</span></div></div>
+      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-neutral.webp"><div class="titleCardName">ベルーフ・シェイド</div><img class="titleCardArt" src="/assets/cards/c_beruf.webp"><span class="titleCardElem"></span></div></div>
+      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-fire.webp"><div class="titleCardName">クイーンベビー</div><img class="titleCardArt" src="/assets/cards/c_qbaby.webp"><span class="titleCardElem">火</span></div></div>
+      <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-wind.webp"><div class="titleCardName">ガーブル</div><img class="titleCardArt" src="/assets/cards/c_garble.webp"><span class="titleCardElem">風</span></div></div>
     </div>
-    <div id="saveWrap" style="display:none; flex-direction:column; align-items:center; gap:8px;">
-      <button class="gbtn" id="saveResume" style="filter:hue-rotate(-40deg)"></button>
-      <div style="display:flex; gap:8px;">
-        <button class="saveSmall" id="saveExport">セーブをファイルに書き出す</button>
-        <button class="saveSmall" id="saveImportBtn">ファイルから再開</button>
-        <input type="file" id="saveImport" accept="application/json,.json" style="display:none">
+    <div class="titleCenter">
+      <img class="tlogo" src="/assets/logo.png">
+      <div class="titleMenu">
+        <button class="gbtn" id="titleCreate">ルームを作る</button>
+        <div id="titleResumeWrap">
+          <button class="gbtn" id="titleResume"></button>
+          <button id="resumeClose" title="このルームを閉じる">✕ 閉じる</button>
+        </div>
+        <button class="gbtn" id="titleSettings">設定</button>
+        <div id="titleSettingsPanel"><button id="titleSoundToggle">音声 ON</button></div>
+        <div id="saveWrap" style="display:none; flex-direction:column; align-items:center; gap:8px;">
+          <button class="gbtn" id="saveResume"></button>
+          <div style="display:flex; gap:8px;">
+            <button class="saveSmall" id="saveExport">セーブを書き出す</button>
+            <button class="saveSmall" id="saveImportBtn">ファイルから再開</button>
+            <input type="file" id="saveImport" accept="application/json,.json" style="display:none">
+          </div>
+          <div id="saveMsg" style="font-size:13px; color:#8f3028; min-height:1.2em; max-width:60vw;"></div>
+        </div>
       </div>
-      <div id="saveMsg" style="font-size:13px; color:#F5B0A5; min-height:1.2em; max-width:60vw;"></div>
+      <p class="hint">テレビ／大画面で開き、スマホから参加します</p>
     </div>
-    <p class="hint">テレビ/大画面でこの画面を開き、スマホで参加します</p>
   </div>
   <div id="ticker" style="position:fixed; right:16px; top:80px; z-index:35; width:340px;
     font-size:12.5px; letter-spacing:1px; color:rgba(241,232,208,.9);
@@ -1371,6 +1446,22 @@ document.getElementById('titleCreate').onclick = () => {
   initAudio();
   document.getElementById('titleOv').classList.remove('on');
   boot();
+};
+document.getElementById('titleSettings').onclick = () => {
+  initAudio();
+  document.getElementById('titleSettingsPanel').classList.toggle('on');
+  if (!bgmMuted) setBgm('select');
+};
+document.getElementById('titleSoundToggle').onclick = e => {
+  e.stopPropagation();
+  initAudio();
+  bgmMuted = !bgmMuted;
+  const label = bgmMuted ? '音声 OFF' : '音声 ON';
+  document.getElementById('titleSoundToggle').textContent = label;
+  const globalBtn = document.getElementById('bgmBtn');
+  globalBtn.textContent = bgmMuted ? '♪ OFF' : '♪ ON';
+  if (bgmMuted) { if (bgmCur) bgmCur.pause(); }
+  else { setBgm('select'); if (bgmCur) bgmCur.play().catch(() => {}); }
 };
 let bgmN = null, bgmR = null, bgmBattle = null, bgmSelect = null, bgmMuted = false, bgmCur = null;
 let bgmFadeTimer = null;
