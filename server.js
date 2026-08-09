@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '0.98';
+const VERSION = '0.99';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -29,6 +29,10 @@ const CHAR_DECKS = {
            'shield', 'shield', 'jinx'],
   mio:    ['gaston', 'gaston', 'gaston', 'gecko', 'gecko', 'cleo',
            'sp_gold', 'sp_insight', 'sp_step',
+           'weapon', 'weapon', 'jinx'],
+  // v0.99 仮実装: バランス確定まではレダーニの火属性スターターを流用する。
+  lia:    ['gecko', 'gecko', 'gecko', 'gaston', 'gaston', 'cleo',
+           'sp_gold', 'sp_insight', 'sp_weaken',
            'weapon', 'weapon', 'jinx'],
 };
 // 廃棄スペル(使用後ゲームから除外)
@@ -177,6 +181,8 @@ const CHARS = {
             style: '防衛・領地育成', deckNote: 'ノーム2+盾2+加護 ─ 守って育てる' },
   mio:    { name: 'ミオ',     color: '#4FA69C', elem: 'wind',
             style: '移動・機動侵略', deckNote: 'ガストン2+疾風2 ─ 動き回って仕掛ける' },
+  lia:    { name: 'リーア',   color: '#E6868F', elem: 'fire',
+            style: '火力・スペル（仮）', deckNote: '仮デッキ ─ レダーニの火属性構成を流用' },
   // 次期召喚士の予告表示。selectable=falseの間は選択肢・ゲーム進行へ入れない。
   adel:   { name: 'アーデル', color: '#9DDFF2', elem: 'water',
             style: '準備中', deckNote: '', selectable: false, upcoming: true },
@@ -186,6 +192,7 @@ const ULTS = {
   linnei: { name: '水鏡の大商談', desc: '市場へ瞬間移動し、全品半額で買い物' },
   grease: { name: '大地の大結界', desc: '次の自分の手番まで、すべての自分の領地が侵略されなくなる' },
   mio:    { name: '追い風の導き', desc: '好きなマスへ移動して止まる' },
+  lia:    { name: '紅蓮の演算（仮）', desc: 'サイコロを3個振って移動する' },
 };
 for (const [cid, c] of Object.entries({ ...CREATURES }))
   if (c.evo) CREATURES[cid + '_f'] = { name: c.evo, elem: c.elem, st: c.evoSt, hp: c.evoHp,
@@ -1004,7 +1011,7 @@ function handleChoose(r, playerId, optionId) {
     p.ultUsed = true;
     r.lastUlt = { player: p.id, charId: p.charId, name: ULTS[p.charId].name, at: stamp(r) };
     log(r, `⚡ ${p.name}が固有スキル【${ULTS[p.charId].name}】を発動!`);
-    if (p.charId === 'redani') {
+    if (p.charId === 'redani' || p.charId === 'lia') {
       const d = [0, 0, 0].map(() => 1 + Math.floor(Math.random() * 6));
       const sum = d[0] + d[1] + d[2];
       return performMove(r, p, sum, { value: d[0], multi: d }, `3つのダイスで${sum}を出した!(${d.join('+')})`);

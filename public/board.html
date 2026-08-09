@@ -1793,7 +1793,7 @@ async function boot() {
   const c = await (await fetch('/api/create', { method: 'POST' })).json();
   enterRoom(c.code, c.phoneUrl, c.boardToken);
 }
-['redani','linnei','grease','mio','adel'].forEach(c => { new Image().src = '/assets/full_' + c + '.png'; });
+['redani','linnei','grease','mio','lia','adel'].forEach(c => { new Image().src = '/assets/full_' + c + '.png'; });
 addEventListener('resize', fitWorld);
 // 前回のルームが生きていれば「戻る」ボタンを出す
 (async () => {
@@ -3047,7 +3047,7 @@ function render() {
   if (!state) return;
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.97' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.99' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
@@ -3608,7 +3608,7 @@ function render() {
   } else { $('winOv').classList.remove('on'); prev.winPlayed = null; }
 }
 fitWorld(); addEventListener('resize', fitWorld);
-['redani','linnei','grease','mio','adel'].forEach(c => { new Image().src = '/assets/full_' + c + '.png'; });
+['redani','linnei','grease','mio','lia','adel'].forEach(c => { new Image().src = '/assets/full_' + c + '.png'; });
 </script>
 </body>
 </html>

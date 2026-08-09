@@ -9,8 +9,16 @@ const fs = require('fs');
 // ===== サーバー(in-process) =====
 let ssrc = fs.readFileSync('server.js', 'utf8').replace(/server\.listen\([\s\S]*?\}\);\s*$/, '');
 const S = new Function('require', '__dirname', 'process', 'console', 'setInterval',
-  ssrc + ';return {makeRoom,startSelect,handleChoose,publicState,isSelectionReady,startGame,SPELLS,doRoll};')(
+  ssrc + ';return {makeRoom,startSelect,handleChoose,publicState,isSelectionReady,startGame,SPELLS,doRoll,CHARS,CHAR_DECKS,ULTS};')(
   require, __dirname, process, { log: () => {}, error: console.error }, () => 0);
+
+// ===== リーア仮実装 =====
+if (!S.CHARS.lia || S.CHARS.lia.elem !== 'fire' || S.CHARS.lia.selectable === false ||
+    !Array.isArray(S.CHAR_DECKS.lia) || S.CHAR_DECKS.lia.length !== 12 || !S.ULTS.lia)
+  throw new Error('リーア仮実装検査: 火属性・選択可・12枚デッキ・固有スキルの定義が不足');
+for (const asset of ['full_lia.png', 'p_lia.png', 'f_lia.png', 'summoner-still-lia.webp'])
+  if (!fs.existsSync('public/assets/' + asset)) throw new Error(`リーア仮実装検査: ${asset} がない`);
+console.log('リーア仮実装 ✓');
 
 // ===== ダイス固定スペル =====
 for (let n = 1; n <= 6; n++) {
@@ -84,9 +92,9 @@ const scripts = timingSrc + '\n' +
   if (!/-webkit-line-clamp:\s*3/.test(css) || !/-webkit-line-clamp:\s*5/.test(css) ||
       !/#cardZoomCard \.ccEffect p/.test(css))
     throw new Error('カード本文検査: 通常表示の省略または拡大時の全文表示がない');
-  if (!/grid-template-columns:repeat\(4,minmax\(0,1fr\)\) clamp\(48px,8vw,84px\)/.test(css) ||
+  if (!/grid-template-columns:repeat\(5,minmax\(0,1fr\)\) clamp\(42px,6\.5vw,70px\)/.test(css) ||
       !/class="csUpcoming" aria-disabled="true"/.test(html))
-    throw new Error('召喚士選択検査: 4人カード+準備中アーデル枠の固定レイアウトがない');
+    throw new Error('召喚士選択検査: 5人カード+準備中アーデル枠の固定レイアウトがない');
   const boardHtml = fs.readFileSync('public/board.html', 'utf8');
   const boardWorldSrc = fs.readFileSync('public/board_world.js', 'utf8');
   if (!/--font-mincho:/.test(html) || !/--font-mincho:/.test(boardHtml) ||
