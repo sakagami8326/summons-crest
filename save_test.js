@@ -36,17 +36,17 @@ function setupGame() {
   return r;
 }
 
-// ===== A-0: 準備中召喚士は公開表示だけで、選択候補へ入らない =====
+// ===== A-0: アーデルが正式公開され、選択候補へ入る =====
 {
   const r = G.makeRoom();
   const p = { id: 'preview-test', name: '予告確認' };
   r.players.push(p);
   G.startSelect(r);
-  ok(G.CHARS.adel && G.CHARS.adel.upcoming && G.CHARS.adel.selectable === false,
-    'A-0: アーデルが準備中召喚士として公開される');
-  ok(!r.pending[p.id].options.some(o => o.id === 'adel'), 'A-0: アーデルは選択候補へ入らない');
+  ok(G.CHARS.adel && !G.CHARS.adel.upcoming && G.CHARS.adel.selectable !== false,
+    'A-0: アーデルが正式な選択可能召喚士として公開される');
+  ok(r.pending[p.id].options.some(o => o.id === 'adel'), 'A-0: アーデルが選択候補へ入る');
   G.handleChoose(r, p.id, 'adel');
-  ok(!p.charId && r.pending[p.id].type === 'select_char', 'A-0: アーデルの直接選択を無視する');
+  ok(p.charId === 'adel' && p.confirmed, 'A-0: アーデルを選択して確定できる');
   G.rooms.delete(r.code);
 }
 
@@ -78,6 +78,11 @@ function setupGame() {
       const pend = r.pending[pid];
       if (!pend) continue;
       let opt = pend.options[Math.floor(Math.random() * pend.options.length)];
+      if (pend.type === 'ult_lia') {
+        opt = pend.options.find(o => o.id === 'lu:confirm') ||
+              pend.options.find(o => /^lu:\d+$/.test(o.id)) ||
+              pend.options.find(o => o.id === 'lu:cancel') || opt;
+      }
       if (opt.id === 'unpick') continue;
       G.handleChoose(r, pid, opt.id);
       // カード保存則(復元をまたいで維持されること)
@@ -133,7 +138,7 @@ function setupGame() {
     ['不正コード', s => { s.room.code = 'ab'; }, /コード/],
     ['トークンなし', s => { delete s.room.boardToken; }, /トークン/],
     ['未知カードID', s => { s.room.players[0].hand = ['hacked_card']; }, /不明なカード/],
-    ['準備中キャラクターID', s => { s.room.players[0].charId = 'adel'; }, /キャラクターID/],
+    ['未知キャラクターID', s => { s.room.players[0].charId = 'future_summoner'; }, /キャラクターID/],
     ['重複プレイヤーID', s => { s.room.players[1].id = s.room.players[0].id; }, /プレイヤーID/],
     ['盤面長不正', s => { s.room.owners = []; }, /盤面/],
     ['位置範囲外', s => { s.room.players[0].pos = 99; }, /位置/],

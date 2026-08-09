@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '0.99';
+const VERSION = '1.00';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -30,10 +30,12 @@ const CHAR_DECKS = {
   mio:    ['gaston', 'gaston', 'gaston', 'gecko', 'gecko', 'cleo',
            'sp_gold', 'sp_insight', 'sp_step',
            'weapon', 'weapon', 'jinx'],
-  // v0.99 仮実装: バランス確定まではレダーニの火属性スターターを流用する。
-  lia:    ['gecko', 'gecko', 'gecko', 'gaston', 'gaston', 'cleo',
-           'sp_gold', 'sp_insight', 'sp_weaken',
+  lia:    ['grayble', 'grayble', 'grayble', 'trooper', 'trooper', 'gecko',
+           'sp_gold', 'sp_insight', 'sp_flame_vortex',
            'weapon', 'weapon', 'jinx'],
+  adel:   ['survey', 'survey', 'survey', 'palecoral', 'palecoral', 'orphe',
+           'sp_gold', 'sp_insight', 'sp_abyssal_pearl',
+           'shield', 'shield', 'jinx'],
 };
 // 廃棄スペル(使用後ゲームから除外)
 const EXILE_SPELLS = new Set(['sp_quake', 'sp_ward', 'sp_volcanic_core', 'sp_abyssal_pearl', 'sp_earth_mother_stone', 'sp_sky_crystal', 'sp_cornucopia']);
@@ -110,6 +112,14 @@ const CREATURES = {
   morbill: { name: 'モービル', evo: 'モルドラ', elem: 'earth', st: 30, hp: 45, cost: 90, evoSt: 50, evoHp: 65, fx: '【腐蝕】侵略時、相手の防衛DF-10(進化-20)', rarity: 'N' },
   mimic:   { name: 'ミミック',         elem: null,    st: 30, hp: 30, cost: 70, fx: '【擬態】戦闘時、相手の基礎AT/HPをコピー', rarity: 'N' },
   beruf:   { name: 'ベルーフ・シェイド', evo: 'デスベルーフ', elem: null, st: 20, hp: 50, cost: 90, evoSt: 40, evoHp: 70, fx: '【死影】スペルダメージを受けるたびAT+10(最大+30)。土地を離れるまで持続', rarity: 'N' },
+  grayble: { name: 'グレイブル', evo: 'グランガルム', elem: 'fire', st: 40, hp: 30, cost: 80, evoSt: 65, evoHp: 45,
+             fx: '【追撃】侵略時、戦闘前から相手が負傷していればAT+10', evoFx: '【追撃】侵略時、戦闘前から相手が負傷していればAT+20', rarity: 'N' },
+  trooper: { name: 'トルーパー', evo: 'グリゴール', elem: 'fire', st: 25, hp: 40, cost: 90, evoSt: 45, evoHp: 60,
+             fx: '【火種】召喚時、「炎の渦」1枚を山札へ加えてシャッフルする', evoFx: '【魔導節約】配置中、自分のスペルコストを20G下げる', rarity: 'N' },
+  survey:  { name: 'サーベイ', evo: 'ザシャック', elem: 'water', st: 35, hp: 35, cost: 80, evoSt: 55, evoHp: 50,
+             fx: '【支援】戦闘時、手札のクリーチャーを支援カードとして使える', evoFx: '【支援】戦闘時、手札のクリーチャーを支援カードとして使える', rarity: 'N' },
+  palecoral:{ name: 'パレコラル', evo: 'コラルグレイヴ', elem: 'water', st: 20, hp: 50, cost: 90, evoSt: 40, evoHp: 70,
+             fx: '【珊瑚再生】水領地が2つ以上ならターン開始時にHPを10回復', evoFx: '【珊瑚再生】水領地が2つ以上ならターン開始時にHPを20回復', rarity: 'N' },
 };
 const ITEMS = {}; // v0.34: 呪いアイテムは廃止(スペル「衰弱の呪文」に移行)
 const SPELLS = {
@@ -182,30 +192,30 @@ const CHARS = {
   mio:    { name: 'ミオ',     color: '#4FA69C', elem: 'wind',
             style: '移動・機動侵略', deckNote: 'ガストン2+疾風2 ─ 動き回って仕掛ける' },
   lia:    { name: 'リーア',   color: '#E6868F', elem: 'fire',
-            style: '火力・スペル（仮）', deckNote: '仮デッキ ─ レダーニの火属性構成を流用' },
-  // 次期召喚士の予告表示。selectable=falseの間は選択肢・ゲーム進行へ入れない。
+            style: '負傷・火力侵略', deckNote: '炎の渦で傷を刻み、追撃で侵略する' },
   adel:   { name: 'アーデル', color: '#9DDFF2', elem: 'water',
-            style: '準備中', deckNote: '', selectable: false, upcoming: true },
+            style: '回復・クリーチャー支援', deckNote: '水連鎖を築き、支援と回復で守り抜く', selectable: true, upcoming: false },
 };
 const ULTS = {
   redani: { name: '烈火の進軍', desc: 'サイコロを3個振って移動する' },
   linnei: { name: '水鏡の大商談', desc: '市場へ瞬間移動し、全品半額で買い物' },
   grease: { name: '大地の大結界', desc: '次の自分の手番まで、すべての自分の領地が侵略されなくなる' },
   mio:    { name: '追い風の導き', desc: '好きなマスへ移動して止まる' },
-  lia:    { name: '紅蓮の演算（仮）', desc: 'サイコロを3個振って移動する' },
+  lia:    { name: '紅蓮の方程式', desc: '敵領地を最大3か所選び、炎の渦を発生させる' },
+  adel:   { name: '氷晶の勅令', desc: '自分の全クリーチャーを20回復し、次の防衛戦闘でDF+10' },
 };
 for (const [cid, c] of Object.entries({ ...CREATURES }))
   if (c.evo) CREATURES[cid + '_f'] = { name: c.evo, elem: c.elem, st: c.evoSt, hp: c.evoHp,
-    cost: c.cost, fx: c.fx, rarity: c.rarity, forged: true };
+    cost: c.cost, fx: c.evoFx || c.fx, rarity: c.rarity, forged: true };
 
-const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill'];
+const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral'];
 // アートが存在するクリーチャーID(assetsのc_*.pngを起動時に走査 ─ v0.82)。
 // クライアントはcatalog.artIds経由で受け取る。手書きリストの二重管理はしない
 // (新クリーチャーはIDとファイル名を一致させて置くだけで盤面・カード・戦闘に反映される)
 const ART_IDS = (() => {
   try {
     return fs.readdirSync(path.join(__dirname, 'public', 'assets'))
-      .filter(f => /^c_.+\.png$/.test(f)).map(f => f.slice(2, -4));
+      .filter(f => /^c_.+\.(?:png|webp)$/.test(f)).map(f => f.replace(/^c_/, '').replace(/\.(?:png|webp)$/, ''));
   } catch (e) { return []; }
 })();
 const RARITY_COPIES = { L: 1, R: 2, N: 3 };
@@ -289,6 +299,23 @@ const ELEM_OF_SPELL = { sp_volcanic_core: 'fire', sp_abyssal_pearl: 'water',
 const ELEM_JA = { fire: '火', water: '水', earth: '土', wind: '風' };
 function chainCount(r, playerId, elem) {
   return r.owners.reduce((n, o, i) => n + (o && o.player === playerId && tileElem(r, i) === elem ? 1 : 0), 0);
+}
+function creatureMaxHp(o) {
+  const c = CREATURES[baseId(o && o.creature)];
+  return c ? (isEvolved(o) && c.evo ? c.evoHp : c.hp) : 0;
+}
+function grigorCount(r, playerId) {
+  return r.owners.reduce((n, o) => n + (o && o.player === playerId &&
+    baseId(o.creature) === 'trooper' && isEvolved(o) ? 1 : 0), 0);
+}
+function effectiveSpellCost(r, p, sid) {
+  const sp = SPELLS[sid];
+  return sp ? Math.max(0, sp.cost - grigorCount(r, p.id) * 20) : Infinity;
+}
+function onCreatureSummoned(r, p, creatureId, reason) {
+  if (creatureId !== 'trooper' || (reason !== 'summon' && reason !== 'swap')) return;
+  gainToDeck(r, p, ['sp_flame_vortex']);
+  log(r, `【火種】${CREATURES.trooper.name}の召喚で「炎の渦」1枚を山札へ加えた`);
 }
 function tollOf(r, i) {
   const o = r.owners[i];
@@ -374,11 +401,17 @@ function ask(r, playerId, type, prompt, options) {
 }
 function askRoll(r, p) {
   const opts = [{ id: 'roll', label: '🎲 サイコロを振る' }];
-  if (!p.fixedDice && !p.ultUsed && ULTS[p.charId])
+  const ultAvailable = p.charId === 'lia'
+    ? r.owners.some(o => o && o.player !== p.id)
+    : p.charId === 'adel'
+      ? r.owners.some(o => o && o.player === p.id)
+      : true;
+  if (!p.fixedDice && !p.ultUsed && ULTS[p.charId] && ultAvailable)
     opts.push({ id: 'ult', label: `固有スキル【${ULTS[p.charId].name}】` });
   // v0.60: 呪文は1ターンに1回まで(黄金+ひらめきの無限ループ対策)
   for (const sid of p.spellCast ? [] : [...new Set(p.hand.filter(c => SPELLS[c]))]) {
-    if (SPELLS[sid].cost > p.gold) continue;
+    const spellCost = effectiveSpellCost(r, p, sid);
+    if (spellCost > p.gold) continue;
     if (sid === 'sp_weaken' &&
         !r.owners.some(o => o && o.player !== p.id)) continue;
     if (sid === 'sp_quake' &&
@@ -396,11 +429,25 @@ function askRoll(r, p) {
         !r.owners.some((o, i) => o && o.player === p.id && tileElem(r, i) === 'earth')) continue;
     if (sid === 'sp_swap' &&
         (!r.owners.some(o => o && o.player === p.id) ||
-         !p.hand.some(c => CREATURES[c] && CREATURES[c].cost + SPELLS.sp_swap.cost <= p.gold))) continue;
+         !p.hand.some(c => CREATURES[c] && CREATURES[c].cost + effectiveSpellCost(r, p, 'sp_swap') <= p.gold))) continue;
     opts.push({ id: 'sp:' + sid,
-      label: `呪文「${SPELLS[sid].name}」を唱える${SPELLS[sid].cost ? `(−${SPELLS[sid].cost}G)` : ''}` });
+      label: `呪文「${SPELLS[sid].name}」を唱える${spellCost ? `(−${spellCost}G)` : ''}` });
   }
   ask(r, p.id, 'roll', 'あなたの手番です', opts);
+}
+function askLiaUlt(r, p, selected = []) {
+  const valid = new Set(r.owners.map((o, i) => o && o.player !== p.id ? i : null).filter(i => i !== null));
+  const chosen = [...new Set(selected.map(Number))].filter(i => valid.has(i)).slice(0, 3);
+  const opts = [];
+  for (const i of valid) {
+    if (chosen.length >= 3 && !chosen.includes(i)) continue;
+    const o = r.owners[i];
+    opts.push({ id: 'lu:' + i, label: `${chosen.includes(i) ? '✓ ' : ''}#${i} ${pById(r, o.player).name}の${CREATURES[o.creature].name}(Lv${o.level})` });
+  }
+  if (chosen.length) opts.push({ id: 'lu:confirm', label: `決定(${chosen.length}か所)` });
+  opts.push({ id: 'lu:cancel', label: 'やめる' });
+  ask(r, p.id, 'ult_lia', '🔥【紅蓮の方程式】炎の渦を発生させる敵領地を1〜3か所選択', opts);
+  r.pending[p.id].selected = chosen;
 }
 // ===== v0.61 選択ドロー: 手番開始時、山札から2枚見て1枚を手札へ・1枚を捨て札へ =====
 // 選択ドロー: 山札からn枚見て1枚を手札へ、残りは捨て札へ。
@@ -458,6 +505,18 @@ function beginTurn(r) {
     if (c.by === p.id) { delete r.curses[ti]; log(r, `衰弱の呪い(${ti}番の土地)の効果が切れた`); }
   // この人の結界は効果終了
   if (r.barrier[p.id]) { delete r.barrier[p.id]; log(r, `${p.name}の結界が解けた`); }
+  if (chainCount(r, p.id, 'water') >= 2) {
+    const healed = [];
+    r.owners.forEach((o, i) => {
+      if (!o || o.player !== p.id || baseId(o.creature) !== 'palecoral' || !(o.dmg > 0)) return;
+      const amount = Math.min(o.dmg, isEvolved(o) ? 20 : 10);
+      if (amount <= 0) return;
+      o.dmg -= amount;
+      healed.push({ tile: i, amount, creature: o.creature });
+      log(r, `【珊瑚再生】${CREATURES[o.creature].name}のHPが${amount}回復した`);
+    });
+    if (healed.length) r.lastHeal = { player: p.id, source: 'palecoral', targets: healed, at: stamp(r) };
+  }
   log(r, `▶ ${p.name}の手番(ラウンド${r.round})`);
   startPickDraw(r, p);  // v0.61: 選択ドロー(完了後にaskRollへ)
 }
@@ -740,9 +799,59 @@ function askSupports(r) {
   for (const pid of [b.attacker, b.defender]) {
     const p = pById(r, pid);
     const opts = p.hand.filter(c => SUPPORTS[c])
-      .map(c => ({ id: 'sup:' + c, label: `${SUPPORTS[c].name}を出す` }));
+      .map(c => ({ id: 'sup:s:' + c, label: `${SUPPORTS[c].name}を出す` }));
+    const battleCreature = pid === b.attacker ? b.atkCreature : r.owners[b.tile].creature;
+    if (baseId(battleCreature) === 'survey') {
+      let skippedReserved = false;
+      p.hand.forEach(c => {
+        if (!CREATURES[c]) return;
+        if (pid === b.attacker && c === b.atkCreature && !skippedReserved) {
+          skippedReserved = true;
+          return;
+        }
+        const cc = CREATURES[c];
+        if (cc.cost <= p.gold)
+          opts.push({ id: 'sup:c:' + c, card: c,
+            label: `【クリーチャー支援】${cc.name}(−${cc.cost}G / AT+${cc.st}・DF+${cc.hp})` });
+      });
+    }
     opts.push({ id: 'sup:none', label: '支援なしで挑む' });
     ask(r, pid, 'support', '⚔ 支援カードを秘密裏に選べ', opts);
+  }
+}
+function supportChoice(raw) {
+  if (!raw || raw === 'none' || raw.kind === 'none') return { kind: 'none' };
+  if (typeof raw === 'string') return { kind: 'support', cardId: raw };
+  return raw;
+}
+function supportStats(choice) {
+  const c = supportChoice(choice);
+  if (c.kind === 'creature') {
+    const card = CREATURES[c.cardId];
+    return card ? { kind: 'creature', cardId: c.cardId, name: card.name,
+      cost: card.cost, st: card.st, hp: card.hp, artId: c.cardId, jinx: false } : null;
+  }
+  if (c.kind === 'support') {
+    const card = SUPPORTS[c.cardId];
+    return card ? { kind: 'support', cardId: c.cardId, name: card.name,
+      cost: card.cost || 0, st: card.st || 0, hp: card.hp || 0,
+      artId: c.cardId, jinx: !!card.jinx } : null;
+  }
+  return null;
+}
+function consumeBattleSupport(r, pid, choice) {
+  const c = supportChoice(choice);
+  if (c.kind === 'none') return;
+  const p = pById(r, pid);
+  const idx = p.hand.indexOf(c.cardId);
+  if (idx < 0) return;
+  p.hand.splice(idx, 1);
+  if (c.kind === 'creature') {
+    const cost = CREATURES[c.cardId].cost;
+    p.gold = Math.max(0, p.gold - cost);
+    p.discard.push(c.cardId);
+  } else {
+    p.exile.push(c.cardId);
   }
 }
 function resolveBattle(r) {
@@ -755,8 +864,8 @@ function resolveBattle(r) {
   const notes = [];
 
   // --- 支援カード(呪具・雲隠れによる無効化) ---
-  const aSup = b.supports[atk.id] !== 'none' ? SUPPORTS[b.supports[atk.id]] : null;
-  const dSup = b.supports[def.id] !== 'none' ? SUPPORTS[b.supports[def.id]] : null;
+  const aSup = supportStats(b.supports[atk.id]);
+  const dSup = supportStats(b.supports[def.id]);
   let aJinxed = dSup && dSup.jinx, dJinxed = aSup && aSup.jinx;
   if (baseId(o.creature) === 'ludi' && aSup && !aJinxed) {
     aJinxed = true;
@@ -776,7 +885,14 @@ function resolveBattle(r) {
   if (baseId(o.creature) === 'mimic') { dBase = { st: aEvoS.st, hp: aEvoS.hp }; notes.push('【擬態】ミミックが' + ac.name + 'をコピー!'); }
 
   // --- 攻撃側AT ---
+  const carried = o.dmg || 0;
+  const atkEvolved = aEvo || /_f$/.test(b.atkCreature);
   let st = aBase.st + (aEff ? aEff.st : 0);
+  if (baseId(b.atkCreature) === 'grayble' && carried > 0) {
+    const chase = atkEvolved ? 20 : 10;
+    st += chase;
+    notes.push(`【追撃】負傷した相手へAT+${chase}!`);
+  }
   if (baseId(b.atkCreature) === 'gecko') { st += 10; notes.push('【猛攻】AT+10!'); }
   if (baseId(b.atkCreature) === 'detropas') {
     const fires = r.owners.reduce((n, oo, i) => n + (oo && oo.player === atk.id && tileElem(r, i) === 'fire' ? 1 : 0), 0);
@@ -811,20 +927,19 @@ function resolveBattle(r) {
   const hp = dBase.hp + terrain + queenBonus + (dEff ? dEff.hp : 0) - curse;
 
   // 支援カードは勝敗問わず消費
-  for (const [pid, sc] of Object.entries(b.supports))
-    if (sc !== 'none') { const pl = pById(r, pid); pl.hand.splice(pl.hand.indexOf(sc), 1); pl.exile.push(sc); }  // 支援は使い切り(廃棄)
+  for (const [pid, sc] of Object.entries(b.supports)) consumeBattleSupport(r, pid, sc);
 
   // ===== v0.47 戦闘: AT / HP / DF モデル =====
   // DF(防御) = 地形補正+女王+支援HP。ダメージ = AT − DF(最低0)。負傷は軽減後の実ダメージだけ蓄積
-  const carried = o.dmg || 0;
   if (carried) notes.push(`負傷を引き継いでいる(−${carried})`);
   const upliftDF = bFx.uplift ? 10 : 0;
   if (upliftDF) notes.push('岩盤隆起が大地を固める!(防衛DF+10)');
   const boneArmor = baseId(o.creature) === 'bonerex' ? (defEvolved ? 20 : 10) : 0;
   if (boneArmor) notes.push(`【骨鎧】防衛DF+${boneArmor}!`);
-  const atkEvolved = aEvo || /_f$/.test(b.atkCreature);
   const corrosion = baseId(b.atkCreature) === 'morbill' ? (atkEvolved ? 20 : 10) : 0;
-  let defDF = terrain + queenBonus + (dEff ? dEff.hp : 0) + upliftDF + boneArmor;
+  const iceWard = o.iceWard ? 10 : 0;
+  if (iceWard) notes.push('【氷晶の勅令】防衛DF+10!');
+  let defDF = terrain + queenBonus + (dEff ? dEff.hp : 0) + upliftDF + boneArmor + iceWard;
   if (corrosion) {
     const reduced = Math.min(defDF, corrosion);
     defDF = Math.max(0, defDF - corrosion);
@@ -867,7 +982,7 @@ function resolveBattle(r) {
   r.lastBattle = { tile: b.tile, attacker: atk.id, defender: def.id,
     atkCreature: b.atkCreature, defCreature: o.creature,
     defLevel: o.level,
-    atkSupport: b.supports[atk.id], defSupport: b.supports[def.id],
+    atkSupport: aSup, defSupport: dSup,
     st: atkDmg, hp: effHp, df: defDF, dealt,
     atkBaseAt: aBase.st, atkBaseHp: atkEffHp,
     defBaseAt: dBase.st, defBaseHp: effHp, defSt,
@@ -878,6 +993,7 @@ function resolveBattle(r) {
     terrain, curse, notes, win, at: stamp(r) };
   log(r, `⚔ ${atk.name}の${ac.name}(AT${atkDmg}${hitsDone === 2 ? '×2回' : ''}) vs ${def.name}の${dc.name}(HP${effHp}/DF${defDF}) → 実ダメージ${dealt}`);
   for (const n of notes) log(r, n);
+  if (iceWard) delete o.iceWard;
 
   if (win) {
     // 一撃で削り切った → 侵略成功
@@ -1008,10 +1124,28 @@ function handleChoose(r, playerId, optionId) {
       opts.push({ id: 'mt:cancel', label: 'やめる' });
       return ask(r, p.id, 'ult_mio', '⚡【追い風の導き】どのマスへ舞い降りる?', opts);
     }
+    if (p.charId === 'lia') return askLiaUlt(r, p);
+    if (p.charId === 'adel') {
+      const targets = [];
+      r.owners.forEach((o, i) => {
+        if (!o || o.player !== p.id) return;
+        const amount = Math.min(o.dmg || 0, 20);
+        if (amount > 0) o.dmg -= amount;
+        o.iceWard = true;
+        targets.push({ tile: i, amount, creature: o.creature, df: 10 });
+      });
+      if (!targets.length) return askRoll(r, p);
+      p.ultUsed = true;
+      r.lastUlt = { player: p.id, charId: p.charId, name: ULTS[p.charId].name, at: stamp(r) };
+      r.lastHeal = { player: p.id, source: 'ult_adel', targets, at: stamp(r) };
+      log(r, `❄ ${p.name}が固有スキル【${ULTS[p.charId].name}】を発動! 配置クリーチャー全員を回復し氷晶の守りを与えた`);
+      spellFx(r, 'ult_adel', targets.map(t => t.tile), p.id, { targets });
+      return askRoll(r, p);
+    }
     p.ultUsed = true;
     r.lastUlt = { player: p.id, charId: p.charId, name: ULTS[p.charId].name, at: stamp(r) };
     log(r, `⚡ ${p.name}が固有スキル【${ULTS[p.charId].name}】を発動!`);
-    if (p.charId === 'redani' || p.charId === 'lia') {
+    if (p.charId === 'redani') {
       const d = [0, 0, 0].map(() => 1 + Math.floor(Math.random() * 6));
       const sum = d[0] + d[1] + d[2];
       return performMove(r, p, sum, { value: d[0], multi: d }, `3つのダイスで${sum}を出した!(${d.join('+')})`);
@@ -1041,17 +1175,51 @@ function handleChoose(r, playerId, optionId) {
     p.pos = i;
     return resolveTile(r, p);
   }
+  if (pend.type === 'ult_lia') {
+    if (optionId === 'lu:cancel') return askRoll(r, p);
+    const selected = Array.isArray(pend.selected) ? pend.selected.slice() : [];
+    if (optionId === 'lu:confirm') {
+      const targets = [...new Set(selected)].filter(i => {
+        const o = r.owners[i];
+        return o && o.player !== p.id;
+      }).slice(0, 3);
+      if (!targets.length) return askRoll(r, p);
+      p.ultUsed = true;
+      r.lastUlt = { player: p.id, charId: p.charId, name: ULTS[p.charId].name, at: stamp(r) };
+      const results = [];
+      for (const i of targets) {
+        const before = r.owners[i];
+        if (!before || before.player === p.id) continue;
+        r.tileFx[i] = r.tileFx[i] || {};
+        r.tileFx[i].vortex = true;
+        const creature = before.creature;
+        const defeated = spellDamage(r, i, 10, '紅蓮の方程式');
+        results.push({ tile: i, creature, damage: 10, defeated });
+      }
+      log(r, `🔥 ${p.name}が固有スキル【紅蓮の方程式】を発動! ${results.length}か所に炎の渦を発生させた`);
+      spellFx(r, 'ult_lia', results.map(x => x.tile), p.id, { sequence: true, results });
+      return askRoll(r, p);
+    }
+    const i = +optionId.slice(3);
+    const o = r.owners[i];
+    if (!o || o.player === p.id) return askLiaUlt(r, p, selected);
+    const at = selected.indexOf(i);
+    if (at >= 0) selected.splice(at, 1);
+    else if (selected.length < 3) selected.push(i);
+    return askLiaUlt(r, p, selected);
+  }
   if (pend.type === 'roll' && optionId.startsWith('sp:')) {
     const sid = optionId.slice(3);
-    if (!p.hand.includes(sid) || SPELLS[sid].cost > p.gold) return askRoll(r, p);
+    const spellCost = effectiveSpellCost(r, p, sid);
+    if (!p.hand.includes(sid) || spellCost > p.gold) return askRoll(r, p);
     const castLog = () => {
       p.hand.splice(p.hand.indexOf(sid), 1);
       if (EXILE_SPELLS.has(sid)) { p.exile.push(sid); }
       else p.discard.push(sid);
-      if (SPELLS[sid].cost) p.gold -= SPELLS[sid].cost;
+      if (spellCost) p.gold -= spellCost;
       p.spellCast = true;
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS[sid].name, desc: SPELLS[sid].desc, at: stamp(r) };
-      log(r, `📜 ${p.name}が呪文「${SPELLS[sid].name}」を唱えた!${SPELLS[sid].cost ? `(−${SPELLS[sid].cost}G)` : ''}${EXILE_SPELLS.has(sid) ? '(廃棄)' : ''}`);
+      log(r, `📜 ${p.name}が呪文「${SPELLS[sid].name}」を唱えた!${spellCost ? `(−${spellCost}G)` : ''}${EXILE_SPELLS.has(sid) ? '(廃棄)' : ''}`);
     };
     if (sid === 'sp_gold') {
       castLog();
@@ -1178,10 +1346,11 @@ function handleChoose(r, playerId, optionId) {
     if (optionId !== 'ct:cancel') {
       const i = +optionId.slice(3);
       const o = r.owners[i];
-      if (o && o.player !== p.id) {
+      const spellCost = effectiveSpellCost(r, p, 'sp_weaken');
+      if (o && o.player !== p.id && p.hand.includes('sp_weaken') && p.gold >= spellCost) {
         p.hand.splice(p.hand.indexOf('sp_weaken'), 1);
         p.discard.push('sp_weaken');
-        if (SPELLS.sp_weaken.cost) p.gold -= SPELLS.sp_weaken.cost;
+        p.gold -= spellCost;
         p.spellCast = true;
         r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_weaken.name,
           desc: `${pById(r, o.player).name}の${CREATURES[o.creature].name}に20ダメージ!`, at: stamp(r) };
@@ -1209,7 +1378,8 @@ function handleChoose(r, playerId, optionId) {
   }
   if (pend.type === 'spell_target') {
     const sid = p.pendSpell;
-    if (optionId === 'tg:cancel' || !sid || !p.hand.includes(sid) || SPELLS[sid].cost > p.gold) {
+    const spellCost = sid ? effectiveSpellCost(r, p, sid) : Infinity;
+    if (optionId === 'tg:cancel' || !sid || !p.hand.includes(sid) || spellCost > p.gold) {
       p.pendSpell = null;
       return askRoll(r, p);
     }
@@ -1220,7 +1390,7 @@ function handleChoose(r, playerId, optionId) {
     const pay = () => {
       p.hand.splice(p.hand.indexOf(sid), 1);
       if (EXILE_SPELLS.has(sid)) p.exile.push(sid); else p.discard.push(sid);
-      if (SPELLS[sid].cost) p.gold -= SPELLS[sid].cost;
+      p.gold -= spellCost;
       p.spellCast = true;
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS[sid].name, desc: SPELLS[sid].desc, at: stamp(r) };
     };
@@ -1271,11 +1441,12 @@ function handleChoose(r, playerId, optionId) {
     if (optionId === 'sd:cancel') { p.stepI = null; return askRoll(r, p); }
     const i = p.stepI, j = +optionId.slice(3);
     const src = r.owners[i];
+    const spellCost = effectiveSpellCost(r, p, 'sp_wind_corridor');
     if (src && src.player === p.id && p.hand.includes('sp_wind_corridor') &&
-        stepDests(r, p, i).includes(j) && SPELLS.sp_wind_corridor.cost <= p.gold) {
+        stepDests(r, p, i).includes(j) && spellCost <= p.gold) {
       p.hand.splice(p.hand.indexOf('sp_wind_corridor'), 1);
       p.discard.push('sp_wind_corridor');
-      p.gold -= SPELLS.sp_wind_corridor.cost;
+      p.gold -= spellCost;
       p.spellCast = true;
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_wind_corridor.name,
         desc: r.owners[j] ? `${CREATURES[src.creature].name}が隣の敵領地へ侵略開始!(通行料なし)`
@@ -1323,11 +1494,12 @@ function handleChoose(r, playerId, optionId) {
     if (optionId === 'sd:cancel') { p.stepI = null; return askRoll(r, p); }
     const i = p.stepI, j = +optionId.slice(3);
     const src = r.owners[i];
+    const spellCost = effectiveSpellCost(r, p, 'sp_step');
     if (src && src.player === p.id && p.hand.includes('sp_step') &&
-        stepDests(r, p, i).includes(j) && SPELLS.sp_step.cost <= p.gold) {
+        stepDests(r, p, i).includes(j) && spellCost <= p.gold) {
       p.hand.splice(p.hand.indexOf('sp_step'), 1);
       p.discard.push('sp_step');
-      p.gold -= SPELLS.sp_step.cost;
+      p.gold -= spellCost;
       p.spellCast = true;
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_step.name,
         desc: r.owners[j] ? `${CREATURES[src.creature].name}が隣の敵領地へ侵略!(通行料なし)`
@@ -1362,7 +1534,8 @@ function handleChoose(r, playerId, optionId) {
     return ask(r, p.id, 'move_b', '転移 ─ 入れ替える相手のクリーチャーを選ぶ', opts);
   }
   if (pend.type === 'move_b') {
-    if (optionId !== 'mb:cancel' && p.hand.includes('sp_move')) {
+    const spellCost = effectiveSpellCost(r, p, 'sp_move');
+    if (optionId !== 'mb:cancel' && p.hand.includes('sp_move') && p.gold >= spellCost) {
       const a = p.moveA, bI = +optionId.slice(3);
       const oa = r.owners[a], ob = r.owners[bI];
       if (oa && ob && oa.player === p.id && ob.player === p.id) {
@@ -1370,11 +1543,11 @@ function handleChoose(r, playerId, optionId) {
         [oa.dmg, ob.dmg] = [ob.dmg || 0, oa.dmg || 0];
         p.hand.splice(p.hand.indexOf('sp_move'), 1);
         p.discard.push('sp_move');
-        p.gold -= SPELLS.sp_move.cost;
+        p.gold -= spellCost;
         p.spellCast = true;
         r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_move.name,
           desc: `${CREATURES[ob.creature].name}と${CREATURES[oa.creature].name}が入れ替わった`, at: stamp(r) };
-        log(r, `📜 ${p.name}が転移の呪文! ${CREATURES[ob.creature].name}と${CREATURES[oa.creature].name}が入れ替わった(−${SPELLS.sp_move.cost}G)`);
+        log(r, `📜 ${p.name}が転移の呪文! ${CREATURES[ob.creature].name}と${CREATURES[oa.creature].name}が入れ替わった(−${spellCost}G)`);
         spellFx(r, 'sp_move', [a, bI], p.id);
       }
     }
@@ -1384,7 +1557,7 @@ function handleChoose(r, playerId, optionId) {
   if (pend.type === 'swap_land') {
     if (optionId === 'sw:cancel') return askRoll(r, p);
     p.swapI = +optionId.slice(3);
-    const budget = p.gold - SPELLS.sp_swap.cost;
+    const budget = p.gold - effectiveSpellCost(r, p, 'sp_swap');
     const opts = [...new Set(p.hand.filter(c => CREATURES[c] && CREATURES[c].cost <= budget))].map(c =>
       ({ id: 'sp2:' + c, label: `${CREATURES[c].name}(AT${CREATURES[c].st}/HP${CREATURES[c].hp} −${CREATURES[c].cost}G)` }));
     opts.push({ id: 'sp2:cancel', label: 'やめる' });
@@ -1394,21 +1567,23 @@ function handleChoose(r, playerId, optionId) {
     if (optionId !== 'sp2:cancel' && p.hand.includes('sp_swap')) {
       const c = optionId.slice(4);
       const o = r.owners[p.swapI];
+      const spellCost = effectiveSpellCost(r, p, 'sp_swap');
       if (o && o.player === p.id && p.hand.includes(c) &&
-          CREATURES[c].cost + SPELLS.sp_swap.cost <= p.gold) {
+          CREATURES[c].cost + spellCost <= p.gold) {
         const oldC = o.creature;
         p.discard.push(oldC);                 // 元のクリーチャーは捨て札へ
         p.hand.splice(p.hand.indexOf(c), 1);
-        o.creature = c; o.dmg = 0; o.shade = 0;  // 新クリーチャーは全快で配置(死影は解除)
+        o.creature = c; o.dmg = 0; o.shade = 0; delete o.iceWard;  // 新クリーチャーは全快で配置
         if (baseId(c) === 'cresteria') { p.gems++; log(r, `【真珠】${p.name}は宝石を1個得た(所持${p.gems}個)`); }
         if (baseId(c) === 'fugorm') { gainToDeck(r, p, ['weapon']); log(r, `【鍛冶】${p.name}は支援「武器」を山札に得た`); }
+        onCreatureSummoned(r, p, c, 'swap');
         p.hand.splice(p.hand.indexOf('sp_swap'), 1);
         p.discard.push('sp_swap');
-        p.gold -= SPELLS.sp_swap.cost + CREATURES[c].cost;
+        p.gold -= spellCost + CREATURES[c].cost;
         p.spellCast = true;
         r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_swap.name,
           desc: `${CREATURES[oldC].name}に代わり${CREATURES[c].name}が領地に立った`, at: stamp(r) };
-        log(r, `📜 ${p.name}が交代の呪文! ${CREATURES[oldC].name}に代わり${CREATURES[c].name}が領地に立った(−${SPELLS.sp_swap.cost + CREATURES[c].cost}G)`);
+        log(r, `📜 ${p.name}が交代の呪文! ${CREATURES[oldC].name}に代わり${CREATURES[c].name}が領地に立った(−${spellCost + CREATURES[c].cost}G)`);
         spellFx(r, 'sp_swap', [p.swapI], p.id, { cid: oldC });
       }
     }
@@ -1454,11 +1629,14 @@ function handleChoose(r, playerId, optionId) {
   if (pend.type === 'quake_target') {
     if (optionId !== 'qt:cancel') {
       const i = +optionId.slice(3);
+      const o = r.owners[i];
+      const spellCost = effectiveSpellCost(r, p, 'sp_quake');
+      if (!o || o.player === p.id || o.level < 2 || !p.hand.includes('sp_quake') || p.gold < spellCost)
+        return askRoll(r, p);
       p.hand.splice(p.hand.indexOf('sp_quake'), 1);
       p.exile.push('sp_quake');
-      if (SPELLS.sp_quake.cost) p.gold -= SPELLS.sp_quake.cost;
+      p.gold -= spellCost;
       p.spellCast = true;
-      const o = r.owners[i];
       o.level = Math.max(1, o.level - 1);
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_quake.name,
         desc: `${pById(r, o.player).name}の領地(${i}番)がLv${o.level}に崩れた!`, at: stamp(r) };
@@ -1552,12 +1730,15 @@ function handleChoose(r, playerId, optionId) {
     const i = p.pos, o = r.owners[i];
     if (optionId.startsWith('summon:')) {
       const c = optionId.slice(7);
+      if (!CREATURES[c] || !p.hand.includes(c) || CREATURES[c].cost > p.gold || r.owners[i])
+        return endTurn(r);
       p.gold -= CREATURES[c].cost;
       p.hand.splice(p.hand.indexOf(c), 1);
       r.owners[i] = { player: p.id, level: 1, creature: c };
       log(r, `${p.name}は${CREATURES[c].name}を召喚し、土地を領地化!`);
       if (baseId(c) === 'cresteria') { p.gems++; log(r, `【真珠】${p.name}は宝石を1個得た(所持${p.gems}個)`); }
       if (baseId(c) === 'fugorm') { gainToDeck(r, p, ['weapon']); log(r, `【鍛冶】${p.name}は支援「武器」を山札に得た`); }
+      onCreatureSummoned(r, p, c, 'summon');
       updateTitles(r); if (checkVictory(r)) return; return endTurn(r);
     }
     if (optionId === 'toll') {
@@ -1575,12 +1756,37 @@ function handleChoose(r, playerId, optionId) {
   }
 
   if (pend.type === 'pick_creature') {
-    r.battle.atkCreature = optionId.slice(4);
+    const c = optionId.slice(4);
+    if (!r.battle || !CREATURES[c] || !p.hand.includes(c) ||
+        !(pend.options || []).some(o => o.id === optionId)) return;
+    r.battle.atkCreature = c;
     return askSupports(r);
   }
 
   if (pend.type === 'support') {
-    r.battle.supports[playerId] = optionId.slice(4);
+    if (!r.battle || !(pend.options || []).some(o => o.id === optionId)) return;
+    let choice;
+    if (optionId === 'sup:none') {
+      choice = { kind: 'none' };
+    } else if (optionId.startsWith('sup:s:')) {
+      const cardId = optionId.slice(6);
+      if (!SUPPORTS[cardId] || !p.hand.includes(cardId)) return;
+      choice = { kind: 'support', cardId };
+    } else if (optionId.startsWith('sup:c:')) {
+      const cardId = optionId.slice(6);
+      const b = r.battle;
+      const battleCreature = playerId === b.attacker
+        ? b.atkCreature
+        : r.owners[b.tile] && r.owners[b.tile].creature;
+      if (baseId(battleCreature) !== 'survey' || !CREATURES[cardId] ||
+          !p.hand.includes(cardId) || CREATURES[cardId].cost > p.gold) return;
+      if (playerId === b.attacker && cardId === b.atkCreature &&
+          p.hand.filter(c => c === cardId).length < 2) return;
+      choice = { kind: 'creature', cardId };
+    } else {
+      return;
+    }
+    r.battle.supports[playerId] = choice;
     if (Object.keys(r.battle.supports).length === 2) return resolveBattle(r);
     return;
   }
@@ -1732,7 +1938,9 @@ function publicState(r, viewerId) {
             resume: r.draft ? r.draft.resume : null }]
         : v.type === 'pick_draw' && k !== viewerId
           ? [k, { type: v.type, prompt: v.prompt, options: [], until: v.until }]  // 候補カードは本人だけに見せる
-          : [k, v])),
+          : v.type === 'support' && k !== viewerId
+            ? [k, { type: v.type, prompt: '支援カードを選択中', options: [] }]
+            : [k, v])),
     lastDraw: r.lastDraw || null, lastGain: r.lastGain || null,
     catalog: { CREATURES, SUPPORTS, ITEMS, CHARS, ULTS, SPELLS, STARTER_DECKS: CHAR_DECKS, artIds: ART_IDS },
     players: r.players.map(p => ({
@@ -1748,6 +1956,9 @@ function publicState(r, viewerId) {
       deckCount: (p.deck || []).length,
       discardCount: (p.discard || []).length,
       exileCount: (p.exile || []).length,
+      effectiveSpellCosts: p.id === viewerId
+        ? Object.fromEntries(Object.keys(SPELLS).map(sid => [sid, effectiveSpellCost(r, p, sid)]))
+        : undefined,
       points: r.phase === 'playing' || r.phase === 'ended' ? points(r, p) : 0,
       bankrupt: !!p.bankrupt,
       dir: p.dir || 1,
@@ -1774,7 +1985,7 @@ const ROOM_PERSIST_KEYS = new Set([                                            /
   'pending', 'titles', 'duel', 'lastBattle', 'winner', 'barrier', 'elemOv', 'tileFx',
   'treasureCost', 'curses', 'boardToken', 'atSeq', 'saveRev', 'battle', 'draft',
   'dirPend', 'halfMarket',
-  'lastEvent', 'lastDice', 'lastUlt', 'lastSeal', 'lastRuin', 'lastDraw', 'lastGain',
+  'lastEvent', 'lastDice', 'lastUlt', 'lastHeal', 'lastSeal', 'lastRuin', 'lastDraw', 'lastGain',
   'lastBarrierHit', 'lastSpellFx',
 ]);
 function serializeRoom(r) {

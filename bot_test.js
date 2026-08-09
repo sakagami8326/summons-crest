@@ -11,7 +11,7 @@ const G = load(require, __dirname, process, console, () => {}); // GCタイマ�
 
 function runGame(seed) {
   const r = G.makeRoom();
-  const names = ['ボットA', 'ボットB', 'ボットC', 'ボットD'];  // 4人=全キャラ別デッキを網羅
+  const names = ['ボットA', 'ボットB', 'ボットC', 'ボットD'];
   const pids = names.map((n, i) => {
     const id = 'bot' + i;
     r.players.push({ id, name: n });
@@ -19,7 +19,8 @@ function runGame(seed) {
   });
   G.startSelect(r);
   const chars = Object.entries(G.CHARS).filter(([, c]) => c.selectable !== false).map(([id]) => id);
-  pids.forEach((pid, i) => G.handleChoose(r, pid, chars[i % chars.length]));
+  // ゲームごとに開始位置をずらし、6召喚士すべての初期デッキとBot経路を網羅する。
+  pids.forEach((pid, i) => G.handleChoose(r, pid, chars[(i + seed - 1) % chars.length]));
   G.startGame(r); // テレビの「ゲーム開始」操作を再現
 
   let steps = 0;
@@ -54,6 +55,12 @@ function runGame(seed) {
         if (spy && spy.options.length !== 0) throw new Error(pend.type + 'の秘匿が破れている');
       }
       let opt = pend.options[Math.floor(Math.random() * pend.options.length)];
+      // 紅蓮の方程式は再選択で解除できるため、ランダム往復によるライブロックを避ける。
+      if (pend.type === 'ult_lia') {
+        opt = pend.options.find(o => o.id === 'lu:confirm') ||
+              pend.options.find(o => /^lu:\d+$/.test(o.id)) ||
+              pend.options.find(o => o.id === 'lu:cancel') || opt;
+      }
       // 「キャラを選び直す」は稀にだけ選ぶ(ランダムBOTのライブロック回避。実プレイヤーは任意)
       if (opt.id === 'unpick' && Math.random() < 0.9) {
         const alt = pend.options.filter(o => o.id !== 'unpick');

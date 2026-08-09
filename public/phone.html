@@ -270,11 +270,11 @@
       flex-direction:column; align-items:center; justify-content:center; gap:1.2dvh;
       padding:2.5dvh 0 3dvh; }
   #charSel.on { display:flex; }
-  #csRow { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)) clamp(42px,6.5vw,70px); gap:.45vw; width:100%; align-items:center;
+  #csRow { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:.45vw; width:100%; align-items:center;
       min-height:0; flex:1;
       padding-left:calc(1.5vw + env(safe-area-inset-left));
       padding-right:calc(1.5vw + env(safe-area-inset-right)); overflow:hidden; }
-  .csCard { position:relative; min-width:0; height:min(76dvh,calc((100vw - 7vw) * 470 / 1200));
+  .csCard { position:relative; min-width:0; height:min(76dvh,calc((100vw - 7vw) * 470 / 1440));
       border-radius:1.6dvh; border:0; background:#16364f; cursor:pointer; transition:transform .15s;
       overflow:hidden; isolation:isolate; box-shadow:0 5px 16px rgba(0,0,0,.5); }
   .csCard:active { transform:scale(.97); }
@@ -942,7 +942,7 @@ function mmCellContent(t, o) {
 function tileTargets(p) {
   const m = {};
   p.options.forEach(o => {
-    const mt = /^(up|ct|qt|mt|mv|mb|sw|sl|st|sd|tg):(\d+)$/.exec(o.id);
+    const mt = /^(up|ct|qt|mt|mv|mb|sw|sl|st|sd|tg|lu):(\d+)$/.exec(o.id);
     if (mt) m[+mt[2]] = o.id;
   });
   return m;
@@ -975,6 +975,9 @@ function showGainToast(n) {
 function renderMiniMap(p) {
   const targets = tileTargets(p);
   const cancel = p.options.find(o => /cancel$|^pass$/.test(o.id));
+  const liaMulti = p.type === 'lia_ult';
+  const liaSelected = liaMulti && Array.isArray(p.selected) ? p.selected : [];
+  const confirm = liaMulti ? p.options.find(o => o.id === 'lu:confirm') : null;
   $('msg').innerHTML = iconize(p.prompt);
   $('action').innerHTML = '';
   const cells = [];
@@ -985,14 +988,21 @@ function renderMiniMap(p) {
     const own = o ? `<div class="mmOwn" style="background:${(state.players.find(q => q.id === o.player) || {}).color || '#888'}"></div>` : '';
     const meHere = state.players.some(q => q.pos === i && q.id === pid) ? `<div class="mmMe" style="background:${(me() || {}).color || '#fff'}"></div>` : '';
     const cls = targets[i] ? 'pickable' : 'dim';
-    cells.push(`<div class="mmT ${cls} ${mmSel === i ? 'sel' : ''}" style="grid-column:${gx + 1}; grid-row:${gy + 1}; background:${bg}"
+    const selectedHere = liaMulti ? liaSelected.includes(i) : mmSel === i;
+    cells.push(`<div class="mmT ${cls} ${selectedHere ? 'sel' : ''}" style="grid-column:${gx + 1}; grid-row:${gy + 1}; background:${bg}"
       ${targets[i] ? `onclick="mmTap(${i})"` : ''}>${glyph}${own}${meHere}</div>`);
   });
   const selOpt = mmSel !== null && targets[mmSel];
   const selLabel = selOpt ? ((p.options.find(o => o.id === selOpt) || {}).label || '') : '';
-  $('mapOvTitle').innerHTML = iconize(p.prompt) + ' <span style="opacity:.75">─ 光っているマスをタップ</span>';
+  $('mapOvTitle').innerHTML = iconize(p.prompt) + ` <span style="opacity:.75">─ ${liaMulti ? '最大3か所を選択' : '光っているマスをタップ'}</span>`;
   $('mapOvMap').innerHTML = `<div id="miniMap">${cells.join('')}</div>`;
-  $('mapOvSide').innerHTML = `<div id="mapOvSel">${selOpt
+  $('mapOvSide').innerHTML = liaMulti
+    ? `<div id="mapOvSel"><b>選択中 ${liaSelected.length}/3</b>${liaSelected.length
+        ? liaSelected.map(i => `<div class="tdSub" style="margin-top:.6dvh">${tileDetailHTML(i)}</div>`).join('')
+        : '<div class="tdSub" style="margin-top:.8dvh">発動する敵領地を選択してください</div>'}</div>
+      ${confirm ? `<button class="abtn" onclick="hideMapOv(); choose('${confirm.id}')">決定</button>` : ''}
+      ${cancel ? `<button class="abtn ghost" onclick="hideMapOv(); choose('${cancel.id}')">${cancel.label}</button>` : ''}`
+    : `<div id="mapOvSel">${selOpt
       ? tileDetailHTML(mmSel) + `<div class="tdSub" style="margin-top:.6dvh">${iconize(selLabel)}</div>`
       : '光っているマスを選ぶと詳細が表示されます'}</div>
     ${selOpt ? `<button class="abtn" onclick="mmSel=null; hideMapOv(); choose('${selOpt}')">ここに決定</button>` : ''}
@@ -1002,6 +1012,12 @@ function renderMiniMap(p) {
 }
 let upPvT = 0;
 function mmTap(i) {
+  const active = pend();
+  if (active && active.type === 'lia_ult') {
+    const oid = tileTargets(active)[i];
+    if (oid) choose(oid);
+    return;
+  }
   mmSel = i; render();
   // 強化選択中はTVへ選択中候補を通知(発注書v0.75 §6.3。揮発イベント・120ms抑制)
   const p = pend();
@@ -1111,7 +1127,7 @@ function creatureFaceBody(cid, cr, evolved) {
   const at = isEvo && cr.evoSt != null ? cr.evoSt : cr.st;
   const hp = isEvo && cr.evoHp != null ? cr.evoHp : cr.hp;
   const elem = cr.elem || 'neutral';
-  const effect = creatureEffectParts(cr.fx);
+  const effect = creatureEffectParts(isEvo ? (cr.evoFx || cr.fx) : cr.fx);
   const art = HAS_ART.has(bid)
     ? `<div class="ccArt"><img src="/assets/cards/${isEvo ? 'e_' : 'c_'}${bid}.webp" alt=""></div>`
     : `<div class="ccArt"><div class="tok2" style="background:${RUNE[cr.elem] || '#6E7288'}">${name.slice(0,4)}</div></div>`;
@@ -1311,7 +1327,10 @@ function renderCharSelection(m, C, p) {
 function cardOption(c) {
   const p = pend();
   if (!p) return null;
-  const map = { tile: 'summon:' + c, pick_creature: 'atk:' + c, support: 'sup:' + c, roll: 'sp:' + c };
+  if (p.type === 'support') {
+    return ['sup:s:' + c, 'sup:c:' + c].find(oid => p.options.some(o => o.id === oid)) || null;
+  }
+  const map = { tile: 'summon:' + c, pick_creature: 'atk:' + c, roll: 'sp:' + c };
   const oid = map[p.type];
   return oid && p.options.some(o => o.id === oid) ? oid : null;
 }
@@ -1330,6 +1349,7 @@ function selectableKind() {
 function cardDim(c) {
   const skind = selectableKind();
   if (!skind) return false;
+  if (pend() && pend().type === 'support') return !cardOption(c);
   if (skind === 'none') return true;
   const C = state.catalog;
   const kind = C.CREATURES[c] ? 'creature' : (C.SPELLS && C.SPELLS[c]) ? 'spell' : 'support';
@@ -1567,7 +1587,7 @@ function render() {
     const pov = $('pickOv');
     if (pov.classList.contains('on')) { pov.classList.remove('on'); pov.dataset.k = ''; }
   }
-  const MAP_TYPES = ['curse_target','quake_target','ult_mio','move_a','move_b','swap_land','upgrade',
+  const MAP_TYPES = ['curse_target','quake_target','ult_mio','lia_ult','move_a','move_b','swap_land','upgrade',
     'sell','step_a','step_b','spell_target','wc_a','wc_b'];
   if (!mapView && (!p || !MAP_TYPES.includes(p.type))) hideMapOv();
   if (mapView) renderMapView();  // 閲覧モード中は最新stateで再描画

@@ -92,9 +92,8 @@ const scripts = timingSrc + '\n' +
   if (!/-webkit-line-clamp:\s*3/.test(css) || !/-webkit-line-clamp:\s*5/.test(css) ||
       !/#cardZoomCard \.ccEffect p/.test(css))
     throw new Error('カード本文検査: 通常表示の省略または拡大時の全文表示がない');
-  if (!/grid-template-columns:repeat\(5,minmax\(0,1fr\)\) clamp\(42px,6\.5vw,70px\)/.test(css) ||
-      !/class="csUpcoming" aria-disabled="true"/.test(html))
-    throw new Error('召喚士選択検査: 5人カード+準備中アーデル枠の固定レイアウトがない');
+  if (!/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/.test(css))
+    throw new Error('召喚士選択検査: 正式公開された6人の固定レイアウトがない');
   const boardHtml = fs.readFileSync('public/board.html', 'utf8');
   const boardWorldSrc = fs.readFileSync('public/board_world.js', 'utf8');
   if (!/--font-mincho:/.test(html) || !/--font-mincho:/.test(boardHtml) ||
@@ -102,9 +101,9 @@ const scripts = timingSrc + '\n' +
       !/body \*,button,input,select,textarea\s*\{\s*font-family:var\(--font-mincho\)!important/.test(boardHtml) ||
       !/Yu Mincho/.test(boardWorldSrc) || /fonts\.googleapis\.com/.test(html + boardHtml))
     throw new Error('フォント検査: テレビ・スマホ・Phaserが明朝体へ統一されていない');
-  if (!/summonerSelect/.test(boardHtml) || !/class="scLocked">準備中/.test(boardHtml) ||
-      !/selectable === false/.test(boardHtml))
-    throw new Error('テレビ召喚士選択検査: 5本パネルまたは準備中表示がない');
+  if (!/summonerSelect/.test(boardHtml) || !/selectable === false/.test(boardHtml) ||
+      !/Object\.entries\(C\)\.map/.test(boardHtml) || !/const C = state\.catalog\.CHARS/.test(boardHtml))
+    throw new Error('テレビ召喚士選択検査: 6人を公開カタログから描画するパネルがない');
   if (!/class="scFlip"/.test(boardHtml) || !/rotateY\(180deg\)/.test(boardHtml) ||
       !/summoner-still-\$\{cid\}\.webp/.test(boardHtml) || !/revealedSummoners/.test(boardHtml))
     throw new Error('テレビ召喚士選択検査: 選択確定時のイメージアート反転表示がない');

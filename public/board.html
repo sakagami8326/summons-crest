@@ -2446,7 +2446,8 @@ function summonCardHTML(cid, forceEvolved = false) {
   const base = state.catalog.CREATURES[bid], cr = state.catalog.CREATURES[cid] || base;
   const name = evolved ? (base.evo || cr.name) : base.name;
   const elem = base.elem || 'neutral';
-  const fx = String(base.fx || ''), m = fx.match(/^【([^】]+)】\s*(.*)$/);
+  const fx = String(evolved ? (base.evoFx || cr.fx || base.fx || '') : (base.fx || ''));
+  const m = fx.match(/^【([^】]+)】\s*(.*)$/);
   const title = m ? m[1] : '特殊能力', body = m ? m[2] : (fx || '効果なし');
   const nameSize = name.length <= 6 ? '6.8vh' : name.length <= 9 ? '5.2vh' : '4.2vh';
   const elemIcon = base.elem ? `<span class="scElem"><svg viewBox="-34 -36 68 72">${ELEM[base.elem]}</svg></span>` : '<span class="scElem">◇</span>';
@@ -2752,14 +2753,25 @@ function playBattleOpening(key) {
     $('battle').classList.add('on');
   }, 900);
 }
+const supportCardId = sup => typeof sup === 'string' ? sup : sup && sup.cardId;
+const hasBattleSupport = sup => !!sup && sup !== 'none';
 const battleSupportArt = sup => ({ weapon:'support-weapon-v1.webp', gweapon:'support-weapon-v1.webp',
-  shield:'support-shield-v1.webp', gshield:'support-shield-v1.webp' })[sup];
+  shield:'support-shield-v1.webp', gshield:'support-shield-v1.webp' })[supportCardId(sup)];
+const battleSupportName = sup => {
+  if (!sup || sup === 'none') return '支援なし';
+  if (typeof sup === 'object') return sup.name || sup.cardId || '支援カード';
+  return (state.catalog.SUPPORTS[sup] || {}).name || sup;
+};
+const battleSupportMods = sup => sup && typeof sup === 'object' && sup.kind === 'creature'
+  ? `<small>AT+${sup.st || 0} / DF+${sup.hp || 0}</small>` : '';
 const supportBackHTML = (status, sup) => `<div class="scardB"><div class="sflipB${sup !== undefined ? ' readyToOpen' : ''}">
   <div class="sfaceB sbackB">❖</div>
-  <div class="sfaceB sfrontB">${sup === 'none'
+  <div class="sfaceB sfrontB">${!sup || sup === 'none'
     ? '<div style="font-size:2.5vh">─</div><div>支援なし</div>'
-    : sup ? (battleSupportArt(sup) ? `<img src="/assets/cards/${battleSupportArt(sup)}" alt="">` : '<div style="font-size:2.5vh">⚔</div>')
-      + '<div>' + state.catalog.SUPPORTS[sup].name + '</div>' : ''}</div>
+    : sup ? (sup.kind === 'creature'
+        ? `<img src="/assets/cards/c_${sup.artId || sup.cardId}.webp" alt="">`
+        : battleSupportArt(sup) ? `<img src="/assets/cards/${battleSupportArt(sup)}" alt="">` : '<div style="font-size:2.5vh">⚔</div>')
+      + '<div>' + battleSupportName(sup) + '</div>' + battleSupportMods(sup) : ''}</div>
   </div></div><div class="supportStatus">${status}</div>`;
 
 function battleCreatureHTML(cid, level, reveal) {
@@ -2826,8 +2838,8 @@ function finalStatsHTML(b, side) {
   const hp = atkSide ? b.atkHp : b.hp;
   const df = atkSide ? b.atkDf : b.df;
   const mods = atkSide
-    ? [`基礎AT ${b.atkBaseAt ?? c.st}`, b.atkSupport !== 'none' ? `支援 ${state.catalog.SUPPORTS[b.atkSupport].name}` : '支援なし']
-    : [`地形補正 +${b.terrain || 0}`, b.defSupport !== 'none' ? `支援 ${state.catalog.SUPPORTS[b.defSupport].name}` : '支援なし', b.curse ? `呪い −${b.curse}` : ''];
+    ? [`基礎AT ${b.atkBaseAt ?? c.st}`, hasBattleSupport(b.atkSupport) ? `支援 ${battleSupportName(b.atkSupport)}` : '支援なし']
+    : [`地形補正 +${b.terrain || 0}`, hasBattleSupport(b.defSupport) ? `支援 ${battleSupportName(b.defSupport)}` : '支援なし', b.curse ? `呪い −${b.curse}` : ''];
   return `<div class="bsOwner">${pl.name}</div><div class="bsCreature">${name}</div>
     <div class="bsValues"><span><small>AT</small><b data-stat="at">${at}</b></span><span><small>HP</small><b data-stat="hp">${hp}</b></span><span><small>DF</small><b data-stat="df">${df}</b></span></div>
     <div class="bsMods">${mods.filter(Boolean).map(x=>`<span class="mod hot">${x}</span>`).join('')}</div>`;
@@ -2838,8 +2850,8 @@ async function playBattle(b) {
   try {
   const C = state.catalog;
   const atk = player(b.attacker), def = player(b.defender);
-  const atkElem = C.CREATURES[b.atkCreature].elem || 'neutral';
-  const defElem = C.CREATURES[b.defCreature].elem || 'neutral';
+  const atkElem = C.CREATURES[b.atkCreature.replace(/_f$/, '')].elem || 'neutral';
+  const defElem = C.CREATURES[b.defCreature.replace(/_f$/, '')].elem || 'neutral';
   const dLv = b.defLevel || (state.owners[b.tile] ? state.owners[b.tile].level : 1);
   battlePlayingKey = activeBattleKey || ('result:' + b.at);
   // SSEの更新や再接続で待機画面のDOMが欠けても、結果再生前に両カードを必ず復元する。
@@ -2875,8 +2887,8 @@ async function playBattle(b) {
   await wait(700);
   $('bAtkStats').innerHTML = finalStatsHTML(b, 'atk');
   $('bDefStats').innerHTML = finalStatsHTML(b, 'def');
-  $('bAtkSupport').querySelector('.supportStatus').textContent = b.atkSupport === 'none' ? '支援なし' : '支援公開';
-  $('bDefSupport').querySelector('.supportStatus').textContent = b.defSupport === 'none' ? '支援なし' : '支援公開';
+  $('bAtkSupport').querySelector('.supportStatus').textContent = hasBattleSupport(b.atkSupport) ? '支援公開' : '支援なし';
+  $('bDefSupport').querySelector('.supportStatus').textContent = hasBattleSupport(b.defSupport) ? '支援公開' : '支援なし';
   await wait(850);
   if (b.notes && b.notes.length)
     $('bnotes').innerHTML = b.notes.map(n => '✦ ' + n).join('<br>');
