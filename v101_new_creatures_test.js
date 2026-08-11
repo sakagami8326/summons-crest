@@ -20,7 +20,7 @@ function eq(actual, expected, name) {
 }
 function count(list, id) { return list.filter(x => x === id).length; }
 
-eq(G.VERSION, '1.01', 'version');
+ok(Number(G.VERSION) >= 1.01, 'version is v1.01 or newer');
 
 const bunny = G.CREATURES.bunnyhop;
 eq([bunny.name, bunny.evo, bunny.elem, bunny.rarity, bunny.cost,

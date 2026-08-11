@@ -126,6 +126,20 @@ function setupGame() {
   G.rooms.delete(r2.code);
 }
 
+// ===== A-2b: マーロー移動先選択中の復元 =====
+{
+  const r = setupGame();
+  const p = r.players[r.turn];
+  r.pending = { [p.id]: { type: 'marlow_dest', prompt: '【風渡り】移動先を選ぶ',
+    options: [{ id: 'md:5', tile: 5, label: '土地5へ移動' }, { id: 'md:cancel', label: 'やめる' }],
+    source: 2, where: '自領地' } };
+  const before = normalizeForDiff(G.serializeRoom(r));
+  const out = G.restoreRoom(clone(G.serializeRoom(r)));
+  ok(!out.error && JSON.stringify(normalizeForDiff(G.serializeRoom(out.room))) === JSON.stringify(before),
+    'A-2b: マーロー移動pendingのsource・where・選択肢を保持して復元できる');
+  G.rooms.delete(out.room.code);
+}
+
 // ===== A-3: 検証 ─ 不正なセーブを拒否し、既存ルームを変更しない =====
 {
   const r = setupGame();

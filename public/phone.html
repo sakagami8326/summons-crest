@@ -1587,7 +1587,7 @@ function render() {
     const pov = $('pickOv');
     if (pov.classList.contains('on')) { pov.classList.remove('on'); pov.dataset.k = ''; }
   }
-  const MAP_TYPES = ['curse_target','quake_target','ult_mio','lia_ult','move_a','move_b','swap_land','upgrade',
+  const MAP_TYPES = ['curse_target','quake_target','ult_mio','lia_ult','move_a','move_b','swap_land','upgrade','marlow_src','marlow_dest',
     'sell','step_a','step_b','spell_target','wc_a','wc_b'];
   if (!mapView && (!p || !MAP_TYPES.includes(p.type))) hideMapOv();
   if (mapView) renderMapView();  // 閲覧モード中は最新stateで再描画
@@ -1735,6 +1735,7 @@ function render() {
     ], null);
   } else if (p.type === 'curse_target' || p.type === 'quake_target' || p.type === 'ult_mio' ||
              p.type === 'move_a' || p.type === 'move_b' || p.type === 'swap_land' || p.type === 'upgrade' ||
+             p.type === 'marlow_src' || p.type === 'marlow_dest' ||
              p.type === 'sell' || p.type === 'step_a' || p.type === 'step_b' ||
              p.type === 'spell_target' || p.type === 'wc_a' || p.type === 'wc_b') {
     renderMiniMap(p);

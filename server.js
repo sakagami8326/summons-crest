@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.01';
+const VERSION = '1.02';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -126,6 +126,10 @@ const CREATURES = {
              fx: '【地脈適応】どの属性の土地からでも地形補正を得る', rarity: 'N' },
   samurai_saga:{ name: 'サムライ・サガ', elem: null, st: 50, hp: 50, cost: 120,
              fx: '【地脈改変】どの属性の土地からでも地形補正を得る。召喚した土地を好きな属性に変更できる', rarity: 'N' },
+  marlow:  { name: 'マーロー', elem: 'wind', st: 30, hp: 30, cost: 50,
+             fx: '【風渡り】自領地に止まった時、配置中のマーロー1体を空いている風属性土地へ移動できる', rarity: 'R' },
+  shuterio:{ name: 'シュテリオ', evo: 'エアロシュティレ', elem: 'wind', st: 30, hp: 30, cost: 70,
+             evoSt: 40, evoHp: 50, fx: '【支援】戦闘時、手札のクリーチャーを支援カードとして使える', rarity: 'R' },
 };
 const ITEMS = {}; // v0.34: 呪いアイテムは廃止(スペル「衰弱の呪文」に移行)
 const SPELLS = {
@@ -214,7 +218,7 @@ for (const [cid, c] of Object.entries({ ...CREATURES }))
   if (c.evo) CREATURES[cid + '_f'] = { name: c.evo, elem: c.elem, st: c.evoSt, hp: c.evoHp,
     cost: c.cost, fx: c.evoFx || c.fx, rarity: c.rarity, forged: true };
 
-const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral','bunnyhop','strauk','samurai_saga'];
+const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral','bunnyhop','strauk','samurai_saga','marlow','shuterio'];
 // アートが存在するクリーチャーID(assetsのc_*.pngを起動時に走査 ─ v0.82)。
 // クライアントはcatalog.artIds経由で受け取る。手書きリストの二重管理はしない
 // (新クリーチャーはIDとファイル名を一致させて置くだけで盤面・カード・戦闘に反映される)
@@ -225,10 +229,11 @@ const ART_IDS = (() => {
   } catch (e) { return []; }
 })();
 const RARITY_COPIES = { L: 1, R: 2, N: 3 };
+const MARKET_COPY_OVERRIDES = { marlow: 3 };
 function makeDeck() {
   const d = [];
   for (const c of MARKET_POOL)
-    for (let i = 0; i < RARITY_COPIES[CREATURES[c].rarity]; i++) d.push(c);
+    for (let i = 0; i < (MARKET_COPY_OVERRIDES[c] || RARITY_COPIES[CREATURES[c].rarity]); i++) d.push(c);
   for (const [sid, sp] of Object.entries(SPELLS))
     for (let i = 0; i < RARITY_COPIES[sp.rarity]; i++) d.push(sid);
   return d.sort(() => Math.random() - 0.5);
@@ -752,6 +757,31 @@ function upCostRange(r, p, i, target) {
   for (let l = r.owners[i].level + 1; l <= target; l++) sum += upCostTo(r, p, i, l);
   return sum;
 }
+function marlowSources(r, p) {
+  const sources = [];
+  r.owners.forEach((o, i) => {
+    if (o && o.player === p.id && baseId(o.creature) === 'marlow') sources.push(i);
+  });
+  return sources;
+}
+function marlowDests(r) {
+  const dests = [];
+  r.owners.forEach((o, i) => {
+    if (!o && TILES[i].t === 'land' && tileElem(r, i) === 'wind') dests.push(i);
+  });
+  return dests;
+}
+function moveMarlow(r, p, src, dest) {
+  const o = r.owners[src];
+  if (!o || o.player !== p.id || baseId(o.creature) !== 'marlow' ||
+      !Number.isInteger(dest) || !TILES[dest] || r.owners[dest] ||
+      TILES[dest].t !== 'land' || tileElem(r, dest) !== 'wind') return false;
+  r.owners[dest] = o;
+  r.owners[src] = null;
+  log(r, `【風渡り】${p.name}のマーローが土地${src}から空いている風属性の土地${dest}へ移動した(Lv${o.level})`);
+  updateTitles(r);
+  return true;
+}
 function askUpgrade(r, p, where) {
   const opts = [];
   r.owners.forEach((o, i) => {
@@ -761,9 +791,12 @@ function askUpgrade(r, p, where) {
         `${TILES[i].e} Lv${o.level}: ${CREATURES[o.creature].name}の土地${aff ? '(親和-20%)' : ''}`, tile: i });
     }
   });
-  if (!opts.length) { log(r, `${p.name}は${where}で休息した(強化できる領地なし)`); return endTurn(r); }
-  opts.push({ id: 'pass', label: '強化しない' });
-  ask(r, p.id, 'upgrade', `${where}に到着 ─ 強化する領地を選ぶ`, opts);
+  if (where === '自領地' && marlowSources(r, p).length && marlowDests(r).length)
+    opts.push({ id: 'marlow:move', label: '【風渡り】マーローを空いている風属性土地へ移動' });
+  if (!opts.length) { log(r, `${p.name}は${where}で休息した(強化・移動できる領地なし)`); return endTurn(r); }
+  opts.push({ id: 'pass', label: where === '自領地' ? '何もしない' : '強化しない' });
+  ask(r, p.id, 'upgrade', `${where}に到着 ─ ${where === '自領地' ? '領地を強化／マーローを移動' : '強化する領地を選ぶ'}`, opts);
+  r.pending[p.id].where = where;
 }
 function startDraft(r, p, resume) {
   refillDeck(r);
@@ -830,6 +863,9 @@ function startBattle(r, attacker, tileIdx) {
                atkCreature: null, supports: {}, startedAt: stamp(r) };
   ask(r, attacker.id, 'pick_creature', '侵略! 手札からクリーチャーを選べ', opts);
 }
+function creatureSupportEnabled(creatureId) {
+  return ['survey', 'shuterio'].includes(baseId(creatureId));
+}
 function askSupports(r) {
   const b = r.battle;
   for (const pid of [b.attacker, b.defender]) {
@@ -837,7 +873,7 @@ function askSupports(r) {
     const opts = p.hand.filter(c => SUPPORTS[c])
       .map(c => ({ id: 'sup:s:' + c, label: `${SUPPORTS[c].name}を出す` }));
     const battleCreature = pid === b.attacker ? b.atkCreature : r.owners[b.tile].creature;
-    if (baseId(battleCreature) === 'survey') {
+    if (creatureSupportEnabled(battleCreature)) {
       let skippedReserved = false;
       p.hand.forEach(c => {
         if (!CREATURES[c]) return;
@@ -1757,7 +1793,42 @@ function handleChoose(r, playerId, optionId) {
     return endTurn(r);
   }
 
+  if (pend.type === 'marlow_src') {
+    if (optionId === 'ms:cancel') return askUpgrade(r, p, pend.where || '自領地');
+    const src = +optionId.slice(3);
+    const o = r.owners[src];
+    if (!o || o.player !== p.id || baseId(o.creature) !== 'marlow' || !marlowDests(r).length)
+      return askUpgrade(r, p, pend.where || '自領地');
+    const opts = marlowDests(r).map(i => ({
+      id: 'md:' + i, tile: i, label: `土地${i}(${ELEM_JA[tileElem(r, i)]})へ移動`,
+    }));
+    opts.push({ id: 'md:cancel', label: 'やめる' });
+    ask(r, p.id, 'marlow_dest', '【風渡り】移動先の空いている風属性土地を選ぶ', opts);
+    Object.assign(r.pending[p.id], { source: src, where: pend.where || '自領地' });
+    return;
+  }
+
+  if (pend.type === 'marlow_dest') {
+    if (optionId === 'md:cancel') return askUpgrade(r, p, pend.where || '自領地');
+    const src = pend.source, dest = +optionId.slice(3);
+    if (!moveMarlow(r, p, src, dest))
+      return askUpgrade(r, p, pend.where || '自領地');
+    if (checkVictory(r)) return;
+    return endTurn(r);
+  }
+
   if (pend.type === 'upgrade') {
+    if (optionId === 'marlow:move') {
+      const opts = marlowSources(r, p).filter(i => marlowDests(r).length).map(i => ({
+        id: 'ms:' + i, tile: i,
+        label: `土地${i}のマーロー(Lv${r.owners[i].level}${r.owners[i].dmg ? `・負傷${r.owners[i].dmg}` : ''})`,
+      }));
+      if (!opts.length) return askUpgrade(r, p, pend.where || '自領地');
+      opts.push({ id: 'ms:cancel', label: 'やめる' });
+      ask(r, p.id, 'marlow_src', '【風渡り】移動するマーローを選ぶ', opts);
+      r.pending[p.id].where = pend.where || '自領地';
+      return;
+    }
     if (optionId.startsWith('up:')) {
       const i = +optionId.slice(3);
       const o = r.owners[i];
@@ -1843,7 +1914,7 @@ function handleChoose(r, playerId, optionId) {
       const battleCreature = playerId === b.attacker
         ? b.atkCreature
         : r.owners[b.tile] && r.owners[b.tile].creature;
-      if (baseId(battleCreature) !== 'survey' || !CREATURES[cardId] ||
+      if (!creatureSupportEnabled(battleCreature) || !CREATURES[cardId] ||
           !p.hand.includes(cardId) || CREATURES[cardId].cost > p.gold) return;
       if (playerId === b.attacker && cardId === b.atkCreature &&
           p.hand.filter(c => c === cardId).length < 2) return;

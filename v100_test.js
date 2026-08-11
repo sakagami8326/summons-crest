@@ -27,7 +27,7 @@ function game(chars = ['lia', 'adel']) {
   return r;
 }
 
-ok(['1.00', '1.01'].includes(G.VERSION), 'version remains compatible with the v1.00 suite');
+ok(Number(G.VERSION) >= 1.00, 'version remains compatible with the v1.00 suite');
 
 // Catalog and evolution values.
 const rows = [
