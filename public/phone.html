@@ -157,14 +157,33 @@
   #shopScene .bubble { position:absolute; left:24vw; top:4dvh; background:var(--parchment);
       color:#3A2B18; font-size:max(2.4dvh, 14px); letter-spacing:1px; padding:1.4dvh 2.6dvh;
       border-radius:1.6dvh; border:2px solid #8A6A1E; max-width:36vw; }
-  #shopBtns { position:absolute; right:calc(2vw + env(safe-area-inset-right)); top:4dvh; bottom:3dvh;
-      width:52vw; display:flex; flex-direction:column; gap:1.6dvh; overflow-y:auto; padding:4px; }
-  .shopBtn { font-family:inherit; font-size:max(2.8dvh, 15px); letter-spacing:1px; padding:2.2dvh 2.6dvh;
-      background:linear-gradient(180deg,#E8C55A,#B8901F); color:#241C05; text-align:left;
-      border:2px solid #F2D062; border-radius:1.6dvh; cursor:pointer; flex:none;
-      box-shadow:0 3px 10px rgba(0,0,0,.5); }
-  .shopBtn:active { transform:scale(.97); }
-  .shopBtn.ghost { background:rgba(20,18,39,.75); color:var(--gold-soft); border:1px solid var(--gold); }
+  #shopShelf { position:absolute; inset:10dvh 2vw 7dvh 20vw; overflow:auto; display:grid;
+      grid-template-columns:repeat(5,minmax(92px,1fr)); gap:1.4dvh 1.2vw; align-content:center; padding:1dvh; }
+  .shopProduct { position:relative; min-width:0; cursor:pointer; text-align:center; transition:.18s transform,.18s filter; }
+  .shopProduct:active { transform:scale(.96); } .shopProduct.unaffordable { filter:saturate(.45) brightness(.62); }
+  .shopProduct.sold { filter:grayscale(1) brightness(.4); pointer-events:none; }
+  .shopProduct .shopCard { width:min(16vw,22dvh); aspect-ratio:5/7; margin:auto; container-type:inline-size; }
+  .shopProduct .shopCard>.face { position:relative; width:100%; height:100%; overflow:hidden; }
+  .shopPrice { display:inline-flex; align-items:center; gap:.35em; margin-top:.55dvh; padding:.45dvh 1.1dvh;
+      border-radius:999px; background:rgba(16,13,36,.9); color:#ffe58a; font-weight:900; font-size:max(1.8dvh,12px); }
+  .shopPrice img { height:1.8em; } .shopOld { opacity:.6; text-decoration:line-through; margin-right:.35em; }
+  .shopSold { position:absolute; inset:35% 0 auto; z-index:20; padding:.8dvh; background:#8b1e28; color:#fff;
+      font-weight:900; letter-spacing:.18em; transform:rotate(-8deg); }
+  .removeCard { height:100%; border:3px solid #d5b75a; border-radius:10px; display:grid; place-items:center;
+      background:linear-gradient(145deg,#311b35,#111326); color:#f2d062; box-shadow:inset 0 0 25px #000; }
+  .removeCard img { width:100%; height:100%; object-fit:cover; }
+  .removeCard b { font-size:clamp(14px,9cqw,30px); } .removeCard span { font-size:clamp(30px,24cqw,74px); }
+  #shopExit { position:absolute; right:3vw; bottom:1.5dvh; z-index:4; }
+  #shopDetail { position:fixed; inset:0; z-index:75; display:none; place-items:center; background:rgba(5,6,16,.88); }
+  #shopDetail.on { display:grid; } #shopDetailCard { width:min(42vw,30dvh); aspect-ratio:5/7; container-type:inline-size; }
+  #shopDetailCard>.face { position:relative; width:100%; height:100%; overflow:hidden; }
+  #shopDetailActions { display:flex; gap:1dvh; justify-content:center; margin-top:1.2dvh; }
+  @media (max-width:700px) and (orientation:portrait) {
+    #shopScene .keeper,#shopScene .bubble { display:none; }
+    #shopShelf { inset:8dvh 1vw 8dvh; grid-template-columns:repeat(3,minmax(88px,1fr)); align-content:start; }
+    .shopProduct .shopCard { width:min(29vw,20dvh); }
+    #shopGold { left:2vw!important; top:1dvh!important; }
+  }
   /* ドロー開帳 */
   #drawModal { position:fixed; inset:0; display:none; z-index:60; align-items:center;
       justify-content:center; background:rgba(10,8,25,.85); }
@@ -567,13 +586,6 @@
   .ucBox .ucd { font-size:max(2dvh, 13px); color:rgba(241,232,208,.9); margin:1.6dvh 0; line-height:1.7; }
   .ucBox .ucw { font-size:max(1.7dvh, 11px); color:#F09595; margin-bottom:2dvh; }
   .ucBox .row { display:flex; gap:2dvh; justify-content:center; }
-  /* ショップ2列 */
-  #shopBtns { display:grid !important; grid-template-columns:1fr 1fr; gap:1.2dvh;
-      align-content:start; }
-  .shopBtn .sbT { font-size:max(2dvh, 14px); letter-spacing:1px; }
-  .shopBtn .sbD { font-size:max(1.5dvh, 11px); color:rgba(36,28,5,.75); margin-top:.5dvh; line-height:1.4; }
-  .shopBtn.ghost .sbD { color:rgba(241,232,208,.6); }
-  .shopBtn.full { grid-column:1 / -1; text-align:center; }
   /* 門の選択肢(全画面オーバーレイ・等幅・タイトル+説明) */
   #gateOv { position:fixed; inset:0; display:none; z-index:56; background:rgba(10,8,25,.94);
       flex-direction:column; align-items:center; justify-content:center; gap:2.6dvh;
@@ -659,8 +671,11 @@
     <div id="shopGold" style="position:absolute; left:calc(2vw + env(safe-area-inset-left)); top:3dvh;
       background:rgba(16,13,36,.8); border:1px solid var(--gold); border-radius:999px;
       color:var(--gold-soft); font-size:max(2.4dvh, 14px); letter-spacing:1px; padding:1dvh 2.4dvh;"></div>
-    <div id="shopBtns"></div>
+    <div id="shopShelf"></div>
+    <button class="abtn ghost" id="shopExit">市場を出る</button>
   </div>
+  <div id="shopDetail"><div><div id="shopDetailCard"></div><div id="shopDetailPrice" class="shopPrice"></div>
+    <div id="shopDetailActions"><button class="abtn" id="shopBuy">購入する</button><button class="abtn ghost" id="shopCancel">戻る</button></div></div></div>
   <div id="deckOv"><h2>デッキ確認</h2><div id="deckScroll"></div>
     <button class="abtn ghost" id="deckClose">閉じる</button></div>
   <div id="resultOv"><div id="resultTitle"></div><div id="resList"></div>
@@ -1049,7 +1064,7 @@ function tileDetailHTML(i) {
   const t = state.tiles[i], o = state.owners[i];
   const st2 = { castle: ['🏰 城', '総資産8000G以上で通過すると勝利。刻印があれば一周ボーナス'],
     shrine: ['⛩ 祠', '止まると+100Gとカード1枚。参拝4回で称号「大巡礼者」'],
-    market: ['🏪 市場', 'カード・支援・宝石を購入できる'],
+    market: ['🏪 市場', '公開されたカード・武器・盾を購入できる'],
     gate: ['🚪 変化の門', '通過で刻印を取得。止まると恩恵を選べる'] }[t.t];
   if (st2) return `<div class="tdRow"><b style="font-size:max(2.4dvh,15px)">${iconize(st2[0])}</b></div>
     <div class="tdSub">${st2[1]}</div>`;
@@ -1119,6 +1134,33 @@ const choose = optionId => fetch('/api/action', {
   method:'POST', headers:{ 'Content-Type':'application/json' },
   body: JSON.stringify({ room, type:'choose', playerId: pid, optionId })
 });
+let shopBuying = false;
+function openShopDetail(slotId) {
+  const visit = state && state.shopVisit;
+  const item = visit && visit.items.find(x => x.slotId === slotId);
+  if (!item || item.sold) return;
+  $('shopDetailCard').innerHTML = item.kind === 'remove'
+    ? '<div class="face removeCard"><img src="/assets/cards/shop-remove.svg" alt="カード削除"></div>'
+    : bigCardHTML(item.card);
+  $('shopDetailPrice').innerHTML = `<img src="/assets/ic_gold.png">${visit.half ? `<span class="shopOld">${item.basePrice}G</span>` : ''}${item.price}G`;
+  $('shopBuy').disabled = item.price > me().gold;
+  $('shopBuy').textContent = item.price > me().gold ? 'ゴールド不足' : '購入する';
+  $('shopBuy').onclick = async () => {
+    if (shopBuying || item.price > me().gold) return;
+    shopBuying = true; $('shopBuy').disabled = true;
+    try { await choose('buy:' + slotId); $('shopDetail').classList.remove('on'); }
+    finally { shopBuying = false; }
+  };
+  $('shopDetail').classList.add('on');
+  try { fetch('/api/action', { method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ room, type:'shop_preview', playerId:pid, slotId }) }); } catch (e) {}
+  afterUiPaint(() => fitCreatureNames($('shopDetailCard')));
+}
+$('shopCancel').onclick = () => {
+  $('shopDetail').classList.remove('on');
+  try { fetch('/api/action', { method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ room, type:'shop_preview', playerId:pid, slotId:null }) }); } catch (e) {}
+};
 document.getElementById('drawModal').onclick = () => $('drawModal').classList.remove('on');
 let galleryEvo = false;
 function artOrToken(cid, cr, evo, tokSize) {
@@ -1570,7 +1612,7 @@ function render() {
       <svg width="12" height="12" viewBox="-34 -36 68 72" style="vertical-align:middle">${ELEM_MINI[e]}</svg>${n}</span>`;
   }).join(' ');
   const ic = n => `<img src="/assets/${n}.png" style="height:2dvh;width:2dvh;object-fit:contain;vertical-align:-0.3dvh">`;
-  const statHtml = `<span class="assetBig">資産 ${m.points}<small>/${state.target}G</small></span><br>${ic('ic_gold')}${m.gold} ｜ ${ic('ic_gem')}${m.gems} ｜ 第${m.lap ?? 1}周 ｜ <span style="color:${m.seal ? '#F2D062' : 'rgba(241,232,208,.35)'}">刻印${m.seal ? '❖' : 'なし'}</span><br>領地: ${elemN} ｜ 山札${m.deckCount ?? 0} 捨${m.discardCount ?? 0}`;
+  const statHtml = `<span class="assetBig">資産 ${m.points}<small>/${state.target}G</small></span><br>${ic('ic_gold')}${m.gold} ｜ 第${m.lap ?? 1}周 ｜ <span style="color:${m.seal ? '#F2D062' : 'rgba(241,232,208,.35)'}">刻印${m.seal ? '❖' : 'なし'}</span><br>領地: ${elemN} ｜ 山札${m.deckCount ?? 0} 捨${m.discardCount ?? 0}`;
   if ($('myStat').dataset.h !== statHtml) {
     $('myStat').dataset.h = statHtml;
     $('myStat').innerHTML = statHtml;
@@ -1609,7 +1651,7 @@ function render() {
   if (mapView) renderMapView();  // 閲覧モード中は最新stateで再描画
   // ショップシーンの開閉
   const inMarket = pend() && pend().type === 'market';
-  if (!inMarket) { $('shopScene').classList.remove('on'); inShopHand = false; }
+  if (!inMarket) { $('shopScene').classList.remove('on'); $('shopDetail').classList.remove('on'); inShopHand = false; }
   else if (inShopHand) $('shopScene').classList.remove('on');
   // 直接ドロー(祠・戦闘勝利・ひらめき)の開帳: 引いたカードを本人にだけ見せる
   const handKey = (m.hand || []).join(',');
@@ -1824,24 +1866,19 @@ function render() {
     A.innerHTML = '';
     $('shopScene').classList.add('on');
     $('shopGold').innerHTML = '<img src="/assets/ic_gold.png" style="height:2.4dvh;vertical-align:-0.4dvh"> ' + m.gold + ' G';
-    const shopDesc = id => {
-      if (id === 'draw') return '山札から3枚公開し、1枚を選んで獲得する';
-      if (id.startsWith('buys:')) {
-        const sp = C.SUPPORTS[id.slice(5)];
-        return sp.jinx ? '戦闘で相手の支援カードを無効化する'
-          : `戦闘で${sp.st ? 'AT+' + sp.st : 'DF+' + sp.hp}(秘密裏に同時出し)`;
-      }
-      if (id === 'buyi:curse') return '敵の土地のクリーチャーのHP-20(自分の次の手番まで)';
-      if (id === 'gem') return '集めて秘宝と交換できる(秘宝=勝利点+1)';
-      if (id === 'treasure') return '宝石を消費して勝利点+1を獲得!';
-      if (id === 'done') return '買い物を終えて手番を終了する';
-      return '';
-    };
-    $('shopBtns').innerHTML =
-      `<button class="shopBtn ghost full" onclick="inShopHand=true; render()"><img src="/assets/ic_hand.png" style="height:2.4dvh;width:auto;vertical-align:-0.4dvh"> 手札を見る</button>` +
-      p.options.map(o =>
-        `<button class="shopBtn ${o.id === 'done' ? 'ghost full' : ''}" onclick="choose('${o.id}')">
-          <div class="sbT">${iconize(o.label)}</div><div class="sbD">${shopDesc(o.id)}</div></button>`).join('');
+    const visit = state.shopVisit;
+    const shopFace = item => item.kind === 'remove'
+      ? '<div class="face removeCard"><img src="/assets/cards/shop-remove.svg" alt="カード削除"></div>'
+      : bigCardHTML(item.card);
+    $('shopShelf').innerHTML = visit ? visit.items.map(item => {
+      const cls = `${item.sold ? ' sold' : ''}${!item.sold && item.price > m.gold ? ' unaffordable' : ''}`;
+      const old = visit.half ? `<span class="shopOld">${item.basePrice}G</span>` : '';
+      return `<div class="shopProduct${cls}" data-slot="${item.slotId}"><div class="shopCard">${shopFace(item)}</div>
+        <div class="shopPrice"><img src="/assets/ic_gold.png">${old}${item.price}G</div>${item.sold ? '<div class="shopSold">売り切れ</div>' : ''}</div>`;
+    }).join('') : '';
+    document.querySelectorAll('.shopProduct:not(.sold)').forEach(el => el.onclick = () => openShopDetail(el.dataset.slot));
+    $('shopExit').onclick = () => choose('done');
+    afterUiPaint(() => fitCreatureNames($('shopShelf')));
   } else if (p.type === 'market' && inShopHand) {
     $('msg').textContent = '手札を確認中';
     A.innerHTML = '<button class="abtn ghost" onclick="inShopHand=false; render()">店にもどる</button>';

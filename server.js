@@ -1,6 +1,6 @@
 // Summons Crest 統合サーバー v0.1(段階①: ゲームエンジン)
 // 仕様書v0.2準拠: 勝利点12先取 / 土地レベル / 連鎖通行料 / 支援カード付き侵略戦闘 /
-// 祠(巡礼称号) / 市場(購入・宝石・秘宝) / 覇者称号 / キャラ選択のダイス競合
+// 祠(巡礼称号) / 市場(公開商品の購入・カード削除) / 覇者称号 / キャラ選択のダイス競合
 // 起動: node server.js
 const http = require('http');
 const fs = require('fs');
@@ -8,12 +8,12 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.06';
+const VERSION = '1.08';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
-                levelCost: { 2: 100, 3: 450, 4: 950 }, gemPrice: 80, drawPrice: 100, maxLevel: 4,  // v0.60: Lv3/Lv4強化を大型投資に
+                levelCost: { 2: 100, 3: 450, 4: 950 }, maxLevel: 4,  // v0.60: Lv3/Lv4強化を大型投資に
                 evoLevel: 3, forgeCost: 150,
                 startHand: 5, forgetCost: 80 };  // v0.44: 初期5枚+毎ターン1枚ドロー
 // キャラ別初期デッキ12枚(初期デッキ仕様案v0.1 第12節)
@@ -97,7 +97,7 @@ const CREATURES = {
   // マーケット
   magado:  { name: 'マガドー', evo: 'マグナガルム', elem: 'fire', st: 55, hp: 35, cost: 120, evoSt: 75, evoHp: 55, rarity: 'R' },
   qbaby:   { name: 'クイーンベビー', evo: 'クイーン', elem: 'fire', st: 35, hp: 30, cost: 120, evoSt: 55, evoHp: 50, fx: '【女王の威光】両隣の自領地の防衛DF+10(進化+20)', rarity: 'L' },
-  cresteria:{ name: 'クレステリア',    elem: 'water', st: 20, hp: 50, cost: 90, fx: '【真珠】召喚時、宝石1個を得る', rarity: 'N' },
+  cresteria:{ name: 'クレステリア',    elem: 'water', st: 20, hp: 50, cost: 90, fx: '【真珠】召喚時、支援「盾」1枚をデッキに加える', rarity: 'N' },
   kbaby:   { name: 'キングベビー', evo: 'キング', elem: 'water', st: 30, hp: 40, cost: 120, evoSt: 50, evoHp: 60, fx: '【王の徴収】この土地の通行料受取時+30G(進化+50G)', rarity: 'L' },
   ludi:    { name: 'ルディ', evo: 'シンルー', elem: 'wind', st: 25, hp: 40, cost: 120, evoSt: 45, evoHp: 60, fx: '【雲隠れ】防衛時、相手の支援を無効化', rarity: 'L' },
   garble:  { name: 'ガーブル', evo: 'ガレス・ゲイル', elem: 'wind', st: 35, hp: 25, cost: 120, evoSt: 55, evoHp: 45, fx: '【風刃】攻撃時、相手の地形補正を無視', rarity: 'R' },
@@ -237,6 +237,33 @@ function makeDeck() {
     for (let i = 0; i < RARITY_COPIES[sp.rarity]; i++) d.push(sid);
   return d.sort(() => Math.random() - 0.5);
 }
+const SHOP_PRICE = { N: 60, R: 100, L: 160 };
+function makeShopVisit(r, p) {
+  const weighted = [];
+  for (const id of [...MARKET_POOL, ...Object.keys(SPELLS)]) {
+    const info = CREATURES[id] || SPELLS[id];
+    for (let i = 0; i < RARITY_COPIES[info.rarity]; i++) weighted.push(id);
+  }
+  const cards = [];
+  while (cards.length < 5 && weighted.length) {
+    const id = weighted[Math.floor(Math.random() * weighted.length)];
+    if (!cards.includes(id)) cards.push(id);
+  }
+  const half = r.halfMarket === p.id;
+  const price = n => half ? Math.round(n / 2) : n;
+  r.shopVisit = {
+    id: crypto.randomBytes(6).toString('hex'), player: p.id, half, selected: null,
+    items: [
+      ...cards.map((card, i) => {
+        const basePrice = SHOP_PRICE[(CREATURES[card] || SPELLS[card]).rarity];
+        return { slotId: `card${i}`, kind: 'card', card, basePrice, price: price(basePrice), sold: false };
+      }),
+      { slotId: 'weapon', kind: 'support', card: 'weapon', basePrice: SUPPORTS.weapon.cost, price: price(SUPPORTS.weapon.cost), sold: false },
+      { slotId: 'shield', kind: 'support', card: 'shield', basePrice: SUPPORTS.shield.cost, price: price(SUPPORTS.shield.cost), sold: false },
+      { slotId: 'remove', kind: 'remove', basePrice: RULES.forgetCost, price: price(RULES.forgetCost), sold: false },
+    ],
+  };
+}
 
 // ===== ルーム管理 =====
 function refillDeck(r) {
@@ -272,14 +299,13 @@ function makeRoom(mode = 'normal') {
     code: code4(), phase: 'lobby', clients: new Set(), players: [],
     botMode: mode === 'bot', botTimer: null, botActionSeq: 0,
     owners: TILES.map(() => null),        // { player, level, creature }
-    deck, market: deck.splice(0, 5),
+    deck, market: deck.splice(0, 5), shopVisit: null,
     turn: 0, round: 1, log: [],
     pending: {},                          // playerId → { type, prompt, options }
     titles: { conqueror: null, pilgrim: null },
     duel: null, lastBattle: null, winner: null, barrier: {},
     elemOv: {},                           // 属性変更スペル: マスi → 'fire'等
     tileFx: {},                           // 土地継続効果: マスi → {vortex,tide:{by},uplift,roots}
-    treasureCost: {},                     // playerId → 次の秘宝に必要な宝石数
     curses: {},                           // tileIdx → { by, hp }
     boardToken: crypto.randomBytes(16).toString('hex'),  // v0.62: 盤面だけが持つ保存/復元/クローズ権限
   };
@@ -340,6 +366,10 @@ function universalTerrain(creatureId) {
 }
 function onCreatureSummoned(r, p, creatureId, reason, tile) {
   if (!['summon', 'swap', 'battle'].includes(reason)) return false;
+  if (baseId(creatureId) === 'cresteria' && reason !== 'battle') {
+    gainToDeck(r, p, ['shield']);
+    log(r, `【真珠】${CREATURES.cresteria.name}の召喚で支援「盾」1枚を山札へ加えた`);
+  }
   if (baseId(creatureId) === 'trooper' && !isEvolved({ creature: creatureId })) {
     gainToDeck(r, p, ['sp_flame_vortex']);
     log(r, `【火種】${CREATURES.trooper.name}の配置で「炎の渦」1枚を山札へ加えた`);
@@ -403,7 +433,7 @@ function kingBonus(r, receiver, tileIdx) {
   return bonus;
 }
 // ===== v0.51 資産経済 =====
-const LV_MUL = { 1: 1, 2: 2.5, 3: 10, 4: 36 };  // v0.60: Lv3=10倍(通行料250G)/Lv4=36倍(通行料900G)
+const LV_MUL = { 1: 1, 2: 2.5, 3: 8, 4: 20 };  // v1.07: 高Lv領地1つで勝負が決まりすぎないよう緩和
 const CHAIN_MUL = [0, 1.0, 1.4, 1.8, 2.2, 2.6];  // 同属性所有数→倍率(5以上は2.6)
 const ASSET_GOAL = 8000, ASSET_REACH = 7000;
 function landValue(r, i) {
@@ -412,12 +442,13 @@ function landValue(r, i) {
   const chain = Math.min(5, chainCount(r, o.player, tileElem(r, i)));
   return Math.round(100 * LV_MUL[o.level] * CHAIN_MUL[chain]);
 }
-const castleLandBonus = lands => Math.round(lands * 0.5);
-// 総資産 = 所持金+地価合計+秘宝600G+称号500G
+const CASTLE_LAND_RATE = 0.2;
+const castleLandBonus = lands => Math.round(lands * CASTLE_LAND_RATE);
+// 総資産 = 所持金+地価合計+称号500G
 function points(r, p) {
   const lands = r.owners.reduce((n, o, i) => n + (o && o.player === p.id ? landValue(r, i) : 0), 0);
   const titles = (r.titles.conqueror === p.id ? 500 : 0) + (r.titles.pilgrim === p.id ? 500 : 0);
-  return p.gold + lands + titles + p.treasures * 600;
+  return p.gold + lands + titles;
 }
 function updateTitles(r) {
   for (const [key, field, min] of [['conqueror', 'battleWins', 3], ['pilgrim', 'shrineVisits', 4]]) {
@@ -645,9 +676,9 @@ function performMove(r, p, steps, meta, moveLabel) {
     log(r, `❖ ${p.name}は門を通過 ─ +${RULES.gateBonus}Gと刻印を得た(城まで持ち帰ると一周ボーナス)`);
   }
   if (bonus) {
-    // 領地ボーナス: 所有地価合計の50%(v1.06)
+    // 領地ボーナス: 所有地価合計の20%(v1.07)
     const lands = r.owners.reduce((n, o, i) => n + (o && o.player === p.id ? landValue(r, i) : 0), 0);
-    const landRate = 0.5;
+    const landRate = CASTLE_LAND_RATE;
     const lb = castleLandBonus(lands);
     p.gold += bonus + lb;
     // 帰還の癒し: 自領地のクリーチャーの負傷を10回復(最大値は超えない)
@@ -677,7 +708,7 @@ function performMove(r, p, steps, meta, moveLabel) {
     const initial = meta.multi ? GAME_TIMING.moveStartDelayMulti : GAME_TIMING.moveStartDelay;
     const availableAt = r.lastDice.at + initial + castleStep * GAME_TIMING.stepMs +
       GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown;
-    r.lastDice.castle = { usedSeal: false, baseBonus: 0, gold: 0, landValue: 0, landRate: .5,
+    r.lastDice.castle = { usedSeal: false, baseBonus: 0, gold: 0, landValue: 0, landRate: CASTLE_LAND_RATE,
       landBonus: 0, total: 0, drew: 0, healed: [], castleStep, availableAt };
     log(r, `${p.name}は${moveLabel} ─ 刻印がないため一周ボーナスなし…`);
     if (points(r, p) >= ASSET_GOAL) return declareWin(r, p, `総資産${points(r, p)}Gで城に凱旋!`);
@@ -854,21 +885,14 @@ function askForge(r, p) {
   ask(r, p.id, 'forge', `鍛錬 ─ 進化させるクリーチャーを選べ(−${RULES.forgeCost}G)`, opts);
 }
 function askMarket(r, p) {
-  const half = r.halfMarket === p.id;
-  const hm = x => half ? Math.round(x / 2) : x;
-  const opts = [];
-  if (p.gold >= hm(RULES.drawPrice))
-    opts.push({ id: 'draw', label: `カードを引く(−${hm(RULES.drawPrice)}G / 3枚から1枚選択)` });
-  for (const [id, sp] of Object.entries(SUPPORTS))
-    if (hm(sp.cost) <= p.gold) opts.push({ id: 'buys:' + id, label: `支援「${sp.name}」を購入(−${hm(sp.cost)}G)` });
-  if (p.gold >= hm(RULES.gemPrice) && (half || (p.gemThisStop || 0) < 2))
-    opts.push({ id: 'gem', label: `宝石を購入(−${hm(RULES.gemPrice)}G / 所持${p.gems}個)` });
-  const need = r.treasureCost[p.id] || 5;
-  if (p.gems >= need) opts.push({ id: 'treasure', label: `💎 秘宝と交換(宝石${need}個 → +1点)` });
-  if (p.gold >= RULES.forgetCost && !p.forgetThisStop && (p.hand.length + p.discard.length) > 0)
-    opts.push({ id: 'forget', label: `忘却 ─ カードを1枚廃棄(−${RULES.forgetCost}G / この来店で1回)` });
+  if (!r.shopVisit || r.shopVisit.player !== p.id) makeShopVisit(r, p);
+  const opts = r.shopVisit.items.filter(x => !x.sold).map(x => ({
+    id: 'buy:' + x.slotId, slotId: x.slotId, card: x.card || null, kind: x.kind,
+    price: x.price, label: x.kind === 'remove' ? 'カード削除' : (CREATURES[x.card] || SPELLS[x.card] || SUPPORTS[x.card]).name,
+  }));
   opts.push({ id: 'done', label: '市場を出る' });
-  ask(r, p.id, 'market', half ? '💧 水鏡の市場 ─ 全品半額セール!' : '市場に到着 ─ 買い物ができます', opts);
+  ask(r, p.id, 'market', r.shopVisit.half ? '💧 水鏡の市場 ─ 全品半額セール!' : '市場に到着 ─ 商品をタップしてください', opts);
+  Object.assign(r.pending[p.id], { shopId: r.shopVisit.id });
 }
 
 // ===== 侵略戦闘 =====
@@ -1495,11 +1519,12 @@ function handleChoose(r, playerId, optionId) {
     if (optionId !== 'fg:cancel') {
       const zone = optionId[1] === 'h' ? p.hand : p.discard;
       const i = +optionId.slice(3);
-      if (i < zone.length && p.gold >= RULES.forgetCost) {
+      const item = r.shopVisit && r.shopVisit.player === p.id && r.shopVisit.items.find(x => x.slotId === 'remove');
+      if (item && !item.sold && i < zone.length && p.gold >= item.price) {
         const c = zone.splice(i, 1)[0];
         p.exile.push(c);
-        p.gold -= RULES.forgetCost;
-        p.forgetThisStop = 1;
+        p.gold -= item.price;
+        item.sold = true;
         const nameOf = x => (CREATURES[x] || SPELLS[x] || SUPPORTS[x] || { name: x }).name;
         log(r, `${p.name}は「${nameOf(c)}」を忘却した(ゲームから廃棄)`);
       }
@@ -1656,7 +1681,6 @@ function handleChoose(r, playerId, optionId) {
         p.discard.push(oldC);                 // 元のクリーチャーは捨て札へ
         p.hand.splice(p.hand.indexOf(c), 1);
         o.creature = c; o.dmg = 0; o.shade = 0; delete o.iceWard;  // 新クリーチャーは全快で配置
-        if (baseId(c) === 'cresteria') { p.gems++; log(r, `【真珠】${p.name}は宝石を1個得た(所持${p.gems}個)`); }
         if (baseId(c) === 'fugorm') { gainToDeck(r, p, ['weapon']); log(r, `【鍛冶】${p.name}は支援「武器」を山札に得た`); }
         p.hand.splice(p.hand.indexOf('sp_swap'), 1);
         p.discard.push('sp_swap');
@@ -1856,7 +1880,6 @@ function handleChoose(r, playerId, optionId) {
       p.hand.splice(p.hand.indexOf(c), 1);
       r.owners[i] = { player: p.id, level: 1, creature: c };
       log(r, `${p.name}は${CREATURES[c].name}を召喚し、土地を領地化!`);
-      if (baseId(c) === 'cresteria') { p.gems++; log(r, `【真珠】${p.name}は宝石を1個得た(所持${p.gems}個)`); }
       if (baseId(c) === 'fugorm') { gainToDeck(r, p, ['weapon']); log(r, `【鍛冶】${p.name}は支援「武器」を山札に得た`); }
       const summonPaused = onCreatureSummoned(r, p, c, 'summon', i);
       updateTitles(r); if (checkVictory(r)) return; if (summonPaused) return; return endTurn(r);
@@ -1912,33 +1935,31 @@ function handleChoose(r, playerId, optionId) {
   }
 
   if (pend.type === 'market') {
-    const hm = x => r.halfMarket === p.id ? Math.round(x / 2) : x;
-    if (optionId === 'draw') {
-      p.gold -= hm(RULES.drawPrice);
-      log(r, `${p.name}は市場でカードを求めた`);
-      return startDraft(r, p, 'market');
-    } else if (optionId.startsWith('buys:')) {
-      const s = optionId.slice(5);
-      p.gold -= hm(SUPPORTS[s].cost);
-      gainToDeck(r, p, [s]);  // v0.61: 購入品は山札へ
-      log(r, `${p.name}は支援「${SUPPORTS[s].name}」を購入(山札へ)`);
-    } else if (optionId === 'gem') {
-      p.gold -= hm(RULES.gemPrice); p.gems++; p.gemThisStop = (p.gemThisStop || 0) + 1;
-      log(r, `${p.name}は宝石を購入(所持${p.gems}個)`);
-    } else if (optionId === 'treasure') {
-      const need = r.treasureCost[p.id] || 5;
-      p.gems -= need; p.treasures++;
-      r.treasureCost[p.id] = need + 2;
-      log(r, `💎 ${p.name}は秘宝を手に入れた!(+1点)`);
-      if (checkVictory(r)) return;
-    } else if (optionId === 'forget') {
+    const visit = r.shopVisit;
+    if (!visit || visit.player !== p.id || pend.shopId !== visit.id) return endTurn(r);
+    if (optionId === 'done') {
+      r.shopVisit = null;
+      if (r.halfMarket === p.id) r.halfMarket = null;
+      return endTurn(r);
+    }
+    const slotId = optionId.startsWith('buy:') ? optionId.slice(4) : '';
+    const item = visit.items.find(x => x.slotId === slotId);
+    if (!item || item.sold || p.gold < item.price) return askMarket(r, p);
+    if (item.kind === 'remove') {
       const nameOf = c => (CREATURES[c] || SPELLS[c] || SUPPORTS[c] || { name: c }).name;
       const opts = [];
       p.hand.forEach((c, i) => opts.push({ id: 'fh:' + i, label: `[手札] ${nameOf(c)}`, card: c, zone: 'h' }));
       p.discard.forEach((c, i) => opts.push({ id: 'fd:' + i, label: `[捨て札] ${nameOf(c)}`, card: c, zone: 'd' }));
       opts.push({ id: 'fg:cancel', label: 'やめる' });
-      return ask(r, p.id, 'forget', `忘却 ─ どのカードを廃棄する?(−${RULES.forgetCost}G)`, opts);
-    } else { p.gemThisStop = 0; p.forgetThisStop = 0; if (r.halfMarket === p.id) r.halfMarket = null; return endTurn(r); }
+      ask(r, p.id, 'forget', `忘却 ─ どのカードを廃棄する?(−${item.price}G)`, opts);
+      Object.assign(r.pending[p.id], { shopId: visit.id });
+      return;
+    }
+    p.gold -= item.price;
+    item.sold = true;
+    gainToDeck(r, p, [item.card]);
+    const card = CREATURES[item.card] || SPELLS[item.card] || SUPPORTS[item.card];
+    log(r, `${p.name}は「${card.name}」を${item.price}Gで購入(山札へ)`);
     return askMarket(r, p);
   }
 }
@@ -2023,7 +2044,7 @@ function startGame(r) {
     p.pos = 0; p.gold = RULES.startGold; p.lap = 1;
     p.deck = shuffle(CHAR_DECKS[p.charId].slice());
     p.discard = []; p.exile = []; p.hand = [];
-    p.gems = 0; p.treasures = 0; p.battleWins = 0; p.shrineVisits = 0; p.ultUsed = false;
+    p.battleWins = 0; p.shrineVisits = 0; p.ultUsed = false;
     p.color = CHARS[p.charId].color;
   }
   for (const p of r.players) drawCards(r, p, RULES.startHand);  // 全員に初期手札を配る
@@ -2130,9 +2151,21 @@ function botChooseOption(r, p, pend) {
     return (affordableReserve[affordableReserve.length - 1] || levels[0]).id;
   }
   if (pend.type === 'market') {
-    if (byId('treasure')) return 'treasure';
-    if (p.gold >= 220 && byId('draw')) return 'draw';
-    if (p.gold >= 180 && byId('gem') && p.gems < (r.treasureCost[p.id] || 5)) return 'gem';
+    const visit = r.shopVisit;
+    const choices = opts.filter(o => o.id.startsWith('buy:')).filter(o => {
+      const item = visit && visit.items.find(x => x.slotId === o.id.slice(4));
+      return item && !item.sold && item.price <= p.gold;
+    });
+    const best = botBest(r, choices, o => {
+      const item = visit.items.find(x => x.slotId === o.id.slice(4));
+      if (item.kind === 'remove') return p.gold >= 260 && (p.hand.length + p.discard.length) ? 20 : -100;
+      const score = item.kind === 'support'
+        ? (item.card === 'shield' ? 65 : 70)
+        : botCardScore(r, p, item.card);
+      return score - item.price * .45;
+    });
+    if (best && botCardScore(r, p, (visit.items.find(x => x.slotId === best.id.slice(4)) || {}).card) > 25)
+      return best.id;
     return (byId('done') || opts[0]).id;
   }
   if (pend.type === 'gate') {
@@ -2243,7 +2276,7 @@ function publicState(r, viewerId) {
     tiles: TILES.map((t, i) => r.elemOv[i] ? Object.assign({}, t, { e: r.elemOv[i] }) : t),
     tolls: r.owners.map((o, i) => o ? tollOf(r, i) : 0),
     tileFx: r.tileFx,
-    owners: r.owners, market: r.market, log: r.log,
+    owners: r.owners, market: r.market, shopVisit: r.shopVisit || null, log: r.log,
     titles: r.titles, duel: r.duel, curses: r.curses, lastEvent: r.lastEvent || null,
     barrier: r.barrier || {}, lastUlt: r.lastUlt || null, battlePreview: publicBattle(r),
     lastBattle: r.lastBattle, lastDice: r.lastDice || null,
@@ -2268,7 +2301,6 @@ function publicState(r, viewerId) {
       id: p.id, name: p.name, charId: p.charId || null, confirmed: !!p.confirmed,
       isBot: !!p.isBot,
       color: p.color || '#888', pos: p.pos || 0, gold: p.gold ?? 0,
-      gems: p.gems || 0, treasures: p.treasures || 0,
       battleWins: p.battleWins || 0, shrineVisits: p.shrineVisits || 0, ultUsed: !!p.ultUsed,
       hand: p.id === viewerId ? (p.hand || []) : [],
       deckList: p.id === viewerId ? [...(p.deck || [])].sort() : undefined,
@@ -2306,8 +2338,8 @@ const ROOM_RUNTIME_KEYS = new Set(['clients', 'lastActivity', 'upgradePreview', 
 const ROOM_PERSIST_KEYS = new Set([                                            // 保存する
   'code', 'phase', 'players', 'owners', 'deck', 'market', 'turn', 'round', 'log',
   'pending', 'titles', 'duel', 'lastBattle', 'winner', 'barrier', 'elemOv', 'tileFx',
-  'treasureCost', 'curses', 'boardToken', 'atSeq', 'saveRev', 'battle', 'draft',
-  'dirPend', 'halfMarket',
+  'curses', 'boardToken', 'atSeq', 'saveRev', 'battle', 'draft',
+  'dirPend', 'halfMarket', 'shopVisit',
   'lastEvent', 'lastDice', 'lastUlt', 'lastHeal', 'lastSeal', 'lastRuin', 'lastDraw', 'lastGain',
   'lastBarrierHit', 'lastSpellFx', 'botMode',
 ]);
@@ -2394,6 +2426,10 @@ function restoreRoom(save) {
     return { error: `ルーム${d.code}は使用中のため復元できません(既存のルームを閉じてから再試行してください)`, status: 409 };
   const room = Object.assign(d, { clients: new Set(), lastActivity: Date.now(), botTimer: null, botActionSeq: 0 });
   if (room.botMode == null) room.botMode = false;
+  delete room.treasureCost;
+  for (const p of room.players) {
+    delete p.gems; delete p.treasures; delete p.gemThisStop; delete p.forgetThisStop;
+  }
   // ここから先は失敗しない操作のみ(原子的な差し替え)
   if (existing) {
     for (const c of existing.clients) { try { c.res.end(); } catch (e) {} }
@@ -2442,7 +2478,7 @@ function makeFixtureRoom() {
     id: 'fx' + i, name: 'テスト' + '甲乙丙丁'[i], charId: c, confirmed: true,
     color: CHARS[c].color, pos: 20, gold: 800 + i * 300, lap: 3, dir: 1,
     deck: [], hand: [], discard: [], exile: [],
-    gems: i, treasures: i % 2, battleWins: i, shrineVisits: i, seal: i % 2 === 0,
+    battleWins: i, shrineVisits: i, seal: i % 2 === 0,
   }));
   // Lv1〜4・進化・全属性・呪い・結界・土地効果を網羅した盤面
   const own = (i, pl, lv, cr) => { r.owners[i] = { player: 'fx' + pl, level: lv, creature: cr, dmg: lv * 5 }; };
@@ -2602,6 +2638,15 @@ const server = http.createServer(async (req, res) => {
           : null;
       }
     }
+    else if (b.type === 'shop_preview') {
+      const actor = pById(r, b.playerId);
+      const pv = r.pending[b.playerId];
+      const visit = r.shopVisit;
+      if (actor && !actor.isBot && pv?.type === 'market' && visit?.player === b.playerId && pv.shopId === visit.id) {
+        if (b.slotId == null) visit.selected = null;
+        else if (visit.items.some(x => x.slotId === b.slotId && !x.sold)) visit.selected = b.slotId;
+      }
+    }
     broadcast(r);
     return json(res, { ok: true });
   }
@@ -2619,6 +2664,10 @@ const server = http.createServer(async (req, res) => {
       // 切断時にプレビューを解除(発注書v0.75 §6.3)
       if (r.upgradePreview && r.upgradePreview.player === client.viewerId) {
         r.upgradePreview = null;
+        broadcast(r);
+      }
+      if (r.shopVisit && r.shopVisit.player === client.viewerId && r.shopVisit.selected) {
+        r.shopVisit.selected = null;
         broadcast(r);
       }
     });

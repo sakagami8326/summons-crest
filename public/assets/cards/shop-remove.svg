@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 700">
+  <defs><linearGradient id="g" x2="1" y2="1"><stop stop-color="#4b294d"/><stop offset="1" stop-color="#101321"/></linearGradient></defs>
+  <rect x="10" y="10" width="480" height="680" rx="34" fill="url(#g)" stroke="#d5b75a" stroke-width="18"/>
+  <path d="M165 225h170l-14 265c-2 35-23 55-55 55h-32c-32 0-53-20-55-55zm37-52h96l18 38H184z" fill="#f2d062"/>
+  <path d="M217 278v190m66-190v190" stroke="#4b294d" stroke-width="20" stroke-linecap="round"/>
+  <text x="250" y="620" fill="#fff4cf" text-anchor="middle" font-family="sans-serif" font-size="48" font-weight="bold">カード削除</text>
+</svg>

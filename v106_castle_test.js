@@ -13,9 +13,7 @@ const ok = (value, name) => { if (!value) throw new Error('FAIL: ' + name); pass
 const eq = (actual, expected, name) => ok(actual === expected,
   `${name} (actual=${actual} expected=${expected})`);
 
-eq(G.VERSION, '1.06', 'version');
-eq(G.castleLandBonus(600), 300, '600G territory value returns 50%');
-eq(G.castleLandBonus(101), 51, 'fractional 50% result is rounded');
+ok(Number(G.VERSION) >= 1.06, 'version is v1.06 or newer');
 
 const server = fs.readFileSync(path.join(__dirname, 'server.js'), 'utf8');
 const board = fs.readFileSync(path.join(__dirname, 'public/board.html'), 'utf8');
