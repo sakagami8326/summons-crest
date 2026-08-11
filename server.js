@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.02';
+const VERSION = '1.03';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -338,8 +338,8 @@ function universalTerrain(creatureId) {
   return ['cleo', 'strauk', 'samurai_saga'].includes(baseId(creatureId));
 }
 function onCreatureSummoned(r, p, creatureId, reason, tile) {
-  if (reason !== 'summon' && reason !== 'swap') return false;
-  if (baseId(creatureId) === 'trooper' && !isEvolved({ creature: creatureId })) {
+  if (!['summon', 'swap', 'battle'].includes(reason)) return false;
+  if (reason !== 'battle' && baseId(creatureId) === 'trooper' && !isEvolved({ creature: creatureId })) {
     gainToDeck(r, p, ['sp_flame_vortex']);
     log(r, `【火種】${CREATURES.trooper.name}の召喚で「炎の渦」1枚を山札へ加えた`);
   }
@@ -1059,6 +1059,12 @@ function resolveBattle(r) {
     atkBaseAt: aBase.st, atkBaseHp: atkEffHp,
     defBaseAt: dBase.st, defBaseHp: effHp, defSt,
     atkHp: atkEffHp, atkDf: atkDF, counterSt, counterDealt, atkSurvived,
+    atkPreAt: atkDmg - (aEff ? aEff.st : 0), atkPostAt: atkDmg,
+    atkPreHp: atkEffHp, atkPostHp: atkEffHp,
+    atkPreDf: 0, atkPostDf: atkDF,
+    defPreAt: defSt - (dEff ? dEff.st : 0), defPostAt: defSt,
+    defPreHp: effHp, defPostHp: effHp,
+    defPreDf: Math.max(0, defDF - (dEff ? dEff.hp : 0)), defPostDf: defDF,
     hits: hitsDone, preempt,
     moveFrom: b.moveFrom,
     remainHp: win ? 0 : effHp - dealt,
@@ -1150,6 +1156,10 @@ function resolveBattle(r) {
   // v0.74: 戦勝報酬は共通山札から3枚ドラフト(勝者=攻守どちらでも)。
   // ドラフト完了後にsettleAll→endTurnへ続く(進行を直列化し、r.draftの競合を防ぐ)
   const bWinner = win ? atk : def;
+  if (win && onCreatureSummoned(r, atk, b.atkCreature, 'battle', b.tile)) {
+    Object.assign(r.pending[atk.id], { battleWinner: bWinner.id });
+    return;
+  }
   if (!bWinner.bankrupt) {
     log(r, `戦${win ? '勝' : '果'}の報酬 ─ ${bWinner.name}は3枚のカードから1枚を選ぶ`);
     return startDraft(r, bWinner, 'battle');
@@ -1185,7 +1195,18 @@ function handleChoose(r, playerId, optionId) {
   if (pend.type === 'samurai_elem') {
     const i = pend.tile;
     const o = r.owners[i];
-    const resume = () => pend.after === 'swap' ? askRoll(r, p) : endTurn(r);
+    const resume = () => {
+      if (pend.after === 'swap') return askRoll(r, p);
+      if (pend.after === 'battle') {
+        const winner = pById(r, pend.battleWinner || p.id);
+        if (winner && !winner.bankrupt) {
+          log(r, `戦勝の報酬 ─ ${winner.name}は3枚のカードから1枚を選ぶ`);
+          return startDraft(r, winner, 'battle');
+        }
+        return settleAll(r);
+      }
+      return endTurn(r);
+    };
     if (!o || o.player !== p.id || baseId(o.creature) !== 'samurai_saga') return resume();
     if (optionId !== 'se:none') {
       const elem = optionId.slice(3);

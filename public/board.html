@@ -182,6 +182,21 @@
   .bsValues small { display:block; font-size:1.25vh; margin:0 0 .4vh; color:#f3d06c; letter-spacing:.12em; }
   .bsMods { margin-top:.9vh; min-height:5.6vh; font-size:1.25vh; font-weight:700; line-height:1.5; color:rgba(255,249,232,.9); }
   .bsMods .mod { display:block; } .bsMods .mod.hot { color:#fff1a6; animation:modGlow .75s ease both; }
+  .durability { margin-top:.9vh; }
+  .durabilityBar { position:relative; display:flex; width:100%; height:2.5vh; overflow:hidden; border:1px solid #d7b84f;
+      border-radius:1.3vh; background:rgba(0,0,0,.58); box-shadow:inset 0 0 .7vh rgba(0,0,0,.8); }
+  .durabilityHp { height:100%; background:linear-gradient(90deg,#78cf83,#42a456); transition:background .2s; }
+  .durabilityHp.low { background:linear-gradient(90deg,#e45e4b,#a52f28); }
+  .durabilityDf { height:100%; background:linear-gradient(90deg,#62bfe9,#3378c4); }
+  .durabilityNum { position:absolute; inset:0; display:grid; place-items:center; color:white; font:700 1.45vh/1 sans-serif;
+      text-shadow:0 1px 4px #000; font-variant-numeric:tabular-nums; }
+  .durabilityBreakdown { margin-top:.35vh; text-align:center; color:#d9ecff; font:700 1.15vh/1.2 sans-serif; }
+  .supportRevealStage { position:fixed; inset:0; z-index:79; display:grid; place-items:center; pointer-events:none;
+      background:radial-gradient(circle,rgba(245,217,117,.2),rgba(8,5,20,.72) 55%,transparent 75%); animation:supportStageIn .25s ease both; }
+  .supportRevealStage .scardB { width:28vh; height:40.4vh; filter:drop-shadow(0 2vh 3vh rgba(0,0,0,.85)); }
+  .supportRevealStage .supportStatus { font:700 2.5vh/1.3 Marudeco,sans-serif; text-shadow:0 2px 7px #000; }
+  .supportRevealStage.none { color:#fff4d5; font:700 4vh/1 Marudeco,sans-serif; }
+  @keyframes supportStageIn { from{opacity:0;transform:scale(.72)} to{opacity:1;transform:none} }
   @keyframes modGlow { 50%{text-shadow:0 0 14px #ffe681;transform:scale(1.03)} }
   #battleFx { position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:4; }
   .battleFxImg { position:absolute; display:block; pointer-events:none; object-fit:contain;
@@ -2789,8 +2804,10 @@ function previewStatsHTML(pid, cid, level, damage, side) {
   const at = evolved && c.evoSt != null ? c.evoSt : c.st;
   const hp0 = evolved && c.evoHp != null ? c.evoHp : c.hp;
   const name = evolved && c.evo ? c.evo : c.name;
+  const curHp = Math.max(1,hp0-(damage||0));
   return `<div class="bsOwner">${pl.name}</div><div class="bsCreature">${name}</div>
     <div class="bsValues"><span><small>AT</small>${at}</span><span><small>HP</small>${Math.max(1,hp0-(damage||0))}</span><span><small>DF</small>—</span></div>
+    ${durabilityHTML(curHp, 0)}
     <div class="bsMods"><span class="mod">支援・地形・能力補正は公開後に反映</span></div>`;
 }
 
@@ -2828,21 +2845,94 @@ function renderBattlePreview(bp) {
     : '両者、支援カードを秘密裏に選択中';
 }
 
-function finalStatsHTML(b, side) {
+function durabilityHTML(hp, df) {
+  const max = Math.max(1, hp + df), hpPct = hp / max * 100, dfPct = df / max * 100;
+  return `<div class="durability"><div class="durabilityBar"><div class="durabilityHp${hp / max <= .25 ? ' low' : ''}" style="width:${hpPct}%"></div><div class="durabilityDf" style="width:${dfPct}%"></div><div class="durabilityNum">${hp + df} / ${max}</div></div><div class="durabilityBreakdown">HP ${hp} + DF ${df}</div></div>`;
+}
+function finalStatsHTML(b, side, phase = 'post') {
   const atkSide = side === 'atk';
   const pid = atkSide ? b.attacker : b.defender;
   const cid = atkSide ? b.atkCreature : b.defCreature;
   const pl = player(pid), c = state.catalog.CREATURES[cid.replace(/_f$/, '')];
   const name = atkSide ? c.name : cname(cid, b.defLevel || (state.owners[b.tile] ? state.owners[b.tile].level : 1));
-  const at = atkSide ? b.st : (b.defSt ?? c.st);
-  const hp = atkSide ? b.atkHp : b.hp;
-  const df = atkSide ? b.atkDf : b.df;
+  const pre = phase === 'pre';
+  const at = atkSide ? (pre ? (b.atkPreAt ?? b.atkBaseAt ?? c.st) : (b.atkPostAt ?? b.st))
+    : (pre ? (b.defPreAt ?? b.defBaseAt ?? c.st) : (b.defPostAt ?? b.defSt ?? c.st));
+  const hp = atkSide ? (pre ? (b.atkPreHp ?? b.atkHp) : (b.atkPostHp ?? b.atkHp))
+    : (pre ? (b.defPreHp ?? b.hp) : (b.defPostHp ?? b.hp));
+  const df = atkSide ? (pre ? (b.atkPreDf ?? 0) : (b.atkPostDf ?? b.atkDf ?? 0))
+    : (pre ? (b.defPreDf ?? Math.max(0,(b.df||0)-((b.defSupport||{}).hp||0))) : (b.defPostDf ?? b.df ?? 0));
   const mods = atkSide
     ? [`基礎AT ${b.atkBaseAt ?? c.st}`, hasBattleSupport(b.atkSupport) ? `支援 ${battleSupportName(b.atkSupport)}` : '支援なし']
     : [`地形補正 +${b.terrain || 0}`, hasBattleSupport(b.defSupport) ? `支援 ${battleSupportName(b.defSupport)}` : '支援なし', b.curse ? `呪い −${b.curse}` : ''];
   return `<div class="bsOwner">${pl.name}</div><div class="bsCreature">${name}</div>
     <div class="bsValues"><span><small>AT</small><b data-stat="at">${at}</b></span><span><small>HP</small><b data-stat="hp">${hp}</b></span><span><small>DF</small><b data-stat="df">${df}</b></span></div>
+    ${durabilityHTML(hp, df)}
     <div class="bsMods">${mods.filter(Boolean).map(x=>`<span class="mod hot">${x}</span>`).join('')}</div>`;
+}
+
+function setDurability(statsId, hp, df, max) {
+  const root = $(statsId), bar = root && root.querySelector('.durabilityBar');
+  if (!bar) return;
+  const totalMax = Math.max(1, max == null ? hp + df : max);
+  const hpEl = bar.querySelector('.durabilityHp'), dfEl = bar.querySelector('.durabilityDf');
+  hpEl.style.width = Math.max(0, hp) / totalMax * 100 + '%';
+  dfEl.style.width = Math.max(0, df) / totalMax * 100 + '%';
+  hpEl.classList.toggle('low', hp / totalMax <= .25);
+  bar.querySelector('.durabilityNum').textContent = `${Math.max(0,hp)+Math.max(0,df)} / ${totalMax}`;
+  root.querySelector('.durabilityBreakdown').textContent = `HP ${Math.max(0,hp)} + DF ${Math.max(0,df)}`;
+  const hpNum = root.querySelector('[data-stat="hp"]'), dfNum = root.querySelector('[data-stat="df"]');
+  if (hpNum) hpNum.textContent = Math.max(0, hp);
+  if (dfNum) dfNum.textContent = Math.max(0, df);
+}
+function animateDurability(statsId, fromHp, fromDf, toHp, toDf, max, ms = 850) {
+  const t0 = performance.now();
+  return new Promise(resolve => {
+    const step = now => {
+      const k = Math.min(1, (now - t0) / ms);
+      setDurability(statsId, Math.round(fromHp + (toHp-fromHp)*k), Math.round(fromDf + (toDf-fromDf)*k), max);
+      if (k < 1) requestAnimationFrame(step); else resolve();
+    };
+    requestAnimationFrame(step);
+  });
+}
+function countBattleStat(statsId, stat, from, to, ms = 600) {
+  const el = $(statsId).querySelector(`[data-stat="${stat}"]`);
+  if (!el || from === to) return Promise.resolve();
+  const t0 = performance.now();
+  return new Promise(resolve => {
+    const step = now => {
+      const k = Math.min(1, (now-t0)/ms);
+      el.textContent = Math.round(from+(to-from)*k);
+      if (k < 1) requestAnimationFrame(step); else resolve();
+    };
+    requestAnimationFrame(step);
+  });
+}
+async function revealBattleSupport(b, side) {
+  const atkSide = side === 'atk', sup = atkSide ? b.atkSupport : b.defSupport;
+  const slotId = atkSide ? 'bAtkSupport' : 'bDefSupport', statsId = atkSide ? 'bAtkStats' : 'bDefStats';
+  const stage = document.createElement('div');
+  if (!hasBattleSupport(sup)) {
+    stage.className = 'supportRevealStage none'; stage.textContent = atkSide ? '攻撃側　支援なし' : '防衛側　支援なし';
+    document.body.appendChild(stage); await wait(420); stage.remove();
+    $(slotId).querySelector('.supportStatus').textContent = '支援なし';
+    return;
+  }
+  stage.className = 'supportRevealStage';
+  stage.innerHTML = supportBackHTML(`${atkSide ? '攻撃側' : '防衛側'}　${battleSupportName(sup)}　${battleSupportMods(sup).replace(/<[^>]+>/g,'')}`, sup);
+  document.body.appendChild(stage); await wait(160);
+  stage.querySelector('.sflipB').classList.add('open'); await wait(650);
+  const preAt = atkSide ? (b.atkPreAt ?? b.atkBaseAt) : (b.defPreAt ?? b.defBaseAt);
+  const postAt = atkSide ? (b.atkPostAt ?? b.st) : (b.defPostAt ?? b.defSt);
+  const hp = atkSide ? (b.atkPostHp ?? b.atkHp) : (b.defPostHp ?? b.hp);
+  const preDf = atkSide ? (b.atkPreDf ?? 0) : (b.defPreDf ?? 0);
+  const postDf = atkSide ? (b.atkPostDf ?? b.atkDf ?? 0) : (b.defPostDf ?? b.df ?? 0);
+  await Promise.all([countBattleStat(statsId,'at',preAt,postAt), animateDurability(statsId,hp,preDf,hp,postDf,hp+postDf)]);
+  stage.style.transition = 'opacity .25s,transform .25s'; stage.style.opacity = '0'; stage.style.transform = `translateX(${atkSide ? '-34vw' : '34vw'}) scale(.45)`;
+  await wait(260); stage.remove();
+  $(slotId).querySelector('.sflipB').classList.add('open');
+  $(slotId).querySelector('.supportStatus').textContent = '支援公開';
 }
 
 async function playBattle(b) {
@@ -2871,10 +2961,10 @@ async function playBattle(b) {
   }
   $('bAtkSupport').innerHTML = supportBackHTML('公開待ち', b.atkSupport);
   $('bDefSupport').innerHTML = supportBackHTML('公開待ち', b.defSupport);
-  $('bAtkStats').innerHTML = previewStatsHTML(b.attacker, b.atkCreature, 1, 0, 'atk');
-  $('bDefStats').innerHTML = previewStatsHTML(b.defender, b.defCreature, dLv, 0, 'def');
+  $('bAtkStats').innerHTML = finalStatsHTML(b, 'atk', 'pre');
+  $('bDefStats').innerHTML = finalStatsHTML(b, 'def', 'pre');
   $('bnotes').innerHTML = '';
-  $('bcap').textContent = '支援カード ─ 同時オープン!';
+  $('bcap').textContent = '支援カード ─ 攻撃側から公開';
   ['bAtk','bDef'].forEach(id => $(id).classList.remove('lungeL','lungeR','dead'));
   $('bresult').classList.remove('show'); $('bresult').innerHTML = '';
   $('battleFx').innerHTML = '';
@@ -2882,14 +2972,13 @@ async function playBattle(b) {
   bannerUntil = Math.max(bannerUntil, Date.now() + 8500); // 演出中はTURN START/バナーを待たせる
   $('battle').classList.add('on');
   const bwOn = false; // v0.93: 通常侵略はカード主体。旧BattleWorldは削除せずフィクスチャ用に保持
-  await wait(650);
-  document.querySelectorAll('.sflipB').forEach(f => f.classList.add('open'));
-  await wait(700);
+  await wait(450);
+  await revealBattleSupport(b, 'atk');
+  $('bcap').textContent = '支援カード ─ 防衛側を公開';
+  await revealBattleSupport(b, 'def');
   $('bAtkStats').innerHTML = finalStatsHTML(b, 'atk');
   $('bDefStats').innerHTML = finalStatsHTML(b, 'def');
-  $('bAtkSupport').querySelector('.supportStatus').textContent = hasBattleSupport(b.atkSupport) ? '支援公開' : '支援なし';
-  $('bDefSupport').querySelector('.supportStatus').textContent = hasBattleSupport(b.defSupport) ? '支援公開' : '支援なし';
-  await wait(850);
+  await wait(450);
   if (b.notes && b.notes.length)
     $('bnotes').innerHTML = b.notes.map(n => '✦ ' + n).join('<br>');
   $('bcap').textContent = '';
@@ -2921,8 +3010,8 @@ async function playBattle(b) {
     };
     requestAnimationFrame(step);
   };
-  animateHp('hpBarA', 'hpNumA', b.atkHp, b.atkHp, b.atkHp, 1);  // 初期表示(満タン)
-  animateHp('hpBarD', 'hpNumD', b.hp, b.hp, b.hp, 1);
+  setDurability('bAtkStats', b.atkHp, b.atkDf || 0, b.atkHp + (b.atkDf || 0));
+  setDurability('bDefStats', b.hp, b.df || 0, b.hp + (b.df || 0));
   // 攻撃アニメ1回分(BW/DOMの分岐を共通化 ─ M6)
   const strike = async (side2, elem2, heavy2, opt2) => {
     if (bwOn) {
@@ -2963,7 +3052,11 @@ async function playBattle(b) {
       $('bcap').textContent = '防衛側の先制攻撃!';
       await strike('def', defElem, b.counterSt >= 60, { cid: b.defCreature, guard: b.counterSt > b.counterDealt });
       pop('bAtk', '−' + b.counterDealt + (b.counterSt > b.counterDealt ? '(DF−' + (b.counterSt - b.counterDealt) + ')' : ''));
-      animateHp('hpBarA', 'hpNumA', b.atkHp, b.atkSurvived ? Math.max(0, b.atkHp - b.counterDealt) : 0, b.atkHp);
+      {
+        const remDf = Math.max(0, (b.atkDf || 0) - b.counterSt);
+        const remHp = b.atkSurvived ? Math.max(0, b.atkHp - b.counterDealt) : 0;
+        animateDurability('bAtkStats', b.atkHp, b.atkDf || 0, remHp, remDf, b.atkHp + (b.atkDf || 0));
+      }
       await wait(450);
       strikeEnd();
       if (!b.atkSurvived) {
@@ -2988,7 +3081,11 @@ async function playBattle(b) {
       }
     }
     pop('bDef', '−' + b.dealt + (b.st > b.dealt ? '(DF−' + (b.st - b.dealt) + ')' : ''));
-    animateHp('hpBarD', 'hpNumD', b.hp, b.win ? 0 : b.remainHp, b.hp);
+    {
+      const rawDamage = (b.hits || 1) * b.st;
+      const remDf = Math.max(0, (b.df || 0) - rawDamage);
+      animateDurability('bDefStats', b.hp, b.df || 0, b.win ? 0 : b.remainHp, b.win ? 0 : remDf, b.hp + (b.df || 0));
+    }
     await wait(450);
     strikeEnd();
     if (b.win) {
@@ -3009,7 +3106,11 @@ async function playBattle(b) {
     $('bcap').textContent = '防衛側の反撃!';
     await strike('def', defElem, b.counterSt >= 60, { cid: b.defCreature, guard: b.counterSt > b.counterDealt });
     pop('bAtk', '−' + b.counterDealt + (b.counterSt > b.counterDealt ? '(DF−' + (b.counterSt - b.counterDealt) + ')' : ''));
-    animateHp('hpBarA', 'hpNumA', b.atkHp, b.atkSurvived ? Math.max(0, b.atkHp - b.counterDealt) : 0, b.atkHp);
+    {
+      const remDf = Math.max(0, (b.atkDf || 0) - b.counterSt);
+      const remHp = b.atkSurvived ? Math.max(0, b.atkHp - b.counterDealt) : 0;
+      animateDurability('bAtkStats', b.atkHp, b.atkDf || 0, remHp, remDf, b.atkHp + (b.atkDf || 0));
+    }
     await wait(450);
     strikeEnd();
     if (!b.atkSurvived) {
@@ -3059,7 +3160,7 @@ function render() {
   if (!state) return;
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 0.99' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.00' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');

@@ -20,7 +20,7 @@ function eq(actual, expected, name) {
 }
 function count(list, id) { return list.filter(x => x === id).length; }
 
-eq(G.VERSION, '1.02', 'version');
+ok(Number(G.VERSION) >= 1.02, 'version is v1.02 or newer');
 const marlow = G.CREATURES.marlow;
 eq([marlow.name, marlow.elem, marlow.rarity, marlow.cost, marlow.st, marlow.hp],
   ['マーロー', 'wind', 'R', 50, 30, 30], 'Marlow values');
@@ -91,6 +91,10 @@ ok(!G.creatureSupportEnabled('marlow'), 'unrelated creature has no creature supp
 
 for (const file of ['c_marlow.png', 'c_shuterio.png', 'e_shuterio.png']) {
   ok(fs.existsSync(path.join(__dirname, 'public', 'assets', file)), `${file} exists`);
+}
+for (const file of ['c_marlow.webp', 'c_shuterio.webp', 'e_shuterio.webp']) {
+  const full = path.join(__dirname, 'public', 'assets', 'cards', file);
+  ok(fs.existsSync(full) && fs.statSync(full).size > 0, `card art ${file} exists`);
 }
 const phone = fs.readFileSync(path.join(__dirname, 'public', 'phone.html'), 'utf8');
 ok(phone.includes("'marlow_src'") && phone.includes("'marlow_dest'"),

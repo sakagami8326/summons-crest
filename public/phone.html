@@ -700,6 +700,7 @@ let room = null, pid = null, state = null, selected = null, rolling = false;
 let inShopHand = false, prevHandKey = '', moveT = null;
 let charPreview = null, charSubmitting = false, fitResizeT = null;
 let actionOverlayKey = '', actionSubmitting = false, browsingActionHand = false;
+let liaTapLock = false, lastLiaSelectedKey = '';
 // v0.61 選択ドロー・カード追加演出
 let pdLock = false, pickAnimUntil = 0, pickTickT = null;
 let lastDrawSeen = 0, lastGainSeen = 0, drawModalT = null, gainT = null;
@@ -975,7 +976,7 @@ function showGainToast(n) {
 function renderMiniMap(p) {
   const targets = tileTargets(p);
   const cancel = p.options.find(o => /cancel$|^pass$/.test(o.id));
-  const liaMulti = p.type === 'lia_ult';
+  const liaMulti = p.type === 'ult_lia';
   const liaSelected = liaMulti && Array.isArray(p.selected) ? p.selected : [];
   const confirm = liaMulti ? p.options.find(o => o.id === 'lu:confirm') : null;
   $('msg').innerHTML = iconize(p.prompt);
@@ -1013,9 +1014,19 @@ function renderMiniMap(p) {
 let upPvT = 0;
 function mmTap(i) {
   const active = pend();
-  if (active && active.type === 'lia_ult') {
+  if (active && active.type === 'ult_lia') {
+    if (liaTapLock) return;
     const oid = tileTargets(active)[i];
-    if (oid) choose(oid);
+    if (oid) {
+      liaTapLock = true;
+      choose(oid).then(res => {
+        if (!res.ok) throw new Error(`map action failed: ${res.status}`);
+      }).catch(err => {
+        console.error(err);
+        liaTapLock = false;
+        $('mapOvSel').insertAdjacentHTML('beforeend', '<div class="tdSub" style="color:#ff9b8c;margin-top:.8dvh">通信できませんでした。もう一度お試しください</div>');
+      });
+    }
     return;
   }
   mmSel = i; render();
@@ -1514,7 +1525,7 @@ function showActionOverlay(title, options, config) {
   $('actionOv').dataset.key = key;
   $('actionOvTitle').textContent = iconize(title || '行動を選んでください');
   $('actionOvBtns').innerHTML = options.map(o => `<button class="gateBtn ${o.cls || ((o.id === 'pass' || o.id === 'cancel' || o.id.endsWith(':cancel') || o.id === 'sup:none') ? 'ghost' : '')}"
-      onclick="submitAction('${o.id}')"><div class="gbT">${iconize(o.label)}</div><div class="gbD">${o.desc || actionDescription(o.id)}</div></button>`).join('')
+      onclick="${o.id === 'ult' ? "closeActionOverlay(true); showUltConfirm()" : `submitAction('${o.id}')`}"><div class="gbT">${iconize(o.label)}</div><div class="gbD">${o.desc || actionDescription(o.id)}</div></button>`).join('')
     + (cfg.browseHand ? `<button class="gateBtn ghost" onclick="browseActionHand()"><div class="gbT">手札を確認する</div><div class="gbD">行動を決める前に手札へ戻ります</div></button>` : '')
     + (cfg.closeable && !cfg.browseHand ? `<button class="gateBtn ghost" onclick="closeActionOverlay(true)"><div class="gbT">閉じる</div><div class="gbD">手札の選択へ戻ります</div></button>` : '');
   $('actionOvHint').textContent = cfg.hint || '';
@@ -1587,9 +1598,14 @@ function render() {
     const pov = $('pickOv');
     if (pov.classList.contains('on')) { pov.classList.remove('on'); pov.dataset.k = ''; }
   }
-  const MAP_TYPES = ['curse_target','quake_target','ult_mio','lia_ult','move_a','move_b','swap_land','upgrade','marlow_src','marlow_dest',
+  const MAP_TYPES = ['curse_target','quake_target','ult_mio','ult_lia','move_a','move_b','swap_land','upgrade','marlow_src','marlow_dest',
     'sell','step_a','step_b','spell_target','wc_a','wc_b'];
   if (!mapView && (!p || !MAP_TYPES.includes(p.type))) hideMapOv();
+  const liaSelectedKey = p && p.type === 'ult_lia' ? (p.selected || []).join(',') : '';
+  if (liaSelectedKey !== lastLiaSelectedKey) {
+    lastLiaSelectedKey = liaSelectedKey;
+    liaTapLock = false;
+  }
   if (mapView) renderMapView();  // 閲覧モード中は最新stateで再描画
   // ショップシーンの開閉
   const inMarket = pend() && pend().type === 'market';
@@ -1733,7 +1749,7 @@ function render() {
     buildPickOv(`手札上限 ─ 捨てるカードをタップ(現在${m.hand.length}枚 → 7枚まで)`, [
       { name: '手札', entries: p.options.map(o => ({ card: o.card, pickId: o.id, n: ovCnt[o.card] || 1 })) },
     ], null);
-  } else if (p.type === 'curse_target' || p.type === 'quake_target' || p.type === 'ult_mio' ||
+  } else if (p.type === 'curse_target' || p.type === 'quake_target' || p.type === 'ult_mio' || p.type === 'ult_lia' ||
              p.type === 'move_a' || p.type === 'move_b' || p.type === 'swap_land' || p.type === 'upgrade' ||
              p.type === 'marlow_src' || p.type === 'marlow_dest' ||
              p.type === 'sell' || p.type === 'step_a' || p.type === 'step_b' ||

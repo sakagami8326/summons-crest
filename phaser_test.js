@@ -73,8 +73,8 @@ ok(/playSe\(seEvolve\)/.test(board), 'board.html: 進化配置時に進化SEを�
 ok(/function renderBattlePreview\(/.test(board), 'board.html: 侵略直後の戦闘待機画面を実装している');
 ok(/battlePreview/.test(board), 'board.html: 公開戦闘プレビューを描画へ接続している');
 ok(/攻撃クリーチャー選択中/.test(board), 'board.html: 攻撃側未選択時のカード裏面がある');
-ok(/document\.querySelectorAll\('\.sflipB'\).*classList\.add\('open'\)/s.test(board),
-  'board.html: 両支援カードを同時に公開する');
+ok(/await revealBattleSupport\(b, 'atk'\)[\s\S]*await revealBattleSupport\(b, 'def'\)/.test(board),
+  'board.html: 攻撃側から防衛側の順に支援カードを公開する');
 ok(/const bwOn = false/.test(board), 'board.html: 通常侵略で旧BattleWorldを起動しない');
 ok(/battle-bg\.webp/.test(board), 'board.html: 差し替え可能な戦闘背景パスを使用している');
 

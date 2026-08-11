@@ -76,9 +76,31 @@ eq(summonRoom.pending.p1.type, 'samurai_elem', 'Samurai Saga pending type');
 eq(summonRoom.pending.p1.options.map(x => x.id),
   ['se:fire', 'se:water', 'se:earth', 'se:wind', 'se:none'], 'terrain options');
 eq([summonRoom.pending.p1.tile, summonRoom.pending.p1.after], [7, 'summon'], 'terrain pending context');
+const invadeRoom = { pending: {}, log: [] };
+const invaded = G.onCreatureSummoned(invadeRoom, { id: 'p1' }, 'samurai_saga', 'battle', 9);
+ok(invaded, 'Samurai Saga opens terrain selection after successful invasion');
+eq([invadeRoom.pending.p1.tile, invadeRoom.pending.p1.after], [9, 'battle'],
+  'invasion terrain pending keeps battle resume context');
+ok(!G.onCreatureSummoned({ pending:{}, log:[] }, { id:'p1' }, 'samurai_saga', 'restore', 9),
+  'restore does not open Samurai terrain selection');
 
 for (const file of ['c_bunnyhop.png', 'e_bunnyhop.png', 'c_strauk.png', 'c_samurai_saga.png']) {
   ok(fs.existsSync(path.join(__dirname, 'public', 'assets', file)), `${file} exists`);
 }
+for (const file of ['c_bunnyhop.webp', 'e_bunnyhop.webp', 'c_strauk.webp', 'c_samurai_saga.webp']) {
+  const full = path.join(__dirname, 'public', 'assets', 'cards', file);
+  ok(fs.existsSync(full) && fs.statSync(full).size > 0, `card art ${file} exists`);
+}
+
+const phone = fs.readFileSync(path.join(__dirname, 'public', 'phone.html'), 'utf8');
+ok(phone.includes("p.type === 'ult_lia'") && !phone.includes("p.type === 'lia_ult'"),
+  'Lia ultimate uses server pending name');
+ok(phone.includes('showUltConfirm()') && phone.includes('固有スキルは1ゲームに1回'),
+  'ultimate confirmation explains once-per-game skill');
+const board = fs.readFileSync(path.join(__dirname, 'public', 'board.html'), 'utf8');
+ok(board.includes('durabilityHp') && board.includes('durabilityDf') && board.includes('animateDurability'),
+  'battle UI includes stacked HP and DF durability gauge');
+ok(board.includes("await revealBattleSupport(b, 'atk')") && board.includes("await revealBattleSupport(b, 'def')"),
+  'battle support reveals attacker then defender');
 
 console.log(`V1.01 ALL ${pass} CHECKS PASSED`);
