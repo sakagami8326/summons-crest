@@ -8,7 +8,7 @@ let src = fs.readFileSync(path.join(__dirname, 'server.js'), 'utf8');
 src = src.replace(/server\.listen\([\s\S]*?\}\);\s*$/, '');
 const load = new Function('require', '__dirname', 'process', 'console', 'setInterval',
   src + '\n;return { makeRoom, startSelect, startGame, handleChoose, publicState, serializeRoom, restoreRoom,' +
-  ' botChooseOption, clearBotTimer, rooms, CHARS };');
+  ' botChooseOption, clearBotTimer, resolveUltSequence, rooms, CHARS };');
 const G = load(require, __dirname, process, console, () => {});
 
 function makeBotGame(humanChar = 'redani') {
@@ -71,6 +71,7 @@ for (let game = 0; game < 2; game++) {
     const entries = Object.entries(r.pending);
     assert(entries.length, `pendingなしで停止 turn=${r.turn}`);
     for (const [pid, pend] of entries) {
+      if (pend.type === 'ult_resolve') { G.resolveUltSequence(r); steps++; continue; }
       if (!pend.options || !pend.options.length) continue;
       const p = r.players.find(q => q.id === pid);
       const optionId = G.botChooseOption(r, p, pend);

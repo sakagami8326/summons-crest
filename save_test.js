@@ -9,7 +9,7 @@ let src = fs.readFileSync(path.join(__dirname, 'server.js'), 'utf8');
 src = src.replace(/server\.listen\([\s\S]*?\}\);\s*$/, '');
 const G = new Function('require', '__dirname', 'process', 'console', 'setInterval',
   src + '\n;return { makeRoom, startSelect, handleChoose, publicState, startGame, rooms, CHARS,' +
-  ' serializeRoom, restoreRoom, validateSave,' +
+  ' serializeRoom, restoreRoom, validateSave, resolveUltSequence,' +
   ' ROOM_PERSIST_KEYS, ROOM_RUNTIME_KEYS, SAVE_VER };')(
   require, __dirname, process, console, () => {});
 
@@ -77,6 +77,7 @@ function setupGame() {
     for (const pid of keys) {
       const pend = r.pending[pid];
       if (!pend) continue;
+      if (pend.type === 'ult_resolve') { G.resolveUltSequence(r); steps++; continue; }
       let opt = pend.options[Math.floor(Math.random() * pend.options.length)];
       if (pend.type === 'ult_lia') {
         opt = pend.options.find(o => o.id === 'lu:confirm') ||

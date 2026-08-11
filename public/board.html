@@ -667,26 +667,30 @@
   @keyframes uppulse2 { 0%,100% { transform:translate(-50%,-50%) scale(1); } 50% { transform:translate(-50%,-50%) scale(1.12); } }
 
   /* ULTカットイン */
-  #ultCut { position:fixed; inset:0; display:none; z-index:72; overflow:hidden; }
+  #ultCut { position:fixed; inset:0; display:none; z-index:72; overflow:hidden; background:#03050c; }
   #ultCut.on { display:block; }
-  #ultBg { position:absolute; inset:0; opacity:0; transition:opacity .25s; }
-  #ultCut.on #ultBg { opacity:1; }
-  #ultArt { position:absolute; bottom:-6vh; left:-40vw; height:88vh;
-      filter:drop-shadow(0 0 40px rgba(0,0,0,.7)); animation:ultSlide 2.5s cubic-bezier(.2,.8,.3,1) forwards; }
-  @keyframes ultSlide { 0% { left:-45vw; } 25% { left:6vw; } 78% { left:9vw; } 100% { left:14vw; opacity:0; } }
-  #ultLines { position:absolute; inset:0; opacity:.5;
-      background:repeating-linear-gradient(100deg, transparent 0 26px, rgba(255,255,255,.28) 26px 30px);
-      animation:ultLines .5s linear infinite; }
-  @keyframes ultLines { to { background-position:220px 0; } }
-  #ultName { position:absolute; left:52%; top:38%; transform:translate(-50%,-50%) scale(2.2);
-      opacity:0; font-size:9.5vh; letter-spacing:2vh; font-weight:700; white-space:nowrap;
-      background:linear-gradient(180deg,#FFE9A0 8%,#E8C55A 35%,#8A6A1E 62%,#F2D062 88%);
-      -webkit-background-clip:text; background-clip:text; color:transparent;
-      filter:drop-shadow(0 3px 0 #4A3608) drop-shadow(0 0 26px rgba(242,208,98,.6));
-      animation:vpop .45s .35s forwards; }
-  #ultSub { position:absolute; left:52%; top:52%; transform:translateX(-50%); font-size:2.6vh;
-      letter-spacing:5px; color:var(--parchment); text-shadow:0 2px 8px rgba(0,0,0,.9);
-      opacity:0; animation:vpop .4s .6s forwards; }
+  #ultBg { position:absolute; inset:0; background:#03050c; }
+  #ultArt { position:absolute; z-index:1; inset:0; width:100%; height:100%; object-fit:contain; opacity:0; }
+  #ultCut.on #ultArt { animation:ultHero 3.35s cubic-bezier(.18,.82,.22,1) both; }
+  @keyframes ultHero { 0%{opacity:0;transform:translateX(-110%) scale(1.08);filter:blur(12px)}
+    11%{opacity:1;transform:translateX(2.5%) scale(1.055);filter:blur(0)}
+    18%{transform:translateX(0) scale(1.05)} 52%{transform:scale(1)}
+    55%{filter:brightness(.62)} 82%{opacity:1;transform:translateX(0) scale(1);filter:brightness(.62)}
+    100%{opacity:0;transform:translateX(32%) scale(1.02);filter:brightness(1.5) blur(9px)} }
+  #ultFxHost { position:absolute; z-index:2; inset:0; pointer-events:none; }
+  #ultSlash { position:absolute; z-index:3; inset:-30%; opacity:0; transform:translateX(-90%) rotate(-9deg);
+      background:linear-gradient(100deg,transparent 43%,#fff 49%,#ffe7a0 50%,transparent 56%); }
+  #ultCut.on #ultSlash { animation:ultSlash 3.35s ease both; }
+  @keyframes ultSlash { 0%{opacity:0} 3%{opacity:1} 16%{opacity:.8;transform:translateX(70%) rotate(-9deg)}
+    18%,82%{opacity:0} 86%{opacity:1;transform:translateX(-60%) rotate(-9deg)} 100%{opacity:0;transform:translateX(70%) rotate(-9deg)} }
+  #ultInfo { position:absolute; z-index:4; left:50%; bottom:5.5vh; transform:translate(-50%,24px); width:min(78vw,1050px);
+      padding:1.5vh 3vw 1.8vh; text-align:center; opacity:0; color:#fff8df; background:linear-gradient(90deg,transparent,#050816e8 16% 84%,transparent);
+      border-top:1px solid #ffe6a4aa; border-bottom:1px solid #ffe6a4aa; text-shadow:0 2px 7px #000; }
+  #ultCut.on #ultInfo { animation:ultInfo 1s 1.75s ease both; }
+  @keyframes ultInfo { 0%{opacity:0;transform:translate(-50%,24px)} 25%,85%{opacity:1;transform:translate(-50%,0)} 100%{opacity:0} }
+  #ultSub { font-size:2.1vh; letter-spacing:.25em; color:#f2d062; } #ultDesc { margin-top:.7vh; font-size:2.8vh; letter-spacing:.08em; }
+  @media (prefers-reduced-motion:reduce) { #ultCut.on #ultArt { animation:ultHeroLite 3.35s ease both; }
+    @keyframes ultHeroLite { 0%,100%{opacity:0} 8%,82%{opacity:1} 55%,82%{filter:brightness(.65)} } #ultSlash{display:none} }
   .dRow { display:flex; gap:2.5vh; }
 
   #summonCut.on #scText { animation:scText .45s ease .32s backwards; }
@@ -936,8 +940,8 @@
   <div id="telop"><img id="telopImg"><div id="telopSub"></div></div>
   <div id="diceFloat"></div>
   <div id="diceOv"></div>
-  <div id="ultCut"><div id="ultBg"></div>
-    <img id="ultArt"><div id="ultName"></div><div id="ultSub"></div></div>
+  <div id="ultCut"><div id="ultBg"></div><img id="ultArt"><div id="ultFxHost"></div><div id="ultSlash"></div>
+    <div id="ultInfo"><div id="ultSub"></div><div id="ultDesc"></div></div></div>
   <div id="centerBanner"></div>
   <div id="castleBreakdown"><div class="castlePanel" id="castlePanel"></div></div>
   <div id="tileMsg"></div>
@@ -1153,6 +1157,7 @@ const QR = (() => {
 <script src="/vendor/phaser.min.js"></script>
 <script src="/board_world.js"></script>
 <script src="/battle_world.js"></script>
+<script src="/ult_fx_world.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -1317,23 +1322,23 @@ let bannerT = null, spotT = null, lastCalloutKey = '';
 async function playUlt(u) {
   cutBusy++;
   try {
-  const ch = state.catalog.CHARS[u.charId];
   hideLogo(true);
+  initAudio();
   $('bflash').classList.add('go');
-  $('ultBg').style.background =
-    `radial-gradient(ellipse at 30% 60%, ${ch.color}44 0%, rgba(10,8,25,.97) 55%)`;
-  $('ultArt').src = '/assets/full_' + u.charId + '.png';
-  $('ultName').textContent = u.name;
-  $('ultSub').innerHTML = sic('ult') + ' ' + player(u.player).name + 'の固有スキル発動!';
+  $('ultArt').src = '/assets/ult_' + u.charId + '.webp';
+  $('ultSub').innerHTML = sic('ult') + ' ' + player(u.player).name + ' ─ 1ゲームに1回';
+  $('ultDesc').textContent = (state.catalog.ULTS[u.charId] || {}).desc || '';
   const art = $('ultArt');
   art.style.animation = 'none'; void art.offsetWidth; art.style.animation = '';
-  bannerUntil = Math.max(bannerUntil, Date.now() + 2700);
+  bannerUntil = Math.max(bannerUntil, Date.now() + 3600);
   $('ultCut').classList.add('on');
+  if (window.UltFxWorld) UltFxWorld.play(matchMedia('(prefers-reduced-motion:reduce)').matches);
+  if (seUltCutin) { seUltCutin.currentTime = 0; seUltCutin.play().catch(() => {}); }
   setTimeout(() => $('bflash').classList.remove('go'), 500);
-  await wait(2550);
+  await wait(3450);
   $('ultCut').classList.remove('on');
+  if (window.UltFxWorld) UltFxWorld.stop();
   hideLogo(false);
-  showBanner(sic('ult') + '【' + u.name + '】', state.catalog.ULTS[u.charId].desc, 2800);
   } finally { cutBusy = Math.max(0, cutBusy - 1); }
 }
 const hideLogo = v => { $('logoImg').style.opacity = v ? 0 : 1; };
@@ -1601,7 +1606,7 @@ document.getElementById('titleSoundToggle').onclick = e => {
 };
 let bgmN = null, bgmR = null, bgmBattle = null, bgmSelect = null, bgmMuted = false, bgmCur = null;
 let bgmFadeTimer = null, bgmFadeFrom = null;
-let seTelop = null, seSummon = null, seEvolve = null, seBattleFinish = null, seCastleBonus = null;
+let seTelop = null, seSummon = null, seEvolve = null, seBattleFinish = null, seCastleBonus = null, seUltCutin = null;
 function initAudio() {
   if (bgmN) return;
   bgmN = new Audio('/assets/bgm_normal.mp3');
@@ -1613,9 +1618,10 @@ function initAudio() {
   seEvolve = new Audio('/assets/se_evolve.mp3');
   seBattleFinish = new Audio('/assets/se_battle_finish.mp3');
   seCastleBonus = new Audio('/assets/se_castle_bonus.mp3');
+  seUltCutin = new Audio('/assets/se_ult_cutin.mp3');
   seTelop.volume = 0.6; seSummon.volume = 0.72; seEvolve.volume = 0.76;
-  seBattleFinish.volume = 0.82; seCastleBonus.volume = 0.78;
-  [seTelop, seSummon, seEvolve, seBattleFinish, seCastleBonus].forEach(a => {
+  seBattleFinish.volume = 0.82; seCastleBonus.volume = 0.78; seUltCutin.volume = 0.9;
+  [seTelop, seSummon, seEvolve, seBattleFinish, seCastleBonus, seUltCutin].forEach(a => {
     a.preload = 'auto'; a.muted = true;
     a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; })
       .catch(() => { a.muted = false; });

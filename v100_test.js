@@ -7,7 +7,7 @@ src = src.replace(/server\.listen\([\s\S]*?\}\);\s*$/, '');
 const G = new Function('require', '__dirname', 'process', 'console', 'setInterval',
   src + '\n;return { VERSION, RULES, TILES, CREATURES, SPELLS, SUPPORTS, CHARS, ULTS,' +
   ' CHAR_DECKS, MARKET_POOL, makeDeck, makeRoom, startGame, handleChoose, askSupports,' +
-  ' resolveBattle, beginTurn, effectiveSpellCost, onCreatureSummoned, chainCount, rooms };')(
+  ' resolveBattle, resolveUltSequence, beginTurn, effectiveSpellCost, onCreatureSummoned, chainCount, rooms };')(
   require, __dirname, process, console, () => {});
 
 let pass = 0;
@@ -173,6 +173,7 @@ for (const [id] of rows) {
   [1, 2, 3].forEach(i => { r.owners[i] = { player: enemy.id, level: 1, creature: 'grayble' }; });
   r.pending[p.id] = { type: 'ult_lia', selected: [1, 2, 3], options: [{ id: 'lu:confirm' }] };
   G.handleChoose(r, p.id, 'lu:confirm');
+  G.resolveUltSequence(r);
   ok([1,2,3].every(i => r.tileFx[i].vortex && r.owners[i].dmg === 10),
     'Crimson Equation applies Vortex and 10 damage to three unique lands');
   ok(p.ultUsed && r.lastUlt.charId === 'lia', 'Lia ult is consumed once');
@@ -190,6 +191,7 @@ for (const [id] of rows) {
   r.owners[22] = { player: p.id, level: 1, creature: 'grayble', dmg: 0 };
   r.pending[p.id] = { type: 'roll', options: [{ id: 'ult' }] };
   G.handleChoose(r, p.id, 'ult');
+  G.resolveUltSequence(r);
   ok(r.owners[21].dmg === 5 && r.owners[22].dmg === 0, 'Crystal Edict heals every friendly attribute by up to 20');
   ok(r.owners[21].iceWard && r.owners[22].iceWard, 'Crystal Edict grants ward even at full HP');
   ok(p.ultUsed && r.lastUlt.charId === 'adel', 'Adele ult is consumed once');

@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.08';
+const VERSION = '1.09';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
@@ -286,6 +286,7 @@ setInterval(() => {
   for (const [code, r] of rooms) {
     if ((r.lastActivity || 0) < cutoff) {
       clearBotTimer(r);
+      clearUltTimer(r);
       for (const c of r.clients) { try { c.res.end(); } catch (e) {} }
       rooms.delete(code);
       console.log(`ルーム${code}を掃除(60分無操作)`);
@@ -303,7 +304,7 @@ function makeRoom(mode = 'normal') {
     turn: 0, round: 1, log: [],
     pending: {},                          // playerId → { type, prompt, options }
     titles: { conqueror: null, pilgrim: null },
-    duel: null, lastBattle: null, winner: null, barrier: {},
+    duel: null, lastBattle: null, winner: null, barrier: {}, ultSequence: null, ultTimer: null,
     elemOv: {},                           // 属性変更スペル: マスi → 'fire'等
     tileFx: {},                           // 土地継続効果: マスi → {vortex,tide:{by},uplift,roots}
     curses: {},                           // tileIdx → { by, hp }
@@ -466,6 +467,7 @@ function checkVictory(r) {
 }
 function declareWin(r, p, why) {
   clearBotTimer(r);
+  clearUltTimer(r);
   r.phase = 'ended'; r.winner = p.id; r.pending = {};
   log(r, `🏆 ${p.name}が${why} 勝利!`);
 }
@@ -473,6 +475,94 @@ function declareWin(r, p, why) {
 // ===== 手番進行 =====
 function ask(r, playerId, type, prompt, options) {
   r.pending[playerId] = { type, prompt, options };
+}
+const ULT_CUTIN_MS = 3500;
+function clearUltTimer(r) {
+  if (r.ultTimer) clearTimeout(r.ultTimer);
+  r.ultTimer = null;
+}
+function armUltSequence(r) {
+  clearUltTimer(r);
+  const seq = r.ultSequence;
+  if (!seq || seq.resolved) return;
+  r.ultTimer = setTimeout(() => {
+    r.ultTimer = null;
+    if (!r.ultSequence || r.ultSequence.id !== seq.id || r.ultSequence.resolved) return;
+    resolveUltSequence(r);
+    touch(r); broadcast(r);
+  }, Math.max(0, seq.resolveAt - Date.now()));
+}
+function beginUltSequence(r, p, data = {}) {
+  p.ultUsed = true;
+  const startedAt = Date.now();
+  const id = crypto.randomBytes(6).toString('hex');
+  r.ultSequence = { id, player: p.id, charId: p.charId, name: ULTS[p.charId].name,
+    desc: ULTS[p.charId].desc, startedAt, resolveAt: startedAt + ULT_CUTIN_MS,
+    resolved: false, data };
+  r.lastUlt = { player: p.id, charId: p.charId, name: ULTS[p.charId].name,
+    sequenceId: id, at: stamp(r) };
+  ask(r, p.id, 'ult_resolve', `【${ULTS[p.charId].name}】発動中…`, []);
+  log(r, `⚡ ${p.name}が固有スキル【${ULTS[p.charId].name}】を発動!`);
+  armUltSequence(r);
+}
+function resolveUltSequence(r) {
+  const seq = r.ultSequence;
+  if (!seq || seq.resolved) return;
+  seq.resolved = true;
+  const p = pById(r, seq.player);
+  if (!p || p.bankrupt || r.phase !== 'playing') { r.ultSequence = null; return; }
+  delete r.pending[p.id];
+  const d = seq.data || {};
+  if (seq.charId === 'redani') {
+    const dice = d.dice || [1, 1, 1], sum = dice.reduce((n, x) => n + x, 0);
+    r.ultSequence = null;
+    return performMove(r, p, sum, { value: dice[0], multi: dice }, `3つのダイスで${sum}を出した!(${dice.join('+')})`);
+  }
+  if (seq.charId === 'linnei') {
+    p.pos = d.target;
+    r.halfMarket = p.id;
+    log(r, `${p.name}は水鏡を通って市場へ瞬間移動した(全品半額!)`);
+    r.ultSequence = null;
+    return askMarket(r, p);
+  }
+  if (seq.charId === 'grease') {
+    r.barrier[p.id] = true;
+    for (const [ti] of Object.entries(r.curses))
+      if (r.owners[ti] && r.owners[ti].player === p.id) delete r.curses[ti];
+    log(r, `🛡 ${p.name}の全領地に大結界が張られた(次の手番まで侵略不可)`);
+  } else if (seq.charId === 'adel') {
+    const targets = [];
+    for (const i of d.targets || []) {
+      const o = r.owners[i];
+      if (!o || o.player !== p.id) continue;
+      const amount = Math.min(o.dmg || 0, 20);
+      if (amount > 0) o.dmg -= amount;
+      o.iceWard = true;
+      targets.push({ tile: i, amount, creature: o.creature, df: 10 });
+    }
+    r.lastHeal = { player: p.id, source: 'ult_adel', targets, at: stamp(r) };
+    log(r, `❄ ${p.name}の配置クリーチャー全員を回復し氷晶の守りを与えた`);
+    spellFx(r, 'ult_adel', targets.map(t => t.tile), p.id, { targets });
+  } else if (seq.charId === 'mio') {
+    p.pos = d.target;
+    r.ultSequence = null;
+    return resolveTile(r, p);
+  } else if (seq.charId === 'lia') {
+    const results = [];
+    for (const i of d.targets || []) {
+      const before = r.owners[i];
+      if (!before || before.player === p.id) continue;
+      r.tileFx[i] = r.tileFx[i] || {}; r.tileFx[i].vortex = true;
+      const creature = before.creature;
+      results.push({ tile: i, creature, damage: 10,
+        defeated: spellDamage(r, i, 10, '紅蓮の方程式', false) });
+    }
+    log(r, `🔥 ${p.name}は${results.length}か所に炎の渦を発生させた`);
+    spellFx(r, 'sp_flame_vortex', results.map(x => x.tile), p.id,
+      { source: 'ult_lia', sequence: true, results });
+  }
+  r.ultSequence = null;
+  return askRoll(r, p);
 }
 function askRoll(r, p) {
   const opts = [{ id: 'roll', label: '🎲 サイコロを振る' }];
@@ -1285,54 +1375,25 @@ function handleChoose(r, playerId, optionId) {
     }
     if (p.charId === 'lia') return askLiaUlt(r, p);
     if (p.charId === 'adel') {
-      const targets = [];
-      r.owners.forEach((o, i) => {
-        if (!o || o.player !== p.id) return;
-        const amount = Math.min(o.dmg || 0, 20);
-        if (amount > 0) o.dmg -= amount;
-        o.iceWard = true;
-        targets.push({ tile: i, amount, creature: o.creature, df: 10 });
-      });
+      const targets = r.owners.map((o, i) => o && o.player === p.id ? i : null).filter(i => i != null);
       if (!targets.length) return askRoll(r, p);
-      p.ultUsed = true;
-      r.lastUlt = { player: p.id, charId: p.charId, name: ULTS[p.charId].name, at: stamp(r) };
-      r.lastHeal = { player: p.id, source: 'ult_adel', targets, at: stamp(r) };
-      log(r, `❄ ${p.name}が固有スキル【${ULTS[p.charId].name}】を発動! 配置クリーチャー全員を回復し氷晶の守りを与えた`);
-      spellFx(r, 'ult_adel', targets.map(t => t.tile), p.id, { targets });
-      return askRoll(r, p);
+      return beginUltSequence(r, p, { targets });
     }
-    p.ultUsed = true;
-    r.lastUlt = { player: p.id, charId: p.charId, name: ULTS[p.charId].name, at: stamp(r) };
-    log(r, `⚡ ${p.name}が固有スキル【${ULTS[p.charId].name}】を発動!`);
     if (p.charId === 'redani') {
       const d = [0, 0, 0].map(() => 1 + Math.floor(Math.random() * 6));
-      const sum = d[0] + d[1] + d[2];
-      return performMove(r, p, sum, { value: d[0], multi: d }, `3つのダイスで${sum}を出した!(${d.join('+')})`);
+      return beginUltSequence(r, p, { dice: d });
     }
     if (p.charId === 'linnei') {
       const target = [8, 23].map(m => ({ m, d: (m - p.pos + 28) % 28 })).sort((a, b) => a.d - b.d)[0].m;
-      p.pos = target;
-      r.halfMarket = p.id;
-      log(r, `${p.name}は水鏡を通って市場へ瞬間移動した(全品半額!)`);
-      return askMarket(r, p);
+      return beginUltSequence(r, p, { target });
     }
-    if (p.charId === 'grease') {
-      r.barrier[p.id] = true;
-      for (const [ti] of Object.entries(r.curses))
-        if (r.owners[ti] && r.owners[ti].player === p.id) delete r.curses[ti];
-      log(r, `🛡 ${p.name}の全領地に大結界が張られた(次の手番まで侵略不可)`);
-      return askRoll(r, p);
-    }
+    if (p.charId === 'grease') return beginUltSequence(r, p);
     return askRoll(r, p);
   }
   if (pend.type === 'ult_mio') {
     if (optionId === 'mt:cancel') return askRoll(r, p);
     const i = +optionId.slice(3);
-    p.ultUsed = true;
-    r.lastUlt = { player: p.id, charId: p.charId, name: ULTS.mio.name, at: stamp(r) };
-    log(r, `⚡ ${p.name}が固有スキル【追い風の導き】を発動! 風に乗って移動する`);
-    p.pos = i;
-    return resolveTile(r, p);
+    return beginUltSequence(r, p, { target: i });
   }
   if (pend.type === 'ult_lia') {
     if (optionId === 'lu:cancel') return askRoll(r, p);
@@ -1343,22 +1404,7 @@ function handleChoose(r, playerId, optionId) {
         return o && o.player !== p.id;
       }).slice(0, 3);
       if (!targets.length) return askRoll(r, p);
-      p.ultUsed = true;
-      r.lastUlt = { player: p.id, charId: p.charId, name: ULTS[p.charId].name, at: stamp(r) };
-      const results = [];
-      for (const i of targets) {
-        const before = r.owners[i];
-        if (!before || before.player === p.id) continue;
-        r.tileFx[i] = r.tileFx[i] || {};
-        r.tileFx[i].vortex = true;
-        const creature = before.creature;
-        const defeated = spellDamage(r, i, 10, '紅蓮の方程式', false);
-        results.push({ tile: i, creature, damage: 10, defeated });
-      }
-      log(r, `🔥 ${p.name}が固有スキル【紅蓮の方程式】を発動! ${results.length}か所に炎の渦を発生させた`);
-      spellFx(r, 'sp_flame_vortex', results.map(x => x.tile), p.id,
-        { source: 'ult_lia', sequence: true, results });
-      return askRoll(r, p);
+      return beginUltSequence(r, p, { targets });
     }
     const i = +optionId.slice(3);
     const o = r.owners[i];
@@ -2278,7 +2324,12 @@ function publicState(r, viewerId) {
     tileFx: r.tileFx,
     owners: r.owners, market: r.market, shopVisit: r.shopVisit || null, log: r.log,
     titles: r.titles, duel: r.duel, curses: r.curses, lastEvent: r.lastEvent || null,
-    barrier: r.barrier || {}, lastUlt: r.lastUlt || null, battlePreview: publicBattle(r),
+    barrier: r.barrier || {}, lastUlt: r.lastUlt || null,
+    ultSequence: r.ultSequence ? { id: r.ultSequence.id, player: r.ultSequence.player,
+      charId: r.ultSequence.charId, name: r.ultSequence.name, desc: r.ultSequence.desc,
+      startedAt: r.ultSequence.startedAt, resolveAt: r.ultSequence.resolveAt,
+      resolved: !!r.ultSequence.resolved } : null,
+    battlePreview: publicBattle(r),
     lastBattle: r.lastBattle, lastDice: r.lastDice || null,
     lastSeal: r.lastSeal || null, lastRuin: r.lastRuin || null,
     lastBarrierHit: r.lastBarrierHit || null,
@@ -2334,13 +2385,13 @@ function broadcast(r) {
 const SAVE_VER = 1;
 // ルームのフィールド分類表。ルームに新しいキーを追加したら必ずどちらかに分類すること
 // (save_testが未分類キーを検出して失敗する)
-const ROOM_RUNTIME_KEYS = new Set(['clients', 'lastActivity', 'upgradePreview', 'botTimer', 'botActionSeq']);  // 保存しない
+const ROOM_RUNTIME_KEYS = new Set(['clients', 'lastActivity', 'upgradePreview', 'botTimer', 'botActionSeq', 'ultTimer']);  // 保存しない
 const ROOM_PERSIST_KEYS = new Set([                                            // 保存する
   'code', 'phase', 'players', 'owners', 'deck', 'market', 'turn', 'round', 'log',
   'pending', 'titles', 'duel', 'lastBattle', 'winner', 'barrier', 'elemOv', 'tileFx',
   'curses', 'boardToken', 'atSeq', 'saveRev', 'battle', 'draft',
   'dirPend', 'halfMarket', 'shopVisit',
-  'lastEvent', 'lastDice', 'lastUlt', 'lastHeal', 'lastSeal', 'lastRuin', 'lastDraw', 'lastGain',
+  'lastEvent', 'lastDice', 'lastUlt', 'ultSequence', 'lastHeal', 'lastSeal', 'lastRuin', 'lastDraw', 'lastGain',
   'lastBarrierHit', 'lastSpellFx', 'botMode',
 ]);
 function serializeRoom(r) {
@@ -2424,7 +2475,7 @@ function restoreRoom(save) {
   const existing = rooms.get(d.code);
   if (existing && existing.boardToken !== d.boardToken)
     return { error: `ルーム${d.code}は使用中のため復元できません(既存のルームを閉じてから再試行してください)`, status: 409 };
-  const room = Object.assign(d, { clients: new Set(), lastActivity: Date.now(), botTimer: null, botActionSeq: 0 });
+  const room = Object.assign(d, { clients: new Set(), lastActivity: Date.now(), botTimer: null, botActionSeq: 0, ultTimer: null });
   if (room.botMode == null) room.botMode = false;
   delete room.treasureCost;
   for (const p of room.players) {
@@ -2440,6 +2491,10 @@ function restoreRoom(save) {
   for (const pend of Object.values(room.pending || {}))
     if (pend && pend.type === 'pick_draw') delete pend.until;  // 旧セーブの制限時間表記は破棄
   log(room, 'セーブデータからゲームを再開した');
+  if (room.ultSequence && !room.ultSequence.resolved) {
+    if (room.ultSequence.resolveAt <= Date.now()) resolveUltSequence(room);
+    else armUltSequence(room);
+  }
   scheduleBotAction(room);
   const warn = save.gameVer !== VERSION
     ? `セーブ時のゲームバージョン(${save.gameVer})と現在(${VERSION})が異なります` : null;
@@ -2511,7 +2566,7 @@ const server = http.createServer(async (req, res) => {
   if (p === '/phone') return serveFile(res, 'phone.html');
   if (p.startsWith('/assets/')) return serveFile(res, p.slice(1));
   // v0.66: 共有タイミング定数・Phaserワールド描画・同梱ライブラリ
-  if (p === '/game_timing.js' || p === '/board_world.js' || p === '/battle_world.js' ||
+  if (p === '/game_timing.js' || p === '/board_world.js' || p === '/battle_world.js' || p === '/ult_fx_world.js' ||
       p === '/fx_manifest.js' || p.startsWith('/vendor/'))
     return serveFile(res, p.slice(1));
   if (p === '/api/fixture') {
@@ -2592,6 +2647,7 @@ const server = http.createServer(async (req, res) => {
     if (r) {
       if (b.token !== r.boardToken) return json(res, { error: '権限がありません' }, 403);  // v0.62
       clearBotTimer(r);
+      clearUltTimer(r);
       for (const c of r.clients) { try { c.res.end(); } catch (e) {} }
       rooms.delete(r.code);
       console.log(`ルーム${r.code}を手動クローズ`);

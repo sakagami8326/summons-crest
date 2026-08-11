@@ -11,7 +11,7 @@ const G = new Function('require', '__dirname', 'process', 'console', 'setInterva
 let pass = 0;
 const ok = (v, n) => { if (!v) throw new Error('FAIL: ' + n); pass++; };
 const eq = (a, b, n) => ok(JSON.stringify(a) === JSON.stringify(b), `${n} (${JSON.stringify(a)} !== ${JSON.stringify(b)})`);
-eq(G.VERSION, '1.08', 'version');
+ok(Number(G.VERSION) >= 1.08, 'version is v1.08 or newer');
 eq(G.CREATURES.cresteria.fx, '【真珠】召喚時、支援「盾」1枚をデッキに加える', 'Cresteria text');
 
 const p = { id:'p1', name:'P1', charId:'linnei', gold:1000, hand:['shield'], deck:[], discard:['weapon'], exile:[],
