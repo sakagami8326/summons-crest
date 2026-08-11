@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.00';
+const VERSION = '1.01';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -120,6 +120,12 @@ const CREATURES = {
              fx: '【支援】戦闘時、手札のクリーチャーを支援カードとして使える', evoFx: '【支援】戦闘時、手札のクリーチャーを支援カードとして使える', rarity: 'N' },
   palecoral:{ name: 'パレコラル', evo: 'コラルグレイヴ', elem: 'water', st: 20, hp: 50, cost: 90, evoSt: 40, evoHp: 70,
              fx: '【珊瑚再生】水領地が2つ以上ならターン開始時にHPを10回復', evoFx: '【珊瑚再生】水領地が2つ以上ならターン開始時にHPを20回復', rarity: 'N' },
+  bunnyhop:{ name: 'バニホップ', evo: 'ロードバンプ', elem: 'fire', st: 10, hp: 10, cost: 60, evoSt: 40, evoHp: 60,
+             fx: '【耐魔】スペルによるダメージを受けない', evoFx: '【魔力徴収】自分がスペルを使うたび100Gを得る(重複)', rarity: 'N' },
+  strauk:  { name: 'ストラウク', elem: null, st: 10, hp: 70, cost: 120,
+             fx: '【地脈適応】どの属性の土地からでも地形補正を得る', rarity: 'N' },
+  samurai_saga:{ name: 'サムライ・サガ', elem: null, st: 50, hp: 50, cost: 120,
+             fx: '【地脈改変】どの属性の土地からでも地形補正を得る。召喚した土地を好きな属性に変更できる', rarity: 'N' },
 };
 const ITEMS = {}; // v0.34: 呪いアイテムは廃止(スペル「衰弱の呪文」に移行)
 const SPELLS = {
@@ -208,7 +214,7 @@ for (const [cid, c] of Object.entries({ ...CREATURES }))
   if (c.evo) CREATURES[cid + '_f'] = { name: c.evo, elem: c.elem, st: c.evoSt, hp: c.evoHp,
     cost: c.cost, fx: c.evoFx || c.fx, rarity: c.rarity, forged: true };
 
-const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral'];
+const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral','bunnyhop','strauk','samurai_saga'];
 // アートが存在するクリーチャーID(assetsのc_*.pngを起動時に走査 ─ v0.82)。
 // クライアントはcatalog.artIds経由で受け取る。手書きリストの二重管理はしない
 // (新クリーチャーはIDとファイル名を一致させて置くだけで盤面・カード・戦闘に反映される)
@@ -312,10 +318,36 @@ function effectiveSpellCost(r, p, sid) {
   const sp = SPELLS[sid];
   return sp ? Math.max(0, sp.cost - grigorCount(r, p.id) * 20) : Infinity;
 }
-function onCreatureSummoned(r, p, creatureId, reason) {
-  if (creatureId !== 'trooper' || (reason !== 'summon' && reason !== 'swap')) return;
-  gainToDeck(r, p, ['sp_flame_vortex']);
-  log(r, `【火種】${CREATURES.trooper.name}の召喚で「炎の渦」1枚を山札へ加えた`);
+function roadbumpCount(r, playerId) {
+  return r.owners.reduce((n, o) => n + (o && o.player === playerId &&
+    baseId(o.creature) === 'bunnyhop' && isEvolved(o) ? 1 : 0), 0);
+}
+function onSpellCast(r, p) {
+  const count = roadbumpCount(r, p.id);
+  if (!count) return;
+  const gain = count * 100;
+  p.gold += gain;
+  log(r, `【魔力徴収】ロードバンプ${count}体が反応し、${p.name}は${gain}Gを得た`);
+}
+function universalTerrain(creatureId) {
+  return ['cleo', 'strauk', 'samurai_saga'].includes(baseId(creatureId));
+}
+function onCreatureSummoned(r, p, creatureId, reason, tile) {
+  if (reason !== 'summon' && reason !== 'swap') return false;
+  if (baseId(creatureId) === 'trooper' && !isEvolved({ creature: creatureId })) {
+    gainToDeck(r, p, ['sp_flame_vortex']);
+    log(r, `【火種】${CREATURES.trooper.name}の召喚で「炎の渦」1枚を山札へ加えた`);
+  }
+  if (baseId(creatureId) !== 'samurai_saga' || !Number.isInteger(tile)) return false;
+  ask(r, p.id, 'samurai_elem', '【地脈改変】この土地の属性を変更しますか?', [
+    { id: 'se:fire', label: '火属性に変更' },
+    { id: 'se:water', label: '水属性に変更' },
+    { id: 'se:earth', label: '土属性に変更' },
+    { id: 'se:wind', label: '風属性に変更' },
+    { id: 'se:none', label: '変更しない' },
+  ]);
+  Object.assign(r.pending[p.id], { tile, after: reason });
+  return true;
 }
 function tollOf(r, i) {
   const o = r.owners[i];
@@ -325,10 +357,14 @@ function tollOf(r, i) {
 }
 // スペルの直接ダメージ処理: 不動(ベデベロ-10)・死影(ベルーフAT+10/最大+30)・撃破は捨て札
 // 戻り値: true=撃破して空き地化
-function spellDamage(r, i, raw, srcName) {
+function spellDamage(r, i, raw, srcName, isSpellCard = true) {
   const o = r.owners[i];
   if (!o) return false;
   const cE = CREATURES[o.creature];
+  if (isSpellCard && baseId(o.creature) === 'bunnyhop' && !isEvolved(o)) {
+    log(r, `【耐魔】バニホップは${srcName}のダメージを受けない`);
+    return false;
+  }
   let dmg = raw;
   if (baseId(o.creature) === 'bedebero') {
     dmg = Math.max(0, dmg - 10);
@@ -908,8 +944,8 @@ function resolveBattle(r) {
 
   // --- 防衛側HP(地形・女王・呪い) ---
   const tElem = tileElem(r, b.tile);
-  let terrain = (dc.elem === tElem || baseId(o.creature) === 'cleo') ? o.level * 10 : 0;
-  if (baseId(o.creature) === 'cleo' && dc.elem !== tElem) notes.push('【適応】クレオが地形に順応!');
+  let terrain = (dc.elem === tElem || universalTerrain(o.creature)) ? o.level * 10 : 0;
+  if (universalTerrain(o.creature) && dc.elem !== tElem) notes.push('【地脈適応】属性を問わず地形補正を獲得!');
   if (baseId(o.creature) === 'nome' && terrain) {
     const rock = defEvolved ? 20 : 10;
     terrain += rock; notes.push(`【岩壁】地形補正+${rock}!`);
@@ -1109,6 +1145,24 @@ function handleChoose(r, playerId, optionId) {
     return trySelectResolve(r);
   }
 
+  // --- サムライ・サガ召喚時の土地属性変更 ---
+  if (pend.type === 'samurai_elem') {
+    const i = pend.tile;
+    const o = r.owners[i];
+    const resume = () => pend.after === 'swap' ? askRoll(r, p) : endTurn(r);
+    if (!o || o.player !== p.id || baseId(o.creature) !== 'samurai_saga') return resume();
+    if (optionId !== 'se:none') {
+      const elem = optionId.slice(3);
+      if (!['fire', 'water', 'earth', 'wind'].includes(elem)) return resume();
+      if (TILES[i].e === elem) delete r.elemOv[i]; else r.elemOv[i] = elem;
+      log(r, `【地脈改変】${p.name}のサムライ・サガが土地${i}を${ELEM_JA[elem]}属性へ変更した`);
+    } else {
+      log(r, `【地脈改変】${p.name}は土地${i}の属性を変更しなかった`);
+    }
+    updateTitles(r);
+    return resume();
+  }
+
   // --- ゲーム中 ---
   if (pend.type === 'roll' && optionId === 'roll') return doRoll(r, p);
   if (pend.type === 'roll' && optionId === 'ult') {
@@ -1193,7 +1247,7 @@ function handleChoose(r, playerId, optionId) {
         r.tileFx[i] = r.tileFx[i] || {};
         r.tileFx[i].vortex = true;
         const creature = before.creature;
-        const defeated = spellDamage(r, i, 10, '紅蓮の方程式');
+        const defeated = spellDamage(r, i, 10, '紅蓮の方程式', false);
         results.push({ tile: i, creature, damage: 10, defeated });
       }
       log(r, `🔥 ${p.name}が固有スキル【紅蓮の方程式】を発動! ${results.length}か所に炎の渦を発生させた`);
@@ -1218,6 +1272,7 @@ function handleChoose(r, playerId, optionId) {
       else p.discard.push(sid);
       if (spellCost) p.gold -= spellCost;
       p.spellCast = true;
+      onSpellCast(r, p);
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS[sid].name, desc: SPELLS[sid].desc, at: stamp(r) };
       log(r, `📜 ${p.name}が呪文「${SPELLS[sid].name}」を唱えた!${spellCost ? `(−${spellCost}G)` : ''}${EXILE_SPELLS.has(sid) ? '(廃棄)' : ''}`);
     };
@@ -1352,6 +1407,7 @@ function handleChoose(r, playerId, optionId) {
         p.discard.push('sp_weaken');
         p.gold -= spellCost;
         p.spellCast = true;
+        onSpellCast(r, p);
         r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_weaken.name,
           desc: `${pById(r, o.player).name}の${CREATURES[o.creature].name}に20ダメージ!`, at: stamp(r) };
         log(r, `☠ ${p.name}が${pById(r, o.player).name}の${CREATURES[o.creature].name}に衰弱の呪文!(20ダメージ)`);
@@ -1392,6 +1448,7 @@ function handleChoose(r, playerId, optionId) {
       if (EXILE_SPELLS.has(sid)) p.exile.push(sid); else p.discard.push(sid);
       p.gold -= spellCost;
       p.spellCast = true;
+      onSpellCast(r, p);
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS[sid].name, desc: SPELLS[sid].desc, at: stamp(r) };
     };
     const fx = () => (r.tileFx[i] = r.tileFx[i] || {});
@@ -1448,6 +1505,7 @@ function handleChoose(r, playerId, optionId) {
       p.discard.push('sp_wind_corridor');
       p.gold -= spellCost;
       p.spellCast = true;
+      onSpellCast(r, p);
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_wind_corridor.name,
         desc: r.owners[j] ? `${CREATURES[src.creature].name}が隣の敵領地へ侵略開始!(通行料なし)`
                           : `${CREATURES[src.creature].name}が隣の空き地へ渡り、Lv1の領地に`, at: stamp(r) };
@@ -1501,6 +1559,7 @@ function handleChoose(r, playerId, optionId) {
       p.discard.push('sp_step');
       p.gold -= spellCost;
       p.spellCast = true;
+      onSpellCast(r, p);
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_step.name,
         desc: r.owners[j] ? `${CREATURES[src.creature].name}が隣の敵領地へ侵略!(通行料なし)`
                           : `${CREATURES[src.creature].name}が隣の空き地へ進出し、Lv1の領地に`, at: stamp(r) };
@@ -1545,6 +1604,7 @@ function handleChoose(r, playerId, optionId) {
         p.discard.push('sp_move');
         p.gold -= spellCost;
         p.spellCast = true;
+        onSpellCast(r, p);
         r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_move.name,
           desc: `${CREATURES[ob.creature].name}と${CREATURES[oa.creature].name}が入れ替わった`, at: stamp(r) };
         log(r, `📜 ${p.name}が転移の呪文! ${CREATURES[ob.creature].name}と${CREATURES[oa.creature].name}が入れ替わった(−${spellCost}G)`);
@@ -1564,9 +1624,11 @@ function handleChoose(r, playerId, optionId) {
     return ask(r, p.id, 'swap_pick', '交代 ─ 手札のどのクリーチャーを配置する?', opts);
   }
   if (pend.type === 'swap_pick') {
+    let summonPaused = false;
     if (optionId !== 'sp2:cancel' && p.hand.includes('sp_swap')) {
       const c = optionId.slice(4);
       const o = r.owners[p.swapI];
+      const swapTile = p.swapI;
       const spellCost = effectiveSpellCost(r, p, 'sp_swap');
       if (o && o.player === p.id && p.hand.includes(c) &&
           CREATURES[c].cost + spellCost <= p.gold) {
@@ -1576,18 +1638,20 @@ function handleChoose(r, playerId, optionId) {
         o.creature = c; o.dmg = 0; o.shade = 0; delete o.iceWard;  // 新クリーチャーは全快で配置
         if (baseId(c) === 'cresteria') { p.gems++; log(r, `【真珠】${p.name}は宝石を1個得た(所持${p.gems}個)`); }
         if (baseId(c) === 'fugorm') { gainToDeck(r, p, ['weapon']); log(r, `【鍛冶】${p.name}は支援「武器」を山札に得た`); }
-        onCreatureSummoned(r, p, c, 'swap');
         p.hand.splice(p.hand.indexOf('sp_swap'), 1);
         p.discard.push('sp_swap');
         p.gold -= spellCost + CREATURES[c].cost;
         p.spellCast = true;
+        onSpellCast(r, p);
         r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_swap.name,
           desc: `${CREATURES[oldC].name}に代わり${CREATURES[c].name}が領地に立った`, at: stamp(r) };
         log(r, `📜 ${p.name}が交代の呪文! ${CREATURES[oldC].name}に代わり${CREATURES[c].name}が領地に立った(−${spellCost + CREATURES[c].cost}G)`);
         spellFx(r, 'sp_swap', [p.swapI], p.id, { cid: oldC });
+        summonPaused = onCreatureSummoned(r, p, c, 'swap', swapTile);
       }
     }
     p.swapI = null;
+    if (summonPaused) return;
     return askRoll(r, p);
   }
   if (pend.type === 'direction') {
@@ -1637,6 +1701,7 @@ function handleChoose(r, playerId, optionId) {
       p.exile.push('sp_quake');
       p.gold -= spellCost;
       p.spellCast = true;
+      onSpellCast(r, p);
       o.level = Math.max(1, o.level - 1);
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_quake.name,
         desc: `${pById(r, o.player).name}の領地(${i}番)がLv${o.level}に崩れた!`, at: stamp(r) };
@@ -1738,8 +1803,8 @@ function handleChoose(r, playerId, optionId) {
       log(r, `${p.name}は${CREATURES[c].name}を召喚し、土地を領地化!`);
       if (baseId(c) === 'cresteria') { p.gems++; log(r, `【真珠】${p.name}は宝石を1個得た(所持${p.gems}個)`); }
       if (baseId(c) === 'fugorm') { gainToDeck(r, p, ['weapon']); log(r, `【鍛冶】${p.name}は支援「武器」を山札に得た`); }
-      onCreatureSummoned(r, p, c, 'summon');
-      updateTitles(r); if (checkVictory(r)) return; return endTurn(r);
+      const summonPaused = onCreatureSummoned(r, p, c, 'summon', i);
+      updateTitles(r); if (checkVictory(r)) return; if (summonPaused) return; return endTurn(r);
     }
     if (optionId === 'toll') {
       const enemy = pById(r, o.player);
