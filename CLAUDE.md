@@ -6,7 +6,7 @@
 テストプレイ→即日修正のサイクルで開発している。
 
 - 公開URL: https://summons-crest.onrender.com (mainへのpushでRenderが自動デプロイ)
-- 現在バージョン: **v1.03**(server.jsの`VERSION`とboard.html左下の`board X.XX`表記)
+- 現在バージョン: **v1.04**(server.jsの`VERSION`とboard.html左下の`board X.XX`表記)
 
 ## 構成
 
@@ -44,7 +44,7 @@ npm test    # timing(定数共有) → bot(サーバー回帰) → ui(スマホ�
 ```
 
 - **bot_test.js**: server.jsをin-processで評価し、4体のランダムBOTが5局完走するかを検証。
-  - カード保存則(全ゾーン+盤面+風の回廊の「戦闘中ゾーン」の合計が減ったら即失敗)
+  - カード保存則(全ゾーン+盤面+戦闘中ゾーンの合計が減ったら即失敗)
   - 全pending種別の発火網羅を出力
   - キャラ選択の`unpick`は10%でしか選ばない(ライブロック回避)
 - **ui_test.js**: phone.htmlのスクリプトをDOMスタブ上で丸ごと実行し、サーバーと結合して3局走行。

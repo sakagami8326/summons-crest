@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.03';
+const VERSION = '1.04';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -101,7 +101,7 @@ const CREATURES = {
   ludi:    { name: 'ルディ', evo: 'シンルー', elem: 'wind', st: 25, hp: 40, cost: 120, evoSt: 45, evoHp: 60, fx: '【雲隠れ】防衛時、相手の支援を無効化', rarity: 'L' },
   garble:  { name: 'ガーブル', evo: 'ガレス・ゲイル', elem: 'wind', st: 35, hp: 25, cost: 120, evoSt: 55, evoHp: 45, fx: '【風刃】攻撃時、相手の地形補正を無視', rarity: 'R' },
   barbaro: { name: 'バルバロ', evo: 'バーグランダ', elem: 'earth', st: 30, hp: 45, cost: 120, evoSt: 50, evoHp: 65, fx: '【逆鱗】防衛成功時、相手から30G奪う(進化50G)', rarity: 'R' },
-  detropas:{ name: 'デトロパス', evo: 'クラーケンイービル', elem: 'fire', st: 30, hp: 25, cost: 90, evoSt: 50, evoHp: 45, fx: '【群れ】攻撃時、自分の火の土地×AT+5', rarity: 'N' },
+  detropas:{ name: 'デトロパス', evo: 'クラーケンイービル', elem: 'fire', st: 30, hp: 25, cost: 60, evoSt: 50, evoHp: 45, fx: '【群れ】攻撃時、自分の火の土地×AT+5', rarity: 'N' },
   goagoa:  { name: 'ゴアゴア', evo: 'ノーク・ゴーア', elem: 'water', st: 40, hp: 40, cost: 140, evoSt: 60, evoHp: 65, fx: '【深海】防衛成功時、自分の負傷を10回復する', rarity: 'R' },
   fugorm:  { name: 'フーゴルム', evo: 'ゴーレムアイン', elem: 'earth', st: 35, hp: 40, cost: 100, evoSt: 55, evoHp: 60, fx: '【鍛冶】召喚時、支援「武器」を得る', rarity: 'N' },
   bedebero:{ name: 'ベデベロ',         elem: 'earth', st: 30, hp: 60, cost: 120, fx: '【不動】受けるスペルダメージを10軽減する', rarity: 'R' },
@@ -115,7 +115,7 @@ const CREATURES = {
   grayble: { name: 'グレイブル', evo: 'グランガルム', elem: 'fire', st: 40, hp: 30, cost: 80, evoSt: 65, evoHp: 45,
              fx: '【追撃】侵略時、戦闘前から相手が負傷していればAT+10', evoFx: '【追撃】侵略時、戦闘前から相手が負傷していればAT+20', rarity: 'N' },
   trooper: { name: 'トルーパー', evo: 'グリゴール', elem: 'fire', st: 25, hp: 40, cost: 90, evoSt: 45, evoHp: 60,
-             fx: '【火種】召喚時、「炎の渦」1枚を山札へ加えてシャッフルする', evoFx: '【魔導節約】配置中、自分のスペルコストを20G下げる', rarity: 'N' },
+             fx: '【火種】配置時、「炎の渦」1枚を山札へ加えてシャッフルする', evoFx: '【魔導節約】配置中、自分のスペルコストを20G下げる', rarity: 'N' },
   survey:  { name: 'サーベイ', evo: 'ザシャック', elem: 'water', st: 35, hp: 35, cost: 80, evoSt: 55, evoHp: 50,
              fx: '【支援】戦闘時、手札のクリーチャーを支援カードとして使える', evoFx: '【支援】戦闘時、手札のクリーチャーを支援カードとして使える', rarity: 'N' },
   palecoral:{ name: 'パレコラル', evo: 'コラルグレイヴ', elem: 'water', st: 20, hp: 50, cost: 90, evoSt: 40, evoHp: 70,
@@ -159,9 +159,7 @@ const SPELLS = {
   sp_cornucopia:        { name: '豊穣の角', rarity: 'R', cost: 0,
     desc: '自分の領地1つにつき20Gを得る' },
   sp_bedrock_uplift:    { name: '岩盤隆起', rarity: 'R', cost: 50,
-    desc: '自分の土領地の負傷を20回復し、次の戦闘でDF+10' },
-  sp_wind_corridor:     { name: '風の回廊', rarity: 'R', cost: 40,
-    desc: '自分の領地のクリーチャーを隣接する土地へ移動する。敵領地なら侵略する(通行料なし)。生き残れば全快して手札へ戻る' },
+    desc: '自分の負傷した領地1つを20回復し、次の戦闘でDF+10' },
   sp_wind_shift:        { name: '風向転換', rarity: 'R', cost: 30,
     desc: 'このターンだけ、通常とは逆方向へ移動する' },
   sp_ward:   { name: '加護の呪文', rarity: 'R', cost: 80,
@@ -339,9 +337,9 @@ function universalTerrain(creatureId) {
 }
 function onCreatureSummoned(r, p, creatureId, reason, tile) {
   if (!['summon', 'swap', 'battle'].includes(reason)) return false;
-  if (reason !== 'battle' && baseId(creatureId) === 'trooper' && !isEvolved({ creature: creatureId })) {
+  if (baseId(creatureId) === 'trooper' && !isEvolved({ creature: creatureId })) {
     gainToDeck(r, p, ['sp_flame_vortex']);
-    log(r, `【火種】${CREATURES.trooper.name}の召喚で「炎の渦」1枚を山札へ加えた`);
+    log(r, `【火種】${CREATURES.trooper.name}の配置で「炎の渦」1枚を山札へ加えた`);
   }
   if (baseId(creatureId) !== 'samurai_saga' || !Number.isInteger(tile)) return false;
   ask(r, p.id, 'samurai_elem', '【地脈改変】この土地の属性を変更しますか?', [
@@ -460,14 +458,13 @@ function askRoll(r, p) {
     if (sid === 'sp_move' &&
         r.owners.filter(o => o && o.player === p.id).length < 2) continue;
     if (sid === 'sp_step' && !stepSources(r, p).length) continue;
-    if (sid === 'sp_wind_corridor' && !stepSources(r, p).length) continue;
     if (sid === 'sp_wind_shift' && p.windShift) continue;
     if ((sid === 'sp_volcanic_core' || sid === 'sp_abyssal_pearl' ||
          sid === 'sp_earth_mother_stone' || sid === 'sp_sky_crystal') &&
         !r.owners.some((o, i) => o && o.player === p.id && tileElem(r, i) !== ELEM_OF_SPELL[sid])) continue;
     if (sid === 'sp_flame_vortex' && !r.owners.some(o => o && o.player !== p.id)) continue;
     if (sid === 'sp_bedrock_uplift' &&
-        !r.owners.some((o, i) => o && o.player === p.id && tileElem(r, i) === 'earth')) continue;
+        !r.owners.some(o => o && o.player === p.id && (o.dmg || 0) > 0)) continue;
     if (sid === 'sp_swap' &&
         (!r.owners.some(o => o && o.player === p.id) ||
          !p.hand.some(c => CREATURES[c] && CREATURES[c].cost + effectiveSpellCost(r, p, 'sp_swap') <= p.gold))) continue;
@@ -1308,7 +1305,8 @@ function handleChoose(r, playerId, optionId) {
         results.push({ tile: i, creature, damage: 10, defeated });
       }
       log(r, `🔥 ${p.name}が固有スキル【紅蓮の方程式】を発動! ${results.length}か所に炎の渦を発生させた`);
-      spellFx(r, 'ult_lia', results.map(x => x.tile), p.id, { sequence: true, results });
+      spellFx(r, 'sp_flame_vortex', results.map(x => x.tile), p.id,
+        { source: 'ult_lia', sequence: true, results });
       return askRoll(r, p);
     }
     const i = +optionId.slice(3);
@@ -1422,21 +1420,13 @@ function handleChoose(r, playerId, optionId) {
       let cond;
       if (ELEM_OF_SPELL[sid]) cond = (o, i) => o.player === p.id && tileElem(r, i) !== ELEM_OF_SPELL[sid];
       else if (sid === 'sp_flame_vortex') cond = o => o.player !== p.id;
-      else if (sid === 'sp_bedrock_uplift') cond = (o, i) => o.player === p.id && tileElem(r, i) === 'earth';
+      else if (sid === 'sp_bedrock_uplift') cond = o => o.player === p.id && (o.dmg || 0) > 0;
       else cond = o => o.player === p.id;
       const opts = r.owners.map((o, i) => o && cond(o, i)
         ? { id: 'tg:' + i, label: `${o.player !== p.id ? pById(r, o.player).name + 'の' : ''}${CREATURES[o.creature].name}(${tileElem(r, i)} Lv${o.level}${o.dmg ? ' 負傷' + o.dmg : ''})` }
         : null).filter(Boolean);
       opts.push({ id: 'tg:cancel', label: 'やめる' });
       return ask(r, p.id, 'spell_target', `「${SPELLS[sid].name}」─ 対象のマスを選ぶ`, opts);
-    }
-    if (sid === 'sp_wind_corridor') {
-      const opts = stepSources(r, p).map(i => ({
-        id: 'st:' + i,
-        label: `${CREATURES[r.owners[i].creature].name}(${tileElem(r, i)} Lv${r.owners[i].level}${r.owners[i].dmg ? ' 負傷' + r.owners[i].dmg : ''})`,
-      }));
-      opts.push({ id: 'st:cancel', label: 'やめる' });
-      return ask(r, p.id, 'wc_a', '風の回廊 ─ どのクリーチャーを動かす?', opts);
     }
     if (sid === 'sp_step') {
       const opts = stepSources(r, p).map(i => ({
@@ -1523,10 +1513,10 @@ function handleChoose(r, playerId, optionId) {
       fx().vortex = true;
       r.lastEvent.desc = `${pById(r, o.player).name}の${CREATURES[o.creature].name}に10ダメージ! 次の侵略者はAT+10`;
       log(r, `🔥 炎の渦がマス${i}を包む。${CREATURES[o.creature].name}に10ダメージ! 次の侵略者はAT+10`);
-      spellFx(r, 'sp_flame_vortex', [i], p.id);
+      spellFx(r, 'sp_flame_vortex', [i], p.id, { cid: o.creature });
       spellDamage(r, i, 10, '炎の渦');
     } else if (sid === 'sp_bedrock_uplift') {
-      if (o.player !== p.id || tileElem(r, i) !== 'earth') return askRoll(r, p);
+      if (o.player !== p.id || !(o.dmg > 0)) return askRoll(r, p);
       pay();
       const before = o.dmg || 0;
       o.dmg = Math.max(0, before - 20);
@@ -1535,60 +1525,6 @@ function handleChoose(r, playerId, optionId) {
       log(r, `⛰ 岩盤隆起! ${CREATURES[o.creature].name}の負傷${before}→${o.dmg}。次の戦闘でDF+10`);
       spellFx(r, 'sp_bedrock_uplift', [i], p.id);
     }
-    return askRoll(r, p);
-  }
-  if (pend.type === 'wc_a') {
-    if (optionId === 'st:cancel') return askRoll(r, p);
-    const i = +optionId.slice(3);
-    if (!r.owners[i] || r.owners[i].player !== p.id) return askRoll(r, p);
-    p.stepI = i;
-    const opts = stepDests(r, p, i).map(j => {
-      const o = r.owners[j];
-      return { id: 'sd:' + j, label: o
-        ? `${pById(r, o.player).name}の${CREATURES[o.creature].name}(${tileElem(r, j)} Lv${o.level})へ侵略!`
-        : `空き地(${tileElem(r, j)})へ移動して取得` };
-    });
-    opts.push({ id: 'sd:cancel', label: 'やめる' });
-    return ask(r, p.id, 'wc_b', '風の回廊 ─ どちらのマスへ?', opts);
-  }
-  if (pend.type === 'wc_b') {
-    if (optionId === 'sd:cancel') { p.stepI = null; return askRoll(r, p); }
-    const i = p.stepI, j = +optionId.slice(3);
-    const src = r.owners[i];
-    const spellCost = effectiveSpellCost(r, p, 'sp_wind_corridor');
-    if (src && src.player === p.id && p.hand.includes('sp_wind_corridor') &&
-        stepDests(r, p, i).includes(j) && spellCost <= p.gold) {
-      p.hand.splice(p.hand.indexOf('sp_wind_corridor'), 1);
-      p.discard.push('sp_wind_corridor');
-      p.gold -= spellCost;
-      p.spellCast = true;
-      onSpellCast(r, p);
-      r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_wind_corridor.name,
-        desc: r.owners[j] ? `${CREATURES[src.creature].name}が隣の敵領地へ侵略開始!(通行料なし)`
-                          : `${CREATURES[src.creature].name}が隣の空き地へ渡り、Lv1の領地に`, at: stamp(r) };
-      p.stepI = null;
-      // 進化状態を維持したまま土地から引き剥がす(解決時点で移動元は空き地へ)
-      let c = src.creature;
-      if (isEvolved(src) && CREATURES[baseId(c)].evo && !/_f$/.test(c)) c = baseId(c) + '_f';
-      const carry = src.dmg || 0;
-      const carryShade = src.shade || 0;
-      r.owners[i] = null;
-      delete r.tileFx[i];
-      const dest = r.owners[j];
-      if (!dest) {
-        r.owners[j] = { player: p.id, level: 1, creature: c, dmg: carry, shade: carryShade };
-        log(r, `🌬 風の回廊! ${CREATURES[c].name}が隣の空き地(${tileElem(r, j)})へ渡り、Lv1の領地とした`);
-        spellFx(r, 'sp_wind_corridor', [i, j], p.id);
-        return askRoll(r, p);
-      }
-      log(r, `🌬 風の回廊から侵略開始! ${CREATURES[c].name}が${pById(r, dest.player).name}の領地へ攻め込む(通行料なし)`);
-      spellFx(r, 'sp_wind_corridor', [i, j], p.id, { battle: true });
-      r.battle = { tile: j, attacker: p.id, defender: dest.player,
-                   atkCreature: c, corridor: true, atkCarry: carry, atkShade: carryShade,
-                   supports: {}, startedAt: stamp(r) };
-      return askSupports(r);
-    }
-    p.stepI = null;
     return askRoll(r, p);
   }
   if (pend.type === 'step_a') {

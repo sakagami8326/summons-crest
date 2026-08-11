@@ -2007,7 +2007,7 @@ async function runFxHarness(name) {
       const sid = new URLSearchParams(location.search).get('spell') || 'sp_weaken';
       const owned = [];
       state.owners.forEach((o2, i2) => { if (o2) owned.push(i2); });
-      const multi = ['sp_move', 'sp_step', 'sp_wind_corridor'].includes(sid) ? owned.slice(0, 2)
+      const multi = ['sp_move', 'sp_step'].includes(sid) ? owned.slice(0, 2)
         : ['sp_ward', 'sp_cornucopia'].includes(sid) ? owned.slice(0, 4)
         : ['sp_gold', 'sp_gale', 'sp_wind_shift', 'sp_bloodstained_blade', 'sp_insight'].includes(sid) ? []
         : [owned[0]];
@@ -2553,9 +2553,17 @@ async function playSpellPresentation(sf, desc) {
     $('spellCut').classList.remove('on');
     await wait(180);
     if (sf.tiles && sf.tiles.length === 1) tileCloseup(sf.tiles[0], iconize(desc || sp.desc || ''), 2800);
-    if (renderModeActive === 'phaser')
-      await PW.play({ type:'spell-fx', spell:sf.spell, tiles:sf.tiles, caster:sf.caster,
-        cid:sf.cid, elem:sf.elem, battle:sf.battle, n:sf.n, timeoutMs:3000 });
+    if (renderModeActive === 'phaser') {
+      if (sf.sequence && Array.isArray(sf.results)) {
+        for (const result of sf.results) {
+          await PW.play({ type:'spell-fx', spell:sf.spell, tiles:[result.tile], caster:sf.caster,
+            cid:result.creature, timeoutMs:3000 });
+        }
+      } else {
+        await PW.play({ type:'spell-fx', spell:sf.spell, tiles:sf.tiles, caster:sf.caster,
+          cid:sf.cid, elem:sf.elem, battle:sf.battle, n:sf.n, timeoutMs:3000 });
+      }
+    }
     else if (sf.tiles) sf.tiles.forEach(ti => fxAt(ti, 'fxRing', '#C8BAE8'));
     if (sf.spell === 'sp_insight') flyCardBacks(sf.caster, sf.n || 2);
     await wait(900);
@@ -3160,7 +3168,7 @@ function render() {
   if (!state) return;
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.00' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.01' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');

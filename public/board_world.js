@@ -325,7 +325,7 @@ const PW = (() => {
         } },
       onComplete: () => { g.destroy(); res(); } }));
   }
-  // 2マスを結ぶ線/帯に沿ってクリーチャーが渡る(移動の呪文・風の回廊)
+  // 2マスを結ぶ線に沿ってクリーチャーが渡る(移動の呪文)
   async function fxLinkMove(ev, col, band) {
     const [a, b] = ev.tiles || [];
     if (a == null || b == null || !GEO[a] || !GEO[b]) return;
@@ -389,6 +389,9 @@ const PW = (() => {
       tintCreature(i, 0xB07AE0, 500);
       await wait(500);
     } else if (sid === 'sp_flame_vortex') {
+      // 撃破時はstate上の所有者が既に消えているため、旧クリーチャーを炎演出中だけ復元する。
+      const victim = (!creatureSprites[i] || !creatureSprites[i].scene) && ev.cid
+        ? await ghostOf(ev.cid, x, y) : null;
       await projectile(from, { x, y: y - 10 }, 0xFF7A45, 420);   // 火種
       const g = scene.add.graphics().setDepth(330);              // 円形の炎(回転)
       await new Promise(res => scene.tweens.addCounter({ from: 0, to: 1, duration: 900, ease: 'Sine.easeOut',
@@ -401,8 +404,10 @@ const PW = (() => {
           } },
         onComplete: () => { g.destroy(); res(); } }));
       tintCreature(i, 0xFFB08A, 400);
+      if (victim) victim.setTint(0xFFB08A);
       elemBurst(x, y, 0xFF7A45, 6, true, 331, 'fire');
       await wait(200);
+      if (victim) victim.destroy();
     } else if (sid === 'sp_root_prison') {
       const g = scene.add.graphics().setDepth(330);              // 四隅から根が中心へ
       const cs = [[-DW / 2 + 8, 0], [0, -DH / 2 + 5], [DW / 2 - 8, 0], [0, DH / 2 - 5]];
@@ -499,11 +504,6 @@ const PW = (() => {
       await wait(250);
     } else if (sid === 'sp_step') {
       await fxLinkMove(ev, 0xD8D2E8, false);   // 細い線で接続して移動(§7.3)
-    } else if (sid === 'sp_wind_corridor') {
-      const [a2, b2] = ev.tiles || [];
-      if (a2 != null && GEO[a2]) groundRipple(a2, 0x9FE8D8, 500);
-      if (b2 != null && GEO[b2]) groundRipple(b2, 0x9FE8D8, 500);
-      await fxLinkMove(ev, 0x9FE8D8, true);    // 太い風の帯(§7.3)
     } else if (sid === 'sp_gold') {
       // 黄金(§7.3): コマ付近に金色ルーン+金粒子(獲得額はバナー=DOM)
       pulseAt(from.x, from.y + 14, 0xF2D062, 700);

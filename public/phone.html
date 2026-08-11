@@ -753,7 +753,7 @@ const supportArt = cid => SUPPORT_ART[cid]
 // アートが存在するスペル(無いものは呪文アイコンで代用)
 const SPELL_ART = new Set(['sp_gold','sp_weaken','sp_gale','sp_quake','sp_volcanic_core','sp_abyssal_pearl',
   'sp_earth_mother_stone','sp_sky_crystal','sp_flame_vortex','sp_bloodstained_blade',
-  'sp_cornucopia','sp_bedrock_uplift','sp_wind_corridor','sp_wind_shift','sp_ward',
+  'sp_cornucopia','sp_bedrock_uplift','sp_wind_shift','sp_ward',
   'sp_dice_1','sp_dice_2','sp_dice_3','sp_dice_4','sp_dice_5','sp_dice_6']);
 const spellArt = (c, h) => SPELL_ART.has(c)
   ? `<div class="art"${h ? ` style="height:${h}"` : ''}><img src="/assets/c_${c}.png"></div>`
@@ -1599,7 +1599,7 @@ function render() {
     if (pov.classList.contains('on')) { pov.classList.remove('on'); pov.dataset.k = ''; }
   }
   const MAP_TYPES = ['curse_target','quake_target','ult_mio','ult_lia','move_a','move_b','swap_land','upgrade','marlow_src','marlow_dest',
-    'sell','step_a','step_b','spell_target','wc_a','wc_b'];
+    'sell','step_a','step_b','spell_target'];
   if (!mapView && (!p || !MAP_TYPES.includes(p.type))) hideMapOv();
   const liaSelectedKey = p && p.type === 'ult_lia' ? (p.selected || []).join(',') : '';
   if (liaSelectedKey !== lastLiaSelectedKey) {
@@ -1753,7 +1753,7 @@ function render() {
              p.type === 'move_a' || p.type === 'move_b' || p.type === 'swap_land' || p.type === 'upgrade' ||
              p.type === 'marlow_src' || p.type === 'marlow_dest' ||
              p.type === 'sell' || p.type === 'step_a' || p.type === 'step_b' ||
-             p.type === 'spell_target' || p.type === 'wc_a' || p.type === 'wc_b') {
+             p.type === 'spell_target') {
     renderMiniMap(p);
   } else if (p.type === 'direction') {
     $('diceDock').innerHTML = `<div style="font-size:max(2dvh,13px);color:var(--gold-soft)">${state.lastDice ? state.lastDice.value + ' が出た' : ''}</div>`;

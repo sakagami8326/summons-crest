@@ -73,7 +73,7 @@ function runGame(seed) {
       if (r.phase === 'playing') {
         for (const q of r.players) {
           const board = r.owners.filter(o => o && o.player === q.id).length;
-          // 風の回廊: 解決時点で移動元が空き地になるため、戦闘確定までのクリーチャーは「戦闘中ゾーン」として数える
+          // 旧セーブ互換: 移動元が先に空き地になる戦闘はクリーチャーを「戦闘中ゾーン」として数える
           const inBattle = r.battle && r.battle.corridor && r.battle.attacker === q.id ? 1 : 0;
           const total = (q.deck || []).length + (q.hand || []).length +
                         (q.discard || []).length + (q.exile || []).length + board + inBattle +

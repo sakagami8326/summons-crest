@@ -71,6 +71,10 @@ ok(/playSe\(seEvolve\)/.test(board), 'board.html: 進化配置時に進化SEを�
 
 // 6) v0.93 カード主体の侵略戦闘
 ok(/function renderBattlePreview\(/.test(board), 'board.html: 侵略直後の戦闘待機画面を実装している');
+ok(/sf\.sequence && Array\.isArray\(sf\.results\)/.test(board),
+  'board.html: 紅蓮の方程式を対象ごとの炎の渦演出として再生する');
+ok(/旧クリーチャーを炎演出中だけ復元する/.test(world) && /ghostOf\(ev\.cid, x, y\)/.test(world),
+  'board_world.js: 炎の渦撃破時も対象を炎演出中に表示する');
 ok(/battlePreview/.test(board), 'board.html: 公開戦闘プレビューを描画へ接続している');
 ok(/攻撃クリーチャー選択中/.test(board), 'board.html: 攻撃側未選択時のカード裏面がある');
 ok(/await revealBattleSupport\(b, 'atk'\)[\s\S]*await revealBattleSupport\(b, 'def'\)/.test(board),

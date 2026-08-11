@@ -28,6 +28,9 @@ function game(chars = ['lia', 'adel']) {
 }
 
 ok(Number(G.VERSION) >= 1.00, 'version remains compatible with the v1.00 suite');
+eq(G.CREATURES.detropas.cost, 60, 'Detropas costs 60G');
+ok(!G.SPELLS.sp_wind_corridor && !G.makeDeck().includes('sp_wind_corridor'),
+  'Wind Corridor is removed from catalog and market deck');
 
 // Catalog and evolution values.
 const rows = [
@@ -74,7 +77,7 @@ for (const [id] of rows) {
   G.rooms.delete(r.code);
 }
 
-// Trooper creates and shuffles Flame Vortex only on summon/swap.
+// Trooper creates and shuffles Flame Vortex whenever its base form is placed.
 {
   const r = game();
   const p = r.players.find(x => x.charId === 'lia');
@@ -83,8 +86,31 @@ for (const [id] of rows) {
   ok(count(p.deck, 'sp_flame_vortex') === 1 && p.deck.length === 2, 'Trooper summon adds Flame Vortex');
   G.onCreatureSummoned(r, p, 'trooper', 'swap');
   ok(count(p.deck, 'sp_flame_vortex') === 2, 'Trooper swap summon adds another Flame Vortex');
-  G.onCreatureSummoned(r, p, 'trooper', 'invasion');
-  ok(count(p.deck, 'sp_flame_vortex') === 2, 'invasion placement does not add Flame Vortex');
+  G.onCreatureSummoned(r, p, 'trooper', 'battle');
+  ok(count(p.deck, 'sp_flame_vortex') === 3, 'successful invasion placement adds Flame Vortex');
+  G.onCreatureSummoned(r, p, 'trooper_f', 'battle');
+  ok(count(p.deck, 'sp_flame_vortex') === 3, 'evolved Grigor does not trigger Trooper placement effect');
+  G.rooms.delete(r.code);
+}
+
+// Bedrock Uplift targets any friendly wounded land, regardless of element.
+{
+  const r = game();
+  const p = r.players[0], enemy = r.players[1];
+  p.gold = 200;
+  p.hand = ['sp_bedrock_uplift'];
+  r.owners[1] = { player: p.id, level: 1, creature: 'gecko', dmg: 25 };
+  r.owners[16] = { player: p.id, level: 1, creature: 'nome', dmg: 0 };
+  r.owners[2] = { player: enemy.id, level: 1, creature: 'grayble', dmg: 20 };
+  r.pending[p.id] = { type: 'roll', options: [{ id: 'sp:sp_bedrock_uplift' }] };
+  G.handleChoose(r, p.id, 'sp:sp_bedrock_uplift');
+  eq(r.pending[p.id].type, 'spell_target', 'Bedrock Uplift opens map target selection');
+  ok(r.pending[p.id].options.some(o => o.id === 'tg:1'), 'wounded friendly fire land is selectable');
+  ok(!r.pending[p.id].options.some(o => o.id === 'tg:16'), 'healthy friendly earth land is not selectable');
+  ok(!r.pending[p.id].options.some(o => o.id === 'tg:2'), 'enemy wounded land is not selectable');
+  G.handleChoose(r, p.id, 'tg:1');
+  eq(r.owners[1].dmg, 5, 'Bedrock Uplift heals selected land by 20');
+  ok(r.tileFx[1].uplift, 'Bedrock Uplift grants next-battle DF on selected land');
   G.rooms.delete(r.code);
 }
 
@@ -150,6 +176,8 @@ for (const [id] of rows) {
   ok([1,2,3].every(i => r.tileFx[i].vortex && r.owners[i].dmg === 10),
     'Crimson Equation applies Vortex and 10 damage to three unique lands');
   ok(p.ultUsed && r.lastUlt.charId === 'lia', 'Lia ult is consumed once');
+  eq(r.lastSpellFx.spell, 'sp_flame_vortex', 'Lia ultimate presents the Flame Vortex card');
+  eq(r.lastSpellFx.source, 'ult_lia', 'Lia ultimate keeps its effect source');
   G.rooms.delete(r.code);
 }
 
