@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.04';
+const VERSION = '1.05';
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -257,6 +257,7 @@ setInterval(() => {
   const cutoff = Date.now() - 60 * 60 * 1000;
   for (const [code, r] of rooms) {
     if ((r.lastActivity || 0) < cutoff) {
+      clearBotTimer(r);
       for (const c of r.clients) { try { c.res.end(); } catch (e) {} }
       rooms.delete(code);
       console.log(`ルーム${code}を掃除(60分無操作)`);
@@ -264,10 +265,11 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000);
 
-function makeRoom() {
+function makeRoom(mode = 'normal') {
   const deck = makeDeck();
   const room = {
     code: code4(), phase: 'lobby', clients: new Set(), players: [],
+    botMode: mode === 'bot', botTimer: null, botActionSeq: 0,
     owners: TILES.map(() => null),        // { player, level, creature }
     deck, market: deck.splice(0, 5),
     turn: 0, round: 1, log: [],
@@ -430,6 +432,7 @@ function checkVictory(r) {
   return false;  // v0.51: 勝利判定は「城通過時に総資産8000G以上」のみ(performMove内)
 }
 function declareWin(r, p, why) {
+  clearBotTimer(r);
   r.phase = 'ended'; r.winner = p.id; r.pending = {};
   log(r, `🏆 ${p.name}が${why} 勝利!`);
 }
@@ -1180,11 +1183,19 @@ function handleChoose(r, playerId, optionId) {
 
   // --- キャラ選択 ---
   if (pend.type === 'select_char') {
-    if (optionId === 'unpick') { p.charId = null; p.confirmed = false; return askSelect(r, p); }
+    if (optionId === 'unpick') {
+      p.charId = null; p.confirmed = false;
+      if (r.botMode && !p.isBot) r.players.filter(q => q.isBot).forEach((q, i) => {
+        q.charId = null; q.confirmed = false; q.name = `BOT ${String.fromCharCode(65 + i)}`;
+        delete r.pending[q.id];
+      });
+      return askSelect(r, p);
+    }
     p.charId = optionId; p.confirmed = true;
     // テレビで開始するまでは、全員がいつでも選び直せる状態を保つ。
     ask(r, p.id, 'select_wait', '他のプレイヤーを待っています…', [{ id: 'unpick', label: 'キャラを選び直す' }]);
     log(r, `${p.name}は${CHARS[optionId].name}を選択`);
+    if (r.botMode && !p.isBot) assignBotCharacters(r, p.charId);
     return trySelectResolve(r);
   }
 
@@ -1917,10 +1928,31 @@ function handleChoose(r, playerId, optionId) {
 }
 
 // ===== キャラ選択フェーズ =====
+function addBotPlayers(r) {
+  if (!r.botMode || r.players.some(p => p.isBot)) return;
+  for (let i = 0; i < 3; i++) r.players.push({
+    id: `bot${crypto.randomBytes(4).toString('hex')}`, name: `BOT ${String.fromCharCode(65 + i)}`,
+    isBot: true, confirmed: false,
+  });
+  log(r, 'BOT3体が参加した');
+}
+function assignBotCharacters(r, humanChar) {
+  const bots = r.players.filter(p => p.isBot);
+  if (!r.botMode || bots.length !== 3 || bots.every(p => p.confirmed)) return;
+  const available = shuffle(Object.keys(CHARS).filter(cid => CHARS[cid].selectable !== false && cid !== humanChar));
+  bots.forEach((bot, i) => {
+    bot.charId = available[i];
+    bot.name = CHARS[bot.charId].name;
+    bot.confirmed = true;
+    ask(r, bot.id, 'select_wait', 'ゲーム開始を待っています…', []);
+    log(r, `BOTは${bot.name}を選択`);
+  });
+}
 function startSelect(r) {
+  if (r.botMode) addBotPlayers(r);
   r.phase = 'select';
   log(r, 'キャラクター選択を開始');
-  for (const p of r.players) askSelect(r, p);
+  for (const p of r.players) if (!p.isBot) askSelect(r, p);
 }
 function askSelect(r, p) {
   const taken = r.players.filter(x => x.confirmed && x.id !== p.id).map(x => x.charId);
@@ -1984,6 +2016,184 @@ function startGame(r) {
   beginTurn(r);
 }
 
+// ===== v1.05 BOT判断・実行 =====
+const BOT_CANCEL_IDS = new Set(['pass', 'done', 'skip', 'back', 'sup:none', 'mt:cancel', 'lu:cancel',
+  'qt:cancel', 'st:cancel', 'sd:cancel', 'mv:cancel', 'sw:cancel', 'fg:cancel', 'ms:cancel', 'md:cancel',
+  'ul:cancel']);
+const botCardInfo = id => CREATURES[baseId(id)] || SPELLS[id] || SUPPORTS[id] || {};
+function botCardScore(r, p, id) {
+  const c = botCardInfo(id);
+  let score = (c.st || 0) * 1.2 + (c.hp || 0) + ({ L: 42, R: 22, N: 8 }[c.rarity] || 0) - (c.cost || 0) * .08;
+  if (c.elem && c.elem === CHARS[p.charId]?.elem) score += 28;
+  if (SPELLS[id]) score += id === 'sp_gold' ? 38 : id === 'sp_insight' ? 32 : 18;
+  if (SUPPORTS[id]) score += (c.st || 0) + (c.hp || 0) + (c.jinx ? 35 : 0);
+  const owned = [...(p.hand || []), ...(p.deck || []), ...(p.discard || [])].filter(x => x === id).length;
+  return score - Math.max(0, owned - 2) * 12;
+}
+function botLandScore(r, p, i, attacking = false) {
+  const t = TILES[i], o = r.owners[i];
+  if (t.t !== 'land') return ({ shrine: 65, gate: 70, market: p.gold >= 100 ? 55 : 18, castle: p.seal ? 90 : 24 }[t.t] || 0);
+  if (!o) return 75 + (tileElem(r, i) === CHARS[p.charId]?.elem ? 45 : 0) + chainCount(r, p.id, tileElem(r, i)) * 14;
+  if (o.player === p.id) return 44 + o.level * 18 + (o.dmg || 0) * -.5;
+  const toll = tollOf(r, i);
+  return attacking ? 35 + landValue(r, i) * .08 - o.level * 12 : -Math.min(180, toll * .25);
+}
+function botBest(r, options, scoreFn, low = false) {
+  if (!options.length) return null;
+  const scored = options.map(o => ({ o, s: scoreFn(o) + Math.random() * .01 }));
+  scored.sort((a, b) => low ? a.s - b.s : b.s - a.s);
+  return scored[0].o;
+}
+function botTileFromOption(o) {
+  if (Number.isInteger(o.tile)) return o.tile;
+  const m = String(o.id).match(/(?:^|:)(\d+)(?::\d+)?$/);
+  return m ? +m[1] : null;
+}
+function botChooseOption(r, p, pend) {
+  const opts = (pend && pend.options || []).slice();
+  if (!opts.length) return null;
+  const byId = id => opts.find(o => o.id === id);
+  const nonCancel = opts.filter(o => !BOT_CANCEL_IDS.has(o.id));
+  if (pend.type === 'roll') {
+    const ult = byId('ult');
+    if (ult && !p.ultUsed && (points(r, p) >= ASSET_REACH || Math.random() < .16)) return ult.id;
+    const spells = opts.filter(o => o.id.startsWith('sp:'));
+    if (spells.length && p.gold >= 100 && Math.random() < .38)
+      return botBest(r, spells, o => botCardScore(r, p, o.id.slice(3))).id;
+    return (byId('roll') || opts[0]).id;
+  }
+  if (pend.type === 'direction') {
+    const steps = r.dirPend?.steps || 1;
+    return botBest(r, opts, o => {
+      const dir = o.id === 'dir:-1' ? -1 : 1;
+      return botLandScore(r, p, (p.pos + dir * steps % TILES.length + TILES.length) % TILES.length);
+    }).id;
+  }
+  if (pend.type === 'pick_draw' || pend.type === 'draft') {
+    const cards = nonCancel.filter(o => o.card || o.id.startsWith('take:'));
+    const best = botBest(r, cards, o => botCardScore(r, p, o.card || o.id.slice(5)));
+    return (best || byId('skip') || opts[0]).id;
+  }
+  if (pend.type === 'tile') {
+    const summons = opts.filter(o => o.id.startsWith('summon:'));
+    if (summons.length) return botBest(r, summons, o => botCardScore(r, p, o.id.slice(7))).id;
+    if (byId('invade')) {
+      const enemy = r.owners[p.pos];
+      const bestAtk = Math.max(0, ...(p.hand || []).filter(c => CREATURES[c]).map(c => CREATURES[c].st));
+      const defHp = enemy ? Math.max(1, creatureMaxHp(enemy) - (enemy.dmg || 0) + enemy.level * 10) : 999;
+      if (bestAtk + 15 >= defHp || tollOf(r, p.pos) > Math.max(80, p.gold * .2)) return 'invade';
+    }
+    return (byId('toll') || byId('pass') || opts[0]).id;
+  }
+  if (pend.type === 'pick_creature')
+    return botBest(r, opts, o => CREATURES[o.id.slice(4)]?.st || 0).id;
+  if (pend.type === 'support') {
+    const sideAttack = r.battle?.attacker === p.id;
+    const useful = opts.filter(o => o.id !== 'sup:none');
+    if (!useful.length) return 'sup:none';
+    const best = botBest(r, useful, o => {
+      const id = o.id.slice(6), c = botCardInfo(id);
+      return (sideAttack ? (c.st || 0) * 2 + (c.hp || 0) : (c.hp || 0) * 2 + (c.st || 0)) + (c.jinx ? 45 : 0) - (o.id.startsWith('sup:c:') ? c.cost * .15 : 0);
+    });
+    return (Math.random() < .72 ? best : byId('sup:none')).id;
+  }
+  if (pend.type === 'upgrade') {
+    const lands = opts.filter(o => o.id.startsWith('up:'));
+    if (lands.length && p.gold >= 180)
+      return botBest(r, lands, o => botLandScore(r, p, botTileFromOption(o))).id;
+    if (byId('marlow:move') && Math.random() < .2) return 'marlow:move';
+    return (byId('pass') || opts[0]).id;
+  }
+  if (pend.type === 'upgrade_lv') {
+    const levels = opts.filter(o => o.id.startsWith('ul:') && o.id !== 'ul:cancel');
+    if (!levels.length || p.gold < 180) return (byId('ul:cancel') || opts[0]).id;
+    const affordableReserve = levels.filter(o => {
+      const [, i, lv] = o.id.split(':');
+      return p.gold - upCostRange(r, p, +i, +lv) >= 100;
+    });
+    return (affordableReserve[affordableReserve.length - 1] || levels[0]).id;
+  }
+  if (pend.type === 'market') {
+    if (byId('treasure')) return 'treasure';
+    if (p.gold >= 220 && byId('draw')) return 'draw';
+    if (p.gold >= 180 && byId('gem') && p.gems < (r.treasureCost[p.id] || 5)) return 'gem';
+    return (byId('done') || opts[0]).id;
+  }
+  if (pend.type === 'gate') {
+    if (byId('g_up') && p.gold >= 250) return 'g_up';
+    if (byId('g_forge') && p.gold >= 300) return 'g_forge';
+    return (byId('g_draft') || byId('pass') || opts[0]).id;
+  }
+  if (pend.type === 'forge') {
+    const choices = opts.filter(o => o.id.startsWith('fg:'));
+    return (botBest(r, choices, o => botCardScore(r, p, p.hand[+o.id.slice(3)])) || byId('back') || opts[0]).id;
+  }
+  if (pend.type === 'sell')
+    return botBest(r, opts, o => botLandScore(r, p, botTileFromOption(o)), true).id;
+  if (pend.type === 'overflow' || pend.type === 'forget') {
+    const cards = nonCancel.filter(o => o.card);
+    return (botBest(r, cards, o => botCardScore(r, p, o.card), true) || opts[0]).id;
+  }
+  if (pend.type === 'ult_lia') {
+    if ((pend.selected || []).length >= Math.min(3, r.owners.filter(o => o && o.player !== p.id).length))
+      return (byId('lu:confirm') || opts[0]).id;
+    const targets = opts.filter(o => /^lu:\d+$/.test(o.id) && !(pend.selected || []).includes(+o.id.slice(3)));
+    return (botBest(r, targets, o => landValue(r, +o.id.slice(3))) || byId('lu:confirm') || byId('lu:cancel')).id;
+  }
+  if (pend.type === 'samurai_elem') {
+    const wanted = CHARS[p.charId]?.elem;
+    return (byId('se:' + wanted) || nonCancel[0] || opts[0]).id;
+  }
+  if (['curse_target', 'quake_target', 'spell_target', 'step_b', 'ult_mio'].includes(pend.type)) {
+    const choices = nonCancel.filter(o => botTileFromOption(o) !== null);
+    return (botBest(r, choices, o => botLandScore(r, p, botTileFromOption(o), true)) || opts[0]).id;
+  }
+  if (['marlow_dest'].includes(pend.type)) {
+    const choices = nonCancel.filter(o => botTileFromOption(o) !== null);
+    return (botBest(r, choices, o => botLandScore(r, p, botTileFromOption(o))) || opts[0]).id;
+  }
+  if (['move_a', 'move_b', 'swap_land', 'swap_pick', 'step_a', 'marlow_src'].includes(pend.type)) {
+    const choice = botBest(r, nonCancel, o => {
+      const tile = botTileFromOption(o);
+      if (tile !== null) return botLandScore(r, p, tile);
+      const card = o.card || p.hand[+String(o.id).split(':')[1]];
+      return card ? botCardScore(r, p, card) : 0;
+    });
+    return (choice || opts.find(o => BOT_CANCEL_IDS.has(o.id)) || opts[0]).id;
+  }
+  return (opts.find(o => BOT_CANCEL_IDS.has(o.id)) || opts[Math.floor(Math.random() * opts.length)]).id;
+}
+function botDelayFor(r, pend, optionId) {
+  if (pend.type === 'roll') return optionId === 'roll' ? 1200 : 1500;
+  if (['pick_creature', 'support'].includes(pend.type)) return 1350;
+  if (['tile', 'spell_target', 'quake_target', 'curse_target'].includes(pend.type)) return 1450;
+  return 800 + Math.floor(Math.random() * 701);
+}
+function clearBotTimer(r) {
+  if (r.botTimer) clearTimeout(r.botTimer);
+  r.botTimer = null;
+}
+function scheduleBotAction(r) {
+  clearBotTimer(r);
+  if (!r.botMode || r.phase !== 'playing' || r.winner) return;
+  const entry = Object.entries(r.pending || {}).find(([pid, pend]) => pById(r, pid)?.isBot && pend?.options?.length);
+  if (!entry) return;
+  const [pid, pend] = entry;
+  const optionId = botChooseOption(r, pById(r, pid), pend);
+  if (!optionId) return;
+  const seq = ++r.botActionSeq;
+  const type = pend.type;
+  r.botTimer = setTimeout(() => {
+    r.botTimer = null;
+    if (r.botActionSeq !== seq || r.phase !== 'playing') return;
+    const now = r.pending[pid];
+    if (!now || now.type !== type || !now.options.some(o => o.id === optionId)) return scheduleBotAction(r);
+    handleChoose(r, pid, optionId);
+    touch(r);
+    broadcast(r);
+  }, botDelayFor(r, pend, optionId));
+}
+
 // ===== 公開状態とHTTP =====
 // 進行中の戦闘はテレビ画面へ段階だけを公開する。
 // 支援カードIDと「支援なし」の区別は、両者が回答してlastBattleになるまで秘匿する。
@@ -2011,6 +2221,7 @@ function publicBattle(r) {
 function publicState(r, viewerId) {
   return {
     ver: VERSION, code: r.code, phase: r.phase, evoLevel: RULES.evoLevel, turn: r.turn, round: r.round, target: ASSET_GOAL, reachAt: ASSET_REACH,
+    botMode: !!r.botMode,
     selectionReady: isSelectionReady(r),
     tiles: TILES.map((t, i) => r.elemOv[i] ? Object.assign({}, t, { e: r.elemOv[i] }) : t),
     tolls: r.owners.map((o, i) => o ? tollOf(r, i) : 0),
@@ -2038,6 +2249,7 @@ function publicState(r, viewerId) {
     catalog: { CREATURES, SUPPORTS, ITEMS, CHARS, ULTS, SPELLS, STARTER_DECKS: CHAR_DECKS, artIds: ART_IDS },
     players: r.players.map(p => ({
       id: p.id, name: p.name, charId: p.charId || null, confirmed: !!p.confirmed,
+      isBot: !!p.isBot,
       color: p.color || '#888', pos: p.pos || 0, gold: p.gold ?? 0,
       gems: p.gems || 0, treasures: p.treasures || 0,
       battleWins: p.battleWins || 0, shrineVisits: p.shrineVisits || 0, ultUsed: !!p.ultUsed,
@@ -2066,20 +2278,21 @@ function broadcast(r) {
     try { c.res.write(`data: ${JSON.stringify(publicState(r, c.viewerId))}\n\n`); }
     catch (e) { r.clients.delete(c); }
   }
+  scheduleBotAction(r);
 }
 
 // ===== v0.62 セーブ/再開(docs/plan_save_v0.62.md §7準拠) =====
 const SAVE_VER = 1;
 // ルームのフィールド分類表。ルームに新しいキーを追加したら必ずどちらかに分類すること
 // (save_testが未分類キーを検出して失敗する)
-const ROOM_RUNTIME_KEYS = new Set(['clients', 'lastActivity', 'upgradePreview']);  // 保存しない
+const ROOM_RUNTIME_KEYS = new Set(['clients', 'lastActivity', 'upgradePreview', 'botTimer', 'botActionSeq']);  // 保存しない
 const ROOM_PERSIST_KEYS = new Set([                                            // 保存する
   'code', 'phase', 'players', 'owners', 'deck', 'market', 'turn', 'round', 'log',
   'pending', 'titles', 'duel', 'lastBattle', 'winner', 'barrier', 'elemOv', 'tileFx',
   'treasureCost', 'curses', 'boardToken', 'atSeq', 'saveRev', 'battle', 'draft',
   'dirPend', 'halfMarket',
   'lastEvent', 'lastDice', 'lastUlt', 'lastHeal', 'lastSeal', 'lastRuin', 'lastDraw', 'lastGain',
-  'lastBarrierHit', 'lastSpellFx',
+  'lastBarrierHit', 'lastSpellFx', 'botMode',
 ]);
 function serializeRoom(r) {
   const room = {};
@@ -2162,7 +2375,8 @@ function restoreRoom(save) {
   const existing = rooms.get(d.code);
   if (existing && existing.boardToken !== d.boardToken)
     return { error: `ルーム${d.code}は使用中のため復元できません(既存のルームを閉じてから再試行してください)`, status: 409 };
-  const room = Object.assign(d, { clients: new Set(), lastActivity: Date.now() });
+  const room = Object.assign(d, { clients: new Set(), lastActivity: Date.now(), botTimer: null, botActionSeq: 0 });
+  if (room.botMode == null) room.botMode = false;
   // ここから先は失敗しない操作のみ(原子的な差し替え)
   if (existing) {
     for (const c of existing.clients) { try { c.res.end(); } catch (e) {} }
@@ -2173,6 +2387,7 @@ function restoreRoom(save) {
   for (const pend of Object.values(room.pending || {}))
     if (pend && pend.type === 'pick_draw') delete pend.until;  // 旧セーブの制限時間表記は破棄
   log(room, 'セーブデータからゲームを再開した');
+  scheduleBotAction(room);
   const warn = save.gameVer !== VERSION
     ? `セーブ時のゲームバージョン(${save.gameVer})と現在(${VERSION})が異なります` : null;
   return { room, warn };
@@ -2252,7 +2467,8 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (p === '/api/create' && req.method === 'POST') {
-    const r = makeRoom();
+    const b = await readBody(req);
+    const r = makeRoom(b.mode === 'bot' ? 'bot' : 'normal');
     const base = process.env.PUBLIC_URL
       ? process.env.PUBLIC_URL.replace(/\/$/, '')
       : `http://${lanIP()}:${PORT}`;
@@ -2265,7 +2481,7 @@ const server = http.createServer(async (req, res) => {
     const nm = String(b.name || '').trim().slice(0, 8);
     if (r.phase !== 'lobby') {
       // v0.62: 名前復帰 ─ 同名の「切断中」プレイヤーを引き継ぐ(接続中は乗っ取り不可)
-      const pl = nm && r.players.find(x => x.name === nm);
+      const pl = nm && r.players.find(x => x.name === nm && !x.isBot);
       if (pl) {
         const connected = [...r.clients].some(c => c.viewerId === pl.id);
         if (connected) return json(res, { error: `「${nm}」は接続中のため復帰できません` }, 400);
@@ -2277,6 +2493,8 @@ const server = http.createServer(async (req, res) => {
       return json(res, { error: 'ゲームは開始済みです(参加中の名前を入力すると復帰できます)' }, 400);
     }
     if (r.players.length >= 4) return json(res, { error: '満員です' }, 400);
+    if (r.botMode && r.players.some(x => !x.isBot))
+      return json(res, { error: 'BOT戦にはプレイヤー1人だけ参加できます' }, 400);
     if (nm && r.players.some(x => x.name === nm))
       return json(res, { error: '同じ名前のプレイヤーがいます' }, 400);  // v0.62: 名前復帰のため重複禁止
     const id = 'p' + Math.random().toString(36).slice(2, 8);
@@ -2308,7 +2526,7 @@ const server = http.createServer(async (req, res) => {
   if (p === '/api/resume' && req.method === 'POST') {
     const b = await readBody(req);
     const r = rooms.get((b.room || '').toUpperCase());
-    const pl = r && r.players.find(x => x.id === b.playerId);
+    const pl = r && r.players.find(x => x.id === b.playerId && !x.isBot);
     if (!pl) return json(res, { error: 'セッションが見つかりません' }, 404);
     touch(r);
     log(r, `${pl.name}が再入場した`);
@@ -2320,6 +2538,7 @@ const server = http.createServer(async (req, res) => {
     const r = rooms.get((b.room || '').toUpperCase());
     if (r) {
       if (b.token !== r.boardToken) return json(res, { error: '権限がありません' }, 403);  // v0.62
+      clearBotTimer(r);
       for (const c of r.clients) { try { c.res.end(); } catch (e) {} }
       rooms.delete(r.code);
       console.log(`ルーム${r.code}を手動クローズ`);
@@ -2340,14 +2559,19 @@ const server = http.createServer(async (req, res) => {
     const r = rooms.get((b.room || '').toUpperCase());
     if (!r) return json(res, { error: 'no room' }, 404);
     touch(r);
-    if (b.type === 'start_select' && r.phase === 'lobby' && r.players.length >= 2) startSelect(r);
+    if (b.type === 'start_select' && r.phase === 'lobby' &&
+        (r.botMode ? r.players.filter(q => !q.isBot).length === 1 : r.players.length >= 2)) startSelect(r);
     else if (b.type === 'start_game') {
       if (b.token !== r.boardToken) return json(res, { error: '権限がありません' }, 403);
       if (!isSelectionReady(r))
         return json(res, { error: '召喚士の選択状態が変わりました。全員でもう一度確認してください' }, 409);
       startGame(r);
     }
-    else if (b.type === 'choose') handleChoose(r, b.playerId, b.optionId);
+    else if (b.type === 'choose') {
+      const actor = pById(r, b.playerId);
+      if (actor && actor.isBot) return json(res, { error: 'BOTは外部から操作できません' }, 403);
+      handleChoose(r, b.playerId, b.optionId);
+    }
     else if (b.type === 'upgrade_preview') {
       // 発注書v0.75 §6.3: 強化選択中の候補プレビュー(揮発・非保存・ルール影響なし)。
       // 本人が強化選択中で、送られたtileが現在の候補に含まれる場合のみ表示する
@@ -2365,7 +2589,9 @@ const server = http.createServer(async (req, res) => {
     const r = rooms.get((url.searchParams.get('room') || '').toUpperCase());
     if (!r) { res.writeHead(404); return res.end(); }
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
-    const client = { res, viewerId: url.searchParams.get('me') || null };
+    const requestedViewer = url.searchParams.get('me') || null;
+    const viewer = pById(r, requestedViewer);
+    const client = { res, viewerId: viewer && !viewer.isBot ? viewer.id : null };
     r.clients.add(client);
     res.write(`data: ${JSON.stringify(publicState(r, client.viewerId))}\n\n`);
     req.on('close', () => {

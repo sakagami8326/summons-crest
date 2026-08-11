@@ -931,6 +931,7 @@
       <img class="tlogo" src="/assets/logo.png">
       <div class="titleMenu">
         <button class="gbtn" id="titleCreate">ルームを作る</button>
+        <button class="gbtn" id="titleBot">BOT戦</button>
         <div id="titleResumeWrap">
           <button class="gbtn" id="titleResume"></button>
           <button id="resumeClose" title="このルームを閉じる">✕ 閉じる</button>
@@ -1511,7 +1512,12 @@ let ownersCache = '';
 document.getElementById('titleCreate').onclick = () => {
   initAudio();
   document.getElementById('titleOv').classList.remove('on');
-  boot();
+  boot('normal');
+};
+document.getElementById('titleBot').onclick = () => {
+  initAudio();
+  document.getElementById('titleOv').classList.remove('on');
+  boot('bot');
 };
 document.getElementById('titleSettings').onclick = () => {
   initAudio();
@@ -1804,8 +1810,9 @@ $('optSaveQuit').onclick = async () => {
     location.reload();  // タイトルに戻る(「続きから再開」ボタンが表示される)
   } catch (e) { $('optMsg').textContent = '保存に失敗しました(サーバー接続を確認)'; }
 };
-async function boot() {
-  const c = await (await fetch('/api/create', { method: 'POST' })).json();
+async function boot(mode = 'normal') {
+  const c = await (await fetch('/api/create', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode }) })).json();
   enterRoom(c.code, c.phoneUrl, c.boardToken);
 }
 ['redani','linnei','grease','mio','lia','adel'].forEach(c => { new Image().src = '/assets/full_' + c + '.png'; });
@@ -2596,7 +2603,7 @@ function renderHUD() {
       <img class="face" src="${p.charId ? '/assets/f_' + p.charId + '.png' : ''}">
       <div class="row1">
         <div class="rankBadge ${rank < 3 ? 'rank' + (rank+1) : ''}">${rank + 1}</div>
-        <div class="pname">${p.name}${crowns}</div>
+        <div class="pname">${p.name}${p.isBot ? ' <small style="color:#F2D062">BOT</small>' : ''}${crowns}</div>
         <div class="pts">${p.points}<small>G/${state.target}</small></div>
       </div>
       <div class="row2">
@@ -3168,13 +3175,16 @@ function render() {
   if (!state) return;
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.01' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.02' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
-    $('joined').innerHTML = state.players.map(p => `<span>${p.name}</span>`).join('');
-    $('startBtn').disabled = state.players.length < 2;
+    $('joined').innerHTML = state.players.map(p => `<span>${p.name}${p.isBot ? ' <b>BOT</b>' : ''}</span>`).join('');
+    $('startBtn').disabled = state.botMode
+      ? state.players.filter(p => !p.isBot).length !== 1
+      : state.players.length < 2;
+    $('startBtn').textContent = state.botMode ? 'BOT戦のキャラ選択を開始' : 'キャラ選択を開始';
   }
   // キャラ選択
   $('selectOv').classList.toggle('on',

@@ -1109,7 +1109,7 @@ function renderResult() {
     <div class="resRow ${q.id === state.winner ? 'win' : ''} ${q.id === pid ? 'mine' : ''}" style="--cc:${q.color}">
       <div class="resRank">${i + 1}位</div>
       <img src="/assets/f_${q.charId}.png">
-      <div>${q.name}${q.id === state.winner ? '<span class="resWin">WINNER</span>' : ''}</div>
+      <div>${q.name}${q.isBot ? '<span class="resWin">BOT</span>' : ''}${q.id === state.winner ? '<span class="resWin">WINNER</span>' : ''}</div>
       <div class="resPts">${q.points}<span style="font-size:1.9dvh">点</span><span class="resGold">${q.gold}G</span></div>
     </div>`).join('');
   $('resultOv').classList.add('on');

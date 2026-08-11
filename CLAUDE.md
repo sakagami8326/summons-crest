@@ -6,7 +6,7 @@
 テストプレイ→即日修正のサイクルで開発している。
 
 - 公開URL: https://summons-crest.onrender.com (mainへのpushでRenderが自動デプロイ)
-- 現在バージョン: **v1.04**(server.jsの`VERSION`とboard.html左下の`board X.XX`表記)
+- 現在バージョン: **v1.05**(server.jsの`VERSION`とboard.html左下の`board X.XX`表記)
 
 ## 構成
 
