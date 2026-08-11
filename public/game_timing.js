@@ -7,7 +7,11 @@ const GAME_TIMING = {
   stepMs: 250,                // 1歩あたりのホップ間隔
   otherStartDelay: 250,       // 自分以外のコマ移動の初動(盤面のみ)
   castleResume: 650,          // 城ドラフト後にコマ移動を再開するまでの間
+  castleZoom: 550,            // 城到着からズーム・効果音まで
+  castleBreakdown: 4000,      // 城ボーナス内訳の表示時間
   arriveBuf: 1300,            // 到着後、スマホが到着UIを出すまでのバッファ(通常)
   arriveBufCastle: 1100,      // 同(城ドラフト経由の再開後)
-  castleDraftLead: 400,       // 城ドラフトUIをコマの城到着に合わせて出す先行時間
+  castleDraftLead: 4550,      // 城ズーム＋内訳表示後にドラフトUIを解禁
+  moveWaitMax: 20000,         // 時計ずれ時のスマホ待機上限
 };
+if (typeof module !== 'undefined') module.exports = GAME_TIMING;

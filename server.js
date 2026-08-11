@@ -8,7 +8,8 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.05';
+const VERSION = '1.06';
+const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
@@ -411,6 +412,7 @@ function landValue(r, i) {
   const chain = Math.min(5, chainCount(r, o.player, tileElem(r, i)));
   return Math.round(100 * LV_MUL[o.level] * CHAIN_MUL[chain]);
 }
+const castleLandBonus = lands => Math.round(lands * 0.5);
 // 総資産 = 所持金+地価合計+秘宝600G+称号500G
 function points(r, p) {
   const lands = r.owners.reduce((n, o, i) => n + (o && o.player === p.id ? landValue(r, i) : 0), 0);
@@ -625,13 +627,14 @@ function performMove(r, p, steps, meta, moveLabel) {
   }
   r.lastDice = Object.assign({ player: p.id, at: stamp(r) }, meta);
   const dir = (p.dir || 1) * (p.windShift ? -1 : 1);  // 風向転換: このターンのみ逆方向
-  let bonus = 0, gotSeal = false, noSeal = false;
+  let bonus = 0, gotSeal = false, noSeal = false, castleStep = 0, usedSeal = false;
   for (let s2 = 0; s2 < steps; s2++) {
     p.pos = (p.pos + dir + TILES.length) % TILES.length;
     if (p.pos === GATE_TILE && !p.seal) { p.seal = true; gotSeal = true; }
     if (p.pos === 0) {
+      castleStep = s2 + 1;
       p.lap = (p.lap || 1) + 1;  // 刻印の有無に関わらず周回は進む
-      if (p.seal) { bonus += RULES.castleBonus; p.seal = false; }
+      if (p.seal) { bonus += RULES.castleBonus; p.seal = false; usedSeal = true; }
       else noSeal = true;
     }
   }
@@ -642,32 +645,44 @@ function performMove(r, p, steps, meta, moveLabel) {
     log(r, `❖ ${p.name}は門を通過 ─ +${RULES.gateBonus}Gと刻印を得た(城まで持ち帰ると一周ボーナス)`);
   }
   if (bonus) {
-    // 領地ボーナス: 所有地価合計の10%
+    // 領地ボーナス: 所有地価合計の50%(v1.06)
     const lands = r.owners.reduce((n, o, i) => n + (o && o.player === p.id ? landValue(r, i) : 0), 0);
-    const lb = Math.round(lands * 0.1);
+    const landRate = 0.5;
+    const lb = castleLandBonus(lands);
     p.gold += bonus + lb;
     // 帰還の癒し: 自領地のクリーチャーの負傷を10回復(最大値は超えない)
     const healed = [];
     r.owners.forEach((o, i) => {
       if (o && o.player === p.id && o.dmg > 0) {
+        const before = o.dmg;
         o.dmg = Math.max(0, o.dmg - 10);
-        healed.push(i);
+        const c = CREATURES[o.creature] || CREATURES[baseId(o.creature)] || {};
+        healed.push({ tile: i, creature: c.name || o.creature, before, after: o.dmg, amount: before - o.dmg });
       }
     });
     if (healed.length) log(r, `⛨ 帰還の癒し ─ ${p.name}の領地のクリーチャーが回復した(負傷-10 × ${healed.length}体)`);
-    r.lastDice.castle = { gold: bonus, landBonus: lb, drew: 1, healed };
+    const initial = meta.multi ? GAME_TIMING.moveStartDelayMulti : GAME_TIMING.moveStartDelay;
+    const availableAt = r.lastDice.at + initial + castleStep * GAME_TIMING.stepMs +
+      GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown;
+    r.lastDice.castle = { usedSeal, baseBonus: bonus, gold: bonus, landValue: lands, landRate,
+      landBonus: lb, total: bonus + lb, drew: 1, healed, castleStep, availableAt };
     log(r, `${p.name}は${moveLabel}(城通過 +${bonus}G${lb ? `+領地ボーナス${lb}G` : ''}、カードを選択!)`);
     // 勝利判定: ボーナス込みで総資産8000G以上
     if (points(r, p) >= ASSET_GOAL) {
       return declareWin(r, p, `総資産${points(r, p)}Gで城に凱旋!`);
     }
-    return startDraft(r, p, 'tile');
+    return startDraft(r, p, 'tile', availableAt);
   }
-  r.lastDice.castle = null;
   if (noSeal) {
+    const initial = meta.multi ? GAME_TIMING.moveStartDelayMulti : GAME_TIMING.moveStartDelay;
+    const availableAt = r.lastDice.at + initial + castleStep * GAME_TIMING.stepMs +
+      GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown;
+    r.lastDice.castle = { usedSeal: false, baseBonus: 0, gold: 0, landValue: 0, landRate: .5,
+      landBonus: 0, total: 0, drew: 0, healed: [], castleStep, availableAt };
     log(r, `${p.name}は${moveLabel} ─ 刻印がないため一周ボーナスなし…`);
     if (points(r, p) >= ASSET_GOAL) return declareWin(r, p, `総資産${points(r, p)}Gで城に凱旋!`);
   } else {
+    r.lastDice.castle = null;
     log(r, `${p.name}は${moveLabel}`);
   }
   resolveTile(r, p);
@@ -798,7 +813,7 @@ function askUpgrade(r, p, where) {
   ask(r, p.id, 'upgrade', `${where}に到着 ─ ${where === '自領地' ? '領地を強化／マーローを移動' : '強化する領地を選ぶ'}`, opts);
   r.pending[p.id].where = where;
 }
-function startDraft(r, p, resume) {
+function startDraft(r, p, resume, availableAt) {
   refillDeck(r);
   if (r.deck.length < 3) {
     r.deck.push(...makeDeck());
@@ -815,6 +830,7 @@ function startDraft(r, p, resume) {
       ? `呪文「${SPELLS[c].name}」 ${SPELLS[c].desc}`
       : `${CREATURES[c].name}(AT${CREATURES[c].st}/HP${CREATURES[c].hp})${CREATURES[c].fx ? ' ' + CREATURES[c].fx : ''}`,
   })).concat([{ id: 'skip', label: 'カードを加えない(3枚とも山札の底へ)' }]));
+  if (availableAt) r.pending[p.id].availableAt = availableAt;
 }
 function askGate(r, p) {
   const canUp = r.owners.some((o, i) => o && o.player === p.id &&
@@ -2183,6 +2199,7 @@ function scheduleBotAction(r) {
   if (!optionId) return;
   const seq = ++r.botActionSeq;
   const type = pend.type;
+  const availableDelay = Math.max(0, (pend.availableAt || 0) - Date.now());
   r.botTimer = setTimeout(() => {
     r.botTimer = null;
     if (r.botActionSeq !== seq || r.phase !== 'playing') return;
@@ -2191,7 +2208,7 @@ function scheduleBotAction(r) {
     handleChoose(r, pid, optionId);
     touch(r);
     broadcast(r);
-  }, botDelayFor(r, pend, optionId));
+  }, Math.max(botDelayFor(r, pend, optionId), availableDelay + 50));
 }
 
 // ===== 公開状態とHTTP =====
@@ -2570,6 +2587,9 @@ const server = http.createServer(async (req, res) => {
     else if (b.type === 'choose') {
       const actor = pById(r, b.playerId);
       if (actor && actor.isBot) return json(res, { error: 'BOTは外部から操作できません' }, 403);
+      const pend = r.pending[b.playerId];
+      if (pend?.availableAt && Date.now() < pend.availableAt)
+        return json(res, { error: '城の帰還演出中です' }, 425);
       handleChoose(r, b.playerId, b.optionId);
     }
     else if (b.type === 'upgrade_preview') {

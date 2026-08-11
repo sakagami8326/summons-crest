@@ -11,7 +11,7 @@ const ok = (cond, name) => { if (!cond) throw new Error('FAIL: ' + name); pass++
 const src = fs.readFileSync(path.join(__dirname, 'public/game_timing.js'), 'utf8');
 const GT = new Function(src + ';return GAME_TIMING;')();
 const KEYS = ['moveStartDelay', 'moveStartDelayMulti', 'stepMs', 'otherStartDelay',
-  'castleResume', 'arriveBuf', 'arriveBufCastle', 'castleDraftLead'];
+  'castleResume', 'castleZoom', 'castleBreakdown', 'arriveBuf', 'arriveBufCastle', 'castleDraftLead', 'moveWaitMax'];
 for (const k of KEYS)
   ok(typeof GT[k] === 'number' && isFinite(GT[k]) && GT[k] > 0, `game_timing: ${k}が正の数`);
 ok(GT.moveStartDelayMulti > GT.moveStartDelay, 'game_timing: 複数ダイスの初動 > 単独');
@@ -36,9 +36,9 @@ ok(!/\*\s*250\s*\+/.test(phone), 'phone: 1歩250msの直書き(*250+)がない')
 // 4) スマホの到着時刻計算が共有定数で構成されていること(式の構成要素を検査)
 const arrive = phone.match(/doneAt = ld\.at \+ init \+ steps \* GT\.stepMs \+ GT\.arriveBuf/);
 ok(!!arrive, 'phone: 通常到着の式が共有定数で構成されている');
-ok(/pendSince \+ GT\.castleResume \+ m\.pos \* GT\.stepMs \+ GT\.arriveBufCastle/.test(phone),
+ok(/castleAt \+ GT\.castleResume \+ remaining \* GT\.stepMs \+ GT\.arriveBufCastle/.test(phone),
   'phone: 城経由の到着式が共有定数で構成されている');
-ok(/toCastle \* GT\.stepMs \+ GT\.castleDraftLead/.test(phone),
+ok(/castleStep \|\| steps\) \* GT\.stepMs \+ GT\.castleDraftLead/.test(phone),
   'phone: 城ドラフト表示の式が共有定数で構成されている');
 
 // 5) 盤面のホップ進行が共有定数で構成されていること

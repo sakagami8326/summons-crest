@@ -1,10 +1,10 @@
 {
   "name": "summons-crest",
-  "version": "1.05.0",
+  "version": "1.06.0",
   "private": true,
   "scripts": {
     "start": "node server.js",
-    "test": "node phaser_test.js && node timing_test.js && node v100_test.js && node v101_new_creatures_test.js && node v102_wind_creatures_test.js && node bot_test.js && node bot_mode_test.js && node ui_test.js && node save_test.js",
+    "test": "node phaser_test.js && node timing_test.js && node v100_test.js && node v101_new_creatures_test.js && node v102_wind_creatures_test.js && node v106_castle_test.js && node bot_test.js && node bot_mode_test.js && node ui_test.js && node save_test.js",
     "test:v100": "node v100_test.js",
     "test:v101": "node v101_new_creatures_test.js",
     "test:v102": "node v102_wind_creatures_test.js",

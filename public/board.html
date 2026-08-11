@@ -443,6 +443,14 @@
   #centerBanner.show { opacity:1; }
   #centerBanner small { display:block; font-size:2.4vh; color:rgba(241,232,208,.92); margin-top:.6vh;
       letter-spacing:2px; max-width:64vw; line-height:1.5; }
+  #castleBreakdown { position:fixed; inset:0; z-index:61; display:flex; align-items:center; justify-content:center; pointer-events:none; opacity:0; transition:opacity .3s; background:radial-gradient(circle,rgba(15,12,35,.18),rgba(8,6,20,.78)); }
+  #castleBreakdown.on { opacity:1; }
+  .castlePanel { width:min(620px,82vw); max-height:78vh; overflow:hidden; padding:2.5vh 3vw; border:2px solid var(--gold); border-radius:2vh; color:var(--parchment); background:linear-gradient(145deg,rgba(30,24,55,.97),rgba(12,10,28,.97)); box-shadow:0 0 45px rgba(242,208,98,.25); font-family:'Reggae One','Yu Mincho',serif; }
+  .castleTitle { color:var(--gold-soft); text-align:center; font-size:3.5vh; letter-spacing:4px; margin-bottom:1.5vh; }
+  .castleLine { display:flex; justify-content:space-between; gap:2vw; padding:.65vh 0; font-size:2.25vh; }
+  .castleLine.total { margin-top:1vh; padding-top:1.2vh; border-top:1px solid rgba(242,208,98,.55); font-size:3vh; color:var(--gold-soft); }
+  .castleHeal { margin-top:1.2vh; padding-top:1vh; border-top:1px solid rgba(255,255,255,.18); font-size:1.75vh; line-height:1.55; }
+  .castleNone { text-align:center; font-size:2.6vh; line-height:1.7; color:#ddd4c4; }
   #diceMsg { text-align:center; font-size:3.2vh; letter-spacing:4px; color:var(--gold-soft);
       text-shadow:0 2px 8px rgba(0,0,0,.9); opacity:0; transition:opacity .25s; margin-top:1vh; }
   #diceMsg.show { opacity:1; }
@@ -913,6 +921,7 @@
   <div id="ultCut"><div id="ultBg"></div>
     <img id="ultArt"><div id="ultName"></div><div id="ultSub"></div></div>
   <div id="centerBanner"></div>
+  <div id="castleBreakdown"><div class="castlePanel" id="castlePanel"></div></div>
   <div id="tileMsg"></div>
   <div id="tpBubble"></div>
   <div id="turnPortrait"><img id="tpImg"><div class="tpn" id="tpName"></div></div>
@@ -1208,10 +1217,24 @@ function hopStep() {
   pawnAnim[hopState.id] = idx;
   renderPawns();
   if (idx === 0 && hopState.castleEv) {
-    playSe(seCastleBonus);
-    showBanner(`+${hopState.castleEv.gold}G${hopState.castleEv.landBonus ? ` +領地ボーナス${hopState.castleEv.landBonus}G` : ''}`,
-      '刻印を使用' + ((hopState.castleEv.healed || []).length ? ' ｜ 領地のクリーチャー回復(負傷-10)' : '') + ' ─ カードを1枚選んで獲得!', 2800);
-    for (const hi of (hopState.castleEv.healed || [])) fxAt(hi, 'fxRing', '#8FE08A');
+    const ev = hopState.castleEv;
+    setZoom(0);
+    cutBusy++;
+    hopState.holdUntil = Date.now() + GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown;
+    setTimeout(() => {
+      playSe(seCastleBonus);
+      showCastleBreakdown(ev);
+      for (const h of (ev.healed || [])) fxAt(typeof h === 'number' ? h : h.tile, 'fxRing', '#8FE08A');
+    }, GAME_TIMING.castleZoom);
+    setTimeout(() => {
+      hideCastleBreakdown();
+      cutBusy = Math.max(0, cutBusy - 1);
+      if (!ev.drew && hopState) {
+        hopState.holding = false;
+        if (hopState.sN < hopState.steps) setTimeout(hopStep, GAME_TIMING.castleResume);
+        else finishHop();
+      }
+    }, GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown);
     hopState.castleEv = null;
     hopState.holding = true;   // ドラフト完了までここで待機
     render();
@@ -1219,6 +1242,28 @@ function hopStep() {
   }
   if (hopState.sN < hopState.steps) setTimeout(hopStep, GAME_TIMING.stepMs);
   else finishHop();
+}
+function showCastleBreakdown(ev) {
+  const el = $('castleBreakdown'), panel = $('castlePanel');
+  if (!ev.usedSeal) {
+    panel.innerHTML = '<div class="castleTitle">城へ帰還</div><div class="castleNone">刻印がありません<br>ボーナス・回復・ドラフトなし</div>';
+  } else {
+    const heals = (ev.healed || []).map(h => typeof h === 'number'
+      ? `マス${h + 1}：負傷 -10`
+      : `マス${h.tile + 1}　${h.creature}：負傷 ${h.before} → ${h.after}`).join('<br>');
+    panel.innerHTML = `<div class="castleTitle">城への帰還ボーナス</div>
+      <div class="castleLine"><span>帰還ボーナス</span><b>+${ev.baseBonus ?? ev.gold ?? 200}G</b></div>
+      <div class="castleLine"><span>領地総価値</span><b>${ev.landValue ?? 0}G</b></div>
+      <div class="castleLine"><span>領地ボーナス</span><b>${ev.landValue ?? 0}G × ${Math.round((ev.landRate ?? .5) * 100)}% = +${ev.landBonus ?? 0}G</b></div>
+      <div class="castleLine total"><span>今回の獲得合計</span><b>+${ev.total ?? ((ev.gold || 0) + (ev.landBonus || 0))}G</b></div>
+      <div class="castleHeal"><b>帰還の癒し（負傷-10）</b><br>${heals || '回復対象なし'}</div>`;
+  }
+  el.classList.add('on');
+  bannerUntil = Math.max(bannerUntil, Date.now() + GAME_TIMING.castleBreakdown);
+}
+function hideCastleBreakdown() {
+  $('castleBreakdown').classList.remove('on');
+  setZoom(null);
 }
 const D_PIPS = { 1:[[30,30]], 2:[[16,16],[44,44]], 3:[[16,16],[30,30],[44,44]],
   4:[[16,16],[44,16],[16,44],[44,44]], 5:[[16,16],[44,16],[30,30],[16,44],[44,44]],
@@ -3270,11 +3315,16 @@ function render() {
           : GAME_TIMING.otherStartDelay);
       }
     } else if (hopState.holding) {
-      const pd = state.pending[hopState.id];
-      if (!pd || pd.type !== 'draft') {
-        hopState.holding = false;
-        if (hopState.sN < hopState.steps) setTimeout(hopStep, GAME_TIMING.castleResume);
-        else finishHop();
+      if (hopState.holdUntil && Date.now() < hopState.holdUntil) {
+        clearTimeout(hopState.holdTimer);
+        hopState.holdTimer = setTimeout(render, hopState.holdUntil - Date.now() + 30);
+      } else {
+        const pd = state.pending[hopState.id];
+        if (!pd || pd.type !== 'draft') {
+          hopState.holding = false;
+          if (hopState.sN < hopState.steps) setTimeout(hopStep, GAME_TIMING.castleResume);
+          else finishHop();
+        }
       }
     }
     renderBoard(); renderPawns(); renderHUD();
