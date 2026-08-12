@@ -1170,6 +1170,7 @@ function resolveBattle(r) {
   }
 
   r.lastBattle = { tile: b.tile, attacker: atk.id, defender: def.id,
+    terrainElem: tileElem(r, b.tile),
     atkCreature: b.atkCreature, defCreature: o.creature,
     defLevel: o.level,
     atkSupport: aSup, defSupport: dSup,
@@ -2288,6 +2289,7 @@ function publicBattle(r) {
     key: b.startedAt || `${b.tile}:${b.attacker}:${b.defender}`,
     phase: b.atkCreature ? 'support' : 'pick_attacker',
     tile: b.tile,
+    terrainElem: tileElem(r, b.tile),
     attacker: b.attacker,
     defender: b.defender,
     atkCreature: b.atkCreature || null,

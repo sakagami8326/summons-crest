@@ -165,7 +165,6 @@
   .statIconDisk { width:100%; aspect-ratio:1; box-sizing:border-box; padding:13%; border-radius:50%;
       background:#101a32; border:1px solid #d9bd67; display:grid; place-items:center; overflow:hidden; }
   .statIconDisk img { display:block; width:100%; height:100%; object-fit:contain; }
-  .battleCreatureCard .scRule { height:4px; background:url('/assets/cards/rule-brush.svg') center/100% 100% no-repeat; }
   .battleCreatureCard .scEffect { padding:3% 3% 0; text-align:center; }
   .battleCreatureCard .scEffect h3 { margin:0 0 1%; font:700 1.4vh/1.1 Marudeco,sans-serif; }
   .battleCreatureCard .scEffect h3::before{content:'【'} .battleCreatureCard .scEffect h3::after{content:'】'}
@@ -223,8 +222,15 @@
   .battleCompareBar { width:100%; height:2.35vh; display:flex; overflow:hidden; box-sizing:border-box;
       border:1px solid #d7b84f; border-radius:1.2vh; background:rgba(0,0,0,.58); box-shadow:inset 0 0 .7vh rgba(0,0,0,.8); }
   .battleCompareBar.over { box-shadow:0 0 1.3vh #ffd95a,inset 0 0 .7vh #fff7c2; }
-  .battleTerrain { display:flex; align-items:center; justify-content:center; gap:.7vw; margin-top:.15vh;
-      color:#f4e8c4; font:700 1.5vh/1 Marudeco,sans-serif; letter-spacing:.08em; }
+  .battleDfLabels { display:grid; grid-template-columns:minmax(8rem,1fr) 2.4ch 5.6vh 2.4ch minmax(8rem,1fr);
+      margin-top:-.25vh; color:#65c7ff; font:700 1.45vh/1.2 Marudeco,sans-serif; text-shadow:0 1px 4px #001225; }
+  #bCmpAtkDf { grid-column:1; justify-self:center; } #bCmpDefDf { grid-column:5; justify-self:center; }
+  .battleTerrain { display:flex; align-items:center; justify-content:center; gap:.7vw; width:18vh; min-height:3.5vh;
+      margin:.25vh auto 0; padding:0 1.2vh; box-sizing:border-box; border-radius:999px;
+      border:1px solid color-mix(in srgb,var(--terrain-color,#777) 75%,#fff); color:#fff8e5;
+      background:linear-gradient(90deg,color-mix(in srgb,var(--terrain-color,#777) 35%,#080818),color-mix(in srgb,var(--terrain-color,#777) 72%,#101020),color-mix(in srgb,var(--terrain-color,#777) 35%,#080818));
+      box-shadow:0 0 1.2vh color-mix(in srgb,var(--terrain-color,#777) 42%,transparent);
+      font:700 1.5vh/1 Marudeco,sans-serif; letter-spacing:.08em; }
   #bCmpTerrain { width:3.2vh; height:3.2vh; filter:drop-shadow(0 1px 3px #000); }
   #bCmpTerrain svg { display:block; width:100%; height:100%; overflow:visible; }
   .supportRevealStage { position:fixed; inset:0; z-index:79; display:grid; place-items:center; pointer-events:none;
@@ -312,6 +318,7 @@
     .scardB { width:8vh; height:11.5vh; }
     #battleCompare { width:min(49vw,69vh); font-size:4vh; }
     .battleCompareRow { grid-template-columns:minmax(5rem,1fr) 2.3ch 4.8vh 2.3ch minmax(5rem,1fr); }
+    .battleDfLabels { grid-template-columns:minmax(5rem,1fr) 2.3ch 4.8vh 2.3ch minmax(5rem,1fr); }
     .battleCompareRow > img { width:4.6vh; height:4.6vh; }
   }
   .sflipB { position:relative; width:100%; height:100%; transform-style:preserve-3d; transition:transform .5s; }
@@ -363,10 +370,13 @@
   .tvShopCard { position:relative; aspect-ratio:5/7; border:0; border-radius:8px; overflow:hidden;
       background:#f6e9c8; color:#172536; box-shadow:0 .8vh 2vh #0009; container-type:inline-size; isolation:isolate; }
   .tvShopCardBg { position:absolute; z-index:-2; inset:0; width:100%; height:100%; object-fit:cover; }
+  .tvShopCardBg.dedicatedSpell { z-index:-1; object-fit:cover; }
   .tvShopArt { position:absolute; z-index:-1; top:9%; left:3%; width:94%; height:58%; display:grid; place-items:center; overflow:hidden; }
   .tvShopArt img { display:block; width:100%; height:100%; object-fit:contain; }
-  .tvShopArt.support { top:9.5%; left:17%; width:66%; height:47%; padding:2% 4% 7%; box-sizing:border-box; }
-  .tvShopArt.support img { width:72%; height:72%; object-position:center 42%; }
+  .tvShopArt.support { top:9%; left:8%; width:84%; height:50%; padding:0; box-sizing:border-box; overflow:visible; }
+  .tvShopArt.support img,.tvShopArt.support.weapon img,.tvShopArt.support.shield img {
+      position:absolute; inset:0; display:block; width:100% !important; height:100% !important;
+      max-width:100%; max-height:100%; object-fit:contain; object-position:center center; transform:none; }
   .tvShopArt.spell img { width:88%; height:88%; }
   .tvShopArt.creature img { width:96%; height:96%; }
   .tvShopArt.remove { inset:0; width:100%; height:100%; background:none; z-index:0; }
@@ -382,9 +392,8 @@
       font:900 clamp(15px,15cqw,30px)/1 Marudeco,sans-serif; }
   .tvShopCard .tsStats>span { display:inline-grid; grid-template-columns:1.4em max-content; align-items:center; justify-content:center; gap:.25em; }
   .tvShopCard .tsStats .statIconDisk { width:1.4em; }
-  .tvShopCard .tsRule { height:1.5%; min-height:3px; background:url('/assets/cards/rule-brush.svg') center/100% 100% no-repeat; }
   .tvShopCard .tsFx { color:#172536; font-size:clamp(8px,5.3cqw,13px); font-weight:700; line-height:1.3;
-      padding:6.5% 4% 0; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+      padding:3% 4% 0; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
   .tvShopPrice { display:inline-flex; align-items:center; gap:.35vw; margin-top:.5vh; padding:.35vh .8vw; border-radius:999px;
       background:#11152de8; color:#ffe279; font-size:1.65vh; font-weight:900; }
   .tvShopPrice img { height:2.2vh; } .tvShopOld { opacity:.6; text-decoration:line-through; }
@@ -422,7 +431,6 @@
   #scCard .scStats { height:36%; display:grid; grid-template-columns:1fr 1fr; gap:6%; align-items:center; }
   #scCard .scStat { display:grid; grid-template-columns:36% max-content; align-items:center; justify-content:center; gap:1.5%; }
   #scCard .scStat b { font:700 7.3vh/1 Marudeco,sans-serif; }
-  #scCard .scRule { height:6px; background:url('/assets/cards/rule-brush.svg') center/100% 100% no-repeat; }
   #scCard .scEffect { padding:3.5% 3% 0; text-align:center; }
   #scCard .scEffect h3 { margin:0 0 1.5%; font:700 3.4vh/1.1 Marudeco,sans-serif; }
   #scCard .scEffect h3::before{content:'【'} #scCard .scEffect h3::after{content:'】'}
@@ -1117,6 +1125,7 @@
       <div id="battleCompare" aria-label="攻撃側と防衛側の戦闘値比較">
         <div class="battleCompareRow"><div id="bCmpAtkAtBar" class="battleCompareBar"></div><b id="bCmpAtkAt">―</b><img src="/assets/cards/stat-at-icon.svg" alt="AT"><b id="bCmpDefAt">―</b><div id="bCmpDefAtBar" class="battleCompareBar"></div></div>
         <div class="battleCompareRow"><div id="bCmpAtkHpBar" class="battleCompareBar"></div><b id="bCmpAtkHp">―</b><img src="/assets/cards/stat-hp-icon.svg" alt="HP"><b id="bCmpDefHp">―</b><div id="bCmpDefHpBar" class="battleCompareBar"></div></div>
+        <div class="battleDfLabels"><span id="bCmpAtkDf"></span><span id="bCmpDefDf"></span></div>
         <div class="battleTerrain"><span>領地の属性</span><span id="bCmpTerrain" aria-label="防衛領地属性"></span></div>
       </div>
     </div>
@@ -2100,6 +2109,23 @@ async function runFxHarness(name) {
     renderPawns();
     return { done: true, fxDebug: PW.fxDebug() };
   }
+  if (name === 'shop') {
+    const pid = state.players[0].id;
+    state.phase = 'playing'; state.turn = 0;
+    state.pending = { [pid]: { type:'market', options:[] } };
+    state.shopVisit = { id:'fixture-shop', player:pid, half:false, selected:null, items:[
+      { slotId:'dice1', kind:'card', card:'sp_dice_1', basePrice:100, price:100, sold:false },
+      { slotId:'weaken', kind:'card', card:'sp_weaken', basePrice:100, price:100, sold:false },
+      { slotId:'dice6', kind:'card', card:'sp_dice_6', basePrice:100, price:100, sold:false },
+      { slotId:'samurai', kind:'card', card:'samurai_saga', basePrice:160, price:160, sold:false },
+      { slotId:'nome', kind:'card', card:'nome', basePrice:60, price:60, sold:false },
+      { slotId:'weapon', kind:'support', card:'weapon', basePrice:60, price:60, sold:false },
+      { slotId:'shield', kind:'support', card:'shield', basePrice:60, price:60, sold:false },
+      { slotId:'remove', kind:'remove', basePrice:80, price:80, sold:false },
+    ] };
+    render(); await wait(450);
+    return { done:true };
+  }
   // ---- M5: ハイブリッド戦闘ハーネス(?fixture=1&fx=battle&elem=water&result=win|counter) ----
   if (name === 'battle') {
     // M5縦切り+M6全分岐(§8.7): ?fx=battle&result=win|counter|dead|preempt|preempt-kill
@@ -2120,6 +2146,13 @@ async function runFxHarness(name) {
       dealt: result === 'win' ? 50 : 20, remainHp: result === 'win' ? 0 : 10,
       counterSt: 30, counterDealt: 25,
       atkSurvived: result !== 'preempt-kill' && result !== 'dead' };
+    b.terrainElem = q2.get('terrain') || (state.tiles[b.tile] && state.tiles[b.tile].e) || 'earth';
+    if (q2.get('supdf')) {
+      b.atkPreDf = 0; b.atkPostDf = Number(q2.get('supdf')) || 0; b.atkDf = b.atkPostDf;
+    }
+    if (q2.get('dsupdf')) {
+      b.defPreDf = Math.max(0, b.df - (Number(q2.get('dsupdf')) || 0)); b.defPostDf = b.df;
+    }
     const t0 = Date.now();
     await playBattle(b);
     return { result, atkCid, defCid, ms: Date.now() - t0,
@@ -2622,7 +2655,7 @@ function summonCardHTML(cid, forceEvolved = false) {
     <div class="scBrush"></div><div class="scInfo"><div class="scStats">
       <div class="scStat"><span class="statIconDisk"><img src="/assets/cards/stat-at-icon.svg"></span><b>${evolved && base.evoSt != null ? base.evoSt : cr.st}</b></div>
       <div class="scStat"><span class="statIconDisk"><img src="/assets/cards/stat-hp-icon.svg"></span><b>${evolved && base.evoHp != null ? base.evoHp : cr.hp}</b></div>
-    </div><div class="scRule"></div><div class="scEffect"><h3>${title}</h3><p>${body}</p></div></div>`;
+    </div><div class="scEffect"><h3>${title}</h3><p>${body}</p></div></div>`;
 }
 async function playSummonPresentation(tile, owner) {
   const pl = player(owner.player), cr = state.catalog.CREATURES[owner.creature];
@@ -3092,8 +3125,15 @@ function updateBattleCompare() {
   mirrorBar('bAtkStats', '.durabilityBar', 'bCmpAtkHpBar');
   mirrorBar('bDefStats', '.durabilityBar', 'bCmpDefHpBar');
   const b = activeBattleData;
-  const elem = b && state.tiles && state.tiles[b.tile] && state.tiles[b.tile].e;
+  const battleState = state.battlePreview || b || state.lastBattle;
+  const atkSupportDf = battleState ? Math.max(0, Number(battleState.atkPostDf || 0) - Number(battleState.atkPreDf || 0)) : 0;
+  const defSupportDf = battleState ? Math.max(0, Number(battleState.defPostDf || 0) - Number(battleState.defPreDf || 0)) : 0;
+  $('bCmpAtkDf').textContent = atkSupportDf ? `支援 DF+${atkSupportDf}` : '';
+  $('bCmpDefDf').textContent = defSupportDf ? `支援 DF+${defSupportDf}` : '';
+  const elem = battleState && (battleState.terrainElem || (state.tiles && state.tiles[battleState.tile] && state.tiles[battleState.tile].e));
   $('bCmpTerrain').innerHTML = elem && ELEM[elem] ? `<svg viewBox="-34 -36 68 72">${ELEM[elem]}</svg>` : '';
+  const terrain = $('bCmpTerrain') && $('bCmpTerrain').closest('.battleTerrain');
+  if (terrain) terrain.style.setProperty('--terrain-color', RUNE[elem] || '#6E7288');
 }
 
 function setAttackMeter(statsId, baseAt, at) {
@@ -3574,22 +3614,26 @@ function render() {
         body = '<div class="tvShopArt remove"><img src="/assets/cards/shop-remove.svg" alt="カード削除"></div>';
       } else {
         const info = state.catalog.CREATURES[item.card] || state.catalog.SPELLS[item.card] || state.catalog.SUPPORTS[item.card];
+        const die = /^sp_dice_([1-6])$/.exec(item.card || '');
+        const dedicatedSpell = !!state.catalog.SPELLS[item.card] && (item.card === 'sp_weaken' || !!die);
         const art = item.kind === 'support'
           ? `/assets/cards/support-${item.card}-v1.webp`
           : state.catalog.SPELLS[item.card]
-            ? `/assets/c_${item.card}.png`
+            ? (die ? `/assets/cards/spell-dice-${die[1]}.webp`
+              : item.card === 'sp_weaken' ? '/assets/cards/spell-weaken-art-v1.webp' : `/assets/c_${item.card}.png`)
             : `/assets/cards/c_${item.card}.webp`;
         const fx = info.fx || info.desc || (info.st ? `AT+${info.st}` : `DF+${info.hp}`);
-        const bg = item.kind === 'support' ? '/assets/cards/bg-weapon-v1.webp'
+        const bg = dedicatedSpell ? art : item.kind === 'support' ? '/assets/cards/bg-weapon-v1.webp'
           : state.catalog.SPELLS[item.card] ? '/assets/cards/bg-spell-v1.webp'
           : `/assets/cards/bg-${info.elem || 'neutral'}.webp`;
-        const artKind = item.kind === 'support' ? 'support' : state.catalog.SPELLS[item.card] ? 'spell' : 'creature';
+        const artKind = item.kind === 'support' ? `support ${item.card}` : state.catalog.SPELLS[item.card] ? 'spell' : 'creature';
         const stats = state.catalog.CREATURES[item.card]
           ? `<div class="tsStats"><span><i class="statIconDisk"><img src="/assets/cards/stat-at-icon.svg" alt=""></i>${info.st}</span><span><i class="statIconDisk"><img src="/assets/cards/stat-hp-icon.svg" alt=""></i>${info.hp}</span></div>`
           : '';
-        body = `<img class="tvShopCardBg" src="${bg}"><div class="tsName">${info.name}</div>
-          <div class="tvShopArt ${artKind}"><img src="${art}" onerror="this.style.visibility='hidden'"></div>
-          <div class="tsBrush"></div><div class="tsCost">${info.cost || item.price}G</div><div class="tsInfo">${stats}${stats ? '<div class="tsRule"></div>' : ''}<div class="tsFx">${fx || ''}</div></div>`;
+        const artMarkup = dedicatedSpell ? '' : `<div class="tvShopArt ${artKind}"><img src="${art}" onerror="this.style.visibility='hidden'"></div>`;
+        body = `<img class="tvShopCardBg${dedicatedSpell ? ' dedicatedSpell' : ''}" src="${bg}"><div class="tsName">${info.name}</div>
+          ${artMarkup}
+          <div class="tsBrush"></div><div class="tsCost">${info.cost || item.price}G</div><div class="tsInfo">${stats}<div class="tsFx">${fx || ''}</div></div>`;
       }
       const old = visit.half ? `<span class="tvShopOld">${item.basePrice}G</span>` : '';
       return `<div class="tvShopProduct ${item.sold ? 'sold' : ''} ${visit.selected === item.slotId ? 'selected' : ''}">

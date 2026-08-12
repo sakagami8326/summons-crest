@@ -540,8 +540,7 @@
   .statIconDisk img { display:block; width:100%; height:100%; object-fit:contain; }
   .inlineStatSymbol { width:1.35em; height:1.35em; object-fit:contain; vertical-align:-.28em; margin-right:.2em; }
   .creatureCard .ccStat span { font:700 clamp(16px,10.8cqw,34px)/1 Marudeco,sans-serif; letter-spacing:-.035em; }
-  .creatureCard .ccRule { height:1.5%; min-height:3px; background:url("/assets/cards/rule-brush.svg") center/100% 100% no-repeat; }
-  .creatureCard .ccEffect { padding:6.5% 4% 0; text-align:center; }
+  .creatureCard .ccEffect { padding:3.5% 4% 0; text-align:center; }
   .creatureCard .ccEffect p { margin:0; font-size:clamp(12px,3.65cqw,16px); font-weight:700; line-height:1.32; letter-spacing:.01em; }
   .creatureCard .ccEffect.long { padding-top:4%; }
   .creatureCard .ccEffect.long p { font-size:clamp(12px,3.35cqw,15px); line-height:1.28; }
@@ -808,8 +807,10 @@ const SPELL_ART = new Set(['sp_gold','sp_weaken','sp_gale','sp_quake','sp_volcan
   'sp_earth_mother_stone','sp_sky_crystal','sp_flame_vortex','sp_bloodstained_blade',
   'sp_cornucopia','sp_bedrock_uplift','sp_wind_shift','sp_ward',
   'sp_dice_1','sp_dice_2','sp_dice_3','sp_dice_4','sp_dice_5','sp_dice_6']);
+const spellAsset = c => { const m = /^sp_dice_([1-6])$/.exec(c); return m ? `/assets/cards/spell-dice-${m[1]}.webp`
+  : c === 'sp_weaken' ? '/assets/cards/spell-weaken-art-v1.webp' : `/assets/c_${c}.png`; };
 const spellArt = (c, h) => SPELL_ART.has(c)
-  ? `<div class="art"${h ? ` style="height:${h}"` : ''}><img src="/assets/c_${c}.png"></div>`
+  ? `<div class="art"${h ? ` style="height:${h}"` : ''}><img src="${spellAsset(c)}"></div>`
   : `<div class="glyph"${h ? ` style="height:${h}"` : ''}>${sic('spell', '9dvh')}</div>`;
 
 let es = null, lastMsgAt = 0;
@@ -879,7 +880,7 @@ function dkThumb(c) {
     return `<div class="dkThumb g" style="background:${RUNE[C.CREATURES[c].elem] || '#6E7288'};border-radius:1dvh"></div>`;
   }
   if (C.SPELLS && C.SPELLS[c]) return SPELL_ART.has(c)
-    ? `<img class="dkThumb" src="/assets/c_${c}.png">`
+    ? `<img class="dkThumb" src="${spellAsset(c)}">`
     : `<div class="dkThumb g">${sic('spell', '4.6dvh')}</div>`;
   if (C.SUPPORTS && C.SUPPORTS[c]) {
     const ic = c === 'jinx' ? icIc('ic_curse') : /shield/.test(c) ? sic('up', '4.6dvh') : sic('sword', '4.6dvh');
@@ -1232,7 +1233,7 @@ function creatureFaceBody(cid, cr, evolved) {
     <div class="ccInfo"><div class="ccStats">
       <div class="ccStat"><i class="statIconDisk"><img src="/assets/cards/stat-at-icon.svg" alt="AT"></i><span>${at}</span></div>
       <div class="ccStat"><i class="statIconDisk"><img src="/assets/cards/stat-hp-icon.svg" alt="HP"></i><span>${hp}</span></div>
-    </div><div class="ccRule"></div><div class="ccEffect ${effect.body.length > 34 ? 'long' : ''}"><p>${effect.body}</p></div></div>`;
+    </div><div class="ccEffect ${effect.body.length > 34 ? 'long' : ''}"><p>${effect.body}</p></div></div>`;
 }
 function spellFaceBody(cid, spl) {
   const die = /^sp_dice_([1-6])$/.exec(cid);
@@ -1346,7 +1347,7 @@ function charDeckThumb(c, n) {
       : `<div class="tok2" style="background:${RUNE[cr.elem] || '#6E7288'}">${cr.name.slice(0,4)}</div>`;
   } else if (spl) {
     bg = '/assets/cards/bg-spell-v1.webp';
-    art = SPELL_ART.has(c) ? `<img src="/assets/c_${c}.png" alt="">` : sic('spell','8dvh');
+    art = SPELL_ART.has(c) ? `<img src="${spellAsset(c)}" alt="">` : sic('spell','8dvh');
   } else if (sup) {
     bg = '/assets/cards/bg-weapon-v1.webp';
     art = supportArt(c);
