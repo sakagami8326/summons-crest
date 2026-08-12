@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.09';
+const VERSION = '1.10';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
@@ -476,7 +476,7 @@ function declareWin(r, p, why) {
 function ask(r, playerId, type, prompt, options) {
   r.pending[playerId] = { type, prompt, options };
 }
-const ULT_CUTIN_MS = 3500;
+const ULT_CUTIN_MS = 5000;
 function clearUltTimer(r) {
   if (r.ultTimer) clearTimeout(r.ultTimer);
   r.ultTimer = null;

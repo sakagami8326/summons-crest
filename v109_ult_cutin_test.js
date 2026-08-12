@@ -8,7 +8,7 @@ const G = new Function('require','__dirname','process','console','setInterval',
 let pass = 0;
 const ok = (v,n) => { if (!v) throw new Error('FAIL: '+n); pass++; };
 const eq = (a,b,n) => ok(JSON.stringify(a)===JSON.stringify(b),`${n} (${JSON.stringify(a)} !== ${JSON.stringify(b)})`);
-eq(G.VERSION,'1.09','version');
+ok(Number(G.VERSION) >= 1.09,'version');
 function roomFor(charId) {
   const r=G.makeRoom(); r.phase='playing'; r.pending={}; r.log=[]; r.turn=0;
   const p={id:'p1',name:'P1',charId,gold:500,pos:0,dir:1,lap:1,hand:[],deck:[],discard:[],exile:[],
@@ -21,7 +21,7 @@ function roomFor(charId) {
   ok(p.ultUsed && r.ultSequence && !r.ultSequence.resolved,'activation creates unresolved sequence');
   eq(r.pending[p.id].type,'ult_resolve','input is locked during cut-in');
   ok(!r.barrier[p.id],'effect is not applied before cut-in ends');
-  ok(r.ultSequence.resolveAt-r.ultSequence.startedAt===3500,'cut-in lasts 3.5 seconds');
+  ok(r.ultSequence.resolveAt-r.ultSequence.startedAt===5000,'cut-in lasts 5 seconds');
   const pub=G.publicState(r,p.id).ultSequence;
   ok(pub && !('data' in pub),'private resolution payload is not public');
   ok(G.serializeRoom(r).room.ultSequence.id===r.ultSequence.id,'sequence is saved');
@@ -40,6 +40,8 @@ const board=fs.readFileSync(path.join(__dirname,'public','board.html'),'utf8');
 const phone=fs.readFileSync(path.join(__dirname,'public','phone.html'),'utf8');
 ok(board.includes("'/assets/ult_' + u.charId + '.webp'") && board.includes('se_ult_cutin.mp3'),'TV uses new art and sound');
 ok(board.includes('UltFxWorld.play') && phone.includes('UltFxWorld.play'),'TV and phone use Phaser sparkles');
+ok(board.includes("level >= (state.evoLevel || 3) && !!base.evo"),'battle card only requests evolved art when evolution exists');
+ok(board.includes('animation:ultInfo 2.9s 1.45s'),'effect message remains readable longer');
 for(const id of ['redani','linnei','grease','mio','adel','lia'])
   ok(fs.existsSync(path.join(__dirname,'public','assets',`ult_${id}.webp`)),`${id} cut-in asset exists`);
 ok(fs.existsSync(path.join(__dirname,'public','assets','se_ult_cutin.mp3')),'cut-in sound exists');

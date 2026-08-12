@@ -671,26 +671,26 @@
   #ultCut.on { display:block; }
   #ultBg { position:absolute; inset:0; background:#03050c; }
   #ultArt { position:absolute; z-index:1; inset:0; width:100%; height:100%; object-fit:contain; opacity:0; }
-  #ultCut.on #ultArt { animation:ultHero 3.35s cubic-bezier(.18,.82,.22,1) both; }
+  #ultCut.on #ultArt { animation:ultHero 4.9s cubic-bezier(.18,.82,.22,1) both; }
   @keyframes ultHero { 0%{opacity:0;transform:translateX(-110%) scale(1.08);filter:blur(12px)}
     11%{opacity:1;transform:translateX(2.5%) scale(1.055);filter:blur(0)}
-    18%{transform:translateX(0) scale(1.05)} 52%{transform:scale(1)}
-    55%{filter:brightness(.62)} 82%{opacity:1;transform:translateX(0) scale(1);filter:brightness(.62)}
+    13%{transform:translateX(0) scale(1.05)} 36%{transform:scale(1)}
+    40%{filter:brightness(.62)} 88%{opacity:1;transform:translateX(0) scale(1);filter:brightness(.62)}
     100%{opacity:0;transform:translateX(32%) scale(1.02);filter:brightness(1.5) blur(9px)} }
   #ultFxHost { position:absolute; z-index:2; inset:0; pointer-events:none; }
   #ultSlash { position:absolute; z-index:3; inset:-30%; opacity:0; transform:translateX(-90%) rotate(-9deg);
       background:linear-gradient(100deg,transparent 43%,#fff 49%,#ffe7a0 50%,transparent 56%); }
-  #ultCut.on #ultSlash { animation:ultSlash 3.35s ease both; }
+  #ultCut.on #ultSlash { animation:ultSlash 4.9s ease both; }
   @keyframes ultSlash { 0%{opacity:0} 3%{opacity:1} 16%{opacity:.8;transform:translateX(70%) rotate(-9deg)}
-    18%,82%{opacity:0} 86%{opacity:1;transform:translateX(-60%) rotate(-9deg)} 100%{opacity:0;transform:translateX(70%) rotate(-9deg)} }
+    18%,88%{opacity:0} 91%{opacity:1;transform:translateX(-60%) rotate(-9deg)} 100%{opacity:0;transform:translateX(70%) rotate(-9deg)} }
   #ultInfo { position:absolute; z-index:4; left:50%; bottom:5.5vh; transform:translate(-50%,24px); width:min(78vw,1050px);
       padding:1.5vh 3vw 1.8vh; text-align:center; opacity:0; color:#fff8df; background:linear-gradient(90deg,transparent,#050816e8 16% 84%,transparent);
       border-top:1px solid #ffe6a4aa; border-bottom:1px solid #ffe6a4aa; text-shadow:0 2px 7px #000; }
-  #ultCut.on #ultInfo { animation:ultInfo 1s 1.75s ease both; }
-  @keyframes ultInfo { 0%{opacity:0;transform:translate(-50%,24px)} 25%,85%{opacity:1;transform:translate(-50%,0)} 100%{opacity:0} }
+  #ultCut.on #ultInfo { animation:ultInfo 2.9s 1.45s ease both; }
+  @keyframes ultInfo { 0%{opacity:0;transform:translate(-50%,24px)} 12%,88%{opacity:1;transform:translate(-50%,0)} 100%{opacity:0} }
   #ultSub { font-size:2.1vh; letter-spacing:.25em; color:#f2d062; } #ultDesc { margin-top:.7vh; font-size:2.8vh; letter-spacing:.08em; }
-  @media (prefers-reduced-motion:reduce) { #ultCut.on #ultArt { animation:ultHeroLite 3.35s ease both; }
-    @keyframes ultHeroLite { 0%,100%{opacity:0} 8%,82%{opacity:1} 55%,82%{filter:brightness(.65)} } #ultSlash{display:none} }
+  @media (prefers-reduced-motion:reduce) { #ultCut.on #ultArt { animation:ultHeroLite 4.9s ease both; }
+    @keyframes ultHeroLite { 0%,100%{opacity:0} 6%,88%{opacity:1} 40%,88%{filter:brightness(.65)} } #ultSlash{display:none} }
   .dRow { display:flex; gap:2.5vh; }
 
   #summonCut.on #scText { animation:scText .45s ease .32s backwards; }
@@ -1335,7 +1335,7 @@ async function playUlt(u) {
   if (window.UltFxWorld) UltFxWorld.play(matchMedia('(prefers-reduced-motion:reduce)').matches);
   if (seUltCutin) { seUltCutin.currentTime = 0; seUltCutin.play().catch(() => {}); }
   setTimeout(() => $('bflash').classList.remove('go'), 500);
-  await wait(3450);
+  await wait(4950);
   $('ultCut').classList.remove('on');
   if (window.UltFxWorld) UltFxWorld.stop();
   hideLogo(false);
@@ -2874,7 +2874,8 @@ const supportBackHTML = (status, sup) => `<div class="scardB"><div class="sflipB
 
 function battleCreatureHTML(cid, level, reveal) {
   if (!cid) return `<div class="battleCardBack"><div>❖</div><small>攻撃クリーチャー選択中</small></div>`;
-  const evolved = /_f$/.test(cid) || level >= (state.evoLevel || 3);
+  const base = state.catalog.CREATURES[cid.replace(/_f$/, '')];
+  const evolved = /_f$/.test(cid) || (level >= (state.evoLevel || 3) && !!base.evo);
   return `<div class="battleCreatureCard${reveal ? ' reveal' : ''}">${summonCardHTML(cid, evolved)}</div>`;
 }
 
@@ -2883,7 +2884,7 @@ function previewStatsHTML(pid, cid, level, damage, side) {
   const c = bid ? state.catalog.CREATURES[bid] : null;
   if (!c) return `<div class="bsOwner">${pl ? pl.name : ''}</div><div class="bsCreature">選択待ち</div>
     <div class="bsValues"><span><small>AT</small>—</span><span><small>HP</small>—</span><span><small>DF</small>—</span></div>`;
-  const evolved = /_f$/.test(cid) || level >= (state.evoLevel || 3);
+  const evolved = /_f$/.test(cid) || (level >= (state.evoLevel || 3) && !!c.evo);
   const at = evolved && c.evoSt != null ? c.evoSt : c.st;
   const hp0 = evolved && c.evoHp != null ? c.evoHp : c.hp;
   const name = evolved && c.evo ? c.evo : c.name;
