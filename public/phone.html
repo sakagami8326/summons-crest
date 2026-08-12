@@ -157,12 +157,12 @@
   #shopScene .bubble { position:absolute; left:24vw; top:4dvh; background:var(--parchment);
       color:#3A2B18; font-size:max(2.4dvh, 14px); letter-spacing:1px; padding:1.4dvh 2.6dvh;
       border-radius:1.6dvh; border:2px solid #8A6A1E; max-width:36vw; }
-  #shopShelf { position:absolute; inset:10dvh 2vw 7dvh 20vw; overflow:auto; display:grid;
-      grid-template-columns:repeat(5,minmax(92px,1fr)); gap:1.4dvh 1.2vw; align-content:center; padding:1dvh; }
+  #shopShelf { position:absolute; inset:9dvh 1vw 7dvh 19vw; overflow:auto; display:grid;
+      grid-template-columns:repeat(5,minmax(96px,1fr)); gap:.8dvh .55vw; align-content:center; padding:.5dvh; }
   .shopProduct { position:relative; min-width:0; cursor:pointer; text-align:center; transition:.18s transform,.18s filter; }
   .shopProduct:active { transform:scale(.96); } .shopProduct.unaffordable { filter:saturate(.45) brightness(.62); }
   .shopProduct.sold { filter:grayscale(1) brightness(.4); pointer-events:none; }
-  .shopProduct .shopCard { width:min(16vw,22dvh); aspect-ratio:5/7; margin:auto; container-type:inline-size; }
+  .shopProduct .shopCard { width:min(17vw,24dvh); aspect-ratio:5/7; margin:auto; container-type:inline-size; }
   .shopProduct .shopCard>.face { position:relative; width:100%; height:100%; overflow:hidden; }
   .shopPrice { display:inline-flex; align-items:center; gap:.35em; margin-top:.55dvh; padding:.45dvh 1.1dvh;
       border-radius:999px; background:rgba(16,13,36,.9); color:#ffe58a; font-weight:900; font-size:max(1.8dvh,12px); }
@@ -200,8 +200,8 @@
   #phoneUltDesc { margin-top:.5dvh; font-size:max(2.2dvh,14px); }
   @media (max-width:700px) and (orientation:portrait) {
     #shopScene .keeper,#shopScene .bubble { display:none; }
-    #shopShelf { inset:8dvh 1vw 8dvh; grid-template-columns:repeat(3,minmax(88px,1fr)); align-content:start; }
-    .shopProduct .shopCard { width:min(29vw,20dvh); }
+    #shopShelf { inset:7dvh .25vw 7dvh; grid-template-columns:repeat(3,minmax(96px,1fr)); gap:.55dvh .25vw; align-content:start; padding:.35dvh; }
+    .shopProduct .shopCard { width:min(32.5vw,23dvh); }
     #shopGold { left:2vw!important; top:1dvh!important; }
   }
   /* ドロー開帳 */

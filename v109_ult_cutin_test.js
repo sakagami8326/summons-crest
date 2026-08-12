@@ -51,7 +51,16 @@ ok(phone.includes('inlineStatSymbol') && phone.includes('stat-at-icon.svg'),'pho
 for(const file of ['stat-at-icon.svg','stat-hp-icon.svg']) {
   const icon=fs.readFileSync(path.join(__dirname,'public','assets','cards',file),'utf8');
   ok(icon.includes('fill="#F2D062"'),'stat symbol uses white-gold fill: '+file);
+  ok(!icon.includes('data-name=') && !icon.includes('<g id='),'stat symbol removes Illustrator metadata: '+file);
 }
+const atIcon=fs.readFileSync(path.join(__dirname,'public','assets','cards','stat-at-icon.svg'),'utf8');
+ok(atIcon.includes('viewBox="-24 -25 513 539"'),'AT symbol has safe viewBox padding');
+ok(board.includes('.tvShopCard .tsBrush') && board.includes('brush-boundary-b-paper.png'),'TV shop uses shared card brush');
+ok(board.includes('.tvShopCard .tsRule') && board.includes('rule-brush.svg'),'TV shop uses shared effect rule');
+ok(board.includes('.tvShopCard { position:relative; aspect-ratio:5/7; border:0;'),'TV shop removes extra outer border');
+ok(!board.includes('.tvShopCard::after'),'TV shop removes extra inner border');
+ok(board.includes('.tvShopArt.support { top:11%; left:15%; width:70%; height:49%; }'),'TV shop contains support art');
+ok(phone.includes('width:min(32.5vw,23dvh)'),'phone shop enlarges product cards');
 for(const id of ['redani','linnei','grease','mio','adel','lia'])
   ok(fs.existsSync(path.join(__dirname,'public','assets',`ult_${id}.webp`)),`${id} cut-in asset exists`);
 ok(fs.existsSync(path.join(__dirname,'public','assets','se_ult_cutin.mp3')),'cut-in sound exists');
