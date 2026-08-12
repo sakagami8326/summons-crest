@@ -8,7 +8,7 @@ const G = new Function('require','__dirname','process','console','setInterval',
 let pass=0;
 const ok=(v,n)=>{if(!v)throw new Error('FAIL: '+n);pass++;};
 const eq=(a,b,n)=>ok(JSON.stringify(a)===JSON.stringify(b),`${n} (${JSON.stringify(a)} !== ${JSON.stringify(b)})`);
-eq(G.VERSION,'1.13','version');
+ok(Number(G.VERSION)>=1.13,'version');
 const C=G.CREATURES;
 eq([C.strauk.rarity,C.samurai_saga.rarity,C.pakawata.rarity,C.ludi.rarity],['L','L','L','R'],'rarities');
 eq([C.gecko.st,C.nome.hp,C.nome.evoHp],[30,40,65],'starter stats');

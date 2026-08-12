@@ -46,6 +46,12 @@ ok(board.includes('.tvShopArt img') && board.includes('object-fit:contain'),'TV 
 ok(board.includes("artKind = item.kind === 'support'"),'TV shop distinguishes support, spell, and creature art');
 ok(board.includes('tvShopCardBg') && board.includes('tsCost') && board.includes('tsInfo'),'TV shop renders complete card faces');
 ok(phone.includes('phoneUltSlash') && phone.includes('phoneUltFlash'),'phone cut-in exits with slash and flash');
+ok(board.includes("statLabel('at')") && board.includes("statLabel('hp')"),'battle uses AT and HP symbols with labels');
+ok(phone.includes('inlineStatSymbol') && phone.includes('stat-at-icon.svg'),'phone territory details use stat symbols');
+for(const file of ['stat-at-icon.svg','stat-hp-icon.svg']) {
+  const icon=fs.readFileSync(path.join(__dirname,'public','assets','cards',file),'utf8');
+  ok(icon.includes('fill="#F2D062"'),'stat symbol uses white-gold fill: '+file);
+}
 for(const id of ['redani','linnei','grease','mio','adel','lia'])
   ok(fs.existsSync(path.join(__dirname,'public','assets',`ult_${id}.webp`)),`${id} cut-in asset exists`);
 ok(fs.existsSync(path.join(__dirname,'public','assets','se_ult_cutin.mp3')),'cut-in sound exists');

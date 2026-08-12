@@ -159,6 +159,7 @@
   .battleCreatureCard .scStats { height:36%; display:grid; grid-template-columns:1fr 1fr; gap:6%; align-items:center; }
   .battleCreatureCard .scStat { display:grid; grid-template-columns:36% max-content; align-items:center; justify-content:center; gap:2%; }
   .battleCreatureCard .scStat img { width:100%; } .battleCreatureCard .scStat b { font:700 2.8vh/1 Marudeco,sans-serif; }
+  .scStat img { box-sizing:border-box; padding:9%; border-radius:50%; background:#101a32; border:1px solid #d9bd67; }
   .battleCreatureCard .scRule { height:4px; background:url('/assets/cards/rule-brush.svg') center/100% 100% no-repeat; }
   .battleCreatureCard .scEffect { padding:3% 3% 0; text-align:center; }
   .battleCreatureCard .scEffect h3 { margin:0 0 1%; font:700 1.4vh/1.1 Marudeco,sans-serif; }
@@ -180,6 +181,9 @@
   .bsValues span { white-space:nowrap; min-width:0; box-sizing:border-box; padding:.65vh .2vw; border-radius:.8vh;
       background:rgba(255,255,255,.075); border:1px solid rgba(255,237,181,.2); text-align:center; }
   .bsValues small { display:block; font-size:1.25vh; margin:0 0 .4vh; color:#f3d06c; letter-spacing:.12em; }
+  .statLabel { display:flex!important; align-items:center; justify-content:center; gap:.3vw; }
+  .statSymbol { width:1.65vh; height:1.65vh; object-fit:contain; flex:none; }
+  .inlineStatSymbol { width:1.35em; height:1.35em; object-fit:contain; vertical-align:-.28em; margin-right:.22em; }
   .bsMods { margin-top:.9vh; min-height:5.6vh; font-size:1.25vh; font-weight:700; line-height:1.5; color:rgba(255,249,232,.9); }
   .bsMods .mod { display:block; } .bsMods .mod.hot { color:#fff1a6; animation:modGlow .75s ease both; }
   .durability { margin-top:.9vh; }
@@ -328,6 +332,11 @@
   .tvShopCard .tsCost { position:absolute; z-index:3; left:4%; top:62%; min-width:31%; padding:.35vh .45vw;
       border-radius:999px; color:#fff4c6; background:#4b2d12; border:1px solid #e7c55b; font:900 clamp(9px,6cqw,15px)/1 sans-serif; }
   .tvShopCard .tsInfo { position:absolute; z-index:1; inset:70% 0 0; padding:7% 7% 4%; background:#f6e9c8; }
+  .tvShopCard .tsStats { display:flex; justify-content:center; gap:12%; margin:-4% 0 4%; color:#172536;
+      font:900 clamp(9px,6cqw,14px)/1 sans-serif; }
+  .tvShopCard .tsStats span { display:inline-flex; align-items:center; gap:.25em; }
+  .tvShopCard .tsStats img { width:1.35em; height:1.35em; padding:.12em; border-radius:50%; box-sizing:border-box;
+      background:#101a38; border:1px solid #d9bd62; object-fit:contain; }
   .tvShopCard .tsFx { color:#172536; font-size:clamp(8px,5.3cqw,13px); font-weight:700; line-height:1.3;
       display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
   .tvShopPrice { display:inline-flex; align-items:center; gap:.35vw; margin-top:.5vh; padding:.35vh .8vw; border-radius:999px;
@@ -2252,7 +2261,7 @@ function tileInfoHTML(i) {
       <img class="tiChar" src="/assets/full_${pl.charId}.png">
       <div class="tiCre">${artHTML(o.creature, o.level, 92)}
         <div class="tiCreName">${cname(o.creature, o.level)}</div>
-        <div class="tiHp">HP ${hp}${dmg ? `<span class="tiCurse"> −負傷${dmg}</span>` : ''}${curse ? `<span class="tiCurse"> −呪い${curse.hp}</span>` : ''} <small>+地形補正</small></div>
+        <div class="tiHp"><img class="inlineStatSymbol" src="/assets/cards/stat-hp-icon.svg" alt="">HP ${hp}${dmg ? `<span class="tiCurse"> −負傷${dmg}</span>` : ''}${curse ? `<span class="tiCurse"> −呪い${curse.hp}</span>` : ''} <small>+地形補正</small></div>
         ${(() => { const fx = (state.tileFx || {})[i]; if (!fx) return '';
           const b2 = [];
           if (fx.vortex) b2.push('炎の渦(侵略者AT+10)');
@@ -2874,7 +2883,9 @@ const battleSupportName = sup => {
   return (state.catalog.SUPPORTS[sup] || {}).name || sup;
 };
 const battleSupportMods = sup => sup && typeof sup === 'object' && sup.kind === 'creature'
-  ? `<small>AT+${sup.st || 0} / DF+${sup.hp || 0}</small>` : '';
+  ? `<small><img class="inlineStatSymbol" src="/assets/cards/stat-at-icon.svg" alt="">AT+${sup.st || 0} / DF+${sup.hp || 0}</small>` : '';
+const statLabel = kind => kind === 'df' ? '<small>DF</small>'
+  : `<small class="statLabel"><img class="statSymbol" src="/assets/cards/stat-${kind}-icon.svg" alt="">${kind.toUpperCase()}</small>`;
 const supportBackHTML = (status, sup) => `<div class="scardB"><div class="sflipB${sup !== undefined ? ' readyToOpen' : ''}">
   <div class="sfaceB sbackB">❖</div>
   <div class="sfaceB sfrontB">${!sup || sup === 'none'
@@ -2896,14 +2907,14 @@ function previewStatsHTML(pid, cid, level, damage, side) {
   const pl = player(pid), bid = cid ? cid.replace(/_f$/, '') : null;
   const c = bid ? state.catalog.CREATURES[bid] : null;
   if (!c) return `<div class="bsOwner">${pl ? pl.name : ''}</div><div class="bsCreature">選択待ち</div>
-    <div class="bsValues"><span><small>AT</small>—</span><span><small>HP</small>—</span><span><small>DF</small>—</span></div>`;
+    <div class="bsValues"><span>${statLabel('at')}—</span><span>${statLabel('hp')}—</span><span>${statLabel('df')}—</span></div>`;
   const evolved = /_f$/.test(cid) || (level >= (state.evoLevel || 3) && !!c.evo);
   const at = evolved && c.evoSt != null ? c.evoSt : c.st;
   const hp0 = evolved && c.evoHp != null ? c.evoHp : c.hp;
   const name = evolved && c.evo ? c.evo : c.name;
   const curHp = Math.max(1,hp0-(damage||0));
   return `<div class="bsOwner">${pl.name}</div><div class="bsCreature">${name}</div>
-    <div class="bsValues"><span><small>AT</small>${at}</span><span><small>HP</small>${Math.max(1,hp0-(damage||0))}</span><span><small>DF</small>—</span></div>
+    <div class="bsValues"><span>${statLabel('at')}${at}</span><span>${statLabel('hp')}${Math.max(1,hp0-(damage||0))}</span><span>${statLabel('df')}—</span></div>
     ${durabilityHTML(curHp, 0)}
     <div class="bsMods"><span class="mod">支援・地形・能力補正は公開後に反映</span></div>`;
 }
@@ -2944,7 +2955,7 @@ function renderBattlePreview(bp) {
 
 function durabilityHTML(hp, df) {
   const max = Math.max(1, hp + df), hpPct = hp / max * 100, dfPct = df / max * 100;
-  return `<div class="durability"><div class="durabilityBar"><div class="durabilityHp${hp / max <= .25 ? ' low' : ''}" style="width:${hpPct}%"></div><div class="durabilityDf" style="width:${dfPct}%"></div><div class="durabilityNum">${hp + df} / ${max}</div></div><div class="durabilityBreakdown">HP ${hp} + DF ${df}</div></div>`;
+  return `<div class="durability"><div class="durabilityBar"><div class="durabilityHp${hp / max <= .25 ? ' low' : ''}" style="width:${hpPct}%"></div><div class="durabilityDf" style="width:${dfPct}%"></div><div class="durabilityNum">${hp + df} / ${max}</div></div><div class="durabilityBreakdown"><img class="inlineStatSymbol" src="/assets/cards/stat-hp-icon.svg" alt="">HP ${hp} + DF ${df}</div></div>`;
 }
 function finalStatsHTML(b, side, phase = 'post') {
   const atkSide = side === 'atk';
@@ -2963,7 +2974,7 @@ function finalStatsHTML(b, side, phase = 'post') {
     ? [`基礎AT ${b.atkBaseAt ?? c.st}`, hasBattleSupport(b.atkSupport) ? `支援 ${battleSupportName(b.atkSupport)}` : '支援なし']
     : [`地形補正 +${b.terrain || 0}`, hasBattleSupport(b.defSupport) ? `支援 ${battleSupportName(b.defSupport)}` : '支援なし', b.curse ? `呪い −${b.curse}` : ''];
   return `<div class="bsOwner">${pl.name}</div><div class="bsCreature">${name}</div>
-    <div class="bsValues"><span><small>AT</small><b data-stat="at">${at}</b></span><span><small>HP</small><b data-stat="hp">${hp}</b></span><span><small>DF</small><b data-stat="df">${df}</b></span></div>
+    <div class="bsValues"><span>${statLabel('at')}<b data-stat="at">${at}</b></span><span>${statLabel('hp')}<b data-stat="hp">${hp}</b></span><span>${statLabel('df')}<b data-stat="df">${df}</b></span></div>
     ${durabilityHTML(hp, df)}
     <div class="bsMods">${mods.filter(Boolean).map(x=>`<span class="mod hot">${x}</span>`).join('')}</div>`;
 }
@@ -2977,7 +2988,7 @@ function setDurability(statsId, hp, df, max) {
   dfEl.style.width = Math.max(0, df) / totalMax * 100 + '%';
   hpEl.classList.toggle('low', hp / totalMax <= .25);
   bar.querySelector('.durabilityNum').textContent = `${Math.max(0,hp)+Math.max(0,df)} / ${totalMax}`;
-  root.querySelector('.durabilityBreakdown').textContent = `HP ${Math.max(0,hp)} + DF ${Math.max(0,df)}`;
+  root.querySelector('.durabilityBreakdown').innerHTML = `<img class="inlineStatSymbol" src="/assets/cards/stat-hp-icon.svg" alt="">HP ${Math.max(0,hp)} + DF ${Math.max(0,df)}`;
   const hpNum = root.querySelector('[data-stat="hp"]'), dfNum = root.querySelector('[data-stat="df"]');
   if (hpNum) hpNum.textContent = Math.max(0, hp);
   if (dfNum) dfNum.textContent = Math.max(0, df);
@@ -3432,9 +3443,12 @@ function render() {
           : state.catalog.SPELLS[item.card] ? '/assets/cards/bg-spell-v1.webp'
           : `/assets/cards/bg-${info.elem || 'neutral'}.webp`;
         const artKind = item.kind === 'support' ? 'support' : state.catalog.SPELLS[item.card] ? 'spell' : 'creature';
+        const stats = state.catalog.CREATURES[item.card]
+          ? `<div class="tsStats"><span><img src="/assets/cards/stat-at-icon.svg" alt="">${info.st}</span><span><img src="/assets/cards/stat-hp-icon.svg" alt="">${info.hp}</span></div>`
+          : '';
         body = `<img class="tvShopCardBg" src="${bg}"><div class="tsName">${info.name}</div>
           <div class="tvShopArt ${artKind}"><img src="${art}" onerror="this.style.visibility='hidden'"></div>
-          <div class="tsCost">${info.cost || item.price}G</div><div class="tsInfo"><div class="tsFx">${fx || ''}</div></div>`;
+          <div class="tsCost">${info.cost || item.price}G</div><div class="tsInfo">${stats}<div class="tsFx">${fx || ''}</div></div>`;
       }
       const old = visit.half ? `<span class="tvShopOld">${item.basePrice}G</span>` : '';
       return `<div class="tvShopProduct ${item.sold ? 'sold' : ''} ${visit.selected === item.slotId ? 'selected' : ''}">

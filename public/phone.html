@@ -536,6 +536,8 @@
   .creatureCard .ccStat { display:grid; grid-template-columns:36% max-content; align-items:center; justify-content:center;
       column-gap:1.5%; min-width:0; }
   .creatureCard .ccStat img { width:100%; max-height:100%; }
+  .creatureCard .ccStat>img { box-sizing:border-box; padding:9%; border-radius:50%; background:#101a32; border:1px solid #d9bd67; }
+  .inlineStatSymbol { width:1.35em; height:1.35em; object-fit:contain; vertical-align:-.28em; margin-right:.2em; }
   .creatureCard .ccStat span { font:700 clamp(16px,10.8cqw,34px)/1 Marudeco,sans-serif; letter-spacing:-.035em; }
   .creatureCard .ccRule { height:1.5%; min-height:3px; background:url("/assets/cards/rule-brush.svg") center/100% 100% no-repeat; }
   .creatureCard .ccEffect { padding:6.5% 4% 0; text-align:center; }
@@ -1124,7 +1126,7 @@ function tileDetailHTML(i) {
       <div><b style="font-size:max(2.3dvh,14px)">${pl.name || '?'}の領地</b>
       <span class="tdSub" style="display:block">Lv${o.level} ｜ 通行料 ${state.tolls ? state.tolls[i] : '?'}G</span></div></div>
     <div class="tdRow">${art}<div><b style="font-size:max(2.2dvh,13px)">${nm}</b>${evo ? '<span class="tdSub">(進化)</span>' : ''}
-      <span class="tdStat" style="display:block">AT <b>${at}</b> ／ HP <i>${curHp}</i>/${maxHp}${o.shade ? ` ｜ 死影${o.shade}` : ''}</span>
+      <span class="tdStat" style="display:block"><img class="inlineStatSymbol" src="/assets/cards/stat-at-icon.svg" alt="">AT <b>${at}</b> ／ <img class="inlineStatSymbol" src="/assets/cards/stat-hp-icon.svg" alt="">HP <i>${curHp}</i>/${maxHp}${o.shade ? ` ｜ 死影${o.shade}` : ''}</span>
       <span class="tdSub" style="display:block">${elemJaIc(t.e)}</span></div></div>
     ${fxLine ? `<div class="tdSub">継続効果: ${fxLine}</div>` : ''}
     ${curse ? `<div class="tdSub">☠ 衰弱の呪い(HP−${curse.hp})</div>` : ''}`;
