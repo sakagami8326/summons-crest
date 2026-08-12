@@ -59,8 +59,28 @@ ok(board.includes('.tvShopCard .tsBrush') && board.includes('brush-boundary-b-pa
 ok(board.includes('.tvShopCard .tsRule') && board.includes('rule-brush.svg'),'TV shop uses shared effect rule');
 ok(board.includes('.tvShopCard { position:relative; aspect-ratio:5/7; border:0;'),'TV shop removes extra outer border');
 ok(!board.includes('.tvShopCard::after'),'TV shop removes extra inner border');
-ok(board.includes('.tvShopArt.support { top:11%; left:15%; width:70%; height:49%; }'),'TV shop contains support art');
+ok(board.includes('.tvShopArt.support { top:9.5%; left:17%; width:66%; height:47%;'),'TV shop contains support art');
 ok(phone.includes('width:min(32.5vw,23dvh)'),'phone shop enlarges product cards');
+ok(board.includes('.statIconDisk { width:100%; aspect-ratio:1;') && phone.includes('.statIconDisk { width:100%; aspect-ratio:1;'),
+  'card stat pedestals remain perfect circles');
+ok(board.includes('.statIconDisk img { display:block; width:100%; height:100%; object-fit:contain;') &&
+  phone.includes('.statIconDisk img { display:block; width:100%; height:100%; object-fit:contain;'),
+  'card stat symbols stay contained inside padded pedestals');
+ok(board.includes('.atk .bside { transform:rotate(3deg)') && board.includes('.def .bside { transform:rotate(-3deg)'),
+  'battle cards face inward');
+ok(board.includes('id="bAtkDetail"') && board.includes('id="bDefDetail"') && board.includes('battleDetailHTML'),
+  'battle shows persistent side detail panels');
+ok(board.includes('function attackMeterHTML(baseAt, at)') && board.includes("at > 100 ? ' over'"),
+  'battle AT meter uses 100 cap and overflow state');
+ok(board.includes('attackBase') && board.includes('attackBonus'),'battle AT meter separates base and bonus');
+ok(board.includes('battleTeam.atk { grid-template-columns') && board.includes('battleFighter'),
+  'battle uses detail support fighter layout');
+ok(board.includes('.tvShopArt.support { top:9.5%; left:17%; width:66%; height:47%; padding:2% 4% 7%;'),
+  'TV shop keeps weapon and shield clear of the lower brush');
+ok(board.includes("sfrontB${creature ? ' creatureSupport' : ''}") && board.includes('.sfrontB.creatureSupport img { width:100%; height:100%;'),
+  'creature support card shows contained creature art');
+ok(board.includes("+ (creature ? '' : '<div>' + battleSupportName(sup) + '</div>')"),
+  'creature support card omits support labels and stat icon rows');
 for(const id of ['redani','linnei','grease','mio','adel','lia'])
   ok(fs.existsSync(path.join(__dirname,'public','assets',`ult_${id}.webp`)),`${id} cut-in asset exists`);
 ok(fs.existsSync(path.join(__dirname,'public','assets','se_ult_cutin.mp3')),'cut-in sound exists');

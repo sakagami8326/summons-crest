@@ -535,8 +535,9 @@
   .creatureCard .ccStats { height:36%; display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:6%; }
   .creatureCard .ccStat { display:grid; grid-template-columns:36% max-content; align-items:center; justify-content:center;
       column-gap:1.5%; min-width:0; }
-  .creatureCard .ccStat img { width:100%; max-height:100%; }
-  .creatureCard .ccStat>img { box-sizing:border-box; padding:9%; border-radius:50%; background:#101a32; border:1px solid #d9bd67; }
+  .statIconDisk { width:100%; aspect-ratio:1; box-sizing:border-box; padding:13%; border-radius:50%;
+      background:#101a32; border:1px solid #d9bd67; display:grid; place-items:center; overflow:hidden; }
+  .statIconDisk img { display:block; width:100%; height:100%; object-fit:contain; }
   .inlineStatSymbol { width:1.35em; height:1.35em; object-fit:contain; vertical-align:-.28em; margin-right:.2em; }
   .creatureCard .ccStat span { font:700 clamp(16px,10.8cqw,34px)/1 Marudeco,sans-serif; letter-spacing:-.035em; }
   .creatureCard .ccRule { height:1.5%; min-height:3px; background:url("/assets/cards/rule-brush.svg") center/100% 100% no-repeat; }
@@ -1229,8 +1230,8 @@ function creatureFaceBody(cid, cr, evolved) {
     <div class="ccCost"><img class="ccCostFrame" src="/assets/cards/cost-frame.svg" alt=""><img class="ccCoin" src="/assets/cards/cost-coin.svg" alt=""><span class="ccCostValue">${cr.cost || 0}G</span></div>
     ${art}<div class="ccBrush"></div>
     <div class="ccInfo"><div class="ccStats">
-      <div class="ccStat"><img src="/assets/cards/stat-at-icon.svg" alt="AT"><span>${at}</span></div>
-      <div class="ccStat"><img src="/assets/cards/stat-hp-icon.svg" alt="HP"><span>${hp}</span></div>
+      <div class="ccStat"><i class="statIconDisk"><img src="/assets/cards/stat-at-icon.svg" alt="AT"></i><span>${at}</span></div>
+      <div class="ccStat"><i class="statIconDisk"><img src="/assets/cards/stat-hp-icon.svg" alt="HP"></i><span>${hp}</span></div>
     </div><div class="ccRule"></div><div class="ccEffect ${effect.body.length > 34 ? 'long' : ''}"><p>${effect.body}</p></div></div>`;
 }
 function spellFaceBody(cid, spl) {
