@@ -312,10 +312,23 @@
   .tvShopProduct.selected { transform:translateY(-1.3vh) scale(1.06); filter:drop-shadow(0 0 18px #ffe073); }
   .tvShopProduct.sold { filter:grayscale(1) brightness(.38); }
   .tvShopCard { position:relative; aspect-ratio:5/7; border:3px solid #c8a94e; border-radius:1.2vh; overflow:hidden;
-      background:linear-gradient(145deg,#263449,#10121d); box-shadow:0 .8vh 2vh #0009; }
-  .tvShopCard img { width:100%; height:66%; object-fit:cover; display:block; }
-  .tvShopCard .tsName { padding:.7vh .4vw .2vh; color:#fff2c4; font-size:clamp(12px,1.55vh,22px); font-weight:900; }
-  .tvShopCard .tsFx { padding:0 .55vw; color:#ddd3bc; font-size:clamp(9px,1.05vh,15px); line-height:1.25;
+      background:#f6e9c8; color:#172536; box-shadow:0 .8vh 2vh #0009; container-type:inline-size; isolation:isolate; }
+  .tvShopCardBg { position:absolute; z-index:-2; inset:0; width:100%; height:100%; object-fit:cover; }
+  .tvShopCard::after { content:""; position:absolute; z-index:2; inset:1.8%; border:1px solid rgba(255,239,181,.72);
+      border-radius:.8vh; pointer-events:none; }
+  .tvShopArt { position:absolute; z-index:-1; top:9%; left:3%; width:94%; height:58%; display:grid; place-items:center; overflow:hidden; }
+  .tvShopArt img { display:block; width:100%; height:100%; object-fit:contain; }
+  .tvShopArt.support img { width:82%; height:94%; }
+  .tvShopArt.spell img { width:88%; height:88%; }
+  .tvShopArt.creature img { width:96%; height:96%; }
+  .tvShopArt.remove { inset:0; width:100%; height:100%; background:none; z-index:0; }
+  .tvShopArt.remove img { width:100%; height:100%; object-fit:cover; }
+  .tvShopCard .tsName { position:absolute; z-index:1; top:3.2%; left:7%; right:7%; color:#fff2c4;
+      font:900 clamp(11px,9cqw,20px)/1.05 'Yu Mincho',serif; text-shadow:0 2px 4px #000; white-space:nowrap; overflow:hidden; }
+  .tvShopCard .tsCost { position:absolute; z-index:3; left:4%; top:62%; min-width:31%; padding:.35vh .45vw;
+      border-radius:999px; color:#fff4c6; background:#4b2d12; border:1px solid #e7c55b; font:900 clamp(9px,6cqw,15px)/1 sans-serif; }
+  .tvShopCard .tsInfo { position:absolute; z-index:1; inset:70% 0 0; padding:7% 7% 4%; background:#f6e9c8; }
+  .tvShopCard .tsFx { color:#172536; font-size:clamp(8px,5.3cqw,13px); font-weight:700; line-height:1.3;
       display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
   .tvShopPrice { display:inline-flex; align-items:center; gap:.35vw; margin-top:.5vh; padding:.35vh .8vw; border-radius:999px;
       background:#11152de8; color:#ffe279; font-size:1.65vh; font-weight:900; }
@@ -3406,7 +3419,7 @@ function render() {
     $('tvShopShelf').innerHTML = visit ? visit.items.map(item => {
       let body;
       if (item.kind === 'remove') {
-        body = '<img src="/assets/cards/shop-remove.svg" alt="カード削除" style="height:100%;object-fit:cover">';
+        body = '<div class="tvShopArt remove"><img src="/assets/cards/shop-remove.svg" alt="カード削除"></div>';
       } else {
         const info = state.catalog.CREATURES[item.card] || state.catalog.SPELLS[item.card] || state.catalog.SUPPORTS[item.card];
         const art = item.kind === 'support'
@@ -3415,7 +3428,13 @@ function render() {
             ? `/assets/c_${item.card}.png`
             : `/assets/cards/c_${item.card}.webp`;
         const fx = info.fx || info.desc || (info.st ? `AT+${info.st}` : `DF+${info.hp}`);
-        body = `<img src="${art}" onerror="this.style.visibility='hidden'"><div class="tsName">${info.name}</div><div class="tsFx">${fx || ''}</div>`;
+        const bg = item.kind === 'support' ? '/assets/cards/bg-weapon-v1.webp'
+          : state.catalog.SPELLS[item.card] ? '/assets/cards/bg-spell-v1.webp'
+          : `/assets/cards/bg-${info.elem || 'neutral'}.webp`;
+        const artKind = item.kind === 'support' ? 'support' : state.catalog.SPELLS[item.card] ? 'spell' : 'creature';
+        body = `<img class="tvShopCardBg" src="${bg}"><div class="tsName">${info.name}</div>
+          <div class="tvShopArt ${artKind}"><img src="${art}" onerror="this.style.visibility='hidden'"></div>
+          <div class="tsCost">${info.cost || item.price}G</div><div class="tsInfo"><div class="tsFx">${fx || ''}</div></div>`;
       }
       const old = visit.half ? `<span class="tvShopOld">${item.basePrice}G</span>` : '';
       return `<div class="tvShopProduct ${item.sold ? 'sold' : ''} ${visit.selected === item.slotId ? 'selected' : ''}">

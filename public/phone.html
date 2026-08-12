@@ -184,6 +184,14 @@
   @keyframes phoneUltHero { 0%{opacity:0;transform:translateX(-110%) scale(1.08);filter:blur(10px)} 12%{opacity:1;transform:translateX(2%) scale(1.05);filter:none}
     20%,52%{transform:translateX(0) scale(1)} 55%,82%{opacity:1;filter:brightness(.62)} 100%{opacity:0;transform:translateX(32%);filter:blur(8px)} }
   #phoneUlt #ultFxHost { position:absolute; z-index:2; inset:0; pointer-events:none; }
+  #phoneUltSlash { position:absolute; z-index:4; inset:-30%; opacity:0; transform:translateX(-90%) rotate(-9deg);
+      background:linear-gradient(100deg,transparent 43%,#fff 49%,#ffe7a0 50%,transparent 56%); pointer-events:none; }
+  #phoneUlt.on #phoneUltSlash { animation:phoneUltSlash 4.9s ease both; }
+  @keyframes phoneUltSlash { 0%,88%{opacity:0} 91%{opacity:1;transform:translateX(-60%) rotate(-9deg)}
+      97%{opacity:1;transform:translateX(65%) rotate(-9deg)} 100%{opacity:0;transform:translateX(75%) rotate(-9deg)} }
+  #phoneUltFlash { position:absolute; z-index:5; inset:0; opacity:0; background:#fff; pointer-events:none; }
+  #phoneUlt.on #phoneUltFlash { animation:phoneUltFlash 4.9s ease both; }
+  @keyframes phoneUltFlash { 0%,92%,100%{opacity:0} 95%{opacity:.92} 98%{opacity:.12} }
   #phoneUltInfo { position:absolute; z-index:3; left:50%; bottom:5dvh; width:88vw; transform:translate(-50%,20px); opacity:0;
       padding:1.2dvh 3vw; text-align:center; color:#fff8df; background:#050816df; border-block:1px solid #ffe6a4aa; }
   #phoneUlt.on #phoneUltInfo { animation:phoneUltInfo 2.9s 1.45s ease both; }
@@ -688,7 +696,7 @@
   </div>
   <div id="shopDetail"><div><div id="shopDetailCard"></div><div id="shopDetailPrice" class="shopPrice"></div>
     <div id="shopDetailActions"><button class="abtn" id="shopBuy">購入する</button><button class="abtn ghost" id="shopCancel">戻る</button></div></div></div>
-  <div id="phoneUlt"><img id="phoneUltArt"><div id="ultFxHost"></div><div id="phoneUltInfo"><div id="phoneUltWho"></div><div id="phoneUltDesc"></div></div></div>
+  <div id="phoneUlt"><img id="phoneUltArt"><div id="ultFxHost"></div><div id="phoneUltSlash"></div><div id="phoneUltFlash"></div><div id="phoneUltInfo"><div id="phoneUltWho"></div><div id="phoneUltDesc"></div></div></div>
   <div id="deckOv"><h2>デッキ確認</h2><div id="deckScroll"></div>
     <button class="abtn ghost" id="deckClose">閉じる</button></div>
   <div id="resultOv"><div id="resultTitle"></div><div id="resList"></div>

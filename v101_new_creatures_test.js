@@ -31,10 +31,10 @@ ok(bunny.fx.includes('スペル') && bunny.evoFx.includes('100G'), 'Bunnyhop eff
 
 const strauk = G.CREATURES.strauk;
 eq([strauk.name, strauk.elem, strauk.rarity, strauk.cost, strauk.st, strauk.hp],
-  ['ストラウク', null, 'N', 120, 10, 70], 'Strauk values');
+  ['ストラウク', null, 'L', 120, 10, 70], 'Strauk values');
 const saga = G.CREATURES.samurai_saga;
 eq([saga.name, saga.elem, saga.rarity, saga.cost, saga.st, saga.hp],
-  ['サムライ・サガ', null, 'N', 120, 50, 50], 'Samurai Saga values');
+  ['サムライ・サガ', null, 'L', 120, 50, 50], 'Samurai Saga values');
 
 eq([count(G.MARKET_POOL, 'bunnyhop'), count(G.MARKET_POOL, 'strauk'),
   count(G.MARKET_POOL, 'samurai_saga')], [1, 1, 1], 'market registrations');

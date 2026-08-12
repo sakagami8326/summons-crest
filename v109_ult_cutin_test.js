@@ -42,6 +42,10 @@ ok(board.includes("'/assets/ult_' + u.charId + '.webp'") && board.includes('se_u
 ok(board.includes('UltFxWorld.play') && phone.includes('UltFxWorld.play'),'TV and phone use Phaser sparkles');
 ok(board.includes("level >= (state.evoLevel || 3) && !!base.evo"),'battle card only requests evolved art when evolution exists');
 ok(board.includes('animation:ultInfo 2.9s 1.45s'),'effect message remains readable longer');
+ok(board.includes('.tvShopArt img') && board.includes('object-fit:contain'),'TV shop keeps product art inside its frame');
+ok(board.includes("artKind = item.kind === 'support'"),'TV shop distinguishes support, spell, and creature art');
+ok(board.includes('tvShopCardBg') && board.includes('tsCost') && board.includes('tsInfo'),'TV shop renders complete card faces');
+ok(phone.includes('phoneUltSlash') && phone.includes('phoneUltFlash'),'phone cut-in exits with slash and flash');
 for(const id of ['redani','linnei','grease','mio','adel','lia'])
   ok(fs.existsSync(path.join(__dirname,'public','assets',`ult_${id}.webp`)),`${id} cut-in asset exists`);
 ok(fs.existsSync(path.join(__dirname,'public','assets','se_ult_cutin.mp3')),'cut-in sound exists');

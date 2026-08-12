@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.10';
+const VERSION = '1.13';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
@@ -89,30 +89,30 @@ const TILES = [
 // ===== カードカタログ =====
 const CREATURES = {
   // スターター(基本形 → LvMAXで進化)
-  gecko:  { name: 'バーンゲッコー', evo: 'サラマンダー',   elem: 'fire',  st: 40, hp: 25, cost: 50, evoSt: 60, evoHp: 40, fx: '【猛攻】攻撃時AT+10', rarity: 'N' },
+  gecko:  { name: 'バーンゲッコー', evo: 'サラマンダー',   elem: 'fire',  st: 30, hp: 25, cost: 50, evoSt: 60, evoHp: 40, fx: '【猛攻】攻撃時AT+10', rarity: 'N' },
   orphe:  { name: 'オルフェ',       evo: 'ウンディーネ',   elem: 'water', st: 30, hp: 30, cost: 50, evoSt: 45, evoHp: 50, fx: '【清流】この土地の通行料+20%', rarity: 'N' },
-  nome:   { name: 'ノーム',         evo: 'アースゴーレム', elem: 'earth', st: 10, hp: 50, cost: 50, evoSt: 30, evoHp: 75, fx: '【岩壁】防衛時、地形補正+10(進化+20)', rarity: 'N' },
+  nome:   { name: 'ノーム',         evo: 'アースゴーレム', elem: 'earth', st: 10, hp: 40, cost: 50, evoSt: 30, evoHp: 65, fx: '【岩壁】防衛時、地形補正+10(進化+20)', rarity: 'N' },
   gaston: { name: 'ガストン',       evo: 'ガストレイド',   elem: 'wind',  st: 20, hp: 40, cost: 50, evoSt: 40, evoHp: 60, fx: '【旋風】敗北しても消滅せず手札に戻る', rarity: 'N' },
   cleo:   { name: 'クレオ',         evo: 'クレステッド',   elem: null,    st: 30, hp: 30, cost: 50, evoSt: 50, evoHp: 45, fx: '【適応】どの属性でも地形補正を得る', rarity: 'N' },
   // マーケット
   magado:  { name: 'マガドー', evo: 'マグナガルム', elem: 'fire', st: 55, hp: 35, cost: 120, evoSt: 75, evoHp: 55, rarity: 'R' },
-  qbaby:   { name: 'クイーンベビー', evo: 'クイーン', elem: 'fire', st: 35, hp: 30, cost: 120, evoSt: 55, evoHp: 50, fx: '【女王の威光】両隣の自領地の防衛DF+10(進化+20)', rarity: 'L' },
+  qbaby:   { name: 'クイーンベビー', evo: 'クイーン', elem: 'fire', st: 35, hp: 30, cost: 120, evoSt: 55, evoHp: 50, fx: '【女王の威光】自分の火領地の防衛DF+10(進化+20)', rarity: 'L' },
   cresteria:{ name: 'クレステリア',    elem: 'water', st: 20, hp: 50, cost: 90, fx: '【真珠】召喚時、支援「盾」1枚をデッキに加える', rarity: 'N' },
-  kbaby:   { name: 'キングベビー', evo: 'キング', elem: 'water', st: 30, hp: 40, cost: 120, evoSt: 50, evoHp: 60, fx: '【王の徴収】この土地の通行料受取時+30G(進化+50G)', rarity: 'L' },
-  ludi:    { name: 'ルディ', evo: 'シンルー', elem: 'wind', st: 25, hp: 40, cost: 120, evoSt: 45, evoHp: 60, fx: '【雲隠れ】防衛時、相手の支援を無効化', rarity: 'L' },
-  garble:  { name: 'ガーブル', evo: 'ガレス・ゲイル', elem: 'wind', st: 35, hp: 25, cost: 120, evoSt: 55, evoHp: 45, fx: '【風刃】攻撃時、相手の地形補正を無視', rarity: 'R' },
+  kbaby:   { name: 'キングベビー', evo: 'キング', elem: 'water', st: 30, hp: 40, cost: 120, evoSt: 50, evoHp: 60, fx: '【王の徴収】配置土地の通行料1.5倍(進化後2倍)', rarity: 'L' },
+  ludi:    { name: 'ルディ', evo: 'シンルー', elem: 'wind', st: 25, hp: 40, cost: 120, evoSt: 45, evoHp: 60, fx: '【雲隠れ】防衛時、相手の支援を無効化', rarity: 'R' },
+  garble:  { name: 'ガーブル', evo: 'ガレス・ゲイル', elem: 'wind', st: 35, hp: 25, cost: 100, evoSt: 55, evoHp: 45, fx: '【風刃】攻撃時、相手の地形補正を無視', rarity: 'R' },
   barbaro: { name: 'バルバロ', evo: 'バーグランダ', elem: 'earth', st: 30, hp: 45, cost: 120, evoSt: 50, evoHp: 65, fx: '【逆鱗】防衛成功時、相手から30G奪う(進化50G)', rarity: 'R' },
-  detropas:{ name: 'デトロパス', evo: 'クラーケンイービル', elem: 'fire', st: 30, hp: 25, cost: 60, evoSt: 50, evoHp: 45, fx: '【群れ】攻撃時、自分の火の土地×AT+5', rarity: 'N' },
-  goagoa:  { name: 'ゴアゴア', evo: 'ノーク・ゴーア', elem: 'water', st: 40, hp: 40, cost: 140, evoSt: 60, evoHp: 65, fx: '【深海】防衛成功時、自分の負傷を10回復する', rarity: 'R' },
-  fugorm:  { name: 'フーゴルム', evo: 'ゴーレムアイン', elem: 'earth', st: 35, hp: 40, cost: 100, evoSt: 55, evoHp: 60, fx: '【鍛冶】召喚時、支援「武器」を得る', rarity: 'N' },
+  detropas:{ name: 'デトロパス', evo: 'クラーケンイービル', elem: 'fire', st: 30, hp: 25, cost: 60, evoSt: 50, evoHp: 45, fx: '【群れ】攻撃時、自分の火領地1つにつきAT+10', rarity: 'N' },
+  goagoa:  { name: 'ゴアゴア', evo: 'ノーク・ゴーア', elem: 'water', st: 40, hp: 40, cost: 100, evoSt: 60, evoHp: 65, fx: '【深海】防衛成功時、自分の負傷を10回復する', rarity: 'R' },
+  fugorm:  { name: 'フーゴルム', evo: 'ゴーレムアイン', elem: 'earth', st: 35, hp: 40, cost: 80, evoSt: 55, evoHp: 60, fx: '【鍛冶】召喚時、支援「武器」を得る', rarity: 'N' },
   bedebero:{ name: 'ベデベロ',         elem: 'earth', st: 30, hp: 60, cost: 120, fx: '【不動】受けるスペルダメージを10軽減する', rarity: 'R' },
-  zati:    { name: 'ザーティー', evo: 'ザンティアー', elem: 'wind', st: 40, hp: 30, cost: 90, evoSt: 60, evoHp: 50, fx: '【略奪】侵略成功時、相手から50G奪う', rarity: 'N' },
-  pakawata:{ name: 'パカワタ',         elem: 'wind',  st: 50, hp: 25, cost: 130, fx: '【先制】防衛時、侵略側より先に攻撃する', rarity: 'R' },
+  zati:    { name: 'ザーティー', evo: 'ザンティアー', elem: 'wind', st: 40, hp: 30, cost: 60, evoSt: 60, evoHp: 50, fx: '【略奪】侵略成功時、相手から50G奪う', rarity: 'N' },
+  pakawata:{ name: 'パカワタ',         elem: 'wind',  st: 50, hp: 25, cost: 130, fx: '【先制】防衛時、侵略側より先に攻撃する', rarity: 'L' },
   avalanche:{ name: 'アヴァランチ', evo: 'アヴァランチジャイアント', elem: 'earth', st: 20, hp: 40, cost: 120, evoSt: 30, evoHp: 60, fx: '【双撃】侵略時、同じATで2回続けて攻撃する', rarity: 'L' },
   bonerex: { name: 'ボーンレックス', evo: 'ディノガルド', elem: 'earth', st: 35, hp: 45, cost: 110, evoSt: 55, evoHp: 65, fx: '【骨鎧】防衛時DF+10(進化+20)', rarity: 'R' },
-  morbill: { name: 'モービル', evo: 'モルドラ', elem: 'earth', st: 30, hp: 45, cost: 90, evoSt: 50, evoHp: 65, fx: '【腐蝕】侵略時、相手の防衛DF-10(進化-20)', rarity: 'N' },
+  morbill: { name: 'モービル', evo: 'モルドラ', elem: 'earth', st: 30, hp: 45, cost: 60, evoSt: 50, evoHp: 65, fx: '【腐蝕】侵略時、相手の防衛DF-10(進化-20)', rarity: 'N' },
   mimic:   { name: 'ミミック',         elem: null,    st: 30, hp: 30, cost: 70, fx: '【擬態】戦闘時、相手の基礎AT/HPをコピー', rarity: 'N' },
-  beruf:   { name: 'ベルーフ・シェイド', evo: 'デスベルーフ', elem: null, st: 20, hp: 50, cost: 90, evoSt: 40, evoHp: 70, fx: '【死影】スペルダメージを受けるたびAT+10(最大+30)。土地を離れるまで持続', rarity: 'N' },
+  beruf:   { name: 'ベルーフ・シェイド', evo: 'デスベルーフ', elem: null, st: 20, hp: 50, cost: 60, evoSt: 40, evoHp: 70, fx: '【死影】スペルダメージを受けるたびDF+10。上限なし、土地を離れるまで持続', rarity: 'N' },
   grayble: { name: 'グレイブル', evo: 'グランガルム', elem: 'fire', st: 40, hp: 30, cost: 80, evoSt: 65, evoHp: 45,
              fx: '【追撃】侵略時、戦闘前から相手が負傷していればAT+10', evoFx: '【追撃】侵略時、戦闘前から相手が負傷していればAT+20', rarity: 'N' },
   trooper: { name: 'トルーパー', evo: 'グリゴール', elem: 'fire', st: 25, hp: 40, cost: 90, evoSt: 45, evoHp: 60,
@@ -124,9 +124,9 @@ const CREATURES = {
   bunnyhop:{ name: 'バニホップ', evo: 'ロードバンプ', elem: 'fire', st: 10, hp: 10, cost: 60, evoSt: 40, evoHp: 60,
              fx: '【耐魔】スペルによるダメージを受けない', evoFx: '【魔力徴収】自分がスペルを使うたび100Gを得る(重複)', rarity: 'N' },
   strauk:  { name: 'ストラウク', elem: null, st: 10, hp: 70, cost: 120,
-             fx: '【地脈適応】どの属性の土地からでも地形補正を得る', rarity: 'N' },
+             fx: '【地脈適応】どの属性の土地からでも地形補正を得る', rarity: 'L' },
   samurai_saga:{ name: 'サムライ・サガ', elem: null, st: 50, hp: 50, cost: 120,
-             fx: '【地脈改変】どの属性の土地からでも地形補正を得る。召喚した土地を好きな属性に変更できる', rarity: 'N' },
+             fx: '【地脈改変】どの属性の土地からでも地形補正を得る。召喚した土地を好きな属性に変更できる', rarity: 'L' },
   marlow:  { name: 'マーロー', elem: 'wind', st: 30, hp: 30, cost: 50,
              fx: '【風渡り】自領地に止まった時、配置中のマーロー1体を空いている風属性土地へ移動できる', rarity: 'R' },
   shuterio:{ name: 'シュテリオ', evo: 'エアロシュティレ', elem: 'wind', st: 30, hp: 30, cost: 70,
@@ -390,9 +390,10 @@ function tollOf(r, i) {
   const o = r.owners[i];
   let rate = 1;
   if (baseId(o.creature) === 'orphe') rate += 0.2;                       // 清流
+  if (baseId(o.creature) === 'kbaby') rate *= isEvolved(o) ? 2 : 1.5;   // 王の徴収
   return Math.round(landValue(r, i) * 0.25 * rate);
 }
-// スペルの直接ダメージ処理: 不動(ベデベロ-10)・死影(ベルーフAT+10/最大+30)・撃破は捨て札
+// スペルの直接ダメージ処理: 不動(ベデベロ-10)・死影(ベルーフDF+10/上限なし)・撃破は捨て札
 // 戻り値: true=撃破して空き地化
 function spellDamage(r, i, raw, srcName, isSpellCard = true) {
   const o = r.owners[i];
@@ -416,22 +417,11 @@ function spellDamage(r, i, raw, srcName, isSpellCard = true) {
     log(r, `${cE.name}は${srcName}に蝕まれて滅びた… 土地は空き地になった`);
     return true;
   }
-  if (dmg > 0 && baseId(o.creature) === 'beruf' && (o.shade || 0) < 3) {
+  if (dmg > 0 && baseId(o.creature) === 'beruf') {
     o.shade = (o.shade || 0) + 1;
-    log(r, `【死影】${cE.name}は受けた痛みを影に変えた(AT+${o.shade * 10})`);
+    log(r, `【死影】${cE.name}は受けた痛みを影に変えた(DF+${o.shade * 10})`);
   }
   return false;
-}
-function kingBonus(r, receiver, tileIdx) {
-  const o = r.owners[tileIdx];
-  let bonus = 0;
-  if (o && o.player === receiver.id && baseId(o.creature) === 'kbaby')
-    bonus = isEvolved(o) ? 50 : 30;
-  if (bonus) {
-    receiver.gold += bonus;
-    log(r, `【王の徴収】${receiver.name}に追加+${bonus}G`);
-  }
-  return bonus;
 }
 // ===== v0.51 資産経済 =====
 const LV_MUL = { 1: 1, 2: 2.5, 3: 8, 4: 20 };  // v1.07: 高Lv領地1つで勝負が決まりすぎないよう緩和
@@ -1098,12 +1088,10 @@ function resolveBattle(r) {
   if (baseId(b.atkCreature) === 'gecko') { st += 10; notes.push('【猛攻】AT+10!'); }
   if (baseId(b.atkCreature) === 'detropas') {
     const fires = r.owners.reduce((n, oo, i) => n + (oo && oo.player === atk.id && tileElem(r, i) === 'fire' ? 1 : 0), 0);
-    if (fires) { st += fires * 5; notes.push(`【群れ】火の領地${fires}つでAT+${fires * 5}!`); }
+    if (fires) { st += fires * 10; notes.push(`【群れ】火の領地${fires}つでAT+${fires * 10}!`); }
   }
   // スペル継続効果(プレイヤー→土地の順、最後に最低0へ補正)
   const bFx = r.tileFx[b.tile] || {};
-  const atkShade = (mvSrc && mvSrc.shade ? mvSrc.shade : (b.atkShade || 0)) * 10;
-  if (atkShade) { st += atkShade; notes.push(`【死影】蓄えた影がATを${atkShade}高める!`); }
   if (atk.blade) { st += 10; notes.push('血染めの刃が侵略者のATを10高めた!'); }
   if (bFx.vortex) { st += 10; notes.push('炎の渦が侵略者を後押し!(AT+10)'); }
   st = Math.max(0, st);
@@ -1118,12 +1106,9 @@ function resolveBattle(r) {
   }
   if (baseId(b.atkCreature) === 'garble' && terrain) { terrain = 0; notes.push('【風刃】地形補正を無視!'); }
   let queenBonus = 0;
-  for (const d of [-1, 1]) {
-    const ni = (b.tile + d + 28) % 28;
-    const no = r.owners[ni];
+  if (tElem === 'fire') for (const no of r.owners)
     if (no && no.player === def.id && baseId(no.creature) === 'qbaby')
       queenBonus = Math.max(queenBonus, isEvolved(no) ? 20 : 10);  // 威光は重複しない(最大のみ)
-  }
   if (queenBonus) notes.push(`【女王の威光】防衛DF+${queenBonus}!`);
   const curse = (r.curses[b.tile] && baseId(o.creature) !== 'beruf') ? r.curses[b.tile].hp : 0;
   const hp = dBase.hp + terrain + queenBonus + (dEff ? dEff.hp : 0) - curse;
@@ -1141,7 +1126,9 @@ function resolveBattle(r) {
   const corrosion = baseId(b.atkCreature) === 'morbill' ? (atkEvolved ? 20 : 10) : 0;
   const iceWard = o.iceWard ? 10 : 0;
   if (iceWard) notes.push('【氷晶の勅令】防衛DF+10!');
-  let defDF = terrain + queenBonus + (dEff ? dEff.hp : 0) + upliftDF + boneArmor + iceWard;
+  const shadeDF = baseId(o.creature) === 'beruf' ? (o.shade || 0) * 10 : 0;
+  if (shadeDF) notes.push(`【死影】蓄えた影が防衛DFを${shadeDF}高める!`);
+  let defDF = terrain + queenBonus + (dEff ? dEff.hp : 0) + upliftDF + boneArmor + iceWard + shadeDF;
   if (corrosion) {
     const reduced = Math.min(defDF, corrosion);
     defDF = Math.max(0, defDF - corrosion);
@@ -1149,12 +1136,13 @@ function resolveBattle(r) {
   }
   const effHp = Math.max(1, dBase.hp - curse - carried);   // 現在HP(呪いは一時的な減少)
   const atkDmg = st;                                        // AT = 基礎AT+固有+効果+支援
-  const atkDF = aEff ? aEff.hp : 0;
+  const atkShadeDF = baseId(b.atkCreature) === 'beruf'
+    ? ((mvSrc && mvSrc.shade) || b.atkShade || 0) * 10 : 0;
+  if (atkShadeDF) notes.push(`【死影】蓄えた影が侵略側DFを${atkShadeDF}高める!`);
+  const atkDF = (aEff ? aEff.hp : 0) + atkShadeDF;
   const atkCarried = mvSrc ? (mvSrc.dmg || 0) : (corridor ? (b.atkCarry || 0) : 0);
   const atkEffHp = Math.max(1, aBase.hp - atkCarried);
-  const defShade = (o.shade || 0) * 10;
-  if (defShade) notes.push(`【死影】蓄えた影が防衛ATを${defShade}高める!`);
-  const defSt = dBase.st + (dEff ? dEff.st : 0) + defShade;
+  const defSt = dBase.st + (dEff ? dEff.st : 0);
 
   // ===== v0.57 戦闘シーケンス: 戦闘耐久値 = 現在HP + DF =====
   const hits = baseId(b.atkCreature) === 'avalanche' ? 2 : 1;      // 【双撃】侵略時のみ2回
@@ -1264,7 +1252,6 @@ function resolveBattle(r) {
       const toll = tollOf(r, b.tile);
       payTo(r, atk, def, toll);
       log(r, `${def.name}が防衛成功! 通行料${toll}Gも支払わせた`);
-      kingBonus(r, def, b.tile);
     } else {
       log(r, `${def.name}が防衛成功!(移動系スペルによる侵略のため通行料なし)`);
     }
@@ -1934,7 +1921,6 @@ function handleChoose(r, playerId, optionId) {
       const enemy = pById(r, o.player);
       const toll = tollOf(r, i);
       const paid = payTo(r, p, enemy, toll);
-      kingBonus(r, enemy, i);
       r.lastEvent = { type: 'toll', from: p.id, to: enemy.id, amount: paid,
                       fromGold: p.gold, toGold: enemy.gold, at: stamp(r) };
       log(r, `${p.name}は通行料${paid}Gを支払った`);
