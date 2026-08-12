@@ -121,11 +121,11 @@
       text-shadow:0 2px 12px #000; white-space:nowrap; }
   #battleField { position:absolute; z-index:3; top:8vh; bottom:11vh; left:50%; width:min(98vw,188vh);
       transform:translateX(-50%); display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-      gap:clamp(.3rem,.7vw,1rem); align-items:center; }
-  .battleTeam { min-width:0; display:grid; align-items:center; gap:.65vw; }
-  .battleTeam.atk { grid-template-columns:minmax(15vw,19vw) minmax(8vh,10vh) minmax(22vh,27vh); }
-  .battleTeam.def { grid-template-columns:minmax(22vh,27vh) minmax(8vh,10vh) minmax(15vw,19vw); }
-  .battleFighter { min-width:0; display:grid; grid-template-rows:auto auto; gap:1vh; align-items:start; }
+      gap:clamp(.3rem,.7vw,1rem); align-items:center; justify-items:center; }
+  .battleTeam { width:100%; min-width:0; display:grid; align-items:center; justify-content:center; gap:.65vw; }
+  .battleTeam.atk { grid-template-columns:minmax(18vw,21vw) minmax(8vh,10vh) minmax(22vh,27vh); }
+  .battleTeam.def { grid-template-columns:minmax(22vh,27vh) minmax(8vh,10vh) minmax(18vw,21vw); }
+  .battleFighter { min-width:0; display:grid; grid-template-rows:auto; align-items:start; }
   .bside { position:relative; text-align:center; transition:transform .35s ease-in,opacity .5s,filter .5s;
       perspective:1000px; }
   .atk .bside { transform:rotate(3deg); transform-origin:bottom center; }
@@ -175,45 +175,58 @@
       background:repeating-linear-gradient(45deg,#17152c 0 10px,#252140 10px 20px);
       box-shadow:0 2vh 4vh rgba(0,0,0,.65),inset 0 0 0 7px #17152c,inset 0 0 0 9px #9b7920; }
   .battleCardBack small { position:absolute; bottom:12%; left:0; right:0; font-size:1.5vh; letter-spacing:.15em; }
-  .battleStats { min-width:0; width:100%; box-sizing:border-box; padding:.8vh .55vw; text-shadow:0 2px 5px #000; }
-  .battleDetail { min-width:0; box-sizing:border-box; padding:1.3vh 1vw; border:1px solid rgba(232,197,90,.72);
+  .battleStats { display:none; }
+  .battleDetail { min-width:0; width:100%; box-sizing:border-box; padding:1.7vh 1.25vw; align-self:start; margin-top:0;
+      transform:translateY(-5vh);
+      border:1px solid rgba(232,197,90,.72); text-align:left;
       border-radius:1.2vh; background:linear-gradient(110deg,rgba(8,9,18,.96),rgba(22,19,35,.88));
       box-shadow:0 1vh 2.8vh rgba(0,0,0,.58),inset 0 0 2vh rgba(232,197,90,.07); text-shadow:0 2px 5px #000; }
-  .def .battleDetail { text-align:right; }
-  .bdTop { color:#ffe596; font:700 1.45vh/1.35 Marudeco,sans-serif; letter-spacing:.06em; }
-  .bdName { color:#fff; font:700 2.05vh/1.25 var(--font-mincho); margin:.35vh 0; }
-  .bdBase { color:#f2d062; font:700 1.4vh/1.35 sans-serif; }
+  .def .battleDetail { text-align:left; }
+  .bdTop { color:#ffe596; font:700 1.7vh/1.35 Marudeco,sans-serif; letter-spacing:.06em; }
+  .bdName { color:#fff; font:700 2.45vh/1.25 var(--font-mincho); margin:.45vh 0; }
+  .bdBase { color:#f2d062; font:700 1.65vh/1.35 sans-serif; }
   .bdAbility { margin-top:1vh; padding-top:.8vh; border-top:1px solid rgba(242,208,98,.4); }
-  .bdAbility b { display:block; color:#ffe59a; font-size:1.45vh; margin-bottom:.4vh; }
-  .bdAbility p { margin:0; color:#f8f2df; font-size:1.2vh; line-height:1.45; display:-webkit-box;
+  .bdAbility b { display:block; color:#ffe59a; font-size:1.7vh; margin-bottom:.5vh; }
+  .bdAbility p { margin:0; color:#f8f2df; font-size:1.42vh; line-height:1.5; display:-webkit-box;
       -webkit-box-orient:vertical; -webkit-line-clamp:5; overflow:hidden; }
-  .bdMods { margin-top:1vh; padding:.7vh .5vw; background:rgba(255,255,255,.055); color:#d9ecff; font:700 1.15vh/1.45 sans-serif; }
+  .bdMods { margin-top:1vh; padding:.8vh .65vw; background:rgba(255,255,255,.055); color:#d9ecff; font:700 1.35vh/1.5 sans-serif; }
   .bdMods span { display:block; }
   .bsOwner,.bsCreature { display:none; }
-  .bsValues { width:100%; display:grid; grid-template-columns:1fr 1fr auto; gap:.35vw; align-items:center; font:700 3.4vh/1 Marudeco,sans-serif; }
-  .def .bsValues { justify-content:flex-end; }
+  .bsValues { display:none; }
+  .def .bsValues { justify-content:center; }
   .bsValues span { white-space:nowrap; min-width:0; box-sizing:border-box; padding:.3vh .2vw; text-align:center; }
-  .bsValues small { display:block; font-size:1.25vh; margin:0 0 .4vh; color:#f3d06c; letter-spacing:.12em; }
+  .bsValues small { display:flex; font-size:1.45vh; margin:0 0 .35vh; color:#f3d06c; letter-spacing:.12em; }
   .statLabel { display:flex!important; align-items:center; justify-content:center; gap:.3vw; }
-  .statSymbol { width:1.65vh; height:1.65vh; object-fit:contain; flex:none; }
+  .statSymbol { width:2.15vh; height:2.15vh; object-fit:contain; flex:none; }
   .inlineStatSymbol { width:1.35em; height:1.35em; object-fit:contain; vertical-align:-.28em; margin-right:.22em; }
   .bsMods { display:none; }
   .bsMods .mod { display:block; } .bsMods .mod.hot { color:#fff1a6; animation:modGlow .75s ease both; }
-  .attackMeter,.durability { margin-top:.45vh; }
-  .attackBar { position:relative; display:flex; width:100%; height:1.8vh; overflow:hidden; border:1px solid #d7b84f;
-      border-radius:.9vh; background:rgba(0,0,0,.58); box-shadow:inset 0 0 .7vh rgba(0,0,0,.8); }
+  .attackMeter,.durability { margin-top:.25vh; }
+  .attackBar { position:relative; display:flex; width:100%; height:2.35vh; overflow:hidden; border:1px solid #d7b84f;
+      border-radius:1.2vh; background:rgba(0,0,0,.58); box-shadow:inset 0 0 .7vh rgba(0,0,0,.8); }
   .attackBase { height:100%; background:linear-gradient(90deg,#8b6416,#c69826); }
   .attackBonus { height:100%; background:linear-gradient(90deg,#ffe064,#fff3aa); }
-  .attackNum { position:absolute; inset:0; display:grid; place-items:center; color:#fff; font:700 1.25vh/1 sans-serif; text-shadow:0 1px 4px #000; }
   .attackMeter.over .attackBar { box-shadow:0 0 1.3vh #ffd95a,inset 0 0 .7vh #fff7c2; }
-  .durabilityBar { position:relative; display:flex; width:100%; height:2.5vh; overflow:hidden; border:1px solid #d7b84f;
-      border-radius:1.3vh; background:rgba(0,0,0,.58); box-shadow:inset 0 0 .7vh rgba(0,0,0,.8); }
+  .durabilityBar { position:relative; display:flex; width:100%; height:2.35vh; overflow:hidden; border:1px solid #d7b84f;
+      border-radius:1.2vh; background:rgba(0,0,0,.58); box-shadow:inset 0 0 .7vh rgba(0,0,0,.8); }
   .durabilityHp { height:100%; background:linear-gradient(90deg,#78cf83,#42a456); transition:background .2s; }
   .durabilityHp.low { background:linear-gradient(90deg,#e45e4b,#a52f28); }
   .durabilityDf { height:100%; background:linear-gradient(90deg,#62bfe9,#3378c4); }
-  .durabilityNum { position:absolute; inset:0; display:grid; place-items:center; color:white; font:700 1.45vh/1 sans-serif;
-      text-shadow:0 1px 4px #000; font-variant-numeric:tabular-nums; }
   .durabilityBreakdown { margin-top:.35vh; text-align:center; color:#d9ecff; font:700 1.15vh/1.2 sans-serif; }
+  #battleCompare { position:absolute; z-index:7; left:50%; top:77.5%; width:min(48vw,76vh); transform:translateX(-50%);
+      display:grid; gap:.7vh; pointer-events:none;
+      color:#fff8e8; font:700 4.6vh/1 Marudeco,sans-serif; text-shadow:0 2px 5px #000,0 0 1.1vh rgba(242,208,98,.32); }
+  .battleCompareRow { display:grid; grid-template-columns:minmax(8rem,1fr) 2.4ch 5.6vh 2.4ch minmax(8rem,1fr);
+      min-height:5.2vh; align-items:center; justify-items:center; gap:.6vw; }
+  .battleCompareRow b { min-width:2.3ch; text-align:center; font-variant-numeric:tabular-nums; }
+  .battleCompareRow > img { display:block; width:5.2vh; height:5.2vh; object-fit:contain; filter:drop-shadow(0 1px 3px #000); }
+  .battleCompareBar { width:100%; height:2.35vh; display:flex; overflow:hidden; box-sizing:border-box;
+      border:1px solid #d7b84f; border-radius:1.2vh; background:rgba(0,0,0,.58); box-shadow:inset 0 0 .7vh rgba(0,0,0,.8); }
+  .battleCompareBar.over { box-shadow:0 0 1.3vh #ffd95a,inset 0 0 .7vh #fff7c2; }
+  .battleTerrain { display:flex; align-items:center; justify-content:center; gap:.7vw; margin-top:.15vh;
+      color:#f4e8c4; font:700 1.5vh/1 Marudeco,sans-serif; letter-spacing:.08em; }
+  #bCmpTerrain { width:3.2vh; height:3.2vh; filter:drop-shadow(0 1px 3px #000); }
+  #bCmpTerrain svg { display:block; width:100%; height:100%; overflow:visible; }
   .supportRevealStage { position:fixed; inset:0; z-index:79; display:grid; place-items:center; pointer-events:none;
       background:radial-gradient(circle,rgba(245,217,117,.2),rgba(8,5,20,.72) 55%,transparent 75%); animation:supportStageIn .25s ease both; }
   .supportRevealStage .scardB { width:28vh; height:40.4vh; filter:drop-shadow(0 2vh 3vh rgba(0,0,0,.85)); }
@@ -293,10 +306,13 @@
   .scardB { display:inline-block; width:12vh; height:17.3vh; perspective:500px; }
   @media (max-aspect-ratio:16/10) {
     #battleField { width:99vw; }
-    .battleTeam.atk { grid-template-columns:minmax(13vw,17vw) minmax(6vh,8vh) minmax(19vh,23vh); }
-    .battleTeam.def { grid-template-columns:minmax(19vh,23vh) minmax(6vh,8vh) minmax(13vw,17vw); }
+    .battleTeam.atk { grid-template-columns:minmax(16vw,19vw) minmax(6vh,8vh) minmax(19vh,23vh); }
+    .battleTeam.def { grid-template-columns:minmax(19vh,23vh) minmax(6vh,8vh) minmax(16vw,19vw); }
     .bdAbility p { font-size:1.05vh; -webkit-line-clamp:4; }
     .scardB { width:8vh; height:11.5vh; }
+    #battleCompare { width:min(49vw,69vh); font-size:4vh; }
+    .battleCompareRow { grid-template-columns:minmax(5rem,1fr) 2.3ch 4.8vh 2.3ch minmax(5rem,1fr); }
+    .battleCompareRow > img { width:4.6vh; height:4.6vh; }
   }
   .sflipB { position:relative; width:100%; height:100%; transform-style:preserve-3d; transition:transform .5s; }
   .sflipB.open { transform:rotateY(180deg); }
@@ -1098,6 +1114,11 @@
         <div class="supportSlot" id="bDefSupport"></div>
         <div class="battleDetail" id="bDefDetail"></div>
       </section>
+      <div id="battleCompare" aria-label="攻撃側と防衛側の戦闘値比較">
+        <div class="battleCompareRow"><div id="bCmpAtkAtBar" class="battleCompareBar"></div><b id="bCmpAtkAt">―</b><img src="/assets/cards/stat-at-icon.svg" alt="AT"><b id="bCmpDefAt">―</b><div id="bCmpDefAtBar" class="battleCompareBar"></div></div>
+        <div class="battleCompareRow"><div id="bCmpAtkHpBar" class="battleCompareBar"></div><b id="bCmpAtkHp">―</b><img src="/assets/cards/stat-hp-icon.svg" alt="HP"><b id="bCmpDefHp">―</b><div id="bCmpDefHpBar" class="battleCompareBar"></div></div>
+        <div class="battleTerrain"><span>領地の属性</span><span id="bCmpTerrain" aria-label="防衛領地属性"></span></div>
+      </div>
     </div>
     <div id="battleFooter"><div id="bcap"></div><div id="bnotes"></div></div>
   </div>
@@ -2957,8 +2978,7 @@ function attackMeterHTML(baseAt, at) {
   baseAt = Math.max(0, Number(baseAt) || 0); at = Math.max(0, Number(at) || 0);
   const basePct = Math.min(baseAt, at, 100), bonusPct = Math.max(0, Math.min(at, 100) - basePct);
   return `<div class="attackMeter${at > 100 ? ' over' : ''}"><div class="attackBar">
-    <div class="attackBase" style="width:${basePct}%"></div><div class="attackBonus" style="width:${bonusPct}%"></div>
-    <div class="attackNum">AT ${at} / 100${at > 100 ? ' OVER' : ''}</div></div></div>`;
+    <div class="attackBase" style="width:${basePct}%"></div><div class="attackBonus" style="width:${bonusPct}%"></div></div></div>`;
 }
 
 function previewStatsHTML(pid, cid, level, damage, side) {
@@ -2972,8 +2992,8 @@ function previewStatsHTML(pid, cid, level, damage, side) {
   const name = evolved && c.evo ? c.evo : c.name;
   const curHp = Math.max(1,hp0-(damage||0));
   return `<div class="bsOwner">${pl.name}</div><div class="bsCreature">${name}</div>
-    <div class="bsValues"><span>${statLabel('at')}${at}</span><span>${statLabel('hp')}${Math.max(1,hp0-(damage||0))}</span><span>${statLabel('df')}—</span></div>
     ${attackMeterHTML(at, at)}
+    <div class="bsValues"><span>${statLabel('at')}<b data-stat="at">${at}</b></span><span>${statLabel('hp')}<b data-stat="hp">${Math.max(1,hp0-(damage||0))}</b></span><span>${statLabel('df')}<b data-stat="df">―</b></span></div>
     ${durabilityHTML(curHp, 0)}
     <div class="bsMods"><span class="mod">支援・地形・能力補正は公開後に反映</span></div>`;
 }
@@ -3007,6 +3027,7 @@ function renderBattlePreview(bp) {
     $('bDefStats').innerHTML = previewStatsHTML(bp.defender, bp.defCreature, bp.defLevel || 1, bp.defDamage || 0, 'def');
     $('bDefDetail').innerHTML = battleDetailHTML(bp.defender, bp.defCreature, bp.defLevel || 1, ['地形・支援・能力補正は公開後に反映']);
   }
+  updateBattleCompare();
   $('bAtkSupport').innerHTML = supportBackHTML(bp.supportReady.attacker ? '選択済み' : '選択中…');
   $('bDefSupport').innerHTML = supportBackHTML(bp.supportReady.defender ? '選択済み' : '選択中…');
   $('bcap').textContent = bp.phase === 'pick_attacker'
@@ -3016,7 +3037,7 @@ function renderBattlePreview(bp) {
 
 function durabilityHTML(hp, df) {
   const max = Math.max(1, hp + df), hpPct = hp / max * 100, dfPct = df / max * 100;
-  return `<div class="durability"><div class="durabilityBar"><div class="durabilityHp${hp / max <= .25 ? ' low' : ''}" style="width:${hpPct}%"></div><div class="durabilityDf" style="width:${dfPct}%"></div><div class="durabilityNum">${hp + df} / ${max}</div></div><div class="durabilityBreakdown"><img class="inlineStatSymbol" src="/assets/cards/stat-hp-icon.svg" alt="">HP ${hp} + DF ${df}</div></div>`;
+  return `<div class="durability"><div class="durabilityBar"><div class="durabilityHp${hp / max <= .25 ? ' low' : ''}" style="width:${hpPct}%"></div><div class="durabilityDf" style="width:${dfPct}%"></div></div><div class="durabilityBreakdown"><img class="inlineStatSymbol" src="/assets/cards/stat-hp-icon.svg" alt="">HP ${hp} + DF ${df}</div></div>`;
 }
 function finalStatsHTML(b, side, phase = 'post') {
   const atkSide = side === 'atk';
@@ -3036,8 +3057,8 @@ function finalStatsHTML(b, side, phase = 'post') {
     : [`地形補正 +${b.terrain || 0}`, hasBattleSupport(b.defSupport) ? `支援 ${battleSupportName(b.defSupport)}` : '支援なし', b.curse ? `呪い −${b.curse}` : ''];
   const baseAt = atkSide ? (b.atkBaseAt ?? c.st) : (b.defBaseAt ?? c.st);
   return `<div class="bsOwner">${pl.name}</div><div class="bsCreature">${name}</div>
-    <div class="bsValues"><span>${statLabel('at')}<b data-stat="at">${at}</b></span><span>${statLabel('hp')}<b data-stat="hp">${hp}</b></span><span>${statLabel('df')}<b data-stat="df">${df}</b></span></div>
     ${attackMeterHTML(baseAt, at)}
+    <div class="bsValues"><span>${statLabel('at')}<b data-stat="at">${at}</b></span><span>${statLabel('hp')}<b data-stat="hp">${hp}</b></span><span>${statLabel('df')}<b data-stat="df">${df}</b></span></div>
     ${durabilityHTML(hp, df)}
     <div class="bsMods">${mods.filter(Boolean).map(x=>`<span class="mod hot">${x}</span>`).join('')}</div>`;
 }
@@ -3051,12 +3072,37 @@ function battleDetailMods(b, side) {
   return items;
 }
 
+function updateBattleCompare() {
+  const read = (rootId, stat) => {
+    const el = $(rootId) && $(rootId).querySelector(`[data-stat="${stat}"]`);
+    return el ? el.textContent : '―';
+  };
+  $('bCmpAtkAt').textContent = read('bAtkStats', 'at');
+  $('bCmpDefAt').textContent = read('bDefStats', 'at');
+  $('bCmpAtkHp').textContent = read('bAtkStats', 'hp');
+  $('bCmpDefHp').textContent = read('bDefStats', 'hp');
+  const mirrorBar = (sourceId, selector, targetId) => {
+    const source = $(sourceId) && $(sourceId).querySelector(selector), target = $(targetId);
+    if (!source || !target) return;
+    target.innerHTML = source.innerHTML;
+    target.classList.toggle('over', !!source.closest('.attackMeter.over'));
+  };
+  mirrorBar('bAtkStats', '.attackBar', 'bCmpAtkAtBar');
+  mirrorBar('bDefStats', '.attackBar', 'bCmpDefAtBar');
+  mirrorBar('bAtkStats', '.durabilityBar', 'bCmpAtkHpBar');
+  mirrorBar('bDefStats', '.durabilityBar', 'bCmpDefHpBar');
+  const b = activeBattleData;
+  const elem = b && state.tiles && state.tiles[b.tile] && state.tiles[b.tile].e;
+  $('bCmpTerrain').innerHTML = elem && ELEM[elem] ? `<svg viewBox="-34 -36 68 72">${ELEM[elem]}</svg>` : '';
+}
+
 function setAttackMeter(statsId, baseAt, at) {
   const root = $(statsId), old = root && root.querySelector('.attackMeter');
   if (!old) return;
   const holder = document.createElement('div'); holder.innerHTML = attackMeterHTML(baseAt, at);
   old.replaceWith(holder.firstElementChild);
   const num = root.querySelector('[data-stat="at"]'); if (num) num.textContent = Math.max(0, at);
+  updateBattleCompare();
 }
 
 function setDurability(statsId, hp, df, max) {
@@ -3067,11 +3113,11 @@ function setDurability(statsId, hp, df, max) {
   hpEl.style.width = Math.max(0, hp) / totalMax * 100 + '%';
   dfEl.style.width = Math.max(0, df) / totalMax * 100 + '%';
   hpEl.classList.toggle('low', hp / totalMax <= .25);
-  bar.querySelector('.durabilityNum').textContent = `${Math.max(0,hp)+Math.max(0,df)} / ${totalMax}`;
   root.querySelector('.durabilityBreakdown').innerHTML = `<img class="inlineStatSymbol" src="/assets/cards/stat-hp-icon.svg" alt="">HP ${Math.max(0,hp)} + DF ${Math.max(0,df)}`;
   const hpNum = root.querySelector('[data-stat="hp"]'), dfNum = root.querySelector('[data-stat="df"]');
   if (hpNum) hpNum.textContent = Math.max(0, hp);
   if (dfNum) dfNum.textContent = Math.max(0, df);
+  updateBattleCompare();
 }
 function animateDurability(statsId, fromHp, fromDf, toHp, toDf, max, ms = 850) {
   const t0 = performance.now();
@@ -3087,6 +3133,9 @@ function animateDurability(statsId, fromHp, fromDf, toHp, toDf, max, ms = 850) {
 let activeBattleData = null;
 function countBattleStat(statsId, stat, from, to, ms = 600) {
   const el = $(statsId).querySelector(`[data-stat="${stat}"]`);
+  const current = Number(el && el.textContent);
+  from = Number.isFinite(Number(from)) ? Number(from) : (Number.isFinite(current) ? current : 0);
+  to = Number.isFinite(Number(to)) ? Number(to) : from;
   if (!el || from === to) return Promise.resolve();
   const t0 = performance.now();
   return new Promise(resolve => {
@@ -3158,6 +3207,7 @@ async function playBattle(b) {
   $('bDefSupport').innerHTML = supportBackHTML('公開待ち', b.defSupport);
   $('bAtkStats').innerHTML = finalStatsHTML(b, 'atk', 'pre');
   $('bDefStats').innerHTML = finalStatsHTML(b, 'def', 'pre');
+  updateBattleCompare();
   $('bAtkDetail').innerHTML = battleDetailHTML(b.attacker, b.atkCreature, 1, battleDetailMods(b, 'atk'));
   $('bDefDetail').innerHTML = battleDetailHTML(b.defender, b.defCreature, dLv, battleDetailMods(b, 'def'));
   $('bnotes').innerHTML = '';
@@ -3175,6 +3225,7 @@ async function playBattle(b) {
   await revealBattleSupport(b, 'def');
   $('bAtkStats').innerHTML = finalStatsHTML(b, 'atk');
   $('bDefStats').innerHTML = finalStatsHTML(b, 'def');
+  updateBattleCompare();
   await wait(450);
   if (b.notes && b.notes.length)
     $('bnotes').innerHTML = b.notes.map(n => '✦ ' + n).join('<br>');

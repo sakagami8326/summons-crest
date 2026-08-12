@@ -73,6 +73,28 @@ ok(board.includes('id="bAtkDetail"') && board.includes('id="bDefDetail"') && boa
 ok(board.includes('function attackMeterHTML(baseAt, at)') && board.includes("at > 100 ? ' over'"),
   'battle AT meter uses 100 cap and overflow state');
 ok(board.includes('attackBase') && board.includes('attackBonus'),'battle AT meter separates base and bonus');
+ok(board.includes('.attackBar { position:relative; display:flex; width:100%; height:2.35vh;') &&
+  board.includes('.durabilityBar { position:relative; display:flex; width:100%; height:2.35vh;'),
+  'battle AT and HP bars use matching heights');
+ok(!board.includes('class="attackNum"') && !board.includes('class="durabilityNum"'),
+  'battle bars omit embedded numeric labels');
+ok(board.includes('.bsValues { display:none; }'),
+  'fighter-local battle values are hidden in favor of the central comparison');
+ok(board.includes('.def .battleDetail { text-align:left; }') && board.includes('align-self:start; margin-top:0;') &&
+  board.includes('transform:translateY(-5vh);'),
+  'battle detail panels are enlarged, upper aligned, and left aligned');
+ok(board.includes('id="battleCompare"') && board.includes('id="bCmpAtkAt"') && board.includes('id="bCmpDefHp"') &&
+  board.includes('function updateBattleCompare()'),
+  'battle comparison values are centered between attacker and defender bars');
+ok(board.includes('id="bCmpAtkAtBar"') && board.includes('id="bCmpDefHpBar"') && board.includes('function updateBattleCompare()') &&
+  board.includes("mirrorBar('bAtkStats', '.attackBar', 'bCmpAtkAtBar')"),
+  'battle comparison bars and values share the same central grid rows');
+ok(board.includes('id="bCmpTerrain"') && board.includes('state.tiles[b.tile].e') && board.includes('ELEM[elem]'),
+  'battle comparison shows the defending land element below the HP symbol');
+ok(board.includes('<span>領地の属性</span><span id="bCmpTerrain"'),
+  'defending land element appears to the right of its label');
+ok(board.includes('Number.isFinite(Number(from))') && board.includes('Number.isFinite(Number(to))'),
+  'battle stat count-up falls back safely when old payload values are missing');
 ok(board.includes('battleTeam.atk { grid-template-columns') && board.includes('battleFighter'),
   'battle uses detail support fighter layout');
 ok(board.includes('.tvShopArt.support { top:9.5%; left:17%; width:66%; height:47%; padding:2% 4% 7%;'),
