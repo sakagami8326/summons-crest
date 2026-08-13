@@ -1,4 +1,3 @@
 deploy/lightsail/*.sh text eol=lf
 deploy/lightsail/Caddyfile.example text eol=lf
 deploy/lightsail/*.service text eol=lf
-
