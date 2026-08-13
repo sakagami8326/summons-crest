@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.17';
+const VERSION = '1.18';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
@@ -258,6 +258,7 @@ function makeShopVisit(r, p) {
       }),
       { slotId: 'weapon', kind: 'support', card: 'weapon', basePrice: SUPPORTS.weapon.cost, price: price(SUPPORTS.weapon.cost), sold: false },
       { slotId: 'shield', kind: 'support', card: 'shield', basePrice: SUPPORTS.shield.cost, price: price(SUPPORTS.shield.cost), sold: false },
+      { slotId: 'jinx', kind: 'support', card: 'jinx', basePrice: SUPPORTS.jinx.cost, price: price(SUPPORTS.jinx.cost), sold: false },
       { slotId: 'remove', kind: 'remove', basePrice: RULES.forgetCost, price: price(RULES.forgetCost), sold: false },
     ],
   };
@@ -2181,7 +2182,7 @@ function botChooseOption(r, p, pend) {
       const item = visit.items.find(x => x.slotId === o.id.slice(4));
       if (item.kind === 'remove') return p.gold >= 260 && (p.hand.length + p.discard.length) ? 20 : -100;
       const score = item.kind === 'support'
-        ? (item.card === 'shield' ? 65 : 70)
+        ? ({ shield:65, weapon:70, jinx:72 }[item.card] || 60)
         : botCardScore(r, p, item.card);
       return score - item.price * .45;
     });

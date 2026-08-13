@@ -19,9 +19,9 @@ const p = { id:'p1', name:'P1', charId:'linnei', gold:1000, hand:['shield'], dec
 const r = G.makeRoom();
 r.phase = 'playing'; r.players = [p]; r.turn = 0; r.pending = {}; r.log = [];
 G.askMarket(r, p);
-eq(r.shopVisit.items.length, 8, 'five cards plus three fixed products');
+eq(r.shopVisit.items.length, 9, 'five cards plus four fixed products');
 eq(new Set(r.shopVisit.items.slice(0, 5).map(x => x.card)).size, 5, 'no duplicate random cards');
-eq(r.shopVisit.items.slice(5).map(x => [x.slotId, x.price]), [['weapon',60],['shield',60],['remove',80]], 'fixed products and prices');
+eq(r.shopVisit.items.slice(5).map(x => [x.slotId, x.price]), [['weapon',60],['shield',60],['jinx',100],['remove',80]], 'fixed products, order, and prices');
 for (const item of r.shopVisit.items.slice(0, 5)) {
   const info = G.CREATURES[item.card] || G.SPELLS[item.card];
   ok(info && !/_f$/.test(item.card) && !G.SUPPORTS[item.card], 'random slot is a base market card');
@@ -36,6 +36,12 @@ G.handleChoose(r, p.id, 'buy:' + first.slotId);
 eq(p.gold, before - first.price, 'sold slot cannot be purchased twice');
 eq(r.shopVisit.id, visitId, 'same visit keeps shelf');
 
+const jinx = r.shopVisit.items.find(x => x.slotId === 'jinx');
+const goldBeforeJinx = p.gold;
+G.handleChoose(r, p.id, 'buy:jinx');
+ok(jinx.sold && p.deck.includes('jinx'), 'jinx purchase sells slot and adds the support card to deck');
+eq(p.gold, goldBeforeJinx - 100, 'jinx purchase charges 100G');
+
 G.handleChoose(r, p.id, 'buy:remove');
 eq(r.pending[p.id].type, 'forget', 'removal opens card picker');
 G.handleChoose(r, p.id, 'fg:cancel');
@@ -48,7 +54,14 @@ ok(r.shopVisit.items.find(x => x.slotId === 'remove').sold && p.exile.includes('
 eq(p.gold, goldBeforeRemove - removePrice, 'removal charges shelf price');
 
 r.halfMarket = p.id; r.shopVisit = null; G.askMarket(r, p);
-ok(r.shopVisit.half && r.shopVisit.items.every(x => x.price === Math.round(x.basePrice / 2)), 'Linnei halves all eight products');
+ok(r.shopVisit.half && r.shopVisit.items.every(x => x.price === Math.round(x.basePrice / 2)), 'Linnei halves all nine products');
+eq(r.shopVisit.items.find(x => x.slotId === 'jinx').price, 50, 'Linnei halves jinx to 50G');
+
+const legacyVisit = r.shopVisit;
+legacyVisit.items = legacyVisit.items.filter(x => x.slotId !== 'jinx');
+G.askMarket(r, p);
+eq(r.shopVisit.id, legacyVisit.id, 'restored legacy visit is not rerolled');
+ok(!r.shopVisit.items.some(x => x.slotId === 'jinx'), 'restored eight-product visit remains compatible until exit');
 
 const deckBefore = p.deck.filter(x => x === 'shield').length;
 G.onCreatureSummoned(r, p, 'cresteria', 'summon', 1);
