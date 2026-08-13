@@ -1,0 +1,11 @@
+[Unit]
+Description=Deploy Summons Crest from GitHub main when updated
+Wants=network-online.target
+After=network-online.target summons-crest.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/summons-crest/deploy/lightsail/update.sh
+Nice=10
+IOSchedulingClass=idle
+

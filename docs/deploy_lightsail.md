@@ -46,15 +46,36 @@ sudo systemctl restart summons-crest
 
 Caddy obtains and renews the TLS certificate after DNS resolves and ports 80/443 are reachable.
 
-## Deploy an update
+## Automatic deployment
 
-After `main` has been pushed and tests have passed:
+The production instance polls public GitHub `main` every 1–2 minutes. This keeps inbound SSH restricted to the Lightsail browser client; GitHub Actions does not need direct SSH access.
+
+Enable it once on an existing instance:
+
+```bash
+sudo bash /opt/summons-crest/deploy/lightsail/enable-auto-deploy.sh
+```
+
+After tests pass, push `main`. The timer fetches the revision, accepts only a fast-forward, installs production dependencies, checks `server.js`, restarts the service, and verifies `/api/fixture`. A failed health check restores the previous revision and will not retry the same failed revision.
+
+Check the automation status:
+
+```bash
+systemctl status summons-crest-deploy.timer --no-pager
+journalctl -u summons-crest-deploy.service -n 100 --no-pager
+```
+
+Because active rooms are held in memory, do not push `main` while a match is running.
+
+## Manual deployment
+
+To deploy immediately after `main` has been pushed:
 
 ```bash
 sudo bash /opt/summons-crest/deploy/lightsail/update.sh
 ```
 
-The updater accepts only a fast-forward from `origin/main`, installs production dependencies without generating a lockfile, checks `server.js`, restarts the service, and verifies `/api/fixture` locally.
+The same updater is safe to run manually while the timer is enabled; a lock prevents duplicate deployment.
 
 Useful diagnostics:
 

@@ -5,7 +5,7 @@
 オーナーはゲームデザイン・AIアート・BGMを担当し、Claudeが実装・検証・ドキュメントを担当してきた。
 テストプレイ→即日修正のサイクルで開発している。
 
-- 公開URL: https://52-68-169-20.sslip.io (AWS Lightsail。mainへのpush後、`sudo bash /opt/summons-crest/deploy/lightsail/update.sh`で反映)
+- 公開URL: https://52-68-169-20.sslip.io (AWS Lightsail。mainへのpush後、systemd timerが1〜2分以内に自動反映)
 - 現在バージョン: **v1.16**(server.jsの`VERSION`とboard.html左下の`board X.XX`表記)
 
 ## 構成

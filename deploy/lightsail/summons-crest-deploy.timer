@@ -1,0 +1,12 @@
+[Unit]
+Description=Check GitHub for Summons Crest updates
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+RandomizedDelaySec=20
+Persistent=true
+Unit=summons-crest-deploy.service
+
+[Install]
+WantedBy=timers.target
