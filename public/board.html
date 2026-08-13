@@ -2983,7 +2983,8 @@ function playBattleOpening(key) {
 const supportCardId = sup => typeof sup === 'string' ? sup : sup && sup.cardId;
 const hasBattleSupport = sup => !!sup && sup !== 'none';
 const battleSupportArt = sup => ({ weapon:'support-weapon-v1.webp', gweapon:'support-weapon-v1.webp',
-  shield:'support-shield-v1.webp', gshield:'support-shield-v1.webp' })[supportCardId(sup)];
+  shield:'support-shield-v1.webp', gshield:'support-shield-v1.webp',
+  jinx:'support-jinx-v1.webp' })[supportCardId(sup)];
 const battleSupportName = sup => {
   if (!sup || sup === 'none') return '支援なし';
   if (typeof sup === 'object') return sup.name || sup.cardId || '支援カード';

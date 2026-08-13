@@ -800,12 +800,12 @@ const SUPPORT_ART = {
   weapon: '/assets/cards/support-weapon-v1.webp',
   gweapon: '/assets/cards/support-weapon-v1.webp',
   shield: '/assets/cards/support-shield-v1.webp',
-  gshield: '/assets/cards/support-shield-v1.webp'
+  gshield: '/assets/cards/support-shield-v1.webp',
+  jinx: '/assets/cards/support-jinx-v1.webp'
 };
 const supportArt = cid => SUPPORT_ART[cid]
   ? `<img src="${SUPPORT_ART[cid]}" alt="">`
-  : (cid === 'jinx' ? '<img src="/assets/ic_curse.png" alt="">'
-    : (GLYPH[cid] ? GLYPH[cid]() : sic('sword', '7.5dvh')));
+  : (GLYPH[cid] ? GLYPH[cid]() : sic('sword', '7.5dvh'));
 // アートが存在するスペル(無いものは呪文アイコンで代用)
 const SPELL_ART = new Set(['sp_gold','sp_weaken','sp_gale','sp_quake','sp_volcanic_core','sp_abyssal_pearl',
   'sp_earth_mother_stone','sp_sky_crystal','sp_flame_vortex','sp_bloodstained_blade',

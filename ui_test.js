@@ -56,6 +56,9 @@ console.log('召喚士のテレビ開始待機 ✓');
 
 // ===== phone.html → DOMスタブ環境で実行 =====
 const html = fs.readFileSync('public/phone.html', 'utf8');
+if (!fs.existsSync('public/assets/cards/support-jinx-v1.webp') ||
+    !/jinx:\s*'\/assets\/cards\/support-jinx-v1\.webp'/.test(html))
+  throw new Error('呪具アート検査: スマホカード用の専用アートが未接続');
 const knownIds = new Set([...html.matchAll(/id="([^"]+)"/g)].map(m => m[1]));
 // v0.66: 共有タイミング定数(外部スクリプト)をインラインscriptの前に連結して実行する
 const timingSrc = fs.readFileSync('public/game_timing.js', 'utf8');
@@ -95,6 +98,8 @@ const scripts = timingSrc + '\n' +
   if (!/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/.test(css))
     throw new Error('召喚士選択検査: 正式公開された6人の固定レイアウトがない');
   const boardHtml = fs.readFileSync('public/board.html', 'utf8');
+  if (!/jinx:'support-jinx-v1\.webp'/.test(boardHtml))
+    throw new Error('呪具アート検査: 戦闘支援公開へ専用アートが未接続');
   const boardWorldSrc = fs.readFileSync('public/board_world.js', 'utf8');
   if (!/--font-mincho:/.test(html) || !/--font-mincho:/.test(boardHtml) ||
       !/body \*,button,input,select,textarea\s*\{\s*font-family:var\(--font-mincho\)!important/.test(html) ||
