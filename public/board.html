@@ -936,6 +936,70 @@
   .scLocked { position:absolute; z-index:6; inset:0; display:grid; place-items:center;
       color:#ecfbff; font:700 clamp(15px,2.4vh,27px)/1 Marudeco,sans-serif; letter-spacing:.22em;
       text-shadow:0 2px 7px #07121c; background:linear-gradient(180deg,transparent 20%,rgba(8,28,42,.2) 65%,transparent); }
+  /* v1.20: テレビは召喚士一覧ではなく、参加プレイヤー4枠の選択状況を表示する。 */
+  #selectOv #selRow { width:min(72vw,1320px); height:68.5vh; display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr)); gap:clamp(3px,.35vw,7px); align-items:stretch; }
+  #selectOv .selCard { --panel-color:#728098; position:relative; width:auto; height:68.5vh; min-width:0;
+      border:1px solid color-mix(in srgb,var(--panel-color) 62%,#f4dfad); border-radius:50% 50% 1.2vh 1.2vh / 27% 27% 1.2vh 1.2vh;
+      background:linear-gradient(180deg,#11192b,#080d18); box-shadow:0 1.2vh 2.4vh rgba(20,25,39,.28);
+      overflow:visible; transform:none!important; }
+  #selectOv .selCard::before { content:""; position:absolute; inset:.5vh; z-index:5; pointer-events:none;
+      border:1px solid rgba(255,238,188,.38); border-radius:50% 50% .85vh .85vh / 27% 27% .85vh .85vh; }
+  #selectOv .selCard::after { content:"✦"; position:absolute; z-index:9; left:50%; top:-1.55vh;
+      transform:translateX(-50%); color:#c59b43; font-size:clamp(19px,2.6vh,31px); line-height:1;
+      text-shadow:0 1px 0 #fff7d7,0 0 .8vh rgba(197,155,67,.44); pointer-events:none; }
+  #selectOv .selCard.chosen { border-color:color-mix(in srgb,var(--panel-color) 58%,#ffe9a8);
+      box-shadow:0 0 0 2px rgba(255,235,157,.55),0 0 2.2vh color-mix(in srgb,var(--panel-color) 72%,transparent),
+      0 1.4vh 2.8vh rgba(27,34,51,.3); }
+  #selectOv .selCard.contested { border-color:#e5574b; animation:selectionConflict 1s ease-in-out infinite alternate;
+      box-shadow:0 0 0 3px rgba(229,87,75,.25),0 0 2.5vh rgba(214,77,66,.75); }
+  @keyframes selectionConflict { to { filter:brightness(1.16); } }
+  .scSlotPlayer { position:absolute; z-index:8; left:18%; right:18%; top:2.1vh; min-height:2.7vh; display:flex;
+      align-items:center; justify-content:center; gap:.55vw; color:#fff8e7; text-shadow:0 2px 6px #000;
+      border:1px solid rgba(224,185,92,.78); background:rgba(8,12,22,.68);
+      font:700 clamp(12px,1.55vh,18px)/1.1 Marudeco,sans-serif; letter-spacing:.08em; }
+  .scBotBadge { padding:.26vh .55vw; border:1px solid #f1d074; border-radius:999px; color:#f9e7a7;
+      background:rgba(8,12,22,.82); font:700 clamp(9px,1vh,12px)/1 Marudeco,sans-serif; letter-spacing:.08em; }
+  .scSlotStatus { position:absolute; inset:13% 8% 18%; display:flex; flex-direction:column; align-items:center;
+      justify-content:center; gap:.9vh; color:rgba(255,248,226,.75); text-align:center; }
+  .scSlotRune { width:clamp(46px,6.4vh,74px); height:clamp(46px,6.4vh,74px); opacity:.52; }
+  .scSlotRune svg { width:100%; height:100%; }
+  .scSlotStatus strong { font:700 clamp(16px,2.3vh,27px)/1.2 Marudeco,sans-serif; letter-spacing:.16em; }
+  .scSlotStatus span { font-size:clamp(10px,1.3vh,14px); letter-spacing:.1em; color:rgba(255,248,226,.54); }
+  .scSelectedFace { position:absolute; inset:0; overflow:visible; border-radius:inherit; background:#090e1a; }
+  .scPortrait { position:absolute; z-index:1; left:1.4%; right:1.4%; top:1.1%; bottom:1.1%; overflow:hidden;
+      border:1px solid color-mix(in srgb,var(--panel-color) 62%,#f5df9e);
+      border-radius:50% 50% .8vh .8vh / 28% 28% .8vh .8vh; background:#101928; }
+  #selectOv .selCard img.scStill { width:100%; height:100%; object-fit:cover; object-position:center 22%;
+      filter:saturate(.94) contrast(1.03) brightness(.92); }
+  .scPortrait::after { content:""; position:absolute; inset:0; pointer-events:none;
+      background:linear-gradient(180deg,transparent 43%,rgba(5,9,18,.18) 51%,rgba(5,9,18,.88) 67%,rgba(5,9,18,.96) 82%,rgba(5,9,18,.72) 100%); }
+  .scChosenMeta { position:absolute; z-index:4; left:5%; right:5%; top:59%; height:25%; display:flex;
+      flex-direction:column; align-items:center; justify-content:center; color:#fff8e8; text-align:center;
+      text-shadow:0 2px 7px #000; }
+  .scPlayerPlate { min-width:48%; margin-bottom:.8vh; padding:.35vh .85vw;
+      display:flex; align-items:center; justify-content:center; gap:.45vw;
+      border:1px solid rgba(232,196,103,.9); background:linear-gradient(90deg,rgba(8,11,20,.54),rgba(8,11,20,.9),rgba(8,11,20,.54));
+      color:#ffe6a0; font:700 clamp(11px,1.45vh,17px)/1.1 Marudeco,sans-serif; letter-spacing:.12em;
+      box-shadow:0 0 .7vh rgba(223,182,79,.18),inset 0 0 .55vh rgba(255,226,151,.08); }
+  .scChosenName { font:700 clamp(20px,3vh,34px)/1.05 Marudeco,sans-serif; letter-spacing:.12em; }
+  .scChosenLine { margin-top:.75vh; display:flex; align-items:center; justify-content:center; gap:.55vw;
+      color:#f1e3c3; font-size:clamp(11px,1.35vh,16px); letter-spacing:.08em; }
+  .scChosenLine .scElem { position:static; transform:none; width:clamp(20px,2.7vh,31px); height:clamp(20px,2.7vh,31px); }
+  .scChosenLine .scElem svg * { fill:var(--panel-color)!important; }
+  .scPawnWrap { position:absolute; z-index:7; left:50%; bottom:-7.4vh; width:62%; height:28%;
+      transform:translateX(-50%); display:flex; align-items:flex-end; justify-content:center; pointer-events:none; }
+  .scPawnWrap::after { content:""; position:absolute; left:22%; right:22%; bottom:-1.75vh; height:2.05vh;
+      border-radius:50%; background:rgba(8,9,13,.68); filter:blur(6px); transform:scaleY(.48); }
+  .scPawnWrap img { position:relative; z-index:1; width:100%; height:100%; object-fit:contain;
+      filter:drop-shadow(0 .5vh .55vh rgba(0,0,0,.66)); }
+  .selCard.revealed .scPawnWrap img { animation:summonerPawnIn .65s cubic-bezier(.18,.75,.25,1.25) both; }
+  @keyframes summonerPawnIn { from { opacity:0; transform:translateY(4vh) scale(.72); } to { opacity:1; transform:none; } }
+  .scConflictTag { position:absolute; z-index:9; left:50%; bottom:2.2vh; transform:translateX(-50%);
+      padding:.5vh .8vw; border:1px solid #ff8a7d; border-radius:999px; color:#fff3ef; background:rgba(118,24,22,.9);
+      font:700 clamp(10px,1.2vh,14px)/1 Marudeco,sans-serif; white-space:nowrap; }
+  #selectOv.departing .selCard:nth-child(-n+2) { transform:translateX(-32vw) scale(.94)!important; }
+  #selectOv.departing .selCard:nth-child(n+3) { transform:translateX(32vw) scale(.94)!important; }
   @media (prefers-reduced-motion:reduce) {
     #selectOv .selCard,.scFlip { transition:none; }
     .summonerOrbit,.summonerOrbit::before { animation:none; }
@@ -1970,7 +2034,11 @@ async function boot(mode = 'normal') {
     headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode }) })).json();
   enterRoom(c.code, c.phoneUrl, c.boardToken);
 }
-['redani','linnei','grease','mio','lia','adel'].forEach(c => { new Image().src = '/assets/full_' + c + '.png'; });
+['redani','linnei','grease','mio','lia','adel','villa'].forEach(c => {
+  new Image().src = '/assets/full_' + c + '.png';
+  new Image().src = '/assets/p_' + c + '.png';
+  new Image().src = '/assets/summoner-still-' + c + '.webp';
+});
 addEventListener('resize', fitWorld);
 // 前回のルームが生きていれば「戻る」ボタンを出す
 (async () => {
@@ -2985,7 +3053,7 @@ const supportCardId = sup => typeof sup === 'string' ? sup : sup && sup.cardId;
 const hasBattleSupport = sup => !!sup && sup !== 'none';
 const battleSupportArt = sup => ({ weapon:'support-weapon-v1.webp', gweapon:'support-weapon-v1.webp',
   shield:'support-shield-v1.webp', gshield:'support-shield-v1.webp',
-  jinx:'support-jinx-v1.webp' })[supportCardId(sup)];
+  jinx:'support-jinx-v2.webp' })[supportCardId(sup)];
 const battleSupportName = sup => {
   if (!sup || sup === 'none') return '支援なし';
   if (typeof sup === 'object') return sup.name || sup.cardId || '支援カード';
@@ -3503,45 +3571,38 @@ function render() {
     let conflict = false;
     const revealNow = [];
     const activeReveals = new Set();
-    $('selRow').innerHTML = Object.entries(C).map(([cid, c]) => {
-      const who = state.players.filter(p => p.charId === cid);
-      if (who.length >= 2) conflict = true;
-      const locked = c.selectable === false || c.upcoming;
-      const chosen = who.some(p => p.confirmed);
-      if (chosen && !locked) activeReveals.add(cid);
-      const animateReveal = chosen && !locked && !revealedSummoners.has(cid);
-      if (animateReveal) revealNow.push(cid);
-      const pill = !who.length ? '─'
-        : who.length >= 2 ? who.map(p => p.name).join(' / ') + ' が競合中'
-        : who[0].name + ' が選択';
-      const elemSvg = c.elem && ELEM[c.elem] ? `<svg viewBox="-34 -36 68 72">${ELEM[c.elem]}</svg>` : '';
-      const flipped = chosen && !locked && !animateReveal;
-      return `<div class="selCard ${chosen ? 'chosen' : ''} ${flipped ? 'flipped' : ''} ${who.length >= 2 ? 'contested' : ''} ${locked ? 'locked' : ''}"
-        data-summoner="${cid}"
-        style="--panel-color:${c.color}">
-        <div class="scFlip">
-          <div class="scFace scFront">
-            <img class="scBg" src="/assets/cards/bg-${c.elem || 'neutral'}.webp" alt="">
-            <div class="scVeil"></div><span class="scElem">${elemSvg}</span>
-            <img class="scArt" src="/assets/full_${cid}.png" alt="${c.name}">
-            ${locked ? '<div class="scLocked">準備中</div>' : ''}
-            <div class="scMeta"><div class="scn">${c.name}</div>
-              <div class="sce">${locked ? 'COMING SOON' : `${elemJa[c.elem] || ''} ─ ${c.style || ''}`}</div>
-              <div class="scp ${chosen && who.length === 1 ? 'done' : ''}">${locked ? '選択できません' : pill}</div></div>
-          </div>
-          ${locked ? '' : `<div class="scFace scBack">
-            <img class="scStill" src="/assets/summoner-still-${cid}.webp" alt="${c.name} イメージアート">
-            <div class="scBackMeta"><strong>${c.name}</strong><span>${pill}</span></div>
-          </div>`}
-        </div>
+    const duplicateIds = new Set(state.players.map(p => p.charId).filter((cid, i, a) => cid && a.indexOf(cid) !== i));
+    conflict = duplicateIds.size > 0;
+    const slots = Array.from({ length:4 }, (_, i) => state.players[i] || null);
+    $('selRow').innerHTML = slots.map((pl, i) => {
+      const cid = pl && pl.charId, c = cid && C[cid], chosen = !!(pl && pl.confirmed && c);
+      const contested = !!(cid && duplicateIds.has(cid));
+      const revealKey = pl ? pl.id + ':' + cid : '';
+      if (chosen) activeReveals.add(revealKey);
+      if (chosen && !revealedSummoners.has(revealKey)) revealNow.push(revealKey);
+      const elemSvg = c && c.elem && ELEM[c.elem] ? `<svg viewBox="-34 -36 68 72">${ELEM[c.elem]}</svg>` : '';
+      const playerName = pl ? pl.name : `PLAYER ${i + 1}`;
+      const botBadge = pl && pl.isBot ? '<span class="scBotBadge">BOT</span>' : '';
+      return `<div class="selCard ${chosen ? 'chosen' : ''} ${contested ? 'contested' : ''} ${pl ? '' : 'vacant'}"
+        data-player-slot="${pl ? pl.id : 'empty-' + i}" data-reveal-key="${revealKey}"
+        style="--panel-color:${c ? c.color : '#728098'}">
+        ${chosen ? `<div class="scSelectedFace">
+          <div class="scPortrait"><img class="scStill" src="/assets/summoner-still-${cid}.webp" alt="${c.name} イメージアート"></div>
+          <div class="scChosenMeta"><div class="scPlayerPlate"><span>${playerName}</span>${botBadge}</div><div class="scChosenName">${c.name}</div>
+            <div class="scChosenLine"><span class="scElem">${elemSvg}</span><span>${elemJa[c.elem] || ''}</span><b>─</b><span>${c.style || ''}</span></div></div>
+          <div class="scPawnWrap"><img src="/assets/p_${cid}.png" alt="${c.name} コマ"></div>
+          ${contested ? '<div class="scConflictTag">同じ召喚士を選択中</div>' : ''}
+        </div>` : `<div class="scSlotStatus">
+          ${pl ? `<div class="scPlayerPlate"><span>${playerName}</span>${botBadge}</div>` : ''}
+          <strong>${pl ? '召喚士選択中' : '空き'}</strong><span>${pl ? 'スマホで選択してください' : 'PLAYER SLOT'}</span></div>`}
       </div>`;
     }).join('');
-    [...revealedSummoners].forEach(cid => { if (!activeReveals.has(cid)) revealedSummoners.delete(cid); });
+    [...revealedSummoners].forEach(key => { if (!activeReveals.has(key)) revealedSummoners.delete(key); });
     if (revealNow.length) requestAnimationFrame(() => requestAnimationFrame(() => {
-      revealNow.forEach(cid => {
-        const card = $('selRow').querySelector(`[data-summoner="${cid}"]`);
-        if (card) card.classList.add('flipped');
-        revealedSummoners.add(cid);
+      revealNow.forEach(key => {
+        const card = $('selRow').querySelector(`[data-reveal-key="${key}"]`);
+        if (card) card.classList.add('revealed');
+        revealedSummoners.add(key);
       });
     }));
     $('selConflict').style.display = conflict ? 'block' : 'none';
@@ -3651,7 +3712,7 @@ function render() {
         const dedicatedArt = state.catalog.SPELLS[item.card] ? dedicatedSpellAsset(item.card) : null;
         const dedicatedSpell = !!dedicatedArt;
         const art = item.kind === 'support'
-          ? `/assets/cards/support-${item.card}-v1.webp`
+          ? `/assets/cards/support-${item.card}-${item.card === 'jinx' ? 'v2' : 'v1'}.webp`
           : state.catalog.SPELLS[item.card]
             ? (dedicatedArt || `/assets/c_${item.card}.png`)
             : `/assets/cards/c_${item.card}.webp`;
@@ -4086,7 +4147,11 @@ function render() {
   } else { $('winOv').classList.remove('on'); prev.winPlayed = null; }
 }
 fitWorld(); addEventListener('resize', fitWorld);
-['redani','linnei','grease','mio','lia','adel'].forEach(c => { new Image().src = '/assets/full_' + c + '.png'; });
+['redani','linnei','grease','mio','lia','adel','villa'].forEach(c => {
+  new Image().src = '/assets/full_' + c + '.png';
+  new Image().src = '/assets/p_' + c + '.png';
+  new Image().src = '/assets/summoner-still-' + c + '.webp';
+});
 </script>
 </body>
 </html>

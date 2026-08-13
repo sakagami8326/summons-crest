@@ -36,6 +36,16 @@ function roomFor(charId) {
   G.resolveUltSequence(r);
   ok(r.owners[1].dmg===0 && r.owners[1].iceWard,'Adele resolves healing and ward');
 }
+{
+  const {r,p}=roomFor('linnei');
+  p.pos=5;
+  G.handleChoose(r,p.id,'ult');
+  ok(r.ultSequence && !r.shopVisit,'Linnei shop waits for the cut-in');
+  G.resolveUltSequence(r);
+  eq(p.pos,5,'Linnei opens the shop without moving');
+  ok(r.halfMarket===p.id && r.shopVisit?.half && r.shopVisit.player===p.id,'Linnei opens a half-price shop at the current tile');
+  eq(r.pending[p.id].type,'market','Linnei continues into the normal shop flow');
+}
 const board=fs.readFileSync(path.join(__dirname,'public','board.html'),'utf8');
 const phone=fs.readFileSync(path.join(__dirname,'public','phone.html'),'utf8');
 const boardWorld=fs.readFileSync(path.join(__dirname,'public','board_world.js'),'utf8');
@@ -185,7 +195,7 @@ ok(board.includes("sfrontB${creature ? ' creatureSupport' : ''}") && board.inclu
   'creature support card shows contained creature art');
 ok(board.includes("+ (creature ? '' : '<div>' + battleSupportName(sup) + '</div>')"),
   'creature support card omits support labels and stat icon rows');
-for(const id of ['redani','linnei','grease','mio','adel','lia'])
+for(const id of ['redani','linnei','grease','mio','adel','lia','villa'])
   ok(fs.existsSync(path.join(__dirname,'public','assets',`ult_${id}.webp`)),`${id} cut-in asset exists`);
 ok(fs.existsSync(path.join(__dirname,'public','assets','se_ult_cutin.mp3')),'cut-in sound exists');
 console.log(`V1.09 ULT CUT-IN ALL ${pass} CHECKS PASSED`);

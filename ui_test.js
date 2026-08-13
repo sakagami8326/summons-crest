@@ -20,6 +20,14 @@ for (const asset of ['full_lia.png', 'p_lia.png', 'f_lia.png', 'summoner-still-l
   if (!fs.existsSync('public/assets/' + asset)) throw new Error(`リーア仮実装検査: ${asset} がない`);
 console.log('リーア仮実装 ✓');
 
+// ===== ヴィラ仮実装 =====
+if (!S.CHARS.villa || S.CHARS.villa.elem !== 'wind' || S.CHARS.villa.selectable !== false ||
+    !S.CHARS.villa.upcoming || S.CHAR_DECKS.villa || !S.ULTS.villa || S.ULTS.villa.name !== '墓守の協奏曲')
+  throw new Error('ヴィラ仮実装検査: 風属性・選択不可・効果未定の定義が不正');
+for (const asset of ['full_villa.png', 'p_villa.png', 'f_villa.png', 'summoner-still-villa.webp', 'ult_villa.webp'])
+  if (!fs.existsSync('public/assets/' + asset)) throw new Error(`ヴィラ仮実装検査: ${asset} がない`);
+console.log('ヴィラ仮実装 ✓');
+
 // ===== ダイス固定スペル =====
 for (let n = 1; n <= 6; n++) {
   const sid = 'sp_dice_' + n;
@@ -56,8 +64,8 @@ console.log('召喚士のテレビ開始待機 ✓');
 
 // ===== phone.html → DOMスタブ環境で実行 =====
 const html = fs.readFileSync('public/phone.html', 'utf8');
-if (!fs.existsSync('public/assets/cards/support-jinx-v1.webp') ||
-    !/jinx:\s*'\/assets\/cards\/support-jinx-v1\.webp'/.test(html))
+if (!fs.existsSync('public/assets/cards/support-jinx-v2.webp') ||
+    !/jinx:\s*'\/assets\/cards\/support-jinx-v2\.webp'/.test(html))
   throw new Error('呪具アート検査: スマホカード用の専用アートが未接続');
 const knownIds = new Set([...html.matchAll(/id="([^"]+)"/g)].map(m => m[1]));
 // v0.66: 共有タイミング定数(外部スクリプト)をインラインscriptの前に連結して実行する
@@ -95,10 +103,11 @@ const scripts = timingSrc + '\n' +
   if (!/-webkit-line-clamp:\s*3/.test(css) || !/-webkit-line-clamp:\s*5/.test(css) ||
       !/#cardZoomCard \.ccEffect p/.test(css))
     throw new Error('カード本文検査: 通常表示の省略または拡大時の全文表示がない');
-  if (!/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/.test(css))
-    throw new Error('召喚士選択検査: 正式公開された6人の固定レイアウトがない');
+  if (!/grid-template-columns:repeat\(4,minmax\(0,1fr\)\);\s*grid-template-rows:repeat\(2,minmax\(0,1fr\)\)/.test(css) ||
+      !/土属性召喚士・準備中/.test(html))
+    throw new Error('召喚士選択検査: 将来8人用の4×2レイアウトまたは第8枠がない');
   const boardHtml = fs.readFileSync('public/board.html', 'utf8');
-  if (!/jinx:'support-jinx-v1\.webp'/.test(boardHtml))
+  if (!/jinx:'support-jinx-v2\.webp'/.test(boardHtml))
     throw new Error('呪具アート検査: 戦闘支援公開へ専用アートが未接続');
   const boardWorldSrc = fs.readFileSync('public/board_world.js', 'utf8');
   if (!/--font-mincho:/.test(html) || !/--font-mincho:/.test(boardHtml) ||
@@ -106,12 +115,12 @@ const scripts = timingSrc + '\n' +
       !/body \*,button,input,select,textarea\s*\{\s*font-family:var\(--font-mincho\)!important/.test(boardHtml) ||
       !/Yu Mincho/.test(boardWorldSrc) || /fonts\.googleapis\.com/.test(html + boardHtml))
     throw new Error('フォント検査: テレビ・スマホ・Phaserが明朝体へ統一されていない');
-  if (!/summonerSelect/.test(boardHtml) || !/selectable === false/.test(boardHtml) ||
-      !/Object\.entries\(C\)\.map/.test(boardHtml) || !/const C = state\.catalog\.CHARS/.test(boardHtml))
-    throw new Error('テレビ召喚士選択検査: 6人を公開カタログから描画するパネルがない');
-  if (!/class="scFlip"/.test(boardHtml) || !/rotateY\(180deg\)/.test(boardHtml) ||
-      !/summoner-still-\$\{cid\}\.webp/.test(boardHtml) || !/revealedSummoners/.test(boardHtml))
-    throw new Error('テレビ召喚士選択検査: 選択確定時のイメージアート反転表示がない');
+  if (!/summonerSelect/.test(boardHtml) || !/Array\.from\(\{ length:4 \}/.test(boardHtml) ||
+      !/data-player-slot/.test(boardHtml) || !/scPortrait/.test(boardHtml) || !/scPawnWrap/.test(boardHtml))
+    throw new Error('テレビ召喚士選択検査: 参加者4枠・イメージアート・コマの表示がない');
+  if (!/summoner-still-\$\{cid\}\.webp/.test(boardHtml) || !/assets\/p_\$\{cid\}\.png/.test(boardHtml) ||
+      !/revealedSummoners/.test(boardHtml))
+    throw new Error('テレビ召喚士選択検査: 選択確定時のイメージアートまたはコマがない');
   if (!/bgm_select\.mp3/.test(boardHtml) || !/summonerOrbit/.test(boardHtml) ||
       !/function playGameEntryTransition\(\)/.test(boardHtml) ||
       !/class="entryRing"/.test(boardHtml) || !/zoomTile = 0; applyZoom\(\)/.test(boardHtml))
@@ -126,9 +135,9 @@ const scripts = timingSrc + '\n' +
       !/type:'start_game', token:boardToken/.test(boardHtml) ||
       !/state\.selectionReady/.test(boardHtml))
     throw new Error('テレビゲーム開始検査: readiness連動の管理者開始ボタンがない');
-  if (!/\.scBackMeta\s*\{[^}]*min-height:35%/.test(boardHtml) ||
-      !/\.scStill\s*\{[^}]*object-fit:cover/.test(boardHtml))
-    throw new Error('召喚士裏面検査: 全面coverまたは下部35%グラデーションがない');
+  if (!/\.scPortrait\s*\{[^}]*bottom:1\.1%/.test(boardHtml) ||
+      !/img\.scStill\s*\{[^}]*object-fit:cover/.test(boardHtml))
+    throw new Error('召喚士選択検査: 縦長イメージのcover表示がない');
   if (/\.selCard\.chosen\s*\{[^}]*flex-grow/.test(boardHtml) ||
       /\.selCard[^\n]*\.chosen\s*\{[^}]*scale\(/.test(boardHtml))
     throw new Error('召喚士選択検査: 選択済みパネルが拡大されている');

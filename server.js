@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.18';
+const VERSION = '1.20';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
@@ -202,14 +202,17 @@ const CHARS = {
             style: '負傷・火力侵略', deckNote: '炎の渦で傷を刻み、追撃で侵略する' },
   adel:   { name: 'アーデル', color: '#9DDFF2', elem: 'water',
             style: '回復・クリーチャー支援', deckNote: '水連鎖を築き、支援と回復で守り抜く', selectable: true, upcoming: false },
+  villa:  { name: 'ヴィラ',   color: '#42B875', elem: 'wind',
+            style: '墓守・調律', deckNote: '初期デッキと固有スキル効果は調整中', selectable: false, upcoming: true },
 };
 const ULTS = {
   redani: { name: '烈火の進軍', desc: 'サイコロを3個振って移動する' },
-  linnei: { name: '水鏡の大商談', desc: '市場へ瞬間移動し、全品半額で買い物' },
+  linnei: { name: '水鏡の大商談', desc: '現在のマスでショップを開き、全品半額で買い物' },
   grease: { name: '大地の大結界', desc: '次の自分の手番まで、すべての自分の領地が侵略されなくなる' },
   mio:    { name: '追い風の導き', desc: '好きなマスへ移動して止まる' },
   lia:    { name: '紅蓮の方程式', desc: '敵領地を最大3か所選び、炎の渦を発生させる' },
   adel:   { name: '氷晶の勅令', desc: '自分の全クリーチャーを20回復し、次の防衛戦闘でDF+10' },
+  villa:  { name: '墓守の協奏曲', desc: '効果調整中' },
 };
 for (const [cid, c] of Object.entries({ ...CREATURES }))
   if (c.evo) CREATURES[cid + '_f'] = { name: c.evo, elem: c.elem, st: c.evoSt, hp: c.evoHp,
@@ -508,9 +511,8 @@ function resolveUltSequence(r) {
     return performMove(r, p, sum, { value: dice[0], multi: dice }, `3つのダイスで${sum}を出した!(${dice.join('+')})`);
   }
   if (seq.charId === 'linnei') {
-    p.pos = d.target;
     r.halfMarket = p.id;
-    log(r, `${p.name}は水鏡を通って市場へ瞬間移動した(全品半額!)`);
+    log(r, `${p.name}は現在地で水鏡のショップを開いた(全品半額!)`);
     r.ultSequence = null;
     return askMarket(r, p);
   }
@@ -1371,8 +1373,7 @@ function handleChoose(r, playerId, optionId) {
       return beginUltSequence(r, p, { dice: d });
     }
     if (p.charId === 'linnei') {
-      const target = [8, 23].map(m => ({ m, d: (m - p.pos + 28) % 28 })).sort((a, b) => a.d - b.d)[0].m;
-      return beginUltSequence(r, p, { target });
+      return beginUltSequence(r, p);
     }
     if (p.charId === 'grease') return beginUltSequence(r, p);
     return askRoll(r, p);

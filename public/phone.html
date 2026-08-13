@@ -16,6 +16,7 @@
          height:100dvh; overflow:hidden; color:var(--parchment);
          font-family:var(--font-mincho); font-weight:400; user-select:none;
          display:flex; flex-direction:column; }  /* フロー配置: HUD/メッセージ/手札が重ならない */
+  body.ingame { background:url('/assets/ui/phone-game-bg-v1.png') center / cover no-repeat fixed,#f3ead1; }
   body *,button,input,select,textarea { font-family:var(--font-mincho)!important; }
   #rotate { display:none; position:fixed; inset:0; z-index:99; background:var(--ink);
         align-items:center; justify-content:center; flex-direction:column; gap:14px;
@@ -39,10 +40,27 @@
   header { flex:none; height:25dvh; display:flex;
         align-items:center; gap:1.4vw; padding:1dvh calc(12px + env(safe-area-inset-right)) 1dvh calc(12px + env(safe-area-inset-left)); }
   #diceDock { flex:0 0 18dvh; min-width:0; height:100%; display:flex; align-items:center; justify-content:center; position:relative; }
-  #topTools { min-width:0; margin-left:auto; display:flex; align-items:center; justify-content:flex-end; gap:.8vw; white-space:nowrap; }
-  #contextBtn { display:none; }
-  .me { min-width:0; display:flex; align-items:center; gap:8px; background:rgba(0,0,0,.35);
-        border:1px solid var(--gold); border-radius:10px; padding:4px 14px 4px 5px; flex:none; }
+  #topTools { min-width:0; height:100%; margin-left:auto; display:grid;
+      grid-template-columns:repeat(4,13.2dvh); grid-template-rows:13.2dvh 8.2dvh;
+      align-content:center; justify-content:end; gap:.45dvh .35vw; white-space:nowrap; }
+  #contextBtn { display:none; grid-column:1 / 3; grid-row:2; align-self:center; justify-self:stretch;
+      min-height:6.6dvh; padding:.8dvh 1.2dvh; font-size:max(2.1dvh,12px); }
+  .phoneToolBtn,#ultBtn { border:0; padding:0; color:transparent; font-size:0; cursor:pointer;
+      background-color:transparent; background-position:center; background-repeat:no-repeat; background-size:contain;
+      filter:drop-shadow(0 .45dvh .55dvh rgba(17,20,31,.42)); transition:transform .12s ease,filter .12s ease; }
+  .phoneToolBtn { width:13.2dvh; height:13.2dvh; }
+  .phoneToolBtn:active,#ultBtn:active { transform:translateY(.25dvh) scale(.96);
+      filter:drop-shadow(0 .15dvh .25dvh rgba(17,20,31,.38)) brightness(.88); }
+  #mapBtn { grid-column:1; grid-row:1; background-image:url('/assets/ui/phone-btn-land-v1.webp'); }
+  #galleryBtn { grid-column:2; grid-row:1; background-image:url('/assets/ui/phone-btn-cards-v1.webp'); }
+  #deckBtn { grid-column:3; grid-row:1; background-image:url('/assets/ui/phone-btn-deck-v1.webp'); }
+  #fsBtn { grid-column:4; grid-row:1; background-image:url('/assets/ui/phone-btn-fullscreen-v1.webp'); }
+  #ultBtn { display:none; grid-column:3 / 5; grid-row:2; width:100%; height:8.2dvh;
+      background-image:url('/assets/ui/phone-btn-ultimate-v1.webp'); }
+  #ultBtn.on { display:block; }
+  .me { min-width:0; display:flex; align-items:center; gap:8px; background:rgba(13,24,43,.9);
+        border:1px solid rgba(201,162,39,.88); border-radius:10px; padding:4px 14px 4px 5px; flex:none;
+        box-shadow:inset 0 0 0 1px rgba(255,238,176,.08); }
   .dirBtn { font-family:'Reggae One','Yu Mincho',serif; display:flex; flex-direction:column;
         align-items:center; gap:.6dvh; background:linear-gradient(170deg,#2E2A52,#1B1838);
         color:var(--gold-soft); border:2px solid var(--gold); border-radius:2.4dvh;
@@ -65,12 +83,6 @@
         overflow:hidden; background:rgba(0,0,0,.28); border:1px solid rgba(201,162,39,.35);
         border-radius:1.2dvh; padding:.6dvh 1dvh; }
   #msg:empty { opacity:0; }
-  #mapBtn { font-family:inherit; font-size:13px; padding:6px 10px; margin-left:auto;
-        background:rgba(201,162,39,.18); color:var(--gold-soft);
-        border:1px solid var(--gold); border-radius:7px; margin-right:6px; }
-  #fsBtn { font-family:inherit; font-size:12px; background:rgba(0,0,0,.4); color:rgba(241,232,208,.8);
-        border:1px solid rgba(201,162,39,.5); border-radius:7px; padding:5px 9px; }
-
   #action { flex:1; min-width:0; display:flex; align-items:center; justify-content:center; gap:14px;
         padding:0 8px; overflow:hidden; }
   .abtn { font-family:inherit; font-size:max(2.7dvh, 15px); letter-spacing:2px; padding:1.8dvh 3.4dvh;
@@ -88,7 +100,7 @@
 
   /* 3Dダイス */
   #diceBtn { width:16dvh; height:16dvh; border-radius:50%; font-size:2.5dvh; white-space:nowrap;
-        box-shadow:0 0 0 8px rgba(201,162,39,.15), 0 4px 14px rgba(0,0,0,.5); }
+        box-shadow:none; }
   .diceStage { position:relative; width:15dvh; height:18dvh; perspective:700px; }
   .diceStage.drop { animation:dbounce 1.4s cubic-bezier(.3,.6,.4,1); }
   @keyframes dbounce { 0%{transform:translateY(-15dvh)} 52%{transform:translateY(0)}
@@ -115,6 +127,7 @@
         align-items:flex-end; -webkit-overflow-scrolling:touch; }
   .card { flex:none; height:100%; aspect-ratio:300/470; width:auto; position:relative;
         perspective:700px; cursor:pointer; transition:transform .15s; }
+  #hand .card { filter:drop-shadow(0 1.15dvh 1.25dvh rgba(20,25,39,.48)); }
   .card.sel { transform:translateY(-7px); }
   .card.sel .face { border-color:#F2D062; box-shadow:0 0 0 2px #F2D062, 0 8px 20px rgba(242,208,98,.4); }
   .card.dim { filter:brightness(.6) saturate(.6); cursor:default; }
@@ -312,16 +325,16 @@
       flex-direction:column; align-items:center; justify-content:center; gap:1.2dvh;
       padding:2.5dvh 0 3dvh; }
   #charSel.on { display:flex; }
-  #csRow { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:.45vw; width:100%; align-items:center;
-      min-height:0; flex:1;
+  #csRow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); grid-template-rows:repeat(2,minmax(0,1fr));
+      gap:.75dvh .65vw; width:100%; align-items:stretch; min-height:0; flex:1;
       padding-left:calc(1.5vw + env(safe-area-inset-left));
       padding-right:calc(1.5vw + env(safe-area-inset-right)); overflow:hidden; }
-  .csCard { position:relative; min-width:0; height:min(76dvh,calc((100vw - 7vw) * 470 / 1440));
-      border-radius:1.6dvh; border:0; background:#16364f; cursor:pointer; transition:transform .15s;
+  .csCard { position:relative; min-width:0; min-height:0; height:100%;
+      border-radius:1.25dvh; border:0; background:#16364f; cursor:pointer; transition:transform .15s;
       overflow:hidden; isolation:isolate; box-shadow:0 5px 16px rgba(0,0,0,.5); }
   .csCard:active { transform:scale(.97); }
   .csCard .csBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-3; }
-  .csCard .csArt { position:absolute; z-index:2; inset:13% 2% 15%; width:96%; height:72%; object-fit:contain;
+  .csCard .csArt { position:absolute; z-index:2; inset:10% 2% 16%; width:96%; height:74%; object-fit:contain;
       filter:drop-shadow(0 0 5px rgba(255,255,255,.5)) drop-shadow(0 5px 8px rgba(0,0,0,.45)); }
   .csCard .csTop { position:absolute; z-index:5; top:4%; left:5%; right:5%; height:10%; display:grid;
       grid-template-columns:15% 1fr 15%; align-items:center; }
@@ -329,7 +342,7 @@
   .csCard .csElem svg { width:88%; height:88%; } .csCard .csElem svg * { fill:#fff !important; }
   .csCard .csName { grid-column:2; min-width:0; color:#fff4d5; font:700 clamp(14px,3dvh,24px)/1 Marudeco,sans-serif;
       letter-spacing:.02em; text-align:center; white-space:nowrap; text-shadow:0 2px 4px rgba(0,0,0,.65); }
-  .csCard .csBottom { position:absolute; z-index:5; inset:auto 0 0; min-height:17%; padding:5% 5% 4%;
+  .csCard .csBottom { position:absolute; z-index:5; inset:auto 0 0; min-height:18%; padding:3.5% 5% 3%;
       display:flex; align-items:center; justify-content:center; background:#f6e9c8; color:#172536;
       font-size:clamp(13px,2dvh,17px); font-weight:700; text-align:center; line-height:1.25; }
   .csCard .csBottom::before { content:""; position:absolute; left:0; bottom:99%; width:100%; height:42%;
@@ -338,7 +351,7 @@
       background:rgba(20,18,39,.88); color:#fff4d5; font-size:clamp(13px,1.8dvh,16px); text-align:center; }
   .csCard.mine { box-shadow:0 0 0 3px #F2D062, 0 0 20px rgba(242,208,98,.5); }
   .csCard.dim { filter:brightness(.5) saturate(.5); cursor:default; }
-  .csUpcoming { position:relative; min-width:0; height:min(76dvh,calc((100vw - 7vw) * 470 / 1200));
+  .csUpcoming { position:relative; min-width:0; min-height:0; height:100%;
       overflow:hidden; isolation:isolate; border-radius:1.35dvh; border:1px solid rgba(168,232,250,.72);
       background:#102f46; box-shadow:0 5px 16px rgba(0,0,0,.48); cursor:default; }
   .csUpcoming .csuBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-3;
@@ -357,6 +370,20 @@
       color:#e9fbff; background:rgba(5,18,30,.82); border:1px solid rgba(177,235,250,.55);
       border-radius:.7dvh; font-size:clamp(10px,1.35dvh,13px); font-weight:700; text-align:center;
       line-height:1.15; letter-spacing:.04em; }
+  .csUpcoming.revealed { cursor:pointer; border-color:rgba(113,236,169,.78); background:#102d28; }
+  .csUpcoming.revealed .csuBg { filter:saturate(.78) brightness(.78); }
+  .csUpcoming.revealed .csuArt { z-index:1; inset:8% 2% 14%; width:96%; height:78%;
+      object-fit:contain; filter:drop-shadow(0 5px 9px rgba(0,0,0,.52)); }
+  .csUpcoming.revealed .csuName { z-index:4; top:4%; writing-mode:horizontal-tb; color:#fff5d8;
+      font-size:clamp(15px,2.3dvh,21px); letter-spacing:.08em; white-space:nowrap; }
+  .csUpcoming.revealed .csuElem { z-index:5; left:8%; transform:none; }
+  .csUpcoming.revealed::after { content:""; position:absolute; z-index:2; inset:0;
+      background:linear-gradient(180deg,rgba(4,12,18,.08) 35%,rgba(4,12,18,.78) 100%); pointer-events:none; }
+  .csUpcoming.empty .csuArt { display:none; }
+  .csUpcoming.empty::before { content:"?"; position:absolute; inset:0; display:grid; place-items:center;
+      color:rgba(238,251,255,.26); font:700 12dvh/1 Georgia,serif; }
+  .cdPending { display:inline-flex; align-items:center; padding:.45dvh 1.2dvh; border-radius:999px;
+      color:#d9fff0; background:#164b38; border:1px solid #58c48a; font-weight:700; letter-spacing:.1em; }
   #charDetail { position:fixed; inset:0; display:none; z-index:36; background:rgba(10,8,25,.98);
       padding:2dvh calc(3vw + env(safe-area-inset-right)) 2dvh calc(3vw + env(safe-area-inset-left)); }
   #charDetail.on { display:grid; grid-template-columns:minmax(24dvh,31vw) 1fr; gap:3vw; }
@@ -386,7 +413,7 @@
   /* ダイス画像ボタン */
   .diceImgBtn { background:none; border:none; cursor:pointer; padding:0; height:100%;
         display:flex; align-items:center; justify-content:center; }
-  .diceImgBtn img { height:23dvh; max-height:100%; filter:drop-shadow(0 5px 14px rgba(0,0,0,.55)); transition:transform .12s; }
+  .diceImgBtn img { height:23dvh; max-height:100%; filter:none; transition:transform .12s; }
   .diceImgBtn:active img { transform:scale(.93); }
 
   .face .fx { font-size:max(1.55dvh, 10px); color:#5C4A2E; text-align:center; padding:0 8px;
@@ -428,9 +455,7 @@
   .draftCard:active { transform:scale(.96); }
   .draftCard .face { position:relative; height:100%; }
 
-  /* クリーチャー一覧(図鑑) */
-  #galleryBtn { font-family:inherit; font-size:13px; padding:6px 10px !important; background:rgba(0,0,0,.4); color:rgba(241,232,208,.85);
-      border:1px solid rgba(201,162,39,.5); border-radius:7px; padding:5px 9px; margin-right:6px; }
+  /* カード一覧(図鑑。スペル対応を見越した共通名) */
   #galleryOv { position:fixed; inset:0; display:none; z-index:57; background:rgba(10,8,25,.96);
       flex-direction:column; }
   #galleryOv.on { display:flex; }
@@ -465,12 +490,58 @@
   #cardZoom .tap { position:absolute; bottom:4dvh; width:100%; text-align:center;
       font-size:2dvh; letter-spacing:3px; color:rgba(241,232,208,.8); }
   #galZoom { position:fixed; inset:0; display:none; z-index:62; align-items:center;
-      justify-content:center; background:rgba(10,8,25,.88); }
+      justify-content:center; overflow:hidden; background:rgba(5,8,20,.9); backdrop-filter:blur(5px); }
   #galZoom.on { display:flex; }
-  #galZoomCard { position:relative; height:min(92dvh, calc(58vw * 470 / 300)); aspect-ratio:300/470;
-      width:auto; animation:drawIn .4s ease; }
-  #galZoom .tap { position:absolute; bottom:5dvh; width:100%; text-align:center;
-      font-size:2dvh; letter-spacing:3px; color:rgba(241,232,208,.8); }
+  #galZoomStage { width:min(82vw,150dvh); height:88dvh; display:grid;
+      grid-template-columns:minmax(30dvh,36%) minmax(0,1fr); gap:2.6vw; align-items:center; }
+  #galZoomCard { position:relative; justify-self:end; height:86dvh; max-width:36vw;
+      aspect-ratio:300/470; animation:drawIn .32s ease; filter:drop-shadow(0 1.3dvh 2.4dvh rgba(0,0,0,.72)); }
+  #galZoomCard>.face { position:relative; width:100%; height:100%; transform:none; }
+  #galZoomCard>.face.back { transform:none; }
+  #galZoomInfo { position:relative; height:82dvh; min-width:0; box-sizing:border-box; overflow:hidden;
+      padding:2.5dvh 3vw 2.2dvh; color:#f7efd9; text-align:left; border:2px solid #b89038;
+      border-radius:1.2dvh; background:linear-gradient(145deg,rgba(9,25,44,.98),rgba(4,13,27,.98));
+      box-shadow:inset 0 0 0 1px rgba(240,205,102,.17),0 1dvh 3dvh rgba(0,0,0,.55); }
+  #galZoomInfo::before,#galZoomInfo::after { content:"◆"; position:absolute; color:#d3ad4c;
+      font-size:1.8dvh; line-height:1; }
+  #galZoomInfo::before { left:.8dvh; top:.7dvh; } #galZoomInfo::after { right:.8dvh; bottom:.7dvh; }
+  .galModeTabs { display:grid; grid-template-columns:1fr 1fr; gap:.7vw; margin-bottom:1.3dvh; }
+  .galModeBtn { min-height:6.5dvh; border:1px solid #9f7930; border-radius:999px; color:#d9bd67;
+      background:#102239; font:700 max(2.2dvh,13px)/1 Marudeco,sans-serif; letter-spacing:.08em; }
+  .galModeBtn.active { color:#fff5d1; border-color:#ebc85f;
+      background:linear-gradient(180deg,#147875,#0b5458); box-shadow:0 0 1.3dvh rgba(91,224,208,.28); }
+  .galModeBtn:disabled { opacity:.38; }
+  .galDetailScroll { height:calc(100% - 7.8dvh); overflow-y:auto; padding-right:.8vw; }
+  .galDetailName { margin:.2dvh 0 .7dvh; color:#fff4d5;
+      font:700 max(4.6dvh,24px)/1.15 Marudeco,sans-serif; letter-spacing:.04em; }
+  .galMeta { display:flex; align-items:center; flex-wrap:wrap; gap:.7dvh 1vw; color:#f2e7c5;
+      font-size:max(2.2dvh,13px); }
+  .galElem { display:inline-flex; align-items:center; gap:.45em; font-weight:700; }
+  .galElem svg { width:2.1em; height:2.1em; } .galElem.neutral { color:#b9bdc8; }
+  .galBadge { display:inline-grid; min-width:2.2em; min-height:2.2em; padding:0 .5em; place-items:center;
+      border:1px solid #b89038; border-radius:.5dvh; color:#ffe8a0; background:#111f35; font-weight:900; }
+  .galStats { display:grid; grid-template-columns:1fr 1fr; gap:1.7vw; margin:1.7dvh 0;
+      padding:1.5dvh 0; border-top:1px solid rgba(211,173,76,.65); border-bottom:1px solid rgba(211,173,76,.65); }
+  .galStat { display:flex; align-items:center; gap:.75vw; color:#fff4d5;
+      font:700 max(4.4dvh,24px)/1 Marudeco,sans-serif; font-variant-numeric:tabular-nums; }
+  .galStat .statIconDisk { width:max(6.1dvh,34px); height:max(6.1dvh,34px); min-width:max(6.1dvh,34px);
+      aspect-ratio:auto; flex:none; padding:max(.75dvh,4px); }
+  .galStat .statIconDisk img { display:block; width:100%; height:100%; min-width:100%; min-height:100%; object-fit:contain; }
+  .galStat small { color:#d9bd67; font-size:.58em; }
+  .galAbilityName { margin:0 0 1dvh; color:#f2c95d; font:700 max(3.2dvh,18px)/1.2 Marudeco,sans-serif; }
+  .galAbilityText { margin:0; color:#f6efdd; font-size:max(2.65dvh,15px); font-weight:700;
+      line-height:1.55; letter-spacing:.03em; }
+  .galNav { position:absolute; top:50%; z-index:4; width:max(9dvh,48px); height:max(9dvh,48px);
+      transform:translateY(-50%); border-radius:50%; border:2px solid #d2ad50; color:#f5d773;
+      background:linear-gradient(145deg,#1b2638,#080f1d); font-size:max(5dvh,28px); line-height:1;
+      box-shadow:0 0 0 3px rgba(0,0,0,.35),0 0 1.5dvh rgba(225,190,83,.28); }
+  #galPrev { left:calc(1.5vw + env(safe-area-inset-left)); }
+  #galNext { right:calc(1.5vw + env(safe-area-inset-right)); }
+  #galZoomClose { position:absolute; z-index:5; right:calc(2vw + env(safe-area-inset-right)); top:1.4dvh;
+      padding:.8dvh 1.5vw; border:0; color:#f2ca66; background:rgba(5,12,25,.78);
+      font:700 max(2.1dvh,13px)/1 Marudeco,sans-serif; letter-spacing:.08em; }
+  #galZoomPosition { position:absolute; left:50%; bottom:1.1dvh; transform:translateX(-50%);
+      color:#f3d06d; font:700 max(2.2dvh,13px)/1 Marudeco,sans-serif; letter-spacing:.18em; }
 
   /* レアリティ */
   .rarBadge { position:absolute; top:6px; right:6px; z-index:3; font-size:max(1.5dvh, 10px); font-family:serif;
@@ -599,7 +670,7 @@
   .supportCard .suText { margin:0; font-size:clamp(12px,3.8cqw,16px); font-weight:700; line-height:1.4; }
   .supportCard .suText { -webkit-line-clamp:3; line-clamp:3; }
   #cardZoomCard .ccEffect p,#cardZoomCard .spText,#cardZoomCard .suText,
-  #galZoomCard .ccEffect p,#drawCard .ccEffect p,#drawCard .spText,#drawCard .suText {
+  #drawCard .ccEffect p,#drawCard .spText,#drawCard .suText {
       display:block; overflow:visible; text-overflow:clip; -webkit-line-clamp:unset; line-clamp:unset; }
   /* ULT確認 */
   #ultConfirm { position:fixed; inset:0; display:none; z-index:64; align-items:center;
@@ -672,10 +743,11 @@
       <div class="st" id="myStat"></div></div></div>
     <div id="diceDock"></div>
     <div id="topTools"><button class="abtn" id="contextBtn">行動</button>
-      <button id="mapBtn">領地を見る</button>
-      <button id="galleryBtn">クリーチャー一覧</button>
-      <button id="deckBtn" style="font-family:inherit; font-size:13px; padding:6px 10px; background:rgba(0,0,0,.4); color:rgba(241,232,208,.85); border:1px solid rgba(201,162,39,.5); border-radius:8px;">デッキ</button>
-      <button id="fsBtn">⛶ 全画面</button></div>
+      <button class="phoneToolBtn" id="mapBtn" aria-label="領地を見る">領地を見る</button>
+      <button class="phoneToolBtn" id="galleryBtn" aria-label="カード一覧">カード一覧</button>
+      <button class="phoneToolBtn" id="deckBtn" aria-label="デッキ">デッキ</button>
+      <button class="phoneToolBtn" id="fsBtn" aria-label="全画面">全画面</button>
+      <button id="ultBtn" aria-label="必殺技">必殺技</button></div>
   </header>
   <div id="midRow"><div id="msg" style="display:none"></div>
   <div id="action" style="display:none"></div></div>
@@ -716,13 +788,19 @@
   <div id="gainToast"></div>
   <div id="galleryOv">
     <div class="gTop">
-      <div class="ttl">クリーチャー一覧</div>
+      <div class="ttl">カード一覧</div>
       <label><input type="checkbox" id="galleryEvoChk"> 進化後を表示</label>
       <button class="gClose" id="galleryClose">✕ 閉じる</button>
     </div>
     <div id="gGrid"></div>
   </div>
-  <div id="galZoom"><div id="galZoomCard"></div><div class="tap">タップで閉じる</div></div>
+  <div id="galZoom">
+    <button id="galZoomClose">× 閉じる</button>
+    <button class="galNav" id="galPrev" aria-label="前のカード">‹</button>
+    <div id="galZoomStage"><div id="galZoomCard"></div><div id="galZoomInfo"></div></div>
+    <button class="galNav" id="galNext" aria-label="次のカード">›</button>
+    <div id="galZoomPosition"></div>
+  </div>
   <div id="ultConfirm"><div class="ucBox">
     <div class="ucn" id="ucName"></div>
     <div class="ucd" id="ucDesc"></div>
@@ -801,7 +879,7 @@ const SUPPORT_ART = {
   gweapon: '/assets/cards/support-weapon-v1.webp',
   shield: '/assets/cards/support-shield-v1.webp',
   gshield: '/assets/cards/support-shield-v1.webp',
-  jinx: '/assets/cards/support-jinx-v1.webp'
+  jinx: '/assets/cards/support-jinx-v2.webp'
 };
 const supportArt = cid => SUPPORT_ART[cid]
   ? `<img src="${SUPPORT_ART[cid]}" alt="">`
@@ -1224,7 +1302,7 @@ $('shopCancel').onclick = () => {
     body:JSON.stringify({ room, type:'shop_preview', playerId:pid, slotId:null }) }); } catch (e) {}
 };
 document.getElementById('drawModal').onclick = () => $('drawModal').classList.remove('on');
-let galleryEvo = false;
+let galleryEvo = false, galleryIds = [], galleryDetailIndex = 0, galleryDetailEvo = false;
 function artOrToken(cid, cr, evo, tokSize) {
   if (HAS_ART.has(cid))
     return `<div class="art"><img src="/assets/${evo ? 'e_' : 'c_'}${cid}.png"></div>`;
@@ -1292,24 +1370,74 @@ window.addEventListener('resize', () => {
 function galleryFace(cid, cr, evo) {
   return `<div class="face ${evo ? 'back' : 'front'} creatureCard"${evo ? ' style="transform:rotateY(180deg)"' : ''}>${creatureFaceBody(cid, cr, evo)}</div>`;
 }
+const GALLERY_ELEM_ORDER = { fire:0, wind:1, earth:2, water:3 };
+function galleryCreatureIds(C = state.catalog.CREATURES) {
+  return Object.entries(C).filter(([cid]) => !cid.endsWith('_f'))
+    .map(([cid, cr], order) => ({ cid, elem:GALLERY_ELEM_ORDER[cr.elem] ?? 4, order }))
+    .sort((a, b) => a.elem - b.elem || a.order - b.order).map(x => x.cid);
+}
 function buildGallery() {
   const C = state.catalog.CREATURES;
-  $('gGrid').innerHTML = Object.entries(C).filter(([cid]) => !cid.endsWith('_f')).map(([cid, cr]) => `
+  galleryIds = galleryCreatureIds(C);
+  $('gGrid').innerHTML = galleryIds.map(cid => {
+    const cr = C[cid];
+    return `
     <div class="gCard" data-cid="${cid}">
       <div class="flip" data-evo="${cr.evo ? 1 : 0}">
         ${galleryFace(cid, cr, false)}
         ${cr.evo ? galleryFace(cid, cr, true) : ''}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   applyGalleryFlip(false);
   afterUiPaint(() => fitCreatureNames($('gGrid')));
-  document.querySelectorAll('.gCard').forEach(el => el.onclick = () => {
-    const cid = el.dataset.cid, cr = state.catalog.CREATURES[cid];
-    $('galZoomCard').innerHTML = galleryFace(cid, cr, galleryEvo && !!cr.evo)
-      .replace('rotateY(180deg)', 'none');
-    afterUiPaint(() => fitCreatureNames($('galZoomCard')));
-    $('galZoom').classList.add('on');
-  });
+  document.querySelectorAll('.gCard').forEach(el => el.onclick = () => openGalleryDetail(el.dataset.cid));
+}
+function galleryDetailValues(cid, cr, evo) {
+  const fx = evo ? (cr.evoFx || cr.fx) : cr.fx;
+  const effect = creatureEffectParts(fx);
+  return { name:evo ? cr.evo : cr.name, at:evo ? cr.evoSt : cr.st, hp:evo ? cr.evoHp : cr.hp,
+    effect:fx ? effect : { title:'能力なし', body:'固有効果なし' } };
+}
+function renderGalleryDetail() {
+  if (!galleryIds.length) return;
+  const cid = galleryIds[galleryDetailIndex], cr = state.catalog.CREATURES[cid];
+  if (!cr.evo) galleryDetailEvo = false;
+  const evo = galleryDetailEvo && !!cr.evo, v = galleryDetailValues(cid, cr, evo);
+  const elemName = { fire:'火属性', wind:'風属性', earth:'土属性', water:'水属性' }[cr.elem] || '無属性';
+  const elem = cr.elem
+    ? `<span class="galElem"><svg viewBox="-34 -36 68 72">${ELEM_MINI[cr.elem]}</svg>${elemName}</span>`
+    : `<span class="galElem neutral">◇ ${elemName}</span>`;
+  const abilityTitle = v.effect.title === '能力なし' ? '能力なし' : `【${v.effect.title}】`;
+  $('galZoomCard').innerHTML = `<div class="face front creatureCard">${creatureFaceBody(cid, cr, evo)}</div>`;
+  $('galZoomInfo').innerHTML = `<div class="galModeTabs">
+      <button class="galModeBtn ${!evo ? 'active' : ''}" data-mode="base">基本形</button>
+      <button class="galModeBtn ${evo ? 'active' : ''}" data-mode="evo" ${cr.evo ? '' : 'disabled'}>${cr.evo ? '進化後' : '進化なし'}</button>
+    </div><div class="galDetailScroll">
+      <h2 class="galDetailName">${v.name}</h2>
+      <div class="galMeta">${elem}<span class="galBadge">${cr.rarity || 'N'}</span><span class="galBadge">${cr.cost || 0}G</span></div>
+      <div class="galStats"><div class="galStat"><i class="statIconDisk"><img src="/assets/cards/stat-at-icon.svg" alt="AT"></i><small>AT</small>${v.at}</div>
+        <div class="galStat"><i class="statIconDisk"><img src="/assets/cards/stat-hp-icon.svg" alt="HP"></i><small>HP</small>${v.hp}</div></div>
+      <h3 class="galAbilityName">${abilityTitle}</h3>
+      <p class="galAbilityText">${v.effect.body || '固有効果なし'}</p>
+    </div>`;
+  $('galZoomPosition').textContent = `${galleryDetailIndex + 1} / ${galleryIds.length}`;
+  $('galZoomInfo').querySelector('[data-mode="base"]').onclick = () => { galleryDetailEvo = false; renderGalleryDetail(); };
+  const evoBtn = $('galZoomInfo').querySelector('[data-mode="evo"]');
+  if (cr.evo) evoBtn.onclick = () => { galleryDetailEvo = true; renderGalleryDetail(); };
+  afterUiPaint(() => fitCreatureNames($('galZoomCard')));
+}
+function openGalleryDetail(cid) {
+  if (!galleryIds.length) galleryIds = galleryCreatureIds();
+  galleryDetailIndex = Math.max(0, galleryIds.indexOf(cid));
+  galleryDetailEvo = galleryEvo && !!state.catalog.CREATURES[cid].evo;
+  renderGalleryDetail(); $('galZoom').classList.add('on');
+}
+function moveGalleryDetail(step) {
+  if (!galleryIds.length) return;
+  galleryDetailIndex = (galleryDetailIndex + step + galleryIds.length) % galleryIds.length;
+  if (!state.catalog.CREATURES[galleryIds[galleryDetailIndex]].evo) galleryDetailEvo = false;
+  renderGalleryDetail();
 }
 function applyGalleryFlip(animate) {
   document.querySelectorAll('#gGrid .flip').forEach((f, i) => {
@@ -1320,7 +1448,9 @@ function applyGalleryFlip(animate) {
 $('galleryBtn').onclick = () => { if (!state) return; buildGallery(); $('galleryOv').classList.add('on'); };
 $('galleryClose').onclick = () => $('galleryOv').classList.remove('on');
 $('galleryEvoChk').onchange = e => { galleryEvo = e.target.checked; applyGalleryFlip(true); };
-$('galZoom').onclick = () => $('galZoom').classList.remove('on');
+$('galPrev').onclick = () => moveGalleryDetail(-1);
+$('galNext').onclick = () => moveGalleryDetail(1);
+$('galZoomClose').onclick = () => $('galZoom').classList.remove('on');
 
 // ===== カード長押し拡大(効果全文の確認用) =====
 let lpFired = false;
@@ -1391,10 +1521,11 @@ function confirmCharacter(id) {
   if (btn) { btn.disabled = true; btn.textContent = '確定中…'; }
   choose(id);
 }
-function openCharDetail(id) {
+function openCharDetail(id, readonly = false) {
   const c = state.catalog.CHARS[id], u = state.catalog.ULTS && state.catalog.ULTS[id];
   const p = pend(), enabled = !!(p && p.type === 'select_char' && p.options.some(o => o.id === id));
-  if (!c || !enabled) return;
+  const previewOnly = readonly || c && (c.selectable === false || c.upcoming);
+  if (!c || (!enabled && !previewOnly)) return;
   charPreview = id;
   const elemJa = { fire:'火', water:'水', earth:'土', wind:'風' }[c.elem] || '';
   $('charDetail').innerHTML = `<div class="cdHero"><img class="csBg" src="/assets/cards/bg-${c.elem}.webp" alt="">
@@ -1403,9 +1534,10 @@ function openCharDetail(id) {
       <div class="cdSec"><h2>${sic('ult','2.5dvh')}【${u ? u.name : '固有スキル'}】</h2>${u ? u.desc : ''}</div>
       <div class="cdSec"><h2>属性親和：${elemJa}</h2>同属性の土地の強化費を20%軽減する。</div>
       <div class="cdSec"><h2>プレイスタイル</h2>${c.style || ''}<br>${c.deckNote || ''}</div>
-      <div class="cdSec"><h2>初期デッキ</h2><div class="cdDeck">${charDeckCards(id)}</div></div>
+      ${previewOnly ? '<div class="cdSec"><span class="cdPending">準備中</span><p>性能は現在調整中です。正式実装まで選択できません。</p></div>'
+        : `<div class="cdSec"><h2>初期デッキ</h2><div class="cdDeck">${charDeckCards(id)}</div></div>`}
     </div><div class="cdActions"><button class="abtn ghost" onclick="closeCharDetail()">戻る</button>
-      <button class="abtn" id="charChoose" onclick="confirmCharacter('${id}')">選ぶ</button></div></div>`;
+      ${previewOnly ? '' : `<button class="abtn" id="charChoose" onclick="confirmCharacter('${id}')">選ぶ</button>`}</div></div>`;
   $('charDetail').classList.add('on');
   afterUiPaint(() => fitCreatureNames($('charDetail')));
 }
@@ -1415,13 +1547,13 @@ function renderCharSelection(m, C, p) {
   $('charSel').classList.add('on');
   $('csMsg').textContent = p ? '使用する召喚士を選んでください'
     : (m.charId ? C.CHARS[m.charId].name + ' で決定 ─ 他のプレイヤーを待っています' : '…');
-  $('csRow').innerHTML = Object.entries(C.CHARS).map(([id, c]) => {
+  const cards = Object.entries(C.CHARS).map(([id, c]) => {
     if (c.selectable === false || c.upcoming) {
       const elemIcon = `<span class="csuElem"><svg viewBox="-34 -36 68 72">${ELEM_MINI[c.elem]}</svg></span>`;
-      return `<div class="csUpcoming" aria-disabled="true" data-id="${id}">
+      return `<div class="csUpcoming revealed" data-id="${id}" role="button" aria-label="${c.name}の準備中情報を見る">
         <img class="csuBg" src="/assets/cards/bg-${c.elem || 'neutral'}.webp" alt="">
         <img class="csuArt" src="/assets/full_${id}.png" alt="">
-        ${elemIcon}<div class="csuName">${c.name}</div><div class="csuState">準備中</div></div>`;
+        ${elemIcon}<div class="csuName">${c.name}</div><div class="csuState">準備中・詳細を見る</div></div>`;
     }
     const taken = state.players.find(x => x.confirmed && x.charId === id && x.id !== pid);
     const mine = m.charId === id;
@@ -1431,9 +1563,17 @@ function renderCharSelection(m, C, p) {
       <img class="csBg" src="/assets/cards/bg-${c.elem}.webp" alt=""><div class="csTop">${elemIcon}<div class="csName">${c.name}</div></div>
       <img class="csArt" src="/assets/full_${id}.png" alt="${c.name}"><div class="csBottom">${c.style || ''}</div>
       ${(mine || taken) ? `<div class="csState">${mine ? '選択済み' : taken.name + 'が使用中'}</div>` : ''}</div>`;
-  }).join('');
+  });
+  cards.push(`<div class="csUpcoming empty" aria-disabled="true" data-id="upcoming-earth">
+    <img class="csuBg" src="/assets/cards/bg-earth.webp" alt="">
+    <span class="csuElem"><svg viewBox="-34 -36 68 72">${ELEM_MINI.earth}</svg></span>
+    <div class="csuName">未発表</div><div class="csuState">土属性召喚士・準備中</div></div>`);
+  $('csRow').innerHTML = cards.join('');
   document.querySelectorAll('.csCard:not(.dim)').forEach(el => el.onclick = () => openCharDetail(el.dataset.id));
+  document.querySelectorAll('.csUpcoming.revealed').forEach(el => el.onclick = () => openCharDetail(el.dataset.id, true));
   if (charPreview && opts.includes(charPreview)) openCharDetail(charPreview);
+  else if (charPreview && C.CHARS[charPreview] && (C.CHARS[charPreview].selectable === false || C.CHARS[charPreview].upcoming))
+    openCharDetail(charPreview, true);
   else if (charPreview) closeCharDetail();
 }
 
@@ -1560,6 +1700,7 @@ function showUltConfirm() {
   $('ucDesc').textContent = u.desc;
   $('ultConfirm').classList.add('on');
 }
+$('ultBtn').onclick = showUltConfirm;
 function startRoll() {
   rolling = true;
   $('diceDock').innerHTML = `<div class="diceStage drop"><div class="dice3d" id="die3d">${DICE_FACES}</div></div>`;
@@ -1664,6 +1805,8 @@ function render() {
   $('galleryBtn').style.display = showGui ? '' : 'none';
   $('deckBtn').style.display = showGui ? '' : 'none';
   $('mapBtn').style.display = showGui ? '' : 'none';
+  $('fsBtn').style.display = showGui ? '' : 'none';
+  $('ultBtn').classList.toggle('on', !!(showGui && p && p.type === 'roll' && p.options.some(o => o.id === 'ult')));
   $('msg').classList.toggle('big', !showGui);
   setContextActions('', []);
   $('myFace').src = m.charId ? '/assets/f_' + m.charId + '.png' : '';
@@ -1831,7 +1974,7 @@ function render() {
   } else if (p.type === 'roll') {
     const hasSp = p.options.some(o => o.id.startsWith('sp:'));
     const ultIc = sic('ult', '2.4dvh') + ' ';
-    const extraOpts = p.options.filter(o => o.id !== 'roll' && !o.id.startsWith('sp:')).map(o => ({
+    const extraOpts = p.options.filter(o => o.id !== 'roll' && o.id !== 'ult' && !o.id.startsWith('sp:')).map(o => ({
       id:o.id, label:(o.id === 'ult' ? '固有スキル ' : '') + iconize(o.label), desc:o.id === 'ult' ? '1ゲームに1度の固有スキルを確認します' : '' }));
     $('diceDock').innerHTML = `<button class="diceImgBtn" id="diceBtn"><img src="/assets/dice_btn.png"></button>`;
     setContextActions(p.prompt, extraOpts);
