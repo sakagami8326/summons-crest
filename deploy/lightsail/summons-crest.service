@@ -1,0 +1,27 @@
+[Unit]
+Description=Summons Crest game server
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=summonscrest
+Group=summonscrest
+WorkingDirectory=/opt/summons-crest
+EnvironmentFile=-/etc/summons-crest.env
+ExecStart=/usr/bin/node /opt/summons-crest/server.js
+Restart=always
+RestartSec=5
+TimeoutStopSec=15
+KillSignal=SIGTERM
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+LimitNOFILE=65536
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+

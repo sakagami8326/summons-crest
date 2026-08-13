@@ -1,0 +1,12 @@
+# Replace the address below with either:
+#   http://203.0.113.10  (initial launch by static IP)
+#   game.example.com     (automatic HTTPS after DNS points to the static IP)
+http://203.0.113.10 {
+	encode zstd gzip
+
+	reverse_proxy 127.0.0.1:3000 {
+		# Send SSE events to the TV and phones immediately.
+		flush_interval -1
+	}
+}
+
