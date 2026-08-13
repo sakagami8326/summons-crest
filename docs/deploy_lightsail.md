@@ -10,6 +10,8 @@ Summons Crest uses an in-memory room server, Server-Sent Events, and runtime BOT
 - Bundle: Micro, 1 GB RAM, public IPv4
 - Instance name: `summons-crest-prod`
 
+Current production endpoint: `https://52-68-169-20.sslip.io`
+
 Attach a static IP before publishing the URL. Open TCP 80 and 443 to the internet. Restrict TCP 22 (SSH) to the administrator's current public IP whenever possible. Do not expose port 3000 in the Lightsail firewall; Caddy is the only public entry point.
 
 ## Initial installation
