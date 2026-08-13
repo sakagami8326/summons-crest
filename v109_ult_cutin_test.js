@@ -114,9 +114,38 @@ ok(board.includes('id="bCmpAtkDf"') && board.includes('id="bCmpDefDf"') && board
   'battle support DF gains appear below the HP bar in blue');
 ok(board.includes('spell-dice-${die[1]}.webp') && phone.includes('const spellAsset = c =>'),
   'dice spell cards resolve their dedicated WebP assets across shop and phone views');
-ok(board.includes("const dedicatedSpell = !!state.catalog.SPELLS[item.card] && (item.card === 'sp_weaken' || !!die)") &&
+ok(board.includes('const dedicatedArt = state.catalog.SPELLS[item.card] ? dedicatedSpellAsset(item.card) : null') &&
   board.includes("const artMarkup = dedicatedSpell ? ''") && board.includes("tvShopCardBg${dedicatedSpell ? ' dedicatedSpell' : ''}"),
   'dice and weaken use their dedicated image directly without the generic spell background');
+const renamedSpellArt = {
+  sp_step:['ムーブ','spell-step-art-v1.webp'],
+  sp_move:['スイッチ','spell-move-art-v1.webp'],
+  sp_insight:['ダブルドロー','spell-insight-art-v1.webp'],
+  sp_swap:['チェンジ','spell-swap-art-v1.webp']
+};
+for (const [id,[name,file]] of Object.entries(renamedSpellArt)) {
+  ok(src.includes(`${id}:`) && src.includes(`name: '${name}'`),`${id} uses its new card name`);
+  ok(fs.existsSync(path.join(__dirname,'public','assets','cards',file)),`${id} completed spell art exists`);
+  ok(board.includes(`${id}:'/assets/cards/${file}'`) && phone.includes(`${id}:'/assets/cards/${file}'`),
+    `${id} completed art is wired to TV and phone card renderers`);
+}
+const shiftedSpellArt = {
+  sp_volcanic_core:['フレイム・シフト','spell-flame-shift-art-v1.webp'],
+  sp_abyssal_pearl:['アクア・シフト','spell-aqua-shift-art-v1.webp'],
+  sp_earth_mother_stone:['アース・シフト','spell-earth-shift-art-v1.webp'],
+  sp_sky_crystal:['ウィンド・シフト','spell-wind-shift-art-v1.webp']
+};
+for (const [id,[name,file]] of Object.entries(shiftedSpellArt)) {
+  ok(src.includes(`${id}:`) && src.includes(`name: '${name}'`),`${id} uses its Shift-series name`);
+  ok(fs.existsSync(path.join(__dirname,'public','assets','cards',file)),`${id} Shift art exists`);
+  ok(board.includes(`${id}:'/assets/cards/${file}'`) && phone.includes(`${id}:'/assets/cards/${file}'`),
+    `${id} Shift art is wired to TV and phone card renderers`);
+}
+for (const oldName of ['火山核','深海珠','地母石','天空晶','移動の呪文','転移の呪文','ひらめきの呪文','交代の呪文'])
+  ok(!src.includes(oldName),`server catalog no longer exposes old card name: ${oldName}`);
+ok(board.includes('/assets/cards/shop-remove-v1.webp') && phone.match(/shop-remove-v1\.webp/g).length === 2 &&
+  fs.existsSync(path.join(__dirname,'public','assets','cards','shop-remove-v1.webp')),
+  'shop card removal uses the supplied art on TV and phone');
 ok(!board.includes('class="scRule"') && !phone.includes('class="ccRule"'),
   'creature cards omit the stat/effect divider asset');
 ok(board.includes("sfrontB${creature ? ' creatureSupport' : ''}") && board.includes('.sfrontB.creatureSupport img { width:100%; height:100%;'),

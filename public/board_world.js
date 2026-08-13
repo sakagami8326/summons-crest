@@ -325,7 +325,7 @@ const PW = (() => {
         } },
       onComplete: () => { g.destroy(); res(); } }));
   }
-  // 2マスを結ぶ線に沿ってクリーチャーが渡る(移動の呪文)
+  // 2マスを結ぶ線に沿ってクリーチャーが渡る(ムーブ)
   async function fxLinkMove(ev, col, band) {
     const [a, b] = ev.tiles || [];
     if (a == null || b == null || !GEO[a] || !GEO[b]) return;

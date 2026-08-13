@@ -380,7 +380,7 @@
   .tvShopArt.spell img { width:88%; height:88%; }
   .tvShopArt.creature img { width:96%; height:96%; }
   .tvShopArt.remove { inset:0; width:100%; height:100%; background:none; z-index:0; }
-  .tvShopArt.remove img { width:100%; height:100%; object-fit:cover; }
+  .tvShopArt.remove img { width:100%; height:100%; object-fit:contain; background:#fff; }
   .tvShopCard .tsName { position:absolute; z-index:1; top:3.2%; left:7%; right:7%; color:#fff2c4;
       font:900 clamp(11px,9cqw,20px)/1.05 'Yu Mincho',serif; text-shadow:0 2px 4px #000; white-space:nowrap; overflow:hidden; }
   .tvShopCard .tsCost { position:absolute; z-index:3; left:4%; top:62%; min-width:31%; padding:.35vh .45vw;
@@ -2114,11 +2114,11 @@ async function runFxHarness(name) {
     state.phase = 'playing'; state.turn = 0;
     state.pending = { [pid]: { type:'market', options:[] } };
     state.shopVisit = { id:'fixture-shop', player:pid, half:false, selected:null, items:[
+      { slotId:'step', kind:'card', card:'sp_step', basePrice:100, price:100, sold:false },
+      { slotId:'move', kind:'card', card:'sp_move', basePrice:100, price:100, sold:false },
+      { slotId:'insight', kind:'card', card:'sp_insight', basePrice:60, price:60, sold:false },
+      { slotId:'swap', kind:'card', card:'sp_swap', basePrice:100, price:100, sold:false },
       { slotId:'dice1', kind:'card', card:'sp_dice_1', basePrice:100, price:100, sold:false },
-      { slotId:'weaken', kind:'card', card:'sp_weaken', basePrice:100, price:100, sold:false },
-      { slotId:'dice6', kind:'card', card:'sp_dice_6', basePrice:100, price:100, sold:false },
-      { slotId:'samurai', kind:'card', card:'samurai_saga', basePrice:160, price:160, sold:false },
-      { slotId:'nome', kind:'card', card:'nome', basePrice:60, price:60, sold:false },
       { slotId:'weapon', kind:'support', card:'weapon', basePrice:60, price:60, sold:false },
       { slotId:'shield', kind:'support', card:'shield', basePrice:60, price:60, sold:false },
       { slotId:'remove', kind:'remove', basePrice:80, price:80, sold:false },
@@ -2707,12 +2707,25 @@ async function playEvolvePresentation(tile, owner) {
   }
 }
 
+const DEDICATED_SPELL_ART = {
+  sp_weaken:'/assets/cards/spell-weaken-art-v1.webp',
+  sp_step:'/assets/cards/spell-step-art-v1.webp',
+  sp_move:'/assets/cards/spell-move-art-v1.webp',
+  sp_insight:'/assets/cards/spell-insight-art-v1.webp',
+  sp_swap:'/assets/cards/spell-swap-art-v1.webp',
+  sp_volcanic_core:'/assets/cards/spell-flame-shift-art-v1.webp',
+  sp_abyssal_pearl:'/assets/cards/spell-aqua-shift-art-v1.webp',
+  sp_earth_mother_stone:'/assets/cards/spell-earth-shift-art-v1.webp',
+  sp_sky_crystal:'/assets/cards/spell-wind-shift-art-v1.webp'
+};
+function dedicatedSpellAsset(sid) {
+  const die = /^sp_dice_([1-6])$/.exec(sid || '');
+  return die ? `/assets/cards/spell-dice-${die[1]}.webp` : DEDICATED_SPELL_ART[sid] || null;
+}
 function spellCardHTML(sid) {
   const sp = state.catalog.SPELLS[sid] || { name:sid, cost:0, desc:'' };
-  const die = /^sp_dice_([1-6])$/.exec(sid);
-  const dedicated = sid === 'sp_weaken' || die;
-  const bg = die ? `/assets/cards/spell-dice-${die[1]}.webp`
-    : dedicated ? '/assets/cards/spell-weaken-art-v1.webp' : '/assets/cards/bg-spell-v1.webp';
+  const dedicated = dedicatedSpellAsset(sid);
+  const bg = dedicated || '/assets/cards/bg-spell-v1.webp';
   const fallback = dedicated ? '' : `<img class="spFallback" src="/assets/c_${sid}.png" onerror="this.style.display='none'">`;
   const nameSize = sp.name.length <= 6 ? '6.2vh' : sp.name.length <= 9 ? '5.1vh' : '4.2vh';
   return `<img class="spBg" src="${bg}">${fallback}<div class="spHead"><div class="spName" style="font-size:${nameSize}">${sp.name}</div></div>
@@ -3611,16 +3624,15 @@ function render() {
     $('tvShopShelf').innerHTML = visit ? visit.items.map(item => {
       let body;
       if (item.kind === 'remove') {
-        body = '<div class="tvShopArt remove"><img src="/assets/cards/shop-remove.svg" alt="カード削除"></div>';
+        body = '<div class="tvShopArt remove"><img src="/assets/cards/shop-remove-v1.webp" alt="カード削除"></div>';
       } else {
         const info = state.catalog.CREATURES[item.card] || state.catalog.SPELLS[item.card] || state.catalog.SUPPORTS[item.card];
-        const die = /^sp_dice_([1-6])$/.exec(item.card || '');
-        const dedicatedSpell = !!state.catalog.SPELLS[item.card] && (item.card === 'sp_weaken' || !!die);
+        const dedicatedArt = state.catalog.SPELLS[item.card] ? dedicatedSpellAsset(item.card) : null;
+        const dedicatedSpell = !!dedicatedArt;
         const art = item.kind === 'support'
           ? `/assets/cards/support-${item.card}-v1.webp`
           : state.catalog.SPELLS[item.card]
-            ? (die ? `/assets/cards/spell-dice-${die[1]}.webp`
-              : item.card === 'sp_weaken' ? '/assets/cards/spell-weaken-art-v1.webp' : `/assets/c_${item.card}.png`)
+            ? (dedicatedArt || `/assets/c_${item.card}.png`)
             : `/assets/cards/c_${item.card}.webp`;
         const fx = info.fx || info.desc || (info.st ? `AT+${info.st}` : `DF+${info.hp}`);
         const bg = dedicatedSpell ? art : item.kind === 'support' ? '/assets/cards/bg-weapon-v1.webp'

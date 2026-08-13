@@ -142,16 +142,16 @@ const SPELLS = {
                desc: 'このターン、サイコロを2個振って移動する' },
   sp_quake:  { name: '地割れの呪文', rarity: 'R', cost: 300,
                desc: '敵の領地1つのレベルを1下げる(Lv1には無効)' },
-  sp_step:   { name: '移動の呪文', rarity: 'R', cost: 40,
+  sp_step:   { name: 'ムーブ', rarity: 'R', cost: 40,
                desc: '自分の領地のクリーチャー1体を隣のマスへ移動。空き地なら新たな領地(Lv1)に、敵領地ならそのまま侵略(通行料なし)' },
   // ---- v0.56 追加スペル(スペル追加仕様v0.53) ----
-  sp_volcanic_core:     { name: '火山核', rarity: 'R', cost: 80,
+  sp_volcanic_core:     { name: 'フレイム・シフト', rarity: 'R', cost: 80,
     desc: '自分の領地1つを火属性に変更する' },
-  sp_abyssal_pearl:     { name: '深海珠', rarity: 'R', cost: 80,
+  sp_abyssal_pearl:     { name: 'アクア・シフト', rarity: 'R', cost: 80,
     desc: '自分の領地1つを水属性に変更する' },
-  sp_earth_mother_stone:{ name: '地母石', rarity: 'R', cost: 80,
+  sp_earth_mother_stone:{ name: 'アース・シフト', rarity: 'R', cost: 80,
     desc: '自分の領地1つを土属性に変更する' },
-  sp_sky_crystal:       { name: '天空晶', rarity: 'R', cost: 80,
+  sp_sky_crystal:       { name: 'ウィンド・シフト', rarity: 'R', cost: 80,
     desc: '自分の領地1つを風属性に変更する' },
   sp_flame_vortex:      { name: '炎の渦', rarity: 'R', cost: 100,
     desc: '敵領地に10ダメージを与える。次にその領地へ侵略するクリーチャーはAT+10' },
@@ -165,11 +165,11 @@ const SPELLS = {
     desc: 'このターンだけ、通常とは逆方向へ移動する' },
   sp_ward:   { name: '加護の呪文', rarity: 'R', cost: 80,
                desc: 'あなたの次の手番まで、自分の領地は侵略されない' },
-  sp_move:   { name: '転移の呪文', rarity: 'R', cost: 40,
+  sp_move:   { name: 'スイッチ', rarity: 'R', cost: 40,
                desc: '自分の領地2つのクリーチャーを入れ替える(負傷も一緒に移動)' },
-  sp_insight:{ name: 'ひらめきの呪文', rarity: 'N', cost: 40,
+  sp_insight:{ name: 'ダブルドロー', rarity: 'N', cost: 40,
                desc: 'カードを2枚引く' },
-  sp_swap:   { name: '交代の呪文', rarity: 'R', cost: 30,
+  sp_swap:   { name: 'チェンジ', rarity: 'R', cost: 30,
                desc: '自分の領地のクリーチャーを手札のクリーチャーと交代する(召喚コスト別途。元のクリーチャーは捨て札へ・負傷は回復)' },
   sp_dice_1: { name: 'ダイス1', rarity: 'R', cost: 50, fixedDice: 1,
                desc: 'このターン、ダイスの出目を1に固定する' },
@@ -852,7 +852,7 @@ function upCost(r, p, i) {
   const base = RULES.levelCost[r.owners[i].level + 1];
   return tileElem(r, i) === CHARS[p.charId].elem ? Math.round(base * 0.8) : base;
 }
-// 移動の呪文: マスiの隣で移動可能な行き先(空き属性地 or 結界のない敵属性地)
+// ムーブ: マスiの隣で移動可能な行き先(空き属性地 or 結界のない敵属性地)
 function stepDests(r, p, i) {
   const dests = [];
   for (const d of [-1, 1]) {
@@ -1065,7 +1065,7 @@ function resolveBattle(r) {
   }
   const aEff = aJinxed ? null : aSup, dEff = dJinxed ? null : dSup;
 
-  // --- 進化ステータスの適用(Lv3以上の防衛側/移動の呪文で進出した攻撃側) ---
+  // --- 進化ステータスの適用(Lv3以上の防衛側/ムーブで進出した攻撃側) ---
   const mvSrc = b.moveFrom !== undefined ? r.owners[b.moveFrom] : null;
   const corridor = !!b.corridor;
   const dEvoS = defEvolved && dc.evo ? { st: dc.evoSt, hp: dc.evoHp } : { st: dc.st, hp: dc.hp };
@@ -1648,12 +1648,12 @@ function handleChoose(r, playerId, optionId) {
         // 空き地へ移動: Lv1で取得・負傷維持・元は空き地に
         r.owners[j] = { player: p.id, level: 1, creature: src.creature, dmg: src.dmg || 0 };
         r.owners[i] = null;
-        log(r, `📜 ${p.name}の移動の呪文! ${CREATURES[r.owners[j].creature].name}が隣の空き地(${TILES[j].e})へ進出し、Lv1の領地とした`);
+        log(r, `📜 ${p.name}の${SPELLS.sp_step.name}! ${CREATURES[r.owners[j].creature].name}が隣の空き地(${TILES[j].e})へ進出し、Lv1の領地とした`);
         spellFx(r, 'sp_step', [i, j], p.id);
         return askRoll(r, p);
       }
       // 敵領地へ: そのまま侵略(通行料なし)。攻撃クリーチャーは土地から出撃
-      log(r, `📜 ${p.name}の移動の呪文! ${CREATURES[src.creature].name}が隣の${pById(r, dest.player).name}の領地へ攻め込む!(通行料なし)`);
+      log(r, `📜 ${p.name}の${SPELLS.sp_step.name}! ${CREATURES[src.creature].name}が隣の${pById(r, dest.player).name}の領地へ攻め込む!(通行料なし)`);
       spellFx(r, 'sp_step', [i, j], p.id, { battle: true });
       r.battle = { tile: j, attacker: p.id, defender: dest.player,
                    atkCreature: src.creature, moveFrom: i, supports: {}, startedAt: stamp(r) };
@@ -1686,7 +1686,7 @@ function handleChoose(r, playerId, optionId) {
         onSpellCast(r, p);
         r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_move.name,
           desc: `${CREATURES[ob.creature].name}と${CREATURES[oa.creature].name}が入れ替わった`, at: stamp(r) };
-        log(r, `📜 ${p.name}が転移の呪文! ${CREATURES[ob.creature].name}と${CREATURES[oa.creature].name}が入れ替わった(−${spellCost}G)`);
+        log(r, `📜 ${p.name}が${SPELLS.sp_move.name}! ${CREATURES[ob.creature].name}と${CREATURES[oa.creature].name}が入れ替わった(−${spellCost}G)`);
         spellFx(r, 'sp_move', [a, bI], p.id);
       }
     }
@@ -1723,7 +1723,7 @@ function handleChoose(r, playerId, optionId) {
         onSpellCast(r, p);
         r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_swap.name,
           desc: `${CREATURES[oldC].name}に代わり${CREATURES[c].name}が領地に立った`, at: stamp(r) };
-        log(r, `📜 ${p.name}が交代の呪文! ${CREATURES[oldC].name}に代わり${CREATURES[c].name}が領地に立った(−${spellCost + CREATURES[c].cost}G)`);
+        log(r, `📜 ${p.name}が${SPELLS.sp_swap.name}! ${CREATURES[oldC].name}に代わり${CREATURES[c].name}が領地に立った(−${spellCost + CREATURES[c].cost}G)`);
         spellFx(r, 'sp_swap', [p.swapI], p.id, { cid: oldC });
         summonPaused = onCreatureSummoned(r, p, c, 'swap', swapTile);
       }

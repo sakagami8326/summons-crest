@@ -171,7 +171,7 @@
       font-weight:900; letter-spacing:.18em; transform:rotate(-8deg); }
   .removeCard { height:100%; border:3px solid #d5b75a; border-radius:10px; display:grid; place-items:center;
       background:linear-gradient(145deg,#311b35,#111326); color:#f2d062; box-shadow:inset 0 0 25px #000; }
-  .removeCard img { width:100%; height:100%; object-fit:cover; }
+  .removeCard img { width:100%; height:100%; object-fit:contain; background:#fff; }
   .removeCard b { font-size:clamp(14px,9cqw,30px); } .removeCard span { font-size:clamp(30px,24cqw,74px); }
   #shopExit { position:absolute; right:3vw; bottom:1.5dvh; z-index:4; }
   #shopDetail { position:fixed; inset:0; z-index:75; display:none; place-items:center; background:rgba(5,6,16,.88); }
@@ -805,10 +805,22 @@ const supportArt = cid => SUPPORT_ART[cid]
 // アートが存在するスペル(無いものは呪文アイコンで代用)
 const SPELL_ART = new Set(['sp_gold','sp_weaken','sp_gale','sp_quake','sp_volcanic_core','sp_abyssal_pearl',
   'sp_earth_mother_stone','sp_sky_crystal','sp_flame_vortex','sp_bloodstained_blade',
-  'sp_cornucopia','sp_bedrock_uplift','sp_wind_shift','sp_ward',
+  'sp_cornucopia','sp_bedrock_uplift','sp_wind_shift','sp_ward','sp_step','sp_move','sp_insight','sp_swap',
   'sp_dice_1','sp_dice_2','sp_dice_3','sp_dice_4','sp_dice_5','sp_dice_6']);
-const spellAsset = c => { const m = /^sp_dice_([1-6])$/.exec(c); return m ? `/assets/cards/spell-dice-${m[1]}.webp`
-  : c === 'sp_weaken' ? '/assets/cards/spell-weaken-art-v1.webp' : `/assets/c_${c}.png`; };
+const DEDICATED_SPELL_ART = {
+  sp_weaken:'/assets/cards/spell-weaken-art-v1.webp',
+  sp_step:'/assets/cards/spell-step-art-v1.webp',
+  sp_move:'/assets/cards/spell-move-art-v1.webp',
+  sp_insight:'/assets/cards/spell-insight-art-v1.webp',
+  sp_swap:'/assets/cards/spell-swap-art-v1.webp',
+  sp_volcanic_core:'/assets/cards/spell-flame-shift-art-v1.webp',
+  sp_abyssal_pearl:'/assets/cards/spell-aqua-shift-art-v1.webp',
+  sp_earth_mother_stone:'/assets/cards/spell-earth-shift-art-v1.webp',
+  sp_sky_crystal:'/assets/cards/spell-wind-shift-art-v1.webp'
+};
+const dedicatedSpellAsset = c => { const m = /^sp_dice_([1-6])$/.exec(c); return m ? `/assets/cards/spell-dice-${m[1]}.webp`
+  : DEDICATED_SPELL_ART[c] || null; };
+const spellAsset = c => dedicatedSpellAsset(c) || `/assets/c_${c}.png`;
 const spellArt = (c, h) => SPELL_ART.has(c)
   ? `<div class="art"${h ? ` style="height:${h}"` : ''}><img src="${spellAsset(c)}"></div>`
   : `<div class="glyph"${h ? ` style="height:${h}"` : ''}>${sic('spell', '9dvh')}</div>`;
@@ -1179,7 +1191,7 @@ function openShopDetail(slotId) {
   const item = visit && visit.items.find(x => x.slotId === slotId);
   if (!item || item.sold) return;
   $('shopDetailCard').innerHTML = item.kind === 'remove'
-    ? '<div class="face removeCard"><img src="/assets/cards/shop-remove.svg" alt="カード削除"></div>'
+    ? '<div class="face removeCard"><img src="/assets/cards/shop-remove-v1.webp" alt="カード削除"></div>'
     : bigCardHTML(item.card);
   $('shopDetailPrice').innerHTML = `<img src="/assets/ic_gold.png">${visit.half ? `<span class="shopOld">${item.basePrice}G</span>` : ''}${item.price}G`;
   $('shopBuy').disabled = item.price > me().gold;
@@ -1236,10 +1248,9 @@ function creatureFaceBody(cid, cr, evolved) {
     </div><div class="ccEffect ${effect.body.length > 34 ? 'long' : ''}"><p>${effect.body}</p></div></div>`;
 }
 function spellFaceBody(cid, spl) {
-  const die = /^sp_dice_([1-6])$/.exec(cid);
-  const dedicated = cid === 'sp_weaken' || die;
+  const dedicated = dedicatedSpellAsset(cid);
   const art = dedicated
-    ? `<img class="spArt" src="${die ? `/assets/cards/spell-dice-${die[1]}.webp` : '/assets/cards/spell-weaken-art-v1.webp'}" alt="">`
+    ? `<img class="spArt" src="${dedicated}" alt="">`
     : `<img class="spArt" src="/assets/cards/bg-spell-v1.webp" alt=""><div class="spFallback">${spellArt(cid, '100%')}</div>`;
   return `${art}<div class="spHeader"><div class="spName" data-card-name>${spl.name}</div></div>
     <div class="ccCost"><img class="ccCostFrame" src="/assets/cards/cost-frame.svg" alt=""><img class="ccCoin" src="/assets/cards/cost-coin.svg" alt=""><span class="ccCostValue">${spl.cost || 0}G</span></div>
@@ -1908,7 +1919,7 @@ function render() {
     $('shopGold').innerHTML = '<img src="/assets/ic_gold.png" style="height:2.4dvh;vertical-align:-0.4dvh"> ' + m.gold + ' G';
     const visit = state.shopVisit;
     const shopFace = item => item.kind === 'remove'
-      ? '<div class="face removeCard"><img src="/assets/cards/shop-remove.svg" alt="カード削除"></div>'
+      ? '<div class="face removeCard"><img src="/assets/cards/shop-remove-v1.webp" alt="カード削除"></div>'
       : bigCardHTML(item.card);
     $('shopShelf').innerHTML = visit ? visit.items.map(item => {
       const cls = `${item.sold ? ' sold' : ''}${!item.sold && item.price > m.gold ? ' unaffordable' : ''}`;
