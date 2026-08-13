@@ -379,8 +379,11 @@
       max-width:100%; max-height:100%; object-fit:contain; object-position:center center; transform:none; }
   .tvShopArt.spell img { width:88%; height:88%; }
   .tvShopArt.creature img { width:96%; height:96%; }
-  .tvShopArt.remove { inset:0; width:100%; height:100%; background:none; z-index:0; }
-  .tvShopArt.remove img { width:100%; height:100%; object-fit:contain; background:#fff; }
+  .tvShopArt.remove { inset:0; width:100%; height:100%; background:#07132f; z-index:0; }
+  .tvShopArt.remove img { position:absolute; left:4%; right:4%; bottom:1%; width:92%; height:84%; object-fit:contain; }
+  .tvShopRemoveTitle { position:absolute; z-index:2; top:5.5%; left:5%; right:5%; color:#fff2c4;
+      font:900 clamp(11px,9cqw,20px)/1.05 'Yu Mincho',serif; letter-spacing:.06em;
+      text-align:center; text-shadow:0 2px 5px #000; white-space:nowrap; }
   .tvShopCard .tsName { position:absolute; z-index:1; top:3.2%; left:7%; right:7%; color:#fff2c4;
       font:900 clamp(11px,9cqw,20px)/1.05 'Yu Mincho',serif; text-shadow:0 2px 4px #000; white-space:nowrap; overflow:hidden; }
   .tvShopCard .tsCost { position:absolute; z-index:3; left:4%; top:62%; min-width:31%; padding:.35vh .45vw;
@@ -2191,7 +2194,7 @@ async function runFxHarness(name) {
       const owned = [];
       state.owners.forEach((o2, i2) => { if (o2) owned.push(i2); });
       const multi = ['sp_move', 'sp_step'].includes(sid) ? owned.slice(0, 2)
-        : ['sp_ward', 'sp_cornucopia'].includes(sid) ? owned.slice(0, 4)
+        : sid === 'sp_ward' ? owned.slice(0, 4)
         : ['sp_gold', 'sp_gale', 'sp_wind_shift', 'sp_bloodstained_blade', 'sp_insight'].includes(sid) ? []
         : [owned[0]];
       const o0 = state.owners[multi[0]];
@@ -2349,7 +2352,7 @@ function tileInfoHTML(i) {
         ${(() => { const fx = (state.tileFx || {})[i]; if (!fx) return '';
           const b2 = [];
           if (fx.vortex) b2.push('炎の渦(侵略者AT+10)');
-          if (fx.uplift) b2.push('岩盤隆起(防衛DF+10)');
+          if (fx.uplift) b2.push('リストア(防衛DF+10)');
           return b2.length ? `<div class="tiSub" style="color:#F2D062">${b2.join(' / ')}</div>` : ''; })()}
         ${cr.fx ? `<div class="tiFx">${cr.fx}</div>` : ''}
         <div class="tiToll">通行料 ${Math.round(toll)}G</div>
@@ -2708,7 +2711,14 @@ async function playEvolvePresentation(tile, owner) {
 }
 
 const DEDICATED_SPELL_ART = {
+  sp_gold:'/assets/cards/spell-gold-art-v1.webp',
   sp_weaken:'/assets/cards/spell-weaken-art-v1.webp',
+  sp_gale:'/assets/cards/spell-double-roll-art-v1.webp',
+  sp_quake:'/assets/cards/spell-quake-art-v1.webp',
+  sp_ward:'/assets/cards/spell-barrier-art-v1.webp',
+  sp_flame_vortex:'/assets/cards/spell-flame-vortex-art-v1.webp',
+  sp_bloodstained_blade:'/assets/cards/spell-bloodstained-blade-art-v1.webp',
+  sp_wind_shift:'/assets/cards/spell-wind-turn-art-v1.webp',
   sp_step:'/assets/cards/spell-step-art-v1.webp',
   sp_move:'/assets/cards/spell-move-art-v1.webp',
   sp_insight:'/assets/cards/spell-insight-art-v1.webp',
@@ -3001,6 +3011,15 @@ function battleCreatureHTML(cid, level, reveal) {
   const base = state.catalog.CREATURES[cid.replace(/_f$/, '')];
   const evolved = /_f$/.test(cid) || (level >= (state.evoLevel || 3) && !!base.evo);
   return `<div class="battleCreatureCard${reveal ? ' reveal' : ''}">${summonCardHTML(cid, evolved)}</div>`;
+}
+async function playInternalAbilityFx(sf) {
+  if (renderModeActive === 'phaser') {
+    await PW.play({ type:'spell-fx', spell:sf.spell, tiles:sf.tiles || [], caster:sf.caster,
+      cid:sf.cid, elem:sf.elem, battle:sf.battle, n:sf.n, timeoutMs:3000 });
+  } else if (sf.tiles) {
+    sf.tiles.forEach(ti => fxAt(ti, 'fxRing', '#C8BAE8'));
+    await wait(900);
+  }
 }
 
 function battleDetailHTML(pid, cid, level, mods = []) {
@@ -3624,7 +3643,7 @@ function render() {
     $('tvShopShelf').innerHTML = visit ? visit.items.map(item => {
       let body;
       if (item.kind === 'remove') {
-        body = '<div class="tvShopArt remove"><img src="/assets/cards/shop-remove-v1.webp" alt="カード削除"></div>';
+        body = '<div class="tvShopArt remove"><div class="tvShopRemoveTitle">カードを削除</div><img src="/assets/cards/shop-remove-v2.webp" alt="カード削除"></div>';
       } else {
         const info = state.catalog.CREATURES[item.card] || state.catalog.SPELLS[item.card] || state.catalog.SUPPORTS[item.card];
         const dedicatedArt = state.catalog.SPELLS[item.card] ? dedicatedSpellAsset(item.card) : null;
@@ -3851,7 +3870,9 @@ function render() {
     prev.spellFxAt = state.lastSpellFx.at;
     const sf = state.lastSpellFx;
     const sfMsg = state.lastEvent && state.lastEvent.type === 'spell' ? (state.lastEvent.desc || '') : '';
-    queueFx(2, () => playSpellPresentation(sf, sfMsg));
+    queueFx(2, () => sf.spell && sf.spell.startsWith('ult_')
+      ? playInternalAbilityFx(sf)
+      : playSpellPresentation(sf, sfMsg));
   }
   // 結界が侵略を阻んだ瞬間 ─ クローズアップ+衝撃時発光(v0.73 plan§8.4)
   if (state.lastBarrierHit && state.lastBarrierHit.at !== prev.barrierHitAt) {

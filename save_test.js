@@ -185,6 +185,21 @@ function setupGame() {
   G.rooms.delete(r.code);
 }
 
+// ===== A-3b: 廃止カードを含む旧セーブは読み込み時に安全に除去 =====
+{
+  const r = setupGame();
+  const legacy = G.serializeRoom(r);
+  legacy.room.players[0].hand.push('sp_cornucopia');
+  legacy.room.deck.push('sp_cornucopia');
+  legacy.room.market = ['sp_cornucopia'];
+  G.rooms.delete(r.code);
+  const out = G.restoreRoom(legacy);
+  ok(!out.error, 'A-3b: 豊穣の角を含む旧セーブを復元できる');
+  const text = JSON.stringify(G.serializeRoom(out.room));
+  ok(!text.includes('sp_cornucopia'), 'A-3b: 復元時に廃止カードを全カード領域から除去する');
+  G.rooms.delete(out.room.code);
+}
+
 // ===== A-5: 秘匿 ─ publicStateにboardTokenが漏れない =====
 {
   const r = setupGame();

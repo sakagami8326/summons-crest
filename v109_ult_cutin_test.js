@@ -38,6 +38,7 @@ function roomFor(charId) {
 }
 const board=fs.readFileSync(path.join(__dirname,'public','board.html'),'utf8');
 const phone=fs.readFileSync(path.join(__dirname,'public','phone.html'),'utf8');
+const boardWorld=fs.readFileSync(path.join(__dirname,'public','board_world.js'),'utf8');
 {
   const {r,p}=roomFor('grease');
   const d={id:'p2',name:'P2',charId:'mio',gold:500,pos:1,dir:1,lap:1,hand:[],deck:[],discard:[],exile:[],battleWins:0,shrineVisits:0,ultUsed:false,spellCast:false,bankrupt:false};
@@ -141,11 +142,43 @@ for (const [id,[name,file]] of Object.entries(shiftedSpellArt)) {
   ok(board.includes(`${id}:'/assets/cards/${file}'`) && phone.includes(`${id}:'/assets/cards/${file}'`),
     `${id} Shift art is wired to TV and phone card renderers`);
 }
-for (const oldName of ['火山核','深海珠','地母石','天空晶','移動の呪文','転移の呪文','ひらめきの呪文','交代の呪文'])
+const renamedCoreSpellArt = {
+  sp_gold:['ゴールド','spell-gold-art-v1.webp'],
+  sp_gale:['ダブルロール','spell-double-roll-art-v1.webp'],
+  sp_quake:['地割れ','spell-quake-art-v1.webp'],
+  sp_ward:['バリア','spell-barrier-art-v1.webp']
+};
+for (const [id,[name,file]] of Object.entries(renamedCoreSpellArt)) {
+  ok(src.includes(`${id}:`) && src.includes(`name: '${name}'`),`${id} uses its finalized short name`);
+  ok(fs.existsSync(path.join(__dirname,'public','assets','cards',file)),`${id} finalized art exists`);
+  ok(board.includes(`${id}:'/assets/cards/${file}'`) && phone.includes(`${id}:'/assets/cards/${file}'`),
+    `${id} finalized art is wired to TV and phone card renderers`);
+}
+const completedCombatSpellArt = {
+  sp_flame_vortex:['炎の渦','spell-flame-vortex-art-v1.webp'],
+  sp_bloodstained_blade:['血染めの刃','spell-bloodstained-blade-art-v1.webp'],
+  sp_wind_shift:['風向転換','spell-wind-turn-art-v1.webp']
+};
+for (const [id,[name,file]] of Object.entries(completedCombatSpellArt)) {
+  ok(src.includes(`${id}:`) && src.includes(`name: '${name}'`),`${id} retains its finalized name`);
+  ok(fs.existsSync(path.join(__dirname,'public','assets','cards',file)),`${id} completed art exists`);
+  ok(board.includes(`${id}:'/assets/cards/${file}'`) && phone.includes(`${id}:'/assets/cards/${file}'`),
+    `${id} completed art is wired to TV and phone card renderers`);
+}
+ok(src.includes("sp_bedrock_uplift:    { name: 'リストア'") && !src.includes("name: '岩盤隆起'"),
+  'bedrock uplift is renamed Restore while keeping its card ID');
+ok(!src.includes('sp_cornucopia:') && !board.includes("'sp_cornucopia'") && !phone.includes("'sp_cornucopia'"),
+  'Cornucopia is removed from the live catalog and client card lists');
+for (const oldName of ['火山核','深海珠','地母石','天空晶','移動の呪文','転移の呪文','ひらめきの呪文','交代の呪文',
+  '黄金の呪文','疾風の呪文','地割れの呪文','加護の呪文'])
   ok(!src.includes(oldName),`server catalog no longer exposes old card name: ${oldName}`);
-ok(board.includes('/assets/cards/shop-remove-v1.webp') && phone.match(/shop-remove-v1\.webp/g).length === 2 &&
-  fs.existsSync(path.join(__dirname,'public','assets','cards','shop-remove-v1.webp')),
-  'shop card removal uses the supplied art on TV and phone');
+ok(board.includes('/assets/cards/shop-remove-v2.webp') && phone.includes('/assets/cards/shop-remove-v2.webp') &&
+  board.includes('tvShopRemoveTitle">カードを削除') && phone.includes('removeTitle">カードを削除') &&
+  fs.existsSync(path.join(__dirname,'public','assets','cards','shop-remove-v2.webp')),
+  'shop card removal uses the supplied art on a navy titled card on TV and phone');
+ok(board.includes("sf.spell && sf.spell.startsWith('ult_')") && board.includes('playInternalAbilityFx(sf)') &&
+  !board.includes("playSpellPresentation({ spell:'ult_adel'") && boardWorld.includes("sid === 'ult_adel'"),
+  'ultimate board effects bypass the generic spell-card presentation');
 ok(!board.includes('class="scRule"') && !phone.includes('class="ccRule"'),
   'creature cards omit the stat/effect divider asset');
 ok(board.includes("sfrontB${creature ? ' creatureSupport' : ''}") && board.includes('.sfrontB.creatureSupport img { width:100%; height:100%;'),

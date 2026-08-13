@@ -378,12 +378,21 @@ const PW = (() => {
     const i = (ev.tiles || [])[0];
     const hasTile = i != null && !!GEO[i];
     // 術者中心のスペル(黄金・疾風・風向転換・血染めの刃・ひらめき)と
-    // 自前でtiles配列を処理するスペル(加護・豊穣)以外は対象マス必須
+    // 自前でtiles配列を処理するスペル(バリア)以外は対象マス必須
     const needTile = !['sp_gold', 'sp_gale', 'sp_wind_shift', 'sp_bloodstained_blade',
-                       'sp_insight', 'sp_ward', 'sp_cornucopia'].includes(sid);
+                       'sp_insight', 'sp_ward'].includes(sid);
     if (needTile && !hasTile) return;
     const { x, y } = hasTile ? proj(GEO[i][0], GEO[i][1]) : { x: from.x, y: from.y };
-    if (sid === 'sp_weaken') {
+    if (sid === 'ult_adel') {
+      for (const ti of (ev.tiles || []).filter(t2 => GEO[t2])) {
+        const pt = proj(GEO[ti][0], GEO[ti][1]);
+        await coverFlash(pt.x, pt.y, 0x9BD8FF, 520);
+        elemBurst(pt.x, pt.y, 0xD9F3FF, 7, true, 331, 'water');
+        tintCreature(ti, 0xCDEEFF, 420);
+        await wait(90);
+      }
+      return;
+    } else if (sid === 'sp_weaken') {
       await projectile(from, { x, y: y - 14 }, 0x7A2EB8, 420);   // 暗紫projectile
       impactAt(x, y, 0x9B59D0, null);
       tintCreature(i, 0xB07AE0, 500);
@@ -510,16 +519,6 @@ const PW = (() => {
       elemBurst(from.x, from.y, 0xF2D062, 10, true, 341);
       fxImageFlash('common', 'sparkGold', from.x, from.y - 10, { width: 90, ms: 600, depth: 342 });
       await wait(800);
-    } else if (sid === 'sp_cornucopia') {
-      // 豊穣の角(§7.3): 自領地を盤面順に金緑pulse(合計金額はバナー=DOM)
-      const tiles = (ev.tiles || []).filter(t2 => GEO[t2]);
-      for (const t2 of tiles) {
-        const pz = proj(GEO[t2][0], GEO[t2][1]);
-        pulseAt(pz.x, pz.y, 0xBFD35C, 550);
-        elemBurst(pz.x, pz.y, 0xF2D062, 3, true, 331);
-        await wait(140);
-      }
-      await wait(500);
     } else if (sid === 'sp_gale') {
       await windSwirl(from.x, from.y, 800);            // 疾風(§7.3): コマ周囲の旋風(ダイス2個はDOM)
     } else if (sid === 'sp_wind_shift') {

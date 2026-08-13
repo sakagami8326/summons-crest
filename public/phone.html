@@ -169,9 +169,12 @@
   .shopPrice img { height:1.8em; } .shopOld { opacity:.6; text-decoration:line-through; margin-right:.35em; }
   .shopSold { position:absolute; inset:35% 0 auto; z-index:20; padding:.8dvh; background:#8b1e28; color:#fff;
       font-weight:900; letter-spacing:.18em; transform:rotate(-8deg); }
-  .removeCard { height:100%; border:3px solid #d5b75a; border-radius:10px; display:grid; place-items:center;
-      background:linear-gradient(145deg,#311b35,#111326); color:#f2d062; box-shadow:inset 0 0 25px #000; }
-  .removeCard img { width:100%; height:100%; object-fit:contain; background:#fff; }
+  .removeCard { position:relative; height:100%; border:3px solid #d5b75a; border-radius:10px; overflow:hidden;
+      background:#07132f; color:#f2d062; box-shadow:inset 0 0 25px #000; }
+  .removeCard img { position:absolute; left:4%; right:4%; bottom:1%; width:92%; height:84%; object-fit:contain; }
+  .removeCard .removeTitle { position:absolute; z-index:2; top:5.5%; left:5%; right:5%; color:#fff2c4;
+      font:900 clamp(14px,9cqw,30px)/1.05 'Yu Mincho',serif; letter-spacing:.06em;
+      text-align:center; text-shadow:0 2px 5px #000; white-space:nowrap; }
   .removeCard b { font-size:clamp(14px,9cqw,30px); } .removeCard span { font-size:clamp(30px,24cqw,74px); }
   #shopExit { position:absolute; right:3vw; bottom:1.5dvh; z-index:4; }
   #shopDetail { position:fixed; inset:0; z-index:75; display:none; place-items:center; background:rgba(5,6,16,.88); }
@@ -736,6 +739,7 @@
 <script src="/ult_fx_world.js"></script>
 <script>
 const $ = id => document.getElementById(id);
+const REMOVE_CARD_HTML = '<div class="face removeCard"><div class="removeTitle">カードを削除</div><img src="/assets/cards/shop-remove-v2.webp" alt="カード削除"></div>';
 let room = null, pid = null, state = null, selected = null, rolling = false;
 let inShopHand = false, prevHandKey = '', moveT = null;
 let charPreview = null, charSubmitting = false, fitResizeT = null;
@@ -805,10 +809,17 @@ const supportArt = cid => SUPPORT_ART[cid]
 // アートが存在するスペル(無いものは呪文アイコンで代用)
 const SPELL_ART = new Set(['sp_gold','sp_weaken','sp_gale','sp_quake','sp_volcanic_core','sp_abyssal_pearl',
   'sp_earth_mother_stone','sp_sky_crystal','sp_flame_vortex','sp_bloodstained_blade',
-  'sp_cornucopia','sp_bedrock_uplift','sp_wind_shift','sp_ward','sp_step','sp_move','sp_insight','sp_swap',
+  'sp_bedrock_uplift','sp_wind_shift','sp_ward','sp_step','sp_move','sp_insight','sp_swap',
   'sp_dice_1','sp_dice_2','sp_dice_3','sp_dice_4','sp_dice_5','sp_dice_6']);
 const DEDICATED_SPELL_ART = {
+  sp_gold:'/assets/cards/spell-gold-art-v1.webp',
   sp_weaken:'/assets/cards/spell-weaken-art-v1.webp',
+  sp_gale:'/assets/cards/spell-double-roll-art-v1.webp',
+  sp_quake:'/assets/cards/spell-quake-art-v1.webp',
+  sp_ward:'/assets/cards/spell-barrier-art-v1.webp',
+  sp_flame_vortex:'/assets/cards/spell-flame-vortex-art-v1.webp',
+  sp_bloodstained_blade:'/assets/cards/spell-bloodstained-blade-art-v1.webp',
+  sp_wind_shift:'/assets/cards/spell-wind-turn-art-v1.webp',
   sp_step:'/assets/cards/spell-step-art-v1.webp',
   sp_move:'/assets/cards/spell-move-art-v1.webp',
   sp_insight:'/assets/cards/spell-insight-art-v1.webp',
@@ -1133,7 +1144,7 @@ function tileDetailHTML(i) {
     ? `<img class="tdArt" src="/assets/${evo && HAS_ART.has(bid) ? 'e_' : 'c_'}${bid}.png">`
     : `<div class="tdTok" style="background:${RUNE[cr.elem] || '#6E7288'}">${nm.slice(0, 4)}</div>`;
   const fx = state.tileFx && state.tileFx[i];
-  const fxLine = fx ? [fx.vortex && '炎の渦', fx.uplift && '岩盤隆起']
+  const fxLine = fx ? [fx.vortex && '炎の渦', fx.uplift && 'リストア']
     .filter(Boolean).join('・') : '';
   const curse = state.curses && state.curses[i];
   return `<div class="tdRow"><img class="tdFace" style="--tdc:${pl.color || '#888'}" src="/assets/f_${pl.charId}.png">
@@ -1191,7 +1202,7 @@ function openShopDetail(slotId) {
   const item = visit && visit.items.find(x => x.slotId === slotId);
   if (!item || item.sold) return;
   $('shopDetailCard').innerHTML = item.kind === 'remove'
-    ? '<div class="face removeCard"><img src="/assets/cards/shop-remove-v1.webp" alt="カード削除"></div>'
+    ? REMOVE_CARD_HTML
     : bigCardHTML(item.card);
   $('shopDetailPrice').innerHTML = `<img src="/assets/ic_gold.png">${visit.half ? `<span class="shopOld">${item.basePrice}G</span>` : ''}${item.price}G`;
   $('shopBuy').disabled = item.price > me().gold;
@@ -1919,7 +1930,7 @@ function render() {
     $('shopGold').innerHTML = '<img src="/assets/ic_gold.png" style="height:2.4dvh;vertical-align:-0.4dvh"> ' + m.gold + ' G';
     const visit = state.shopVisit;
     const shopFace = item => item.kind === 'remove'
-      ? '<div class="face removeCard"><img src="/assets/cards/shop-remove-v1.webp" alt="カード削除"></div>'
+      ? REMOVE_CARD_HTML
       : bigCardHTML(item.card);
     $('shopShelf').innerHTML = visit ? visit.items.map(item => {
       const cls = `${item.sold ? ' sold' : ''}${!item.sold && item.price > m.gold ? ' unaffordable' : ''}`;

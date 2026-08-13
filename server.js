@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.16';
+const VERSION = '1.17';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
@@ -39,7 +39,7 @@ const CHAR_DECKS = {
            'shield', 'shield', 'jinx'],
 };
 // 廃棄スペル(使用後ゲームから除外)
-const EXILE_SPELLS = new Set(['sp_quake', 'sp_ward', 'sp_volcanic_core', 'sp_abyssal_pearl', 'sp_earth_mother_stone', 'sp_sky_crystal', 'sp_cornucopia']);
+const EXILE_SPELLS = new Set(['sp_quake', 'sp_ward', 'sp_volcanic_core', 'sp_abyssal_pearl', 'sp_earth_mother_stone', 'sp_sky_crystal']);
 const shuffle = a => a.sort(() => Math.random() - 0.5);
 // 山札から引く(足りなければ捨て札をシャッフルして新しい山札に)
 function drawCards(r, p, n) {
@@ -134,13 +134,13 @@ const CREATURES = {
 };
 const ITEMS = {}; // v0.34: 呪いアイテムは廃止(スペル「衰弱の呪文」に移行)
 const SPELLS = {
-  sp_gold:   { name: '黄金の呪文', rarity: 'N', cost: 0,
+  sp_gold:   { name: 'ゴールド', rarity: 'N', cost: 0,
                desc: '現在の周回数×100Gを得る' },
   sp_weaken: { name: '衰弱の呪文', rarity: 'N', cost: 200, hp: 20,
                desc: '敵領地を1つ選び、そのクリーチャーに20ダメージ(回復しない)。HPが0以下になると滅び、土地は空き地になる' },
-  sp_gale:   { name: '疾風の呪文', rarity: 'R', cost: 30,
+  sp_gale:   { name: 'ダブルロール', rarity: 'R', cost: 30,
                desc: 'このターン、サイコロを2個振って移動する' },
-  sp_quake:  { name: '地割れの呪文', rarity: 'R', cost: 300,
+  sp_quake:  { name: '地割れ', rarity: 'R', cost: 300,
                desc: '敵の領地1つのレベルを1下げる(Lv1には無効)' },
   sp_step:   { name: 'ムーブ', rarity: 'R', cost: 40,
                desc: '自分の領地のクリーチャー1体を隣のマスへ移動。空き地なら新たな領地(Lv1)に、敵領地ならそのまま侵略(通行料なし)' },
@@ -157,13 +157,11 @@ const SPELLS = {
     desc: '敵領地に10ダメージを与える。次にその領地へ侵略するクリーチャーはAT+10' },
   sp_bloodstained_blade:{ name: '血染めの刃', rarity: 'R', cost: 40,
     desc: '次の侵略でAT+10。侵略成功時、相手から30Gを奪う' },
-  sp_cornucopia:        { name: '豊穣の角', rarity: 'R', cost: 0,
-    desc: '自分の領地1つにつき20Gを得る' },
-  sp_bedrock_uplift:    { name: '岩盤隆起', rarity: 'R', cost: 50,
+  sp_bedrock_uplift:    { name: 'リストア', rarity: 'R', cost: 50,
     desc: '自分の負傷した領地1つを20回復し、次の戦闘でDF+10' },
   sp_wind_shift:        { name: '風向転換', rarity: 'R', cost: 30,
     desc: 'このターンだけ、通常とは逆方向へ移動する' },
-  sp_ward:   { name: '加護の呪文', rarity: 'R', cost: 80,
+  sp_ward:   { name: 'バリア', rarity: 'R', cost: 80,
                desc: 'あなたの次の手番まで、自分の領地は侵略されない' },
   sp_move:   { name: 'スイッチ', rarity: 'R', cost: 40,
                desc: '自分の領地2つのクリーチャーを入れ替える(負傷も一緒に移動)' },
@@ -1120,7 +1118,7 @@ function resolveBattle(r) {
   // DF(防御) = 地形補正+女王+支援HP。ダメージ = AT − DF(最低0)。負傷は軽減後の実ダメージだけ蓄積
   if (carried) notes.push(`負傷を引き継いでいる(−${carried})`);
   const upliftDF = bFx.uplift ? 10 : 0;
-  if (upliftDF) notes.push('岩盤隆起が大地を固める!(防衛DF+10)');
+  if (upliftDF) notes.push('リストアが大地を固める!(防衛DF+10)');
   const boneArmor = baseId(o.creature) === 'bonerex' ? (defEvolved ? 20 : 10) : 0;
   if (boneArmor) notes.push(`【骨鎧】防衛DF+${boneArmor}!`);
   const corrosion = baseId(b.atkCreature) === 'morbill' ? (atkEvolved ? 20 : 10) : 0;
@@ -1476,16 +1474,6 @@ function handleChoose(r, playerId, optionId) {
       opts.push({ id: 'sw:cancel', label: 'やめる' });
       return ask(r, p.id, 'swap_land', '交代 ─ どの領地のクリーチャーを入れ替える?', opts);
     }
-    if (sid === 'sp_cornucopia') {
-      castLog();
-      const n = r.owners.filter(o => o && o.player === p.id).length;
-      const gain = n * 20;
-      p.gold += gain;
-      r.lastEvent.desc = `領地${n}つ ─ ${gain}Gを獲得`;
-      log(r, `豊穣の角があふれ出す! 領地${n}つ ─ ${p.name}は${gain}Gを得た`);
-      spellFx(r, 'sp_cornucopia', r.owners.map((o, i) => o && o.player === p.id ? i : null).filter(x => x !== null), p.id);
-      return askRoll(r, p);
-    }
     if (sid === 'sp_bloodstained_blade') {
       castLog();
       p.blade = true;
@@ -1608,7 +1596,7 @@ function handleChoose(r, playerId, optionId) {
       o.dmg = Math.max(0, before - 20);
       fx().uplift = true;
       r.lastEvent.desc = `${CREATURES[o.creature].name}の負傷${before}→${o.dmg}。次の戦闘でDF+10`;
-      log(r, `⛰ 岩盤隆起! ${CREATURES[o.creature].name}の負傷${before}→${o.dmg}。次の戦闘でDF+10`);
+      log(r, `⛰ リストア! ${CREATURES[o.creature].name}の負傷${before}→${o.dmg}。次の戦闘でDF+10`);
       spellFx(r, 'sp_bedrock_uplift', [i], p.id);
     }
     return askRoll(r, p);
@@ -2392,7 +2380,9 @@ function serializeRoom(r) {
   return { saveVer: SAVE_VER, gameVer: VERSION, savedAt: Date.now(),
            room: JSON.parse(JSON.stringify(room)) };
 }
+const RETIRED_CARD_IDS = new Set(['sp_cornucopia']);
 const VALID_CARD = c => !!(CREATURES[c] || SPELLS[c] || SUPPORTS[c]);
+const VALID_SAVE_CARD = c => VALID_CARD(c) || RETIRED_CARD_IDS.has(c);
 // セーブデータの検証。問題なければnull、あればエラーメッセージを返す
 function validateSave(save) {
   if (!save || typeof save !== 'object') return 'セーブデータが不正です';
@@ -2417,7 +2407,7 @@ function validateSave(save) {
       const z = q[zone];
       if (z == null) continue;
       if (!Array.isArray(z) || z.length > 300) return `カード置き場(${zone})が不正です`;
-      for (const c of z) if (!VALID_CARD(c)) return `不明なカードID: ${c}`;
+      for (const c of z) if (!VALID_SAVE_CARD(c)) return `不明なカードID: ${c}`;
     }
     for (const nk of ['gold', 'pos', 'lap', 'gems', 'treasures', 'battleWins', 'shrineVisits'])
       if (q[nk] != null && (typeof q[nk] !== 'number' || !isFinite(q[nk]))) return `数値(${nk})が不正です`;
@@ -2431,8 +2421,8 @@ function validateSave(save) {
     if (typeof o.level !== 'number' || o.level < 1 || o.level > RULES.maxLevel) return '領地レベルが不正です';
   }
   if (!Array.isArray(d.deck) || d.deck.length > 500) return '共通山札が不正です';
-  for (const c of d.deck) if (!VALID_CARD(c)) return `共通山札に不明なカードID: ${c}`;
-  if (d.market != null && (!Array.isArray(d.market) || d.market.some(c => !VALID_CARD(c)))) return '市場データが不正です';
+  for (const c of d.deck) if (!VALID_SAVE_CARD(c)) return `共通山札に不明なカードID: ${c}`;
+  if (d.market != null && (!Array.isArray(d.market) || d.market.some(c => !VALID_SAVE_CARD(c)))) return '市場データが不正です';
   if (d.pending != null) {
     if (typeof d.pending !== 'object') return 'pendingが不正です';
     for (const [k, v] of Object.entries(d.pending)) {
@@ -2468,7 +2458,16 @@ function restoreRoom(save) {
   delete room.treasureCost;
   for (const p of room.players) {
     delete p.gems; delete p.treasures; delete p.gemThisStop; delete p.forgetThisStop;
+    for (const zone of ['deck', 'hand', 'discard', 'exile', 'pickCards'])
+      if (Array.isArray(p[zone])) p[zone] = p[zone].filter(c => !RETIRED_CARD_IDS.has(c));
   }
+  room.deck = (room.deck || []).filter(c => !RETIRED_CARD_IDS.has(c));
+  if (Array.isArray(room.market)) room.market = room.market.filter(c => !RETIRED_CARD_IDS.has(c));
+  if (room.shopVisit && Array.isArray(room.shopVisit.items))
+    room.shopVisit.items = room.shopVisit.items.filter(item => !RETIRED_CARD_IDS.has(item.card));
+  for (const pend of Object.values(room.pending || {}))
+    if (pend && Array.isArray(pend.options))
+      pend.options = pend.options.filter(o => ![...RETIRED_CARD_IDS].some(c => o.card === c || String(o.id || '').includes(c)));
   // ここから先は失敗しない操作のみ(原子的な差し替え)
   if (existing) {
     for (const c of existing.clients) { try { c.res.end(); } catch (e) {} }
