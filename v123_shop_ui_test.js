@@ -7,8 +7,8 @@ const server = fs.readFileSync('server.js', 'utf8');
 const pkg = require('./package.json');
 const css = (phone.match(/<style>([\s\S]*?)<\/style>/) || ['', ''])[1];
 
-if (!/const VERSION = '1\.25';/.test(server) || pkg.version !== '1.25.0' || !/board 1\.25/.test(board))
-  throw new Error('バージョン検査: v1.25へ統一されていない');
+if (!/const VERSION = '1\.26';/.test(server) || pkg.version !== '1.26.0' || !/board 1\.26/.test(board))
+  throw new Error('バージョン検査: v1.26へ統一されていない');
 
 const pawn = fs.readFileSync('public/assets/p_adel.png');
 if (pawn.toString('ascii', 1, 4) !== 'PNG' || pawn.readUInt32BE(16) !== 190 || pawn.readUInt32BE(20) !== 227)
@@ -29,11 +29,11 @@ if (!/\.shopProduct \.shopCard\s*\{[^}]*height:min\(41\.5dvh[^}]*aspect-ratio:4\
     !/gap:\.16dvh \.08vw/.test(css))
   throw new Error('商品サイズ検査: コンパクトカードの寸法または余白が不正');
 
-if (!/function shopCompactHTML\(item, visit\)/.test(phone) ||
+if (!/function shopCompactHTML\(item, visit, insufficient = false\)/.test(phone) ||
     !/shopCompactName/.test(phone) || !/shopCompactPrice/.test(phone) ||
     !/stat-at-icon\.svg/.test(phone) || !/stat-hp-icon\.svg/.test(phone))
   throw new Error('一覧表示検査: 商品名・価格・AT・HPの軽量表示がない');
-const compactSource = phone.match(/function shopCompactHTML\(item, visit\)\s*\{([\s\S]*?)\n\}/)?.[1] || '';
+const compactSource = phone.match(/function shopCompactHTML\(item, visit, insufficient = false\)\s*\{([\s\S]*?)\n\}/)?.[1] || '';
 if (/ccEffect|spText|suText|desc|fx/.test(compactSource))
   throw new Error('一覧表示検査: 効果全文がコンパクト一覧へ混入している');
 

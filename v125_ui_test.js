@@ -27,8 +27,8 @@ function game(chars = ['villa', 'adel']) {
   return r;
 }
 
-eq([G.VERSION, pkg.version], ['1.25', '1.25.0'], 'version is unified at v1.25');
-ok(/board 1\.25/.test(board), 'board version tag is v1.25');
+eq([G.VERSION, pkg.version], ['1.26', '1.26.0'], 'version is unified at v1.26');
+ok(/board 1\.26/.test(board), 'board version tag is v1.26');
 
 // Villa movement gets a dedicated event instead of entering the dice renderer.
 {
@@ -84,7 +84,7 @@ ok(/else if \(spl\)/.test(phone) && /else if \(sup\)/.test(phone),
   'common detail navigation supports spells and support cards');
 
 // Phone shop is denser, larger, and keeps exile badges out of the compact shelf.
-const compact = phone.match(/function shopCompactHTML\(item, visit\)\s*\{([\s\S]*?)\n\}/)?.[1] || '';
+const compact = phone.match(/function shopCompactHTML\(item, visit, insufficient = false\)\s*\{([\s\S]*?)\n\}/)?.[1] || '';
 ok(/height:min\(41\.5dvh/.test(phone) && /gap:\.16dvh \.08vw/.test(phone),
   'phone shop cards are enlarged with tighter spacing');
 ok(!/shopCompactExile/.test(compact), 'phone shop shelf omits exile badges');

@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.25';
+const VERSION = '1.26';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
@@ -62,10 +62,10 @@ function drawCards(r, p, n) {
 const baseId = c => (c || '').replace(/_f$/, '');
 const isEvolved = (o) => o.level >= RULES.evoLevel || /_f$/.test(o.creature);
 // v0.61: 新規獲得カードは捨て札ではなく現在の山札へ加えてシャッフルする(位置は非公開)
-function gainToDeck(r, p, cards) {
+function gainToDeck(r, p, cards, reason = 'gain') {
   p.deck.push(...cards);
   shuffle(p.deck);
-  r.lastGain = { player: p.id, n: cards.length, at: stamp(r) };
+  r.lastGain = { player: p.id, n: cards.length, cards: cards.slice(), reason, at: stamp(r) };
 }
 
 // ===== 盤面(28マス周回) =====
@@ -404,11 +404,11 @@ function resumeAfterPlacement(r, p, pend) {
 function onCreatureSummoned(r, p, creatureId, reason, tile) {
   if (!['summon', 'swap', 'battle'].includes(reason)) return false;
   if (baseId(creatureId) === 'cresteria' && reason !== 'battle') {
-    gainToDeck(r, p, ['shield']);
+    gainToDeck(r, p, ['shield'], 'cresteria');
     log(r, `【真珠】${CREATURES.cresteria.name}の召喚で支援「盾」1枚を山札へ加えた`);
   }
   if (baseId(creatureId) === 'trooper' && !isEvolved({ creature: creatureId })) {
-    gainToDeck(r, p, ['sp_flame_vortex']);
+    gainToDeck(r, p, ['sp_flame_vortex'], 'trooper');
     log(r, `【火種】${CREATURES.trooper.name}の配置で「炎の渦」1枚を山札へ加えた`);
   }
   if (baseId(creatureId) === 'gaust') {
@@ -1414,7 +1414,7 @@ function handleChoose(r, playerId, optionId) {
       const cards = valid.map(i => p.exile[i]);
       [...valid].sort((a, b) => b - a).forEach(i => p.exile.splice(i, 1));
       p.hand.push(...cards);
-      r.lastGain = { player: p.id, n: cards.length, reason: 'ult_villa', at: stamp(r) };
+      r.lastGain = { player: p.id, n: cards.length, cards: cards.slice(), reason: 'ult_villa', at: stamp(r) };
       log(r, `【墓守の協奏曲】${p.name}は廃棄から${cards.length}枚を手札へ戻した`);
       return resolveTile(r, p);
     }
@@ -1851,7 +1851,7 @@ function handleChoose(r, playerId, optionId) {
         p.discard.push(oldC);                 // 元のクリーチャーは捨て札へ
         p.hand.splice(p.hand.indexOf(c), 1);
         o.creature = c; o.dmg = 0; o.shade = 0; delete o.iceWard;  // 新クリーチャーは全快で配置
-        if (baseId(c) === 'fugorm') { gainToDeck(r, p, ['weapon']); log(r, `【鍛冶】${p.name}は支援「武器」を山札に得た`); }
+        if (baseId(c) === 'fugorm') { gainToDeck(r, p, ['weapon'], 'fugorm'); log(r, `【鍛冶】${p.name}は支援「武器」を山札に得た`); }
         p.hand.splice(p.hand.indexOf('sp_swap'), 1);
         p.discard.push('sp_swap');
         p.gold -= spellCost + CREATURES[c].cost;
@@ -1946,7 +1946,7 @@ function handleChoose(r, playerId, optionId) {
     const idx = r.draft.cards.indexOf(c);
     r.draft.cards.splice(idx, 1);
     r.deck.push(...r.draft.cards);
-    gainToDeck(r, p, [c]);  // v0.61: 獲得カードは山札へ(シャッフル)
+    gainToDeck(r, p, [c], 'draft');  // v0.61: 獲得カードは山札へ(シャッフル)
     log(r, `${p.name}はカードを1枚獲得し、山札に加えた(中身は非公開)`);
     const resume = r.draft.resume;
     r.draft = null;
@@ -2055,7 +2055,7 @@ function handleChoose(r, playerId, optionId) {
       p.hand.splice(p.hand.indexOf(c), 1);
       r.owners[i] = { player: p.id, level: 1, creature: c };
       log(r, `${p.name}は${CREATURES[c].name}を召喚し、土地を領地化!`);
-      if (baseId(c) === 'fugorm') { gainToDeck(r, p, ['weapon']); log(r, `【鍛冶】${p.name}は支援「武器」を山札に得た`); }
+      if (baseId(c) === 'fugorm') { gainToDeck(r, p, ['weapon'], 'fugorm'); log(r, `【鍛冶】${p.name}は支援「武器」を山札に得た`); }
       const summonPaused = onCreatureSummoned(r, p, c, 'summon', i);
       updateTitles(r); if (checkVictory(r)) return; if (summonPaused) return; return endTurn(r);
     }
@@ -2131,7 +2131,7 @@ function handleChoose(r, playerId, optionId) {
     }
     p.gold -= item.price;
     item.sold = true;
-    gainToDeck(r, p, [item.card]);
+    gainToDeck(r, p, [item.card], 'market');
     const card = CREATURES[item.card] || SPELLS[item.card] || SUPPORTS[item.card];
     log(r, `${p.name}は「${card.name}」を${item.price}Gで購入(山札へ)`);
     return askMarket(r, p);
@@ -2489,7 +2489,10 @@ function publicState(r, viewerId) {
           : v.type === 'support' && k !== viewerId
             ? [k, { type: v.type, prompt: '支援カードを選択中', options: [] }]
             : [k, v])),
-    lastDraw: r.lastDraw || null, lastGain: r.lastGain || null,
+    lastDraw: r.lastDraw || null,
+    lastGain: r.lastGain ? Object.assign({}, r.lastGain,
+      r.lastGain.player === viewerId && Array.isArray(r.lastGain.cards)
+        ? { cards: r.lastGain.cards.slice() } : { cards: undefined }) : null,
     catalog: { CREATURES, SUPPORTS, ITEMS, CHARS, ULTS, SPELLS, STARTER_DECKS: CHAR_DECKS, artIds: ART_IDS },
     players: r.players.map(p => ({
       id: p.id, name: p.name, charId: p.charId || null, confirmed: !!p.confirmed,
