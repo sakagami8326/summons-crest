@@ -184,6 +184,8 @@
   .bdTop { color:#ffe596; font:700 1.7vh/1.35 Marudeco,sans-serif; letter-spacing:.06em; }
   .bdName { color:#fff; font:700 2.45vh/1.25 var(--font-mincho); margin:.45vh 0; }
   .bdBase { color:#f2d062; font:700 1.65vh/1.35 sans-serif; }
+  .bdSoul { margin-top:.7vh; padding:.55vh .65vw; border:1px solid rgba(92,230,174,.55); border-radius:.7vh;
+      color:#b9ffe2; background:rgba(15,78,61,.34); font:700 1.45vh/1.45 sans-serif; }
   .bdAbility { margin-top:1vh; padding-top:.8vh; border-top:1px solid rgba(242,208,98,.4); }
   .bdAbility b { display:block; color:#ffe59a; font-size:1.7vh; margin-bottom:.5vh; }
   .bdAbility p { margin:0; color:#f8f2df; font-size:1.42vh; line-height:1.5; display:-webkit-box;
@@ -555,6 +557,23 @@
   #diceMsg { text-align:center; font-size:3.2vh; letter-spacing:4px; color:var(--gold-soft);
       text-shadow:0 2px 8px rgba(0,0,0,.9); opacity:0; transition:opacity .25s; margin-top:1vh; }
   #diceMsg.show { opacity:1; }
+  .villaMove { width:min(46vw,640px); text-align:center; color:#eafff5; font-family:'Reggae One','Yu Mincho',serif; }
+  .villaMoveCards { position:relative; height:16vh; margin-bottom:.8vh; }
+  .villaMoveCard { position:absolute; left:50%; top:50%; width:7.2vh; height:10.5vh; margin:-5.25vh 0 0 -3.6vh;
+      border:2px solid #7ff0bc; border-radius:.8vh; background:linear-gradient(150deg,#142d2a,#071513);
+      box-shadow:0 0 2.2vh rgba(74,239,171,.6),inset 0 0 1.4vh rgba(174,255,221,.22);
+      animation:villaCardScatter 1.65s ease both; transform:rotate(var(--vr)) translateX(var(--vx)); }
+  .villaMoveCard::after { content:'✦'; position:absolute; inset:0; display:grid; place-items:center;
+      color:#9affcf; font-size:3.8vh; text-shadow:0 0 1.2vh #56f0ad; }
+  .villaMoveCard:nth-child(1){--vr:-22deg;--vx:-12vh}.villaMoveCard:nth-child(2){--vr:-10deg;--vx:-6vh}
+  .villaMoveCard:nth-child(3){--vr:0deg;--vx:0}.villaMoveCard:nth-child(4){--vr:10deg;--vx:6vh}
+  .villaMoveCard:nth-child(5){--vr:22deg;--vx:12vh}
+  @keyframes villaCardScatter { 0%{opacity:0;transform:translateY(7vh) scale(.45) rotate(0)}
+      35%,70%{opacity:1} 100%{opacity:0;transform:rotate(var(--vr)) translateX(var(--vx)) translateY(-3vh) scale(1.05)} }
+  .villaMoveLabel { font-size:2.5vh; letter-spacing:.18em; color:#b9ffe2; }
+  .villaMoveValue { margin-top:.4vh; font-size:5.2vh; letter-spacing:.08em; color:#fff4b2;
+      text-shadow:0 0 2vh rgba(107,255,192,.75),0 3px 10px #000; animation:villaValueIn .45s .25s ease both; }
+  @keyframes villaValueIn { from{opacity:0;transform:scale(.55)} to{opacity:1;transform:none} }
   /* TURN STARTカットイン(右からスライドイン) */
   #turnCutin { position:fixed; top:0; right:0; bottom:0; width:56vw; z-index:58;
       pointer-events:none; display:none; overflow:hidden; }
@@ -607,6 +626,8 @@
   #tileInfo .tiHp small { font-size:1.4vh; color:rgba(241,232,208,.6); }
   #tileInfo .tiCurse { color:#B77CD8; font-size:1.7vh; }
   #tileInfo .tiFx { font-size:1.55vh; color:var(--gold-soft); margin-top:.5vh; line-height:1.5; }
+  #tileInfo .tiSoul { margin:.7vh auto 0; padding:.5vh .8vw; border:1px solid rgba(92,230,174,.55);
+      border-radius:.7vh; color:#b9ffe2; background:rgba(15,78,61,.34); font:700 1.5vh/1.45 sans-serif; }
   #tileInfo .tiToll { font-size:1.9vh; color:var(--parchment); margin-top:.8vh;
       background:rgba(0,0,0,.35); border-radius:999px; padding:.3vh 1vw; display:inline-block; }
   #tileInfo .tiDesc { font-size:2vh; line-height:1.8; color:var(--parchment); }
@@ -993,7 +1014,7 @@
   .scChosenLine .scElem svg * { fill:var(--panel-color)!important; }
   .scPawnWrap { position:absolute; z-index:7; left:50%; bottom:-7.4vh; width:62%; height:28%;
       transform:translateX(-50%); display:flex; align-items:flex-end; justify-content:center; pointer-events:none; }
-  .scPawnWrap::after { content:""; position:absolute; left:22%; right:22%; bottom:-1.75vh; height:2.05vh;
+  .scPawnWrap::after { content:""; position:absolute; left:22%; right:22%; bottom:-.35vh; height:2.05vh;
       border-radius:50%; background:rgba(8,9,13,.68); filter:blur(6px); transform:scaleY(.48); }
   .scPawnWrap img { position:relative; z-index:1; width:100%; height:100%; object-fit:contain;
       filter:drop-shadow(0 .5vh .55vh rgba(0,0,0,.66)); }
@@ -1715,6 +1736,13 @@ function showDice3D(n) {
   setTimeout(() => $('diceMsg') && $('diceMsg').classList.add('show'), 1400);
   setTimeout(() => ov.classList.remove('on'), 2600);
 }
+function showVillaMove(steps) {
+  const n = Math.max(0, Number(steps) || 0), ov = $('diceOv');
+  ov.innerHTML = `<div class="villaMove"><div class="villaMoveCards">${'<i class="villaMoveCard"></i>'.repeat(5)}</div>
+    <div class="villaMoveLabel">廃棄札 ${n}枚</div><div class="villaMoveValue">${n}マス進む</div></div>`;
+  ov.classList.add('on');
+  setTimeout(() => ov.classList.remove('on'), 1850);
+}
 function spawnGold(pid, delta) {
   const plate = $('plate-' + pid);
   if (!plate) return;
@@ -2413,6 +2441,7 @@ function tileInfoHTML(i) {
   const cr = C.CREATURES[o.creature];
   const evolved = o.level >= (state.evoLevel || 3) || /_f$/.test(o.creature);
   const hp = evolved && cr.evoHp ? cr.evoHp : cr.hp;
+  const soulCount = o.creature.replace(/_f$/, '') === 'alter' ? Number(pl.exileCount || 0) : null;
   const curse = state.curses && state.curses[i];
   const dmg = o.dmg || 0;
   const toll = o.level * chain(o.player, t.e) * 30 * (o.creature.replace(/_f$/, '') === 'orphe' ? 1.2 : 1);
@@ -2428,6 +2457,7 @@ function tileInfoHTML(i) {
           if (fx.uplift) b2.push('リストア(防衛DF+10)');
           return b2.length ? `<div class="tiSub" style="color:#F2D062">${b2.join(' / ')}</div>` : ''; })()}
         ${cr.fx ? `<div class="tiFx">${cr.fx}</div>` : ''}
+        ${soulCount !== null ? `<div class="tiSoul">廃棄札 ${soulCount}枚<br>【魂喰らい】AT・DF +${soulCount * 5}</div>` : ''}
         <div class="tiToll">通行料 ${Math.round(toll)}G</div>
       </div>
     </div>`;
@@ -3102,7 +3132,7 @@ async function playInternalAbilityFx(sf) {
   }
 }
 
-function battleDetailHTML(pid, cid, level, mods = []) {
+function battleDetailHTML(pid, cid, level, mods = [], exileCount = null) {
   const pl = player(pid), bid = cid ? cid.replace(/_f$/, '') : null;
   const c = bid ? state.catalog.CREATURES[bid] : null;
   if (!c) return `<div class="bdTop">${pl ? pl.name : ''}</div><div class="bdName">選択待ち</div>`;
@@ -3113,8 +3143,10 @@ function battleDetailHTML(pid, cid, level, mods = []) {
   const fx = String(evolved ? (c.evoFx || c.fx || '') : (c.fx || ''));
   const m = fx.match(/^【([^】]+)】\s*(.*)$/s), title = m ? m[1] : '固有能力', body = m ? m[2] : (fx || '効果なし');
   const elem = {fire:'火',water:'水',earth:'土',wind:'風',neutral:'無'}[c.elem || 'neutral'];
+  const soulCount = bid === 'alter' ? Number(exileCount ?? (pl && pl.exileCount) ?? 0) : null;
   return `<div class="bdTop">${pl ? pl.name : ''} ／ ${elem}属性 ／ ${c.cost || 0}G</div>
     <div class="bdName">${name}</div><div class="bdBase">基礎 AT ${at}　HP ${hp}</div>
+    ${soulCount !== null ? `<div class="bdSoul">廃棄札 ${soulCount}枚　【魂喰らい】AT・DF +${soulCount * 5}</div>` : ''}
     <div class="bdAbility"><b>【${title}】</b><p>${body}</p></div>
     <div class="bdMods">${mods.filter(Boolean).map(x=>`<span>${x}</span>`).join('') || '<span>戦闘補正なし</span>'}</div>`;
 }
@@ -3360,8 +3392,8 @@ async function playBattle(b) {
   $('bAtkStats').innerHTML = finalStatsHTML(b, 'atk', 'pre');
   $('bDefStats').innerHTML = finalStatsHTML(b, 'def', 'pre');
   updateBattleCompare();
-  $('bAtkDetail').innerHTML = battleDetailHTML(b.attacker, b.atkCreature, 1, battleDetailMods(b, 'atk'));
-  $('bDefDetail').innerHTML = battleDetailHTML(b.defender, b.defCreature, dLv, battleDetailMods(b, 'def'));
+  $('bAtkDetail').innerHTML = battleDetailHTML(b.attacker, b.atkCreature, 1, battleDetailMods(b, 'atk'), b.atkExileCount);
+  $('bDefDetail').innerHTML = battleDetailHTML(b.defender, b.defCreature, dLv, battleDetailMods(b, 'def'), b.defExileCount);
   $('bnotes').innerHTML = '';
   $('bcap').textContent = '支援カード ─ 攻撃側から公開';
   ['bAtk','bDef'].forEach(id => $(id).classList.remove('lungeL','lungeR','dead'));
@@ -3561,7 +3593,7 @@ function render() {
   if (!state) return;
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.24' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.25' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
@@ -4101,8 +4133,11 @@ function render() {
   // ダイス
   if (state.lastDice && state.lastDice.at !== prev.dice) {
     prev.dice = state.lastDice.at;
-    if (state.lastDice.multi) showDiceMulti(state.lastDice.multi);
-    else showDice3D(state.lastDice.value);
+    if (!state.lastDice.suppressPresentation) {
+      if (state.lastDice.presentation === 'villa_move') showVillaMove(state.lastDice.moveSteps ?? state.lastDice.value);
+      else if (state.lastDice.multi) showDiceMulti(state.lastDice.multi);
+      else showDice3D(state.lastDice.value);
+    }
   }
   // 侵略確定直後から戦闘待機画面を同期。支援内容はbattlePreviewに含まれない。
   if (state.battlePreview) {

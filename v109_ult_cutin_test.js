@@ -78,7 +78,7 @@ ok(!board.includes('.tvShopCard .tsRule') && !board.includes('class="tsRule"'),'
 ok(board.includes('.tvShopCard { position:relative; aspect-ratio:5/7; border:0;'),'TV shop removes extra outer border');
 ok(!board.includes('.tvShopCard::after'),'TV shop removes extra inner border');
 ok(board.includes('.tvShopArt.support { top:9%; left:8%; width:84%; height:50%;'),'TV shop contains support art');
-ok(phone.includes('width:min(32.5vw,23dvh)'),'phone shop enlarges product cards');
+ok(phone.includes('height:min(41.5dvh'),'phone shop enlarges product cards');
 ok(board.includes('.statIconDisk { width:100%; aspect-ratio:1;') && phone.includes('.statIconDisk { width:100%; aspect-ratio:1;'),
   'card stat pedestals remain perfect circles');
 ok(board.includes('.statIconDisk img { display:block; width:100%; height:100%; object-fit:contain;') &&

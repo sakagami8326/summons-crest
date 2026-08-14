@@ -174,9 +174,9 @@
   #shopScene { position:fixed; inset:0; display:none; z-index:40;
       background:url('/assets/shop_bg.jpg') center / cover; }
   #shopScene.on { display:block; }
-  #shopShelf { position:absolute; inset:5.8dvh max(.45vw,env(safe-area-inset-right)) 5.2dvh max(.45vw,env(safe-area-inset-left));
+  #shopShelf { position:absolute; inset:.7dvh max(.15vw,env(safe-area-inset-right)) 6.4dvh max(.15vw,env(safe-area-inset-left));
       overflow:auto; display:grid; grid-template-columns:repeat(10,minmax(0,1fr));
-      grid-template-rows:repeat(2,minmax(0,1fr)); gap:.35dvh .22vw; align-items:center; padding:.2dvh; }
+      grid-template-rows:repeat(2,minmax(0,1fr)); gap:.16dvh .08vw; align-items:center; padding:.1dvh; }
   .shopProduct { position:relative; min-width:0; cursor:pointer; text-align:center; transition:.18s transform,.18s filter; }
   .shopProduct:nth-child(1) { grid-area:1/1/2/3; } .shopProduct:nth-child(2) { grid-area:1/3/2/5; }
   .shopProduct:nth-child(3) { grid-area:1/5/2/7; } .shopProduct:nth-child(4) { grid-area:1/7/2/9; }
@@ -185,8 +185,8 @@
   .shopProduct:nth-child(9) { grid-area:2/8/3/10; }
   .shopProduct:active { transform:scale(.96); } .shopProduct.unaffordable { filter:saturate(.45) brightness(.62); }
   .shopProduct.sold { filter:grayscale(1) brightness(.4); pointer-events:none; }
-  .shopProduct .shopCard { height:min(33dvh,calc((100dvh - 12.5dvh)/2)); aspect-ratio:4/5; width:auto;
-      max-width:18.8vw; margin:auto; container-type:inline-size; }
+  .shopProduct .shopCard { height:min(41.5dvh,calc((100dvh - 7.8dvh)/2)); aspect-ratio:4/5; width:auto;
+      max-width:19.65vw; margin:auto; container-type:inline-size; }
   .shopCompact { position:relative; width:100%; height:100%; overflow:hidden; border-radius:1.15dvh;
       border:1px solid rgba(231,199,106,.72); background:#111a31; color:#fff4d5;
       box-shadow:0 .65dvh 1.25dvh rgba(0,0,0,.48); isolation:isolate; }
@@ -209,8 +209,6 @@
       color:#fff5d0; font:900 clamp(12px,8.5cqw,22px)/1 Marudeco,sans-serif; white-space:nowrap; }
   .shopCompactStats .statIconDisk { width:1.35em; height:1.35em; flex:none; padding:.18em; }
   .shopCompactKind { color:#fff2c4; font:900 clamp(12px,7.5cqw,20px)/1 Marudeco,sans-serif; white-space:nowrap; }
-  .shopCompactExile { position:absolute; z-index:8; right:4%; top:14%; padding:.25em .5em;
-      color:#fff; background:#b51d2c; border-radius:.45em; font:900 clamp(10px,6cqw,16px)/1 Marudeco,sans-serif; }
   .shopPrice { display:inline-flex; align-items:center; gap:.35em; margin-top:.55dvh; padding:.45dvh 1.1dvh;
       border-radius:999px; background:rgba(16,13,36,.9); color:#ffe58a; font-weight:900; font-size:max(1.8dvh,12px); }
   .shopPrice img { height:1.8em; } .shopOld { opacity:.6; text-decoration:line-through; margin-right:.35em; }
@@ -224,6 +222,8 @@
       text-align:center; text-shadow:0 2px 5px #000; white-space:nowrap; }
   .removeCard b { font-size:clamp(14px,9cqw,30px); } .removeCard span { font-size:clamp(30px,24cqw,74px); }
   #shopExit { position:absolute; right:3vw; bottom:1.5dvh; z-index:4; }
+  #shopGold { left:calc(1.3vw + env(safe-area-inset-left))!important; top:auto!important; bottom:1.2dvh;
+      z-index:4; padding:.65dvh 1.6dvh!important; }
   #shopDetail { position:fixed; inset:0; z-index:75; display:none; align-items:center; justify-content:center;
       overflow:hidden; background:rgba(5,8,20,.92); backdrop-filter:blur(5px); }
   #shopDetail.on { display:flex; }
@@ -261,11 +261,11 @@
   #phoneUltWho { color:#f2d062; font-size:max(1.8dvh,12px); letter-spacing:.15em; }
   #phoneUltDesc { margin-top:.5dvh; font-size:max(2.2dvh,14px); }
   @media (max-width:700px) and (orientation:portrait) {
-    #shopShelf { inset:7dvh .25vw 7dvh; grid-template-columns:repeat(3,minmax(96px,1fr));
-        grid-template-rows:none; gap:.55dvh .25vw; align-content:start; padding:.35dvh; }
+    #shopShelf { inset:.7dvh .12vw 6.8dvh; grid-template-columns:repeat(3,minmax(96px,1fr));
+        grid-template-rows:none; gap:.25dvh .12vw; align-content:start; padding:.2dvh; }
     .shopProduct:nth-child(n) { grid-area:auto; }
-    .shopProduct .shopCard { width:min(32.5vw,23dvh); height:auto; max-width:none; }
-    #shopGold { left:2vw!important; top:1dvh!important; }
+    .shopProduct .shopCard { width:min(32.9vw,25dvh); height:auto; max-width:none; }
+    #shopGold { left:2vw!important; top:auto!important; bottom:1dvh; }
   }
   /* ドロー開帳 */
   #drawModal { position:fixed; inset:0; display:none; z-index:60; align-items:center;
@@ -291,6 +291,10 @@
   .dkCard.pick { cursor:pointer; }
   .dkCard.pick:active { transform:scale(.96); }
   .dkCard.pick .face { box-shadow:0 0 0 2px var(--gold), 0 4px 12px rgba(0,0,0,.5); }
+  .dkCard.picked .face { box-shadow:0 0 0 4px #68f0b3,0 0 2.2dvh rgba(78,242,171,.92),0 4px 12px rgba(0,0,0,.55); }
+  .dkCard.picked::after { content:'✓'; position:absolute; z-index:12; right:-.7dvh; top:-1dvh; width:4.4dvh; height:4.4dvh;
+      display:grid; place-items:center; border-radius:50%; color:#08251a; background:#8ff5c5; border:2px solid #fff3b2;
+      font:900 2.7dvh/1 sans-serif; box-shadow:0 0 1.4dvh rgba(91,245,181,.9); }
   .dkN { position:absolute; top:-.8dvh; right:-.8dvh; z-index:3; background:var(--gold);
       color:#241C05; font-size:2.2dvh; font-weight:700; border-radius:999px; padding:.2dvh 1.3dvh;
       box-shadow:0 2px 6px rgba(0,0,0,.5); font-variant-numeric:tabular-nums; }
@@ -381,10 +385,13 @@
       overflow:hidden; isolation:isolate; box-shadow:0 5px 16px rgba(0,0,0,.5); }
   .csCard:active { transform:scale(.97); }
   .csCard .csBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-3; }
-  .csCard .csArt { position:absolute; z-index:2; inset:10% 2% 16%; width:96%; height:74%; object-fit:contain;
+  .csCard .csArt { position:absolute; z-index:2; inset:9% 2% 12%; width:96%; height:79%; object-fit:contain;
+      transform:translate(var(--cs-x,0),var(--cs-y,7%)) scale(var(--cs-scale,1.42)); transform-origin:center 30%;
       filter:drop-shadow(0 0 5px rgba(255,255,255,.5)) drop-shadow(0 5px 8px rgba(0,0,0,.45)); }
-  .csCard .csTop { position:absolute; z-index:5; top:4%; left:5%; right:5%; height:10%; display:grid;
+  .csCard .csTop { position:absolute; z-index:6; top:2.5%; left:4%; right:4%; height:12%; display:grid;
       grid-template-columns:15% 1fr 15%; align-items:center; }
+  .csCard .csTop::before { content:""; position:absolute; z-index:-1; inset:-45% -10% -75%;
+      background:linear-gradient(180deg,rgba(4,8,18,.88),rgba(4,8,18,.58) 58%,transparent); pointer-events:none; }
   .csCard .csElem { width:100%; height:100%; display:grid; place-items:center; }
   .csCard .csElem svg { width:88%; height:88%; } .csCard .csElem svg * { fill:#fff !important; }
   .csCard .csName { grid-column:2; min-width:0; color:#fff4d5; font:700 clamp(14px,3dvh,24px)/1 Marudeco,sans-serif;
@@ -447,7 +454,8 @@
   .cdInfo .cdSec { padding:1dvh 0; border-bottom:2px solid rgba(23,37,54,.18); }
   .cdDeck { display:flex; gap:1dvh; overflow-x:auto; padding:.6dvh .3dvh 1dvh; }
   .cdDeckThumb { position:relative; flex:none; width:15dvh; aspect-ratio:300/470; overflow:hidden;
-      border-radius:1.2dvh; background:#24203d; box-shadow:0 3px 8px rgba(0,0,0,.35); isolation:isolate; }
+      border-radius:1.2dvh; background:#24203d; box-shadow:0 3px 8px rgba(0,0,0,.35); isolation:isolate; cursor:pointer; }
+  .cdDeckThumb:active { transform:scale(.96); }
   .cdDeckThumb .cdtBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-2; }
   .cdDeckThumb .cdtArt { position:absolute; inset:8% 4% 5%; width:92%; height:87%; display:grid; place-items:center;
       color:#fff4d5; filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)); }
@@ -1090,7 +1098,7 @@ function buildPickOv(title, sections, cancelId) {
     const total = sec.entries.reduce((a, e) => a + (e.n || 1), 0);
     return `<div class="dkSec">${sec.name}(${total}枚)</div><div class="dkGrid">` +
       sec.entries.map(e =>
-        `<div class="dkCard ${e.pickId ? 'pick' : 'dis'}" ${e.pickId ? `onclick="pickOvChoose('${e.pickId}')"` : ''}>
+        `<div class="dkCard ${e.pickId ? 'pick' : 'dis'} ${e.selected ? 'picked' : ''}" ${e.pickId ? `onclick="pickOvChoose('${e.pickId}')"` : ''}>
           ${bigCardHTML(e.card)}${e.n > 1 ? `<div class="dkN">×${e.n}</div>` : ''}
           ${e.zone ? `<div class="dkZoneTag">${e.zone}</div>` : ''}</div>`).join('') + '</div>';
   }).join('');
@@ -1480,15 +1488,27 @@ function creatureDetailInfoHTML(cid, cr, evo, includeModes) {
 }
 function renderGalleryDetail() {
   if (!galleryIds.length) return;
-  const cid = galleryIds[galleryDetailIndex], cr = state.catalog.CREATURES[cid];
-  if (!cr.evo) galleryDetailEvo = false;
-  const evo = galleryDetailEvo && !!cr.evo;
-  $('galZoomCard').innerHTML = `<div class="face front creatureCard">${creatureFaceBody(cid, cr, evo)}</div>`;
-  $('galZoomInfo').innerHTML = creatureDetailInfoHTML(cid, cr, evo, true);
+  const cid = galleryIds[galleryDetailIndex], C = state.catalog;
+  const cr = C.CREATURES[cid], spl = C.SPELLS && C.SPELLS[cid], sup = C.SUPPORTS && C.SUPPORTS[cid];
+  if (!cr || !cr.evo) galleryDetailEvo = false;
+  const evo = !!cr && galleryDetailEvo && !!cr.evo;
+  $('galZoomCard').innerHTML = cr
+    ? `<div class="face front creatureCard">${creatureFaceBody(cid, cr, evo)}</div>` : bigCardHTML(cid);
+  if (cr) {
+    $('galZoomInfo').innerHTML = creatureDetailInfoHTML(cid, cr, evo, true);
+    $('galZoomInfo').querySelector('[data-mode="base"]').onclick = () => { galleryDetailEvo = false; renderGalleryDetail(); };
+    const evoBtn = $('galZoomInfo').querySelector('[data-mode="evo"]');
+    if (cr.evo) evoBtn.onclick = () => { galleryDetailEvo = true; renderGalleryDetail(); };
+  } else if (spl) {
+    $('galZoomInfo').innerHTML = `<div class="galDetailScroll"><h2 class="galDetailName">${spl.name}</h2>
+      <div class="galMeta"><span class="galBadge">スペル</span><span class="galBadge">${spl.rarity || 'N'}</span><span class="galBadge">${spl.cost || 0}G</span></div>
+      <h3 class="galAbilityName">効果</h3><p class="galAbilityText">${spl.desc || '効果なし'}</p></div>`;
+  } else if (sup) {
+    $('galZoomInfo').innerHTML = `<div class="galDetailScroll"><h2 class="galDetailName">${sup.name}</h2>
+      <div class="galMeta"><span class="galBadge">支援カード</span><span class="galBadge">${supportPower(sup)}</span></div>
+      <h3 class="galAbilityName">効果</h3><p class="galAbilityText">${supportDescription(sup)}</p></div>`;
+  }
   $('galZoomPosition').textContent = `${galleryDetailIndex + 1} / ${galleryIds.length}`;
-  $('galZoomInfo').querySelector('[data-mode="base"]').onclick = () => { galleryDetailEvo = false; renderGalleryDetail(); };
-  const evoBtn = $('galZoomInfo').querySelector('[data-mode="evo"]');
-  if (cr.evo) evoBtn.onclick = () => { galleryDetailEvo = true; renderGalleryDetail(); };
   afterUiPaint(() => fitCreatureNames($('galZoomCard')));
 }
 function openGalleryDetail(cid) {
@@ -1500,8 +1520,16 @@ function openGalleryDetail(cid) {
 function moveGalleryDetail(step) {
   if (!galleryIds.length) return;
   galleryDetailIndex = (galleryDetailIndex + step + galleryIds.length) % galleryIds.length;
-  if (!state.catalog.CREATURES[galleryIds[galleryDetailIndex]].evo) galleryDetailEvo = false;
+  const cr = state.catalog.CREATURES[galleryIds[galleryDetailIndex]];
+  if (!cr || !cr.evo) galleryDetailEvo = false;
   renderGalleryDetail();
+}
+function openStarterDeckDetail(charId, cid) {
+  galleryIds = [...new Set((state.catalog.STARTER_DECKS && state.catalog.STARTER_DECKS[charId]) || [])];
+  galleryDetailIndex = Math.max(0, galleryIds.indexOf(cid));
+  galleryDetailEvo = false;
+  renderGalleryDetail();
+  $('galZoom').classList.add('on');
 }
 function applyGalleryFlip(animate) {
   document.querySelectorAll('#gGrid .flip').forEach((f, i) => {
@@ -1570,7 +1598,6 @@ function shopCompactHTML(item, visit) {
   }
   return `<div class="shopCompact ${cr ? 'creature' : spl ? 'spell' : sup ? 'support' : 'remove'}">${bg}
     <div class="shopCompactShade"></div><div class="shopCompactName" data-card-name>${name}</div>
-    ${(spl?.exileAfterUse || sup?.exileAfterUse) ? '<div class="shopCompactExile">廃棄</div>' : ''}
     <div class="shopCompactArt">${art}</div><div class="shopCompactFooter">
       <div class="shopCompactPrice">${shopPriceHTML(item, visit)}</div>${stats || `<div class="shopCompactKind">${kind}</div>`}
     </div></div>`;
@@ -1603,9 +1630,9 @@ function charDeckCards(id) {
   const deck = (state.catalog.STARTER_DECKS && state.catalog.STARTER_DECKS[id]) || [];
   const counts = new Map();
   deck.forEach(c => counts.set(c, (counts.get(c) || 0) + 1));
-  return [...counts.entries()].map(([c, n]) => charDeckThumb(c, n)).join('');
+  return [...counts.entries()].map(([c, n]) => charDeckThumb(c, n, id)).join('');
 }
-function charDeckThumb(c, n) {
+function charDeckThumb(c, n, charId) {
   const C = state.catalog, cr = C.CREATURES[c], spl = C.SPELLS && C.SPELLS[c], sup = C.SUPPORTS && C.SUPPORTS[c];
   let bg = '/assets/cards/bg-neutral.webp', art = '';
   if (cr) {
@@ -1620,7 +1647,8 @@ function charDeckThumb(c, n) {
     bg = '/assets/cards/bg-weapon-v1.webp';
     art = supportArt(c);
   }
-  return `<div class="cdDeckThumb" title="${n}枚"><img class="cdtBg" src="${bg}" alt=""><div class="cdtArt">${art}</div><span class="cdtCount">×${n}</span></div>`;
+  return `<div class="cdDeckThumb" role="button" tabindex="0" data-card="${c}" title="${n}枚"
+      onclick="openStarterDeckDetail('${charId}','${c}')"><img class="cdtBg" src="${bg}" alt=""><div class="cdtArt">${art}</div><span class="cdtCount">×${n}</span></div>`;
 }
 function closeCharDetail() {
   charPreview = null;
@@ -1628,6 +1656,10 @@ function closeCharDetail() {
   $('charDetail').classList.remove('on');
   $('charDetail').innerHTML = '';
 }
+const CHAR_SELECT_FOCUS = {
+  redani:[1.44,'0%','8%'], linnei:[1.46,'0%','8%'], grease:[1.40,'0%','9%'],
+  mio:[1.45,'0%','8%'], lia:[1.48,'0%','10%'], adel:[1.46,'0%','9%'], villa:[1.48,'0%','9%']
+};
 function confirmCharacter(id) {
   if (charSubmitting) return;
   const p = pend();
@@ -1675,7 +1707,9 @@ function renderCharSelection(m, C, p) {
     const mine = m.charId === id;
     const enabled = opts.includes(id);
     const elemIcon = `<span class="csElem"><svg viewBox="-34 -36 68 72">${ELEM_MINI[c.elem]}</svg></span>`;
-    return `<div class="csCard ${mine ? 'mine' : ''} ${(!enabled && !mine) ? 'dim' : ''}" data-id="${id}">
+    const focus = CHAR_SELECT_FOCUS[id] || [1.42,'0%','7%'];
+    return `<div class="csCard ${mine ? 'mine' : ''} ${(!enabled && !mine) ? 'dim' : ''}" data-id="${id}"
+      style="--cs-scale:${focus[0]};--cs-x:${focus[1]};--cs-y:${focus[2]}">
       <img class="csBg" src="/assets/cards/bg-${c.elem}.webp" alt=""><div class="csTop">${elemIcon}<div class="csName">${c.name}</div></div>
       <img class="csArt" src="/assets/full_${id}.png" alt="${c.name}"><div class="csBottom">${c.style || ''}</div>
       ${(mine || taken) ? `<div class="csState">${mine ? '選択済み' : taken.name + 'が使用中'}</div>` : ''}</div>`;
@@ -2132,7 +2166,7 @@ function render() {
     const cardOpts = p.options.filter(o => o.id.startsWith('vr:') && o.id !== 'vr:confirm');
     buildPickOv(`墓守の協奏曲 ─ 廃棄から回収　選択中 ${picked.size}/3`, [
       { name:'廃棄', entries:cardOpts.map(o => ({ card:o.card, pickId:o.id,
-          zone:picked.has(+o.id.slice(3)) ? '選択済み' : 'タップして選択' })) },
+          selected:picked.has(+o.id.slice(3)), zone:picked.has(+o.id.slice(3)) ? '選択済み' : 'タップして選択' })) },
     ], null);
     $('deckScroll').innerHTML += '<button class="abtn" style="display:block;margin:2dvh auto 4dvh" onclick="pickOvChoose(\'vr:confirm\')">決定</button>';
   } else if (p.type === 'curse_target' || p.type === 'quake_target' || p.type === 'ult_mio' || p.type === 'ult_lia' ||

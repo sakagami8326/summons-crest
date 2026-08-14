@@ -7,8 +7,8 @@ const server = fs.readFileSync('server.js', 'utf8');
 const pkg = require('./package.json');
 const css = (phone.match(/<style>([\s\S]*?)<\/style>/) || ['', ''])[1];
 
-if (!/const VERSION = '1\.24';/.test(server) || pkg.version !== '1.24.0' || !/board 1\.24/.test(board))
-  throw new Error('バージョン検査: v1.24へ統一されていない');
+if (!/const VERSION = '1\.25';/.test(server) || pkg.version !== '1.25.0' || !/board 1\.25/.test(board))
+  throw new Error('バージョン検査: v1.25へ統一されていない');
 
 const pawn = fs.readFileSync('public/assets/p_adel.png');
 if (pawn.toString('ascii', 1, 4) !== 'PNG' || pawn.readUInt32BE(16) !== 190 || pawn.readUInt32BE(20) !== 227)
@@ -25,8 +25,8 @@ if (!/id="shopKeeper"/.test(board) || !/id="shopBubble"/.test(board))
 if (!/#shopShelf\s*\{[^}]*grid-template-columns:repeat\(10,minmax\(0,1fr\)\)[^}]*grid-template-rows:repeat\(2/.test(css) ||
     !/\.shopProduct:nth-child\(9\)\s*\{\s*grid-area:2\/8\/3\/10/.test(css))
   throw new Error('商品配置検査: 5+4商品の10分割グリッドになっていない');
-if (!/\.shopProduct \.shopCard\s*\{[^}]*height:min\(33dvh[^}]*aspect-ratio:4\/5/.test(css) ||
-    !/gap:\.35dvh \.22vw/.test(css))
+if (!/\.shopProduct \.shopCard\s*\{[^}]*height:min\(41\.5dvh[^}]*aspect-ratio:4\/5/.test(css) ||
+    !/gap:\.16dvh \.08vw/.test(css))
   throw new Error('商品サイズ検査: コンパクトカードの寸法または余白が不正');
 
 if (!/function shopCompactHTML\(item, visit\)/.test(phone) ||

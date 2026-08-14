@@ -20,7 +20,7 @@ for (const fn of ['galleryCreatureIds','renderGalleryDetail','openGalleryDetail'
   ok(new RegExp(`function ${fn}\\(`).test(html), `${fn} exists`);
 ok(/const GALLERY_ELEM_ORDER = \{ fire:0, wind:1, earth:2, water:3 \}/.test(html), 'element order is fire, wind, earth, water, neutral fallback');
 ok(/galleryDetailIndex \+ step \+ galleryIds\.length\) % galleryIds\.length/.test(html), 'previous and next navigation wraps');
-ok(/if \(!state\.catalog\.CREATURES\[galleryIds\[galleryDetailIndex\]\]\.evo\) galleryDetailEvo = false/.test(html), 'non-evolving card resets detail to base form');
+ok(/const cr = state\.catalog\.CREATURES\[galleryIds\[galleryDetailIndex\]\];\s*if \(!cr \|\| !cr\.evo\) galleryDetailEvo = false/.test(html), 'non-evolving or non-creature card resets detail to base form');
 ok(/galleryDetailEvo = galleryEvo && !!state\.catalog\.CREATURES\[cid\]\.evo/.test(html), 'detail initially inherits the gallery evolution toggle');
 ok(!/\$\('galZoom'\)\.onclick\s*=/.test(html), 'detail backdrop does not close the view');
 ok(/body\.ingame \{ background:url\('\/assets\/ui\/phone-game-bg-v1\.png'\)/.test(html), 'phone game uses summoner-select background');

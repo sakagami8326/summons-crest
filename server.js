@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.24';
+const VERSION = '1.25';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
@@ -601,7 +601,7 @@ function resolveUltSequence(r) {
     p.bonusRollPending = true;
     r.ultSequence = null;
     return performMove(r, p, steps,
-      { value: steps, ultimate: true, villaUlt: true },
+      { value: steps, ultimate: true, villaUlt: true, presentation: 'villa_move', moveSteps: steps },
       `【墓守の協奏曲】廃棄${steps}枚の力で${steps}マス進んだ`);
   }
   r.ultSequence = null;
@@ -804,7 +804,8 @@ function performMove(r, p, steps, meta, moveLabel) {
   // 初回の移動時: ダイスの後に進行方向を選ぶ(矢印UI)
   if (!p.dir) {
     const at = stamp(r);
-    r.lastDice = Object.assign({ player: p.id, at, noMove: true }, meta);  // 出目だけ先に見せる
+    r.lastDice = Object.assign({ player: p.id, at, noMove: true }, meta,
+      meta && meta.villaUlt ? { suppressPresentation: true } : null);  // ヴィラ演出は方向決定後に見せる
     r.dirPend = { steps, meta: Object.assign({}, meta, { at }), moveLabel };
     return ask(r, p.id, 'direction', `${steps}が出た! どちらの方向へ進む?`, [
       { id: 'dir:1', label: '⬅ 左回りに進む' },
@@ -1265,6 +1266,8 @@ function resolveBattle(r) {
     defPreAt: defSt - (dEff ? dEff.st : 0), defPostAt: defSt,
     defPreHp: effHp, defPostHp: effHp,
     defPreDf: Math.max(0, defDF - (dEff ? dEff.hp : 0)), defPostDf: defDF,
+    atkExileCount: (atk.exile || []).length, defExileCount: (def.exile || []).length,
+    atkSoulBonus: atkSoul, defSoulBonus: defSoul,
     hits: hitsDone, preempt,
     moveFrom: b.moveFrom,
     remainHp: win ? 0 : effHp - dealt,
@@ -1870,7 +1873,10 @@ function handleChoose(r, playerId, optionId) {
     log(r, `${p.name}は${p.dir === 1 ? '左回り' : '右回り'}に進むことにした(以後変更不可)`);
     const dp = r.dirPend;
     r.dirPend = null;
-    if (dp) return performMove(r, p, dp.steps, dp.meta, dp.moveLabel);
+    if (dp) {
+      if (dp.meta && dp.meta.villaUlt) delete dp.meta.at;
+      return performMove(r, p, dp.steps, dp.meta, dp.moveLabel);
+    }
     return askRoll(r, p);
   }
   if (pend.type === 'select_wait') {
