@@ -18,7 +18,8 @@ ok(Number(G.VERSION) >= 1.06, 'version is v1.06 or newer');
 const server = fs.readFileSync(path.join(__dirname, 'server.js'), 'utf8');
 const board = fs.readFileSync(path.join(__dirname, 'public/board.html'), 'utf8');
 const phone = fs.readFileSync(path.join(__dirname, 'public/phone.html'), 'utf8');
-ok(server.includes("return startDraft(r, p, 'tile', availableAt)"), 'castle draft has presentation gate');
+ok(server.includes("return startDraft(r, p, meta && meta.villaUlt ? 'villa_recover' : 'tile', availableAt)"),
+  'castle draft has presentation gate and Villa resume target');
 ok(server.includes("error: '城の帰還演出中です'"), 'early HTTP selection is rejected');
 ok(server.includes('healed.push({ tile: i, creature:'), 'healing details retain before/after data');
 ok(board.includes('id="castleBreakdown"') && board.includes('領地総価値'), 'TV has detailed castle panel');

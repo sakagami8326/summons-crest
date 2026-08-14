@@ -77,7 +77,8 @@ function runGame(seed) {
           // 旧セーブ互換: 移動元が先に空き地になる戦闘はクリーチャーを「戦闘中ゾーン」として数える
           const inBattle = r.battle && r.battle.corridor && r.battle.attacker === q.id ? 1 : 0;
           const total = (q.deck || []).length + (q.hand || []).length +
-                        (q.discard || []).length + (q.exile || []).length + board + inBattle +
+                        (q.discard || []).length + (q.exile || []).length +
+                        (q.resolving || []).length + board + inBattle +
                         (q.pickCards || []).length;  // v0.61: 選択ドロー中の候補もカードとして数える
           if (totals[q.id] !== undefined && total < totals[q.id])
             throw new Error(`カード消滅検出: ${q.name} ${totals[q.id]}→${total} (直前の選択: ${opt.id})`);

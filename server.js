@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.23';
+const VERSION = '1.24';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
@@ -37,9 +37,12 @@ const CHAR_DECKS = {
   adel:   ['survey', 'survey', 'survey', 'palecoral', 'palecoral', 'orphe',
            'sp_gold', 'sp_insight', 'sp_abyssal_pearl',
            'shield', 'shield', 'jinx'],
+  villa:  ['gaust', 'gaust', 'alter', 'alter', 'marlow', 'cleo',
+           'sp_gold', 'sp_insight', 'sp_fatal_reward',
+           'shield', 'weapon', 'jinx'],
 };
 // 廃棄スペル(使用後ゲームから除外)
-const EXILE_SPELLS = new Set(['sp_quake', 'sp_ward', 'sp_volcanic_core', 'sp_abyssal_pearl', 'sp_earth_mother_stone', 'sp_sky_crystal']);
+let EXILE_SPELLS = new Set();
 const shuffle = a => a.sort(() => Math.random() - 0.5);
 // 山札から引く(足りなければ捨て札をシャッフルして新しい山札に)
 function drawCards(r, p, n) {
@@ -131,6 +134,10 @@ const CREATURES = {
              fx: '【風渡り】自領地停止時、配置中のマーロー1体を空いている風属性土地へ移動できる', rarity: 'R' },
   shuterio:{ name: 'シュテリオ', evo: 'エアロシュティレ', elem: 'wind', st: 30, hp: 30, cost: 70,
              evoSt: 40, evoHp: 50, fx: '【支援】戦闘時、手札のクリーチャーを支援カードとして使える', rarity: 'R' },
+  gaust:   { name: 'ガウスト', evo: 'マスターガウスト', elem: 'wind', st: 30, hp: 30, cost: 70,
+             evoSt: 40, evoHp: 50, fx: '【魂の選別】配置時、1枚引き、手札1枚を廃棄する', rarity: 'N' },
+  alter:   { name: 'オルター', evo: 'オルボロス', elem: 'wind', st: 30, hp: 40, cost: 70,
+             evoSt: 40, evoHp: 50, fx: '【魂喰らい】戦闘時、自分の廃棄1枚につきAT・DF+5', rarity: 'R' },
 };
 const ITEMS = {}; // v0.34: 呪いアイテムは廃止(スペル「衰弱の呪文」に移行)
 const SPELLS = {
@@ -140,18 +147,18 @@ const SPELLS = {
                desc: '敵領地を1つ選び、そのクリーチャーに20ダメージ(回復しない)。HPが0以下になると滅び、土地は空き地になる' },
   sp_gale:   { name: 'ダブルロール', rarity: 'R', cost: 30,
                desc: 'このターン、サイコロを2個振って移動する' },
-  sp_quake:  { name: '地割れ', rarity: 'R', cost: 300,
+  sp_quake:  { name: '地割れ', rarity: 'R', cost: 300, exileAfterUse: true,
                desc: '敵の領地1つのレベルを1下げる(Lv1には無効)' },
   sp_step:   { name: 'ムーブ', rarity: 'R', cost: 40,
                desc: '自分の領地のクリーチャー1体を隣のマスへ移動。空き地なら新たな領地(Lv1)に、敵領地ならそのまま侵略(通行料なし)' },
   // ---- v0.56 追加スペル(スペル追加仕様v0.53) ----
-  sp_volcanic_core:     { name: 'フレイム・シフト', rarity: 'R', cost: 80,
+  sp_volcanic_core:     { name: 'フレイム・シフト', rarity: 'R', cost: 80, exileAfterUse: true,
     desc: '自分の領地1つを火属性に変更する' },
-  sp_abyssal_pearl:     { name: 'アクア・シフト', rarity: 'R', cost: 80,
+  sp_abyssal_pearl:     { name: 'アクア・シフト', rarity: 'R', cost: 80, exileAfterUse: true,
     desc: '自分の領地1つを水属性に変更する' },
-  sp_earth_mother_stone:{ name: 'アース・シフト', rarity: 'R', cost: 80,
+  sp_earth_mother_stone:{ name: 'アース・シフト', rarity: 'R', cost: 80, exileAfterUse: true,
     desc: '自分の領地1つを土属性に変更する' },
-  sp_sky_crystal:       { name: 'ウィンド・シフト', rarity: 'R', cost: 80,
+  sp_sky_crystal:       { name: 'ウィンド・シフト', rarity: 'R', cost: 80, exileAfterUse: true,
     desc: '自分の領地1つを風属性に変更する' },
   sp_flame_vortex:      { name: '炎の渦', rarity: 'R', cost: 100,
     desc: '敵領地に10ダメージを与える。次にその領地へ侵略するクリーチャーはAT+10' },
@@ -161,12 +168,14 @@ const SPELLS = {
     desc: '自分の負傷した領地1つを20回復し、次の戦闘でDF+10' },
   sp_wind_shift:        { name: '風向転換', rarity: 'R', cost: 30,
     desc: 'このターンだけ、通常とは逆方向へ移動する' },
-  sp_ward:   { name: 'バリア', rarity: 'R', cost: 80,
+  sp_ward:   { name: 'バリア', rarity: 'R', cost: 80, exileAfterUse: true,
                desc: 'あなたの次の手番まで、自分の領地は侵略されない' },
   sp_move:   { name: 'スイッチ', rarity: 'R', cost: 40,
                desc: '自分の領地2つのクリーチャーを入れ替える(負傷も一緒に移動)' },
   sp_insight:{ name: 'ダブルドロー', rarity: 'N', cost: 40,
                desc: 'カードを2枚引く' },
+  sp_fatal_reward:{ name: 'フェイタルリワード', rarity: 'N', cost: 80,
+               desc: 'カードを1枚引き、その後手札1枚を廃棄する' },
   sp_swap:   { name: 'チェンジ', rarity: 'R', cost: 30,
                desc: '自分の領地のクリーチャーを手札のクリーチャーと交代する(召喚コスト別途。元のクリーチャーは捨て札へ・負傷は回復)' },
   sp_dice_1: { name: 'ダイス1', rarity: 'R', cost: 50, fixedDice: 1,
@@ -183,12 +192,13 @@ const SPELLS = {
                desc: 'このターン、ダイスの出目を6に固定する' },
 };
 const SUPPORTS = {
-  weapon:  { name: '武器',   st: 20, hp: 0,  cost: 60 },
-  gweapon: { name: '重武器', st: 40, hp: 0,  cost: 120 },
-  shield:  { name: '盾',     st: 0,  hp: 20, cost: 60 },
-  gshield: { name: '大盾',   st: 0,  hp: 40, cost: 120 },
-  jinx:    { name: '呪具',   st: 0,  hp: 0,  cost: 100, jinx: true },
+  weapon:  { name: '武器',   st: 20, hp: 0,  cost: 60, exileAfterUse: true },
+  gweapon: { name: '重武器', st: 40, hp: 0,  cost: 120, exileAfterUse: true },
+  shield:  { name: '盾',     st: 0,  hp: 20, cost: 60, exileAfterUse: true },
+  gshield: { name: '大盾',   st: 0,  hp: 40, cost: 120, exileAfterUse: true },
+  jinx:    { name: '呪具',   st: 0,  hp: 0,  cost: 100, jinx: true, exileAfterUse: true },
 };
+EXILE_SPELLS = new Set(Object.entries(SPELLS).filter(([, sp]) => sp.exileAfterUse).map(([id]) => id));
 const CHARS = {
   redani: { name: 'レダーニ', color: '#D85A30', elem: 'fire',
             style: '侵略・攻撃', deckNote: 'ゲッコー2+武器2 ─ 衰弱で崩して攻める' },
@@ -203,7 +213,7 @@ const CHARS = {
   adel:   { name: 'アーデル', color: '#9DDFF2', elem: 'water',
             style: '回復・クリーチャー支援', deckNote: '水連鎖を築き、支援と回復で守り抜く', selectable: true, upcoming: false },
   villa:  { name: 'ヴィラ',   color: '#42B875', elem: 'wind',
-            style: '墓守・調律', deckNote: '初期デッキと固有スキル効果は調整中', selectable: false, upcoming: true },
+            style: '廃棄・墓守戦術', deckNote: '廃棄を蓄え、魂喰らいと墓守の協奏曲で再利用する', selectable: true, upcoming: false },
 };
 const ULTS = {
   redani: { name: '烈火の進軍', desc: 'サイコロを3個振って移動する' },
@@ -212,13 +222,13 @@ const ULTS = {
   mio:    { name: '追い風の導き', desc: '好きなマスへ移動して止まる' },
   lia:    { name: '紅蓮の方程式', desc: '敵領地を最大3か所選び、炎の渦を発生させる' },
   adel:   { name: '氷晶の勅令', desc: '自分の全クリーチャーを20回復し、次の防衛戦闘でDF+10' },
-  villa:  { name: '墓守の協奏曲', desc: '効果調整中' },
+  villa:  { name: '墓守の協奏曲', desc: '廃棄枚数だけ進み、廃棄から最大3枚を手札へ戻す。その後ダイスを振る' },
 };
 for (const [cid, c] of Object.entries({ ...CREATURES }))
   if (c.evo) CREATURES[cid + '_f'] = { name: c.evo, elem: c.elem, st: c.evoSt, hp: c.evoHp,
     cost: c.cost, fx: c.evoFx || c.fx, rarity: c.rarity, forged: true };
 
-const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral','bunnyhop','strauk','samurai_saga','marlow','shuterio'];
+const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral','bunnyhop','strauk','samurai_saga','marlow','shuterio','gaust','alter'];
 // アートが存在するクリーチャーID(assetsのc_*.pngを起動時に走査 ─ v0.82)。
 // クライアントはcatalog.artIds経由で受け取る。手書きリストの二重管理はしない
 // (新クリーチャーはIDとファイル名を一致させて置くだけで盤面・カード・戦闘に反映される)
@@ -367,6 +377,30 @@ function onSpellCast(r, p) {
 function universalTerrain(creatureId) {
   return ['cleo', 'strauk', 'samurai_saga'].includes(baseId(creatureId));
 }
+function cardName(cardId) {
+  return (CREATURES[cardId] || SPELLS[cardId] || SUPPORTS[cardId] || { name: cardId }).name;
+}
+function askMandatoryHandExile(r, p, type, prompt, extra = {}) {
+  if (!p.hand.length) return false;
+  ask(r, p.id, type, prompt, p.hand.map((c, i) => ({
+    id: (type === 'gaust_exile' ? 'gx:' : 'fe:') + i, card: c,
+    label: `${cardName(c)}を廃棄`,
+  })));
+  Object.assign(r.pending[p.id], extra);
+  return true;
+}
+function resumeAfterPlacement(r, p, pend) {
+  if (pend.after === 'swap') return askRoll(r, p);
+  if (pend.after === 'battle') {
+    const winner = pById(r, pend.battleWinner || p.id);
+    if (winner && !winner.bankrupt) {
+      log(r, `戦勝の報酬 ─ ${winner.name}は3枚のカードから1枚を選ぶ`);
+      return startDraft(r, winner, 'battle');
+    }
+    return settleAll(r);
+  }
+  return endTurn(r);
+}
 function onCreatureSummoned(r, p, creatureId, reason, tile) {
   if (!['summon', 'swap', 'battle'].includes(reason)) return false;
   if (baseId(creatureId) === 'cresteria' && reason !== 'battle') {
@@ -376,6 +410,13 @@ function onCreatureSummoned(r, p, creatureId, reason, tile) {
   if (baseId(creatureId) === 'trooper' && !isEvolved({ creature: creatureId })) {
     gainToDeck(r, p, ['sp_flame_vortex']);
     log(r, `【火種】${CREATURES.trooper.name}の配置で「炎の渦」1枚を山札へ加えた`);
+  }
+  if (baseId(creatureId) === 'gaust') {
+    const got = drawCards(r, p, 1);
+    if (got) r.lastDraw = { player: p.id, n: got, reason: 'gaust', at: stamp(r) };
+    log(r, `【魂の選別】${CREATURES.gaust.name}の配置で${got ? 'カードを1枚引いた' : '引けるカードがなかった'}`);
+    if (askMandatoryHandExile(r, p, 'gaust_exile', '【魂の選別】廃棄する手札を1枚選ぶ', { after: reason, tile }))
+      return true;
   }
   if (baseId(creatureId) !== 'samurai_saga' || !Number.isInteger(tile)) return false;
   ask(r, p.id, 'samurai_elem', '【地脈改変】この土地の属性を変更しますか?', [
@@ -551,6 +592,17 @@ function resolveUltSequence(r) {
     log(r, `🔥 ${p.name}は${results.length}か所に炎の渦を発生させた`);
     spellFx(r, 'sp_flame_vortex', results.map(x => x.tile), p.id,
       { source: 'ult_lia', sequence: true, results });
+  } else if (seq.charId === 'villa') {
+    const steps = Math.max(0, Number(d.steps) || 0);
+    if (!steps) {
+      r.ultSequence = null;
+      return askRoll(r, p);
+    }
+    p.bonusRollPending = true;
+    r.ultSequence = null;
+    return performMove(r, p, steps,
+      { value: steps, ultimate: true, villaUlt: true },
+      `【墓守の協奏曲】廃棄${steps}枚の力で${steps}マス進んだ`);
   }
   r.ultSequence = null;
   return askRoll(r, p);
@@ -561,6 +613,8 @@ function askRoll(r, p) {
     ? r.owners.some(o => o && o.player !== p.id)
     : p.charId === 'adel'
       ? r.owners.some(o => o && o.player === p.id)
+      : p.charId === 'villa'
+        ? (p.exile || []).length > 0
       : true;
   if (!p.fixedDice && !p.ultUsed && ULTS[p.charId] && ultAvailable)
     opts.push({ id: 'ult', label: `固有スキル【${ULTS[p.charId].name}】` });
@@ -603,6 +657,21 @@ function askLiaUlt(r, p, selected = []) {
   opts.push({ id: 'lu:cancel', label: 'やめる' });
   ask(r, p.id, 'ult_lia', '🔥【紅蓮の方程式】炎の渦を発生させる敵領地を1〜3か所選択', opts);
   r.pending[p.id].selected = chosen;
+}
+function startVillaRecovery(r, p, availableAt = 0, selected = []) {
+  const valid = new Set((p.exile || []).map((_, i) => i));
+  const chosen = [...new Set(selected.map(Number))].filter(i => valid.has(i)).slice(0, 3);
+  const opts = [];
+  (p.exile || []).forEach((c, i) => {
+    if (chosen.length >= 3 && !chosen.includes(i)) return;
+    opts.push({ id: 'vr:' + i, card: c,
+      label: `${chosen.includes(i) ? '✓ ' : ''}${cardName(c)}` });
+  });
+  opts.push({ id: 'vr:confirm', label: `決定(${chosen.length}枚回収)` });
+  ask(r, p.id, 'ult_villa_recover',
+    `【墓守の協奏曲】廃棄から0〜3枚を手札へ戻す ─ 選択中 ${chosen.length}/3`, opts);
+  Object.assign(r.pending[p.id], { selected: chosen });
+  if (availableAt && Date.now() < availableAt) r.pending[p.id].availableAt = availableAt;
 }
 // ===== v0.61 選択ドロー: 手番開始時、山札から2枚見て1枚を手札へ・1枚を捨て札へ =====
 // 選択ドロー: 山札からn枚見て1枚を手札へ、残りは捨て札へ。
@@ -705,6 +774,11 @@ const HAND_LIMIT = 7;
 function endTurn(r) {
   // 手札上限: 8枚以上なら7枚になるまで捨てさせてから手番を渡す
   const p = cur(r);
+  // 墓守の協奏曲の停止マス処理後は、手番を渡さず通常のダイスへ戻る。
+  if (p && p.bonusRollPending && !p.bankrupt && r.phase === 'playing') {
+    p.bonusRollPending = false;
+    return askRoll(r, p);
+  }
   if (p) p.windShift = false;  // 風向転換はターン終了で解除
   if (p && !p.bankrupt && p.hand && p.hand.length > HAND_LIMIT) {  // 破産者に捨て札選択はさせない
     const opts = [...new Set(p.hand)].map(c => ({
@@ -783,7 +857,7 @@ function performMove(r, p, steps, meta, moveLabel) {
     if (points(r, p) >= ASSET_GOAL) {
       return declareWin(r, p, `総資産${points(r, p)}Gで城に凱旋!`);
     }
-    return startDraft(r, p, 'tile', availableAt);
+    return startDraft(r, p, meta && meta.villaUlt ? 'villa_recover' : 'tile', availableAt);
   }
   if (noSeal) {
     const initial = meta.multi ? GAME_TIMING.moveStartDelayMulti : GAME_TIMING.moveStartDelay;
@@ -797,6 +871,8 @@ function performMove(r, p, steps, meta, moveLabel) {
     r.lastDice.castle = null;
     log(r, `${p.name}は${moveLabel}`);
   }
+  if (meta && meta.villaUlt) return startVillaRecovery(r, p,
+    r.lastDice && r.lastDice.castle ? r.lastDice.castle.availableAt : 0);
   resolveTile(r, p);
 }
 function doRoll(r, p) {
@@ -1044,7 +1120,7 @@ function consumeBattleSupport(r, pid, choice) {
     p.gold = Math.max(0, p.gold - cost);
     p.discard.push(c.cardId);
   } else {
-    p.exile.push(c.cardId);
+    (SUPPORTS[c.cardId].exileAfterUse ? p.exile : p.discard).push(c.cardId);
   }
 }
 function resolveBattle(r) {
@@ -1081,6 +1157,10 @@ function resolveBattle(r) {
   const carried = o.dmg || 0;
   const atkEvolved = aEvo || /_f$/.test(b.atkCreature);
   let st = aBase.st + (aEff ? aEff.st : 0);
+  const atkSoul = baseId(b.atkCreature) === 'alter' ? (atk.exile || []).length * 5 : 0;
+  const defSoul = baseId(o.creature) === 'alter' ? (def.exile || []).length * 5 : 0;
+  if (atkSoul) { st += atkSoul; notes.push(`【魂喰らい】廃棄${atk.exile.length}枚で侵略側AT・DF+${atkSoul}!`); }
+  if (defSoul) notes.push(`【魂喰らい】廃棄${def.exile.length}枚で防衛側AT・DF+${defSoul}!`);
   if (baseId(b.atkCreature) === 'grayble' && carried > 0) {
     const chase = atkEvolved ? 20 : 10;
     st += chase;
@@ -1129,7 +1209,7 @@ function resolveBattle(r) {
   if (iceWard) notes.push('【氷晶の勅令】防衛DF+10!');
   const shadeDF = baseId(o.creature) === 'beruf' ? (o.shade || 0) * 10 : 0;
   if (shadeDF) notes.push(`【死影】蓄えた影が防衛DFを${shadeDF}高める!`);
-  let defDF = terrain + queenBonus + (dEff ? dEff.hp : 0) + upliftDF + boneArmor + iceWard + shadeDF;
+  let defDF = terrain + queenBonus + (dEff ? dEff.hp : 0) + upliftDF + boneArmor + iceWard + shadeDF + defSoul;
   if (corrosion) {
     const reduced = Math.min(defDF, corrosion);
     defDF = Math.max(0, defDF - corrosion);
@@ -1140,10 +1220,10 @@ function resolveBattle(r) {
   const atkShadeDF = baseId(b.atkCreature) === 'beruf'
     ? ((mvSrc && mvSrc.shade) || b.atkShade || 0) * 10 : 0;
   if (atkShadeDF) notes.push(`【死影】蓄えた影が侵略側DFを${atkShadeDF}高める!`);
-  const atkDF = (aEff ? aEff.hp : 0) + atkShadeDF;
+  const atkDF = (aEff ? aEff.hp : 0) + atkShadeDF + atkSoul;
   const atkCarried = mvSrc ? (mvSrc.dmg || 0) : (corridor ? (b.atkCarry || 0) : 0);
   const atkEffHp = Math.max(1, aBase.hp - atkCarried);
-  const defSt = dBase.st + (dEff ? dEff.st : 0);
+  const defSt = dBase.st + (dEff ? dEff.st : 0) + defSoul;
 
   // ===== v0.57 戦闘シーケンス: 戦闘耐久値 = 現在HP + DF =====
   const hits = baseId(b.atkCreature) === 'avalanche' ? 2 : 1;      // 【双撃】侵略時のみ2回
@@ -1181,7 +1261,7 @@ function resolveBattle(r) {
     atkHp: atkEffHp, atkDf: atkDF, counterSt, counterDealt, atkSurvived,
     atkPreAt: atkDmg - (aEff ? aEff.st : 0), atkPostAt: atkDmg,
     atkPreHp: atkEffHp, atkPostHp: atkEffHp,
-    atkPreDf: 0, atkPostDf: atkDF,
+    atkPreDf: atkSoul + atkShadeDF, atkPostDf: atkDF,
     defPreAt: defSt - (dEff ? dEff.st : 0), defPostAt: defSt,
     defPreHp: effHp, defPostHp: effHp,
     defPreDf: Math.max(0, defDF - (dEff ? dEff.hp : 0)), defPostDf: defDF,
@@ -1300,6 +1380,49 @@ function handleChoose(r, playerId, optionId) {
     return resolvePickDraw(r, p, +optionId.slice(3));  // optionIdはpd:0/pd:1のみ(冒頭で検証済み)
   }
 
+  if (pend.type === 'gaust_exile') {
+    const i = +optionId.slice(3);
+    if (i >= 0 && i < p.hand.length) {
+      const card = p.hand.splice(i, 1)[0];
+      p.exile.push(card);
+      log(r, `【魂の選別】${p.name}は「${cardName(card)}」を廃棄した`);
+    }
+    return resumeAfterPlacement(r, p, pend);
+  }
+
+  if (pend.type === 'fatal_exile') {
+    const i = +optionId.slice(3);
+    if (i >= 0 && i < p.hand.length) {
+      const card = p.hand.splice(i, 1)[0];
+      p.exile.push(card);
+      log(r, `フェイタルリワード ─ ${p.name}は「${cardName(card)}」を廃棄した`);
+    }
+    const resolving = Array.isArray(p.resolving) ? p.resolving : [];
+    const ri = resolving.indexOf('sp_fatal_reward');
+    if (ri >= 0) p.discard.push(resolving.splice(ri, 1)[0]);
+    spellFx(r, 'sp_fatal_reward', [], p.id, { exiled: true });
+    return askRoll(r, p);
+  }
+
+  if (pend.type === 'ult_villa_recover') {
+    const selected = Array.isArray(pend.selected) ? pend.selected.slice() : [];
+    if (optionId === 'vr:confirm') {
+      const valid = [...new Set(selected)].filter(i => i >= 0 && i < p.exile.length).slice(0, 3);
+      const cards = valid.map(i => p.exile[i]);
+      [...valid].sort((a, b) => b - a).forEach(i => p.exile.splice(i, 1));
+      p.hand.push(...cards);
+      r.lastGain = { player: p.id, n: cards.length, reason: 'ult_villa', at: stamp(r) };
+      log(r, `【墓守の協奏曲】${p.name}は廃棄から${cards.length}枚を手札へ戻した`);
+      return resolveTile(r, p);
+    }
+    const i = +optionId.slice(3);
+    if (!(i >= 0 && i < p.exile.length)) return startVillaRecovery(r, p, 0, selected);
+    const at = selected.indexOf(i);
+    if (at >= 0) selected.splice(at, 1);
+    else if (selected.length < 3) selected.push(i);
+    return startVillaRecovery(r, p, 0, selected);
+  }
+
   // --- キャラ選択 ---
   if (pend.type === 'select_char') {
     if (optionId === 'unpick') {
@@ -1376,6 +1499,8 @@ function handleChoose(r, playerId, optionId) {
       return beginUltSequence(r, p);
     }
     if (p.charId === 'grease') return beginUltSequence(r, p);
+    if (p.charId === 'villa' && (p.exile || []).length)
+      return beginUltSequence(r, p, { steps: p.exile.length });
     return askRoll(r, p);
   }
   if (pend.type === 'ult_mio') {
@@ -1416,6 +1541,24 @@ function handleChoose(r, playerId, optionId) {
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS[sid].name, desc: SPELLS[sid].desc, at: stamp(r) };
       log(r, `📜 ${p.name}が呪文「${SPELLS[sid].name}」を唱えた!${spellCost ? `(−${spellCost}G)` : ''}${EXILE_SPELLS.has(sid) ? '(廃棄)' : ''}`);
     };
+    if (sid === 'sp_fatal_reward') {
+      p.hand.splice(p.hand.indexOf(sid), 1);
+      p.gold -= spellCost;
+      p.spellCast = true;
+      if (!Array.isArray(p.resolving)) p.resolving = [];
+      p.resolving.push(sid);  // 効果解決後まで解決中領域へ置き、即時の引き直しを防ぐ
+      onSpellCast(r, p);
+      r.lastEvent = { type: 'spell', player: p.id, name: SPELLS[sid].name,
+        desc: SPELLS[sid].desc, at: stamp(r) };
+      const got = drawCards(r, p, 1);
+      if (got) r.lastDraw = { player: p.id, n: got, reason: 'fatal_reward', at: stamp(r) };
+      log(r, `📜 ${p.name}が「${SPELLS[sid].name}」を唱え、カードを${got}枚引いた(−${spellCost}G)`);
+      if (askMandatoryHandExile(r, p, 'fatal_exile', 'フェイタルリワード ─ 廃棄する手札を1枚選ぶ')) return;
+      const ri = p.resolving.indexOf(sid);
+      if (ri >= 0) p.discard.push(p.resolving.splice(ri, 1)[0]);
+      spellFx(r, sid, [], p.id, { exiled: false });
+      return askRoll(r, p);
+    }
     if (sid === 'sp_gold') {
       castLog();
       const gain = (p.lap || 1) * 100;
@@ -1786,6 +1929,7 @@ function handleChoose(r, playerId, optionId) {
       const resume0 = r.draft.resume;
       r.draft = null;
       if (resume0 === 'tile') return resolveTile(r, p);
+      if (resume0 === 'villa_recover') return startVillaRecovery(r, p);
       if (resume0 === 'market') return askMarket(r, p);
       if (resume0 === 'battle') return settleAll(r);  // 戦勝ドラフト後は精算→手番終了へ(v0.74)
       return endTurn(r);
@@ -1801,6 +1945,7 @@ function handleChoose(r, playerId, optionId) {
     const resume = r.draft.resume;
     r.draft = null;
     if (resume === 'tile') return resolveTile(r, p);
+    if (resume === 'villa_recover') return startVillaRecovery(r, p);
     if (resume === 'market') return askMarket(r, p);
     if (resume === 'battle') return settleAll(r);  // 戦勝ドラフト後は精算→手番終了へ(v0.74)
     return endTurn(r);
@@ -2066,7 +2211,8 @@ function startGame(r) {
   for (const p of r.players) {
     p.pos = 0; p.gold = RULES.startGold; p.lap = 1;
     p.deck = shuffle(CHAR_DECKS[p.charId].slice());
-    p.discard = []; p.exile = []; p.hand = [];
+    p.discard = []; p.exile = []; p.resolving = []; p.hand = [];
+    p.bonusRollPending = false;
     p.battleWins = 0; p.shrineVisits = 0; p.ultUsed = false;
     p.color = CHARS[p.charId].color;
   }
@@ -2086,6 +2232,9 @@ function botCardScore(r, p, id) {
   let score = (c.st || 0) * 1.2 + (c.hp || 0) + ({ L: 42, R: 22, N: 8 }[c.rarity] || 0) - (c.cost || 0) * .08;
   if (c.elem && c.elem === CHARS[p.charId]?.elem) score += 28;
   if (SPELLS[id]) score += id === 'sp_gold' ? 38 : id === 'sp_insight' ? 32 : 18;
+  if (id === 'sp_fatal_reward') score += p.charId === 'villa' ? 34 : 10;
+  if (baseId(id) === 'alter') score += Math.min(60, (p.exile || []).length * 6);
+  if (baseId(id) === 'gaust' && p.charId === 'villa') score += 24;
   if (SUPPORTS[id]) score += (c.st || 0) + (c.hp || 0) + (c.jinx ? 35 : 0);
   const owned = [...(p.hand || []), ...(p.deck || []), ...(p.discard || [])].filter(x => x === id).length;
   return score - Math.max(0, owned - 2) * 12;
@@ -2133,6 +2282,14 @@ function botChooseOption(r, p, pend) {
     const cards = nonCancel.filter(o => o.card || o.id.startsWith('take:'));
     const best = botBest(r, cards, o => botCardScore(r, p, o.card || o.id.slice(5)));
     return (best || byId('skip') || opts[0]).id;
+  }
+  if (pend.type === 'gaust_exile' || pend.type === 'fatal_exile')
+    return (botBest(r, opts.filter(o => o.card), o => botCardScore(r, p, o.card), true) || opts[0]).id;
+  if (pend.type === 'ult_villa_recover') {
+    const confirm = byId('vr:confirm');
+    if ((pend.selected || []).length >= Math.min(3, (p.exile || []).length)) return confirm.id;
+    const choices = opts.filter(o => /^vr:\d+$/.test(o.id) && !(pend.selected || []).includes(+o.id.slice(3)));
+    return (botBest(r, choices, o => botCardScore(r, p, o.card)) || confirm).id;
   }
   if (pend.type === 'tile') {
     const summons = opts.filter(o => o.id.startsWith('summon:'));
@@ -2321,6 +2478,8 @@ function publicState(r, viewerId) {
             resume: r.draft ? r.draft.resume : null }]
         : v.type === 'pick_draw' && k !== viewerId
           ? [k, { type: v.type, prompt: v.prompt, options: [], until: v.until }]  // 候補カードは本人だけに見せる
+          : ['gaust_exile', 'fatal_exile', 'ult_villa_recover'].includes(v.type) && k !== viewerId
+            ? [k, { type: v.type, prompt: v.prompt, options: [], selectedCount: (v.selected || []).length }]
           : v.type === 'support' && k !== viewerId
             ? [k, { type: v.type, prompt: '支援カードを選択中', options: [] }]
             : [k, v])),
@@ -2405,7 +2564,7 @@ function validateSave(save) {
     if (typeof q.name !== 'string' || q.name.length > 16) return 'プレイヤー名が不正です';
     if (q.charId != null && (!CHARS[q.charId] || CHARS[q.charId].selectable === false))
       return 'キャラクターIDが不正です';
-    for (const zone of ['deck', 'hand', 'discard', 'exile', 'pickCards']) {
+    for (const zone of ['deck', 'hand', 'discard', 'exile', 'resolving', 'pickCards']) {
       const z = q[zone];
       if (z == null) continue;
       if (!Array.isArray(z) || z.length > 300) return `カード置き場(${zone})が不正です`;
@@ -2460,7 +2619,8 @@ function restoreRoom(save) {
   delete room.treasureCost;
   for (const p of room.players) {
     delete p.gems; delete p.treasures; delete p.gemThisStop; delete p.forgetThisStop;
-    for (const zone of ['deck', 'hand', 'discard', 'exile', 'pickCards'])
+    if (!Array.isArray(p.resolving)) p.resolving = [];
+    for (const zone of ['deck', 'hand', 'discard', 'exile', 'resolving', 'pickCards'])
       if (Array.isArray(p[zone])) p[zone] = p[zone].filter(c => !RETIRED_CARD_IDS.has(c));
   }
   room.deck = (room.deck || []).filter(c => !RETIRED_CARD_IDS.has(c));

@@ -20,13 +20,14 @@ for (const asset of ['full_lia.png', 'p_lia.png', 'f_lia.png', 'summoner-still-l
   if (!fs.existsSync('public/assets/' + asset)) throw new Error(`リーア仮実装検査: ${asset} がない`);
 console.log('リーア仮実装 ✓');
 
-// ===== ヴィラ仮実装 =====
-if (!S.CHARS.villa || S.CHARS.villa.elem !== 'wind' || S.CHARS.villa.selectable !== false ||
-    !S.CHARS.villa.upcoming || S.CHAR_DECKS.villa || !S.ULTS.villa || S.ULTS.villa.name !== '墓守の協奏曲')
-  throw new Error('ヴィラ仮実装検査: 風属性・選択不可・効果未定の定義が不正');
+// ===== ヴィラ正式実装 =====
+if (!S.CHARS.villa || S.CHARS.villa.elem !== 'wind' || S.CHARS.villa.selectable === false ||
+    S.CHARS.villa.upcoming || !Array.isArray(S.CHAR_DECKS.villa) || S.CHAR_DECKS.villa.length !== 12 ||
+    !S.ULTS.villa || S.ULTS.villa.name !== '墓守の協奏曲')
+  throw new Error('ヴィラ正式実装検査: 風属性・選択可能・12枚デッキ・必殺技の定義が不正');
 for (const asset of ['full_villa.png', 'p_villa.png', 'f_villa.png', 'summoner-still-villa.webp', 'ult_villa.webp'])
   if (!fs.existsSync('public/assets/' + asset)) throw new Error(`ヴィラ仮実装検査: ${asset} がない`);
-console.log('ヴィラ仮実装 ✓');
+console.log('ヴィラ正式実装 ✓');
 
 // ===== ダイス固定スペル =====
 for (let n = 1; n <= 6; n++) {

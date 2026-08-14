@@ -92,7 +92,7 @@ function setupGame() {
           const board = r.owners.filter(o => o && o.player === q.id).length;
           const inBattle = r.battle && r.battle.corridor && r.battle.attacker === q.id ? 1 : 0;
           const total = (q.deck || []).length + (q.hand || []).length + (q.discard || []).length +
-                        (q.exile || []).length + board + inBattle + (q.pickCards || []).length;
+                        (q.exile || []).length + (q.resolving || []).length + board + inBattle + (q.pickCards || []).length;
           if (totals[q.id] !== undefined && total < totals[q.id])
             throw new Error(`復元後にカード消滅: ${q.name} ${totals[q.id]}→${total}`);
           totals[q.id] = total;

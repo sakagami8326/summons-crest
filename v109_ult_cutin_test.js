@@ -193,8 +193,8 @@ ok(!board.includes('class="scRule"') && !phone.includes('class="ccRule"'),
   'creature cards omit the stat/effect divider asset');
 ok(board.includes("sfrontB${creature ? ' creatureSupport' : ''}") && board.includes('.sfrontB.creatureSupport img { width:100%; height:100%;'),
   'creature support card shows contained creature art');
-ok(board.includes("+ (creature ? '' : '<div>' + battleSupportName(sup) + '</div>')"),
-  'creature support card omits support labels and stat icon rows');
+ok(board.includes("+ (creature ? '' : '<div>' + battleSupportName(sup) + '</div>' + battleSupportExile(sup))"),
+  'creature support card omits support labels while ordinary support shows its exile badge');
 for(const id of ['redani','linnei','grease','mio','adel','lia','villa'])
   ok(fs.existsSync(path.join(__dirname,'public','assets',`ult_${id}.webp`)),`${id} cut-in asset exists`);
 ok(fs.existsSync(path.join(__dirname,'public','assets','se_ult_cutin.mp3')),'cut-in sound exists');

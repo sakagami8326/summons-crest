@@ -332,6 +332,8 @@
            border:2px solid #2C2A4A; color:#fff4d5; gap:2px; overflow:hidden; padding:.5vh; box-sizing:border-box;
            text-shadow:0 1px 3px rgba(0,0,0,.9); }
   .sfrontB img { width:78%; height:68%; object-fit:contain; transform:translateY(-.7vh); filter:drop-shadow(0 .3vh .35vh rgba(0,0,0,.65)); }
+  .sfrontB .supportExileTag { position:absolute; right:7%; bottom:6%; color:#ff5361;
+      font:900 1.7vh/1 Marudeco,sans-serif; text-shadow:0 2px 4px #000; }
   .sfrontB.creatureSupport { padding:0; gap:0; background:rgba(8,7,20,.9); border-color:#c9a227; }
   .sfrontB.creatureSupport img { width:100%; height:100%; transform:none; object-fit:contain; filter:none; }
   #bflash { position:fixed; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:75; }
@@ -466,6 +468,8 @@
       color:#172536; text-align:center; }
   #spellCard .spInfo h3 { margin:0 0 5%; font:700 3.2vh/1.1 Marudeco,sans-serif; }
   #spellCard .spInfo p { margin:0; font-size:1.8vh; line-height:1.45; font-weight:700; }
+  #spellCard .cardExileTag { position:absolute; z-index:14; right:7%; bottom:5%; color:#c51f2d;
+      font:900 2.6vh/1 Marudeco,sans-serif; letter-spacing:.1em; }
   #spellEffectBox { width:min(34vw,500px); padding:3vh 2.4vw; color:#172536; background:#f6e9c8;
       border:3px solid #d6b65b; border-radius:2vh; box-shadow:0 2vh 5vh rgba(0,0,0,.55); opacity:0; }
   #spellCut.on #spellEffectBox { animation:spellBoxIn .48s .55s ease both; }
@@ -2795,7 +2799,8 @@ const DEDICATED_SPELL_ART = {
   sp_volcanic_core:'/assets/cards/spell-flame-shift-art-v1.webp',
   sp_abyssal_pearl:'/assets/cards/spell-aqua-shift-art-v1.webp',
   sp_earth_mother_stone:'/assets/cards/spell-earth-shift-art-v1.webp',
-  sp_sky_crystal:'/assets/cards/spell-wind-shift-art-v1.webp'
+  sp_sky_crystal:'/assets/cards/spell-wind-shift-art-v1.webp',
+  sp_fatal_reward:'/assets/cards/spell-fatal-reward-art-v1.webp'
 };
 function dedicatedSpellAsset(sid) {
   const die = /^sp_dice_([1-6])$/.exec(sid || '');
@@ -2809,7 +2814,8 @@ function spellCardHTML(sid) {
   const nameSize = sp.name.length <= 6 ? '6.2vh' : sp.name.length <= 9 ? '5.1vh' : '4.2vh';
   return `<img class="spBg" src="${bg}">${fallback}<div class="spHead"><div class="spName" style="font-size:${nameSize}">${sp.name}</div></div>
     <div class="scCost"><img class="frame" src="/assets/cards/cost-frame.svg"><img class="coin" src="/assets/cards/cost-coin.svg"><b>${sp.cost || 0}G</b></div>
-    <div class="scBrush"></div><div class="spInfo"><h3>【呪文効果】</h3><p>${sp.desc}</p></div>`;
+    <div class="scBrush"></div><div class="spInfo"><h3>【呪文効果】</h3><p>${sp.desc}</p></div>
+    ${sp.exileAfterUse ? '<div class="cardExileTag">廃棄</div>' : ''}`;
 }
 
 async function playSpellPresentation(sf, desc) {
@@ -3059,6 +3065,10 @@ const battleSupportName = sup => {
   if (typeof sup === 'object') return sup.name || sup.cardId || '支援カード';
   return (state.catalog.SUPPORTS[sup] || {}).name || sup;
 };
+const battleSupportExile = sup => {
+  const cid = supportCardId(sup);
+  return cid && state.catalog.SUPPORTS[cid]?.exileAfterUse ? '<div class="supportExileTag">廃棄</div>' : '';
+};
 const battleSupportMods = sup => sup && typeof sup === 'object' && sup.kind === 'creature'
   ? `<small><img class="inlineStatSymbol" src="/assets/cards/stat-at-icon.svg" alt="">AT+${sup.st || 0} / DF+${sup.hp || 0}</small>` : '';
 const statLabel = kind => kind === 'df' ? '<small>DF</small>'
@@ -3072,7 +3082,7 @@ const supportBackHTML = (status, sup) => {
     : sup ? (creature
         ? `<img src="/assets/cards/c_${sup.artId || sup.cardId}.webp" alt="${battleSupportName(sup)}">`
         : battleSupportArt(sup) ? `<img src="/assets/cards/${battleSupportArt(sup)}" alt="">` : '<div style="font-size:2.5vh">⚔</div>')
-      + (creature ? '' : '<div>' + battleSupportName(sup) + '</div>') : ''}</div>
+      + (creature ? '' : '<div>' + battleSupportName(sup) + '</div>' + battleSupportExile(sup)) : ''}</div>
   </div></div><div class="supportStatus">${status}</div>`;
 };
 
@@ -3551,7 +3561,7 @@ function render() {
   if (!state) return;
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.23' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.24' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
