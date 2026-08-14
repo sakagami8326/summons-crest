@@ -12,7 +12,7 @@ const ok = (condition, message) => {
   pass++;
 };
 
-ok(G.VERSION === '1.20', 'version is 1.20');
+ok(Number(G.VERSION) >= 1.20, 'version is v1.20 or newer');
 ok(G.CHARS.villa && G.CHARS.villa.name === 'ヴィラ' && G.CHARS.villa.elem === 'wind',
   'Villa is published as a wind summoner');
 ok(G.CHARS.villa.selectable === false && G.CHARS.villa.upcoming === true && !G.CHAR_DECKS.villa,

@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#141227">
-<title>Summons Crest — 手元</title>
+<title>SUMMONS CODE — 手元</title>
 <style>
   :root { --ink:#141227; --ink2:#1E1B3C; --gold:#C9A227; --gold-soft:#EFD98F; --parchment:#F1E8D0;
       --font-mincho:"Yu Mincho","Hiragino Mincho ProN","Hiragino Mincho Pro","Noto Serif JP",serif; }
@@ -28,20 +28,25 @@
   /* 参加フォーム(縦横どちらでも) */
   #join { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center;
         padding-top:6dvh; gap:12px; z-index:50; background:var(--ink); }
-  #join img { height:auto; max-height:16dvh; max-width:86vw; object-fit:contain; }
+  #join img { height:auto; max-height:21dvh; max-width:86vw; object-fit:contain; }
   #join input { font-family:inherit; font-size:17px; text-align:center; letter-spacing:3px;
         background:var(--ink2); color:var(--parchment); border:1px solid var(--gold);
         border-radius:10px; padding:11px; width:min(70vw, 300px); }
   #join button { font-family:inherit; font-size:16px; letter-spacing:3px; padding:12px;
         width:min(70vw, 300px); background:linear-gradient(180deg,#E8C55A,#B8901F);
         color:#241C05; border:1px solid #F2D062; border-radius:10px; cursor:pointer; }
+  #join #joinFsBtn { position:absolute; top:calc(10px + env(safe-area-inset-top));
+        right:calc(10px + env(safe-area-inset-right)); width:clamp(54px,13.2dvh,96px);
+        height:clamp(54px,13.2dvh,96px); padding:0; border:0; border-radius:0;
+        background:transparent url('/assets/ui/phone-btn-fullscreen-v1.webp') center / contain no-repeat;
+        color:transparent; font-size:0; filter:drop-shadow(0 .45dvh .55dvh rgba(0,0,0,.42)); }
   #err { color:#F09595; font-size:13px; min-height:1.2em; }
 
   header { flex:none; height:25dvh; display:flex;
         align-items:center; gap:1.4vw; padding:1dvh calc(12px + env(safe-area-inset-right)) 1dvh calc(12px + env(safe-area-inset-left)); }
-  #diceDock { flex:0 0 18dvh; min-width:0; height:100%; display:flex; align-items:center; justify-content:center; position:relative; }
+  #diceDock { flex:0 0 24dvh; min-width:0; height:100%; display:flex; align-items:center; justify-content:center; position:relative; }
   #topTools { min-width:0; height:100%; margin-left:auto; display:grid;
-      grid-template-columns:repeat(4,13.2dvh); grid-template-rows:13.2dvh 8.2dvh;
+      grid-template-columns:repeat(5,13.2dvh); grid-template-rows:13.2dvh 8.2dvh;
       align-content:center; justify-content:end; gap:.45dvh .35vw; white-space:nowrap; }
   #contextBtn { display:none; grid-column:1 / 3; grid-row:2; align-self:center; justify-self:stretch;
       min-height:6.6dvh; padding:.8dvh 1.2dvh; font-size:max(2.1dvh,12px); }
@@ -51,13 +56,14 @@
   .phoneToolBtn { width:13.2dvh; height:13.2dvh; }
   .phoneToolBtn:active,#ultBtn:active { transform:translateY(.25dvh) scale(.96);
       filter:drop-shadow(0 .15dvh .25dvh rgba(17,20,31,.38)) brightness(.88); }
-  #mapBtn { grid-column:1; grid-row:1; background-image:url('/assets/ui/phone-btn-land-v1.webp'); }
-  #galleryBtn { grid-column:2; grid-row:1; background-image:url('/assets/ui/phone-btn-cards-v1.webp'); }
-  #deckBtn { grid-column:3; grid-row:1; background-image:url('/assets/ui/phone-btn-deck-v1.webp'); }
-  #fsBtn { grid-column:4; grid-row:1; background-image:url('/assets/ui/phone-btn-fullscreen-v1.webp'); }
-  #ultBtn { display:none; grid-column:3 / 5; grid-row:2; width:100%; height:8.2dvh;
-      background-image:url('/assets/ui/phone-btn-ultimate-v1.webp'); }
-  #ultBtn.on { display:block; }
+  #ultBtn { grid-column:1; grid-row:1; width:13.2dvh; height:13.2dvh;
+      background-image:url('/assets/ui/phone-btn-ultimate-v2.webp'); }
+  #mapBtn { grid-column:2; grid-row:1; background-image:url('/assets/ui/phone-btn-land-v1.webp'); }
+  #galleryBtn { grid-column:3; grid-row:1; background-image:url('/assets/ui/phone-btn-cards-v1.webp'); }
+  #deckBtn { grid-column:4; grid-row:1; background-image:url('/assets/ui/phone-btn-deck-v1.webp'); }
+  #fsBtn { grid-column:5; grid-row:1; background-image:url('/assets/ui/phone-btn-fullscreen-v1.webp'); }
+  #ultBtn:disabled { cursor:default; opacity:.46; filter:grayscale(.72) brightness(.58) saturate(.5); }
+  #ultBtn.on { opacity:1; filter:drop-shadow(0 .45dvh .55dvh rgba(72,30,92,.58)); }
   .me { min-width:0; display:flex; align-items:center; gap:8px; background:rgba(13,24,43,.9);
         border:1px solid rgba(201,162,39,.88); border-radius:10px; padding:4px 14px 4px 5px; flex:none;
         box-shadow:inset 0 0 0 1px rgba(255,238,176,.08); }
@@ -77,11 +83,12 @@
   #msg.big { font-size:max(4dvh, 20px); }
   /* 中段: 左=行動メッセージ / 右=アクション(フロー配置なので重ならない) */
   #midRow { display:none !important; }
-  #msg { flex:none; width:26vw; display:flex; align-items:center; justify-content:center; text-align:center;
-        font-size:max(2.2dvh, 13px); letter-spacing:1px; color:var(--gold-soft); line-height:1.4;
-        text-shadow:0 1px 4px rgba(0,0,0,.6); font-family:'Reggae One','Yu Mincho',serif;
-        overflow:hidden; background:rgba(0,0,0,.28); border:1px solid rgba(201,162,39,.35);
-        border-radius:1.2dvh; padding:.6dvh 1dvh; }
+  #msg { grid-column:1 / 6; grid-row:2; width:100%; min-width:0; display:-webkit-box;
+        align-self:center; text-align:center; font-size:max(2.2dvh, 13px); letter-spacing:1px;
+        color:#111; line-height:1.35; text-shadow:0 1px 1px rgba(255,255,255,.72);
+        font-family:'Reggae One','Yu Mincho',serif; overflow:hidden; padding:.35dvh .8dvh;
+        white-space:normal; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+  #topTools.hasContext #msg { grid-column:3 / 6; }
   #msg:empty { opacity:0; }
   #action { flex:1; min-width:0; display:flex; align-items:center; justify-content:center; gap:14px;
         padding:0 8px; overflow:hidden; }
@@ -99,22 +106,22 @@
   @keyframes blink { 50% { opacity:.3; } }
 
   /* 3Dダイス */
-  #diceBtn { width:16dvh; height:16dvh; border-radius:50%; font-size:2.5dvh; white-space:nowrap;
+  #diceBtn { width:22dvh; height:22dvh; border-radius:50%; font-size:2.5dvh; white-space:nowrap;
         box-shadow:none; }
-  .diceStage { position:relative; width:15dvh; height:18dvh; perspective:700px; }
+  .diceStage { position:relative; width:21dvh; height:24dvh; perspective:700px; }
   .diceStage.drop { animation:dbounce 1.4s cubic-bezier(.3,.6,.4,1); }
   @keyframes dbounce { 0%{transform:translateY(-15dvh)} 52%{transform:translateY(0)}
     68%{transform:translateY(-4dvh)} 80%{transform:translateY(0)} 89%{transform:translateY(-1.4dvh)} 100%{transform:translateY(0)} }
-  .dice3d { position:absolute; left:50%; top:42%; width:11dvh; height:11dvh; margin:-5.5dvh 0 0 -5.5dvh;
+  .dice3d { position:absolute; left:50%; top:42%; width:15dvh; height:15dvh; margin:-7.5dvh 0 0 -7.5dvh;
         transform-style:preserve-3d; }
   .dface { position:absolute; inset:0; background:linear-gradient(160deg,#F5EDD8,#DCCFA8);
         border:2px solid var(--gold); border-radius:1.6dvh; backface-visibility:hidden;
         display:flex; align-items:center; justify-content:center;
         box-shadow:inset 0 0 1.4dvh rgba(90,59,20,.25); }
   .dface svg { width:74%; height:74%; }
-  .f1{transform:translateZ(5.5dvh)} .f2{transform:rotateX(90deg) translateZ(5.5dvh)}
-  .f3{transform:rotateY(90deg) translateZ(5.5dvh)} .f4{transform:rotateY(-90deg) translateZ(5.5dvh)}
-  .f5{transform:rotateX(-90deg) translateZ(5.5dvh)} .f6{transform:rotateY(180deg) translateZ(5.5dvh)}
+  .f1{transform:translateZ(7.5dvh)} .f2{transform:rotateX(90deg) translateZ(7.5dvh)}
+  .f3{transform:rotateY(90deg) translateZ(7.5dvh)} .f4{transform:rotateY(-90deg) translateZ(7.5dvh)}
+  .f5{transform:rotateX(-90deg) translateZ(7.5dvh)} .f6{transform:rotateY(180deg) translateZ(7.5dvh)}
 
   /* 手札 */
   #handWrap { flex:1; min-height:0; height:auto; position:relative; padding:0 calc(10px + env(safe-area-inset-right))
@@ -128,6 +135,8 @@
   .card { flex:none; height:100%; aspect-ratio:300/470; width:auto; position:relative;
         perspective:700px; cursor:pointer; transition:transform .15s; }
   #hand .card { filter:drop-shadow(0 1.15dvh 1.25dvh rgba(20,25,39,.48)); }
+  #hand .card.dim { filter:drop-shadow(0 .65dvh .75dvh rgba(20,25,39,.32)) brightness(.48) saturate(.35);
+        opacity:.78; }
   .card.sel { transform:translateY(-7px); }
   .card.sel .face { border-color:#F2D062; box-shadow:0 0 0 2px #F2D062, 0 8px 20px rgba(242,208,98,.4); }
   .card.dim { filter:brightness(.6) saturate(.6); cursor:default; }
@@ -165,18 +174,41 @@
   #shopScene { position:fixed; inset:0; display:none; z-index:40;
       background:url('/assets/shop_bg.jpg') center / cover; }
   #shopScene.on { display:block; }
-  #shopScene .keeper { position:absolute; left:2vw; bottom:0; height:72dvh;
-      filter:drop-shadow(0 0 20px rgba(0,0,0,.6)); }
-  #shopScene .bubble { position:absolute; left:24vw; top:4dvh; background:var(--parchment);
-      color:#3A2B18; font-size:max(2.4dvh, 14px); letter-spacing:1px; padding:1.4dvh 2.6dvh;
-      border-radius:1.6dvh; border:2px solid #8A6A1E; max-width:36vw; }
-  #shopShelf { position:absolute; inset:9dvh 1vw 7dvh 19vw; overflow:auto; display:grid;
-      grid-template-columns:repeat(5,minmax(96px,1fr)); gap:.8dvh .55vw; align-content:center; padding:.5dvh; }
+  #shopShelf { position:absolute; inset:5.8dvh max(.45vw,env(safe-area-inset-right)) 5.2dvh max(.45vw,env(safe-area-inset-left));
+      overflow:auto; display:grid; grid-template-columns:repeat(10,minmax(0,1fr));
+      grid-template-rows:repeat(2,minmax(0,1fr)); gap:.35dvh .22vw; align-items:center; padding:.2dvh; }
   .shopProduct { position:relative; min-width:0; cursor:pointer; text-align:center; transition:.18s transform,.18s filter; }
+  .shopProduct:nth-child(1) { grid-area:1/1/2/3; } .shopProduct:nth-child(2) { grid-area:1/3/2/5; }
+  .shopProduct:nth-child(3) { grid-area:1/5/2/7; } .shopProduct:nth-child(4) { grid-area:1/7/2/9; }
+  .shopProduct:nth-child(5) { grid-area:1/9/2/11; } .shopProduct:nth-child(6) { grid-area:2/2/3/4; }
+  .shopProduct:nth-child(7) { grid-area:2/4/3/6; } .shopProduct:nth-child(8) { grid-area:2/6/3/8; }
+  .shopProduct:nth-child(9) { grid-area:2/8/3/10; }
   .shopProduct:active { transform:scale(.96); } .shopProduct.unaffordable { filter:saturate(.45) brightness(.62); }
   .shopProduct.sold { filter:grayscale(1) brightness(.4); pointer-events:none; }
-  .shopProduct .shopCard { width:min(17vw,24dvh); aspect-ratio:5/7; margin:auto; container-type:inline-size; }
-  .shopProduct .shopCard>.face { position:relative; width:100%; height:100%; overflow:hidden; }
+  .shopProduct .shopCard { height:min(33dvh,calc((100dvh - 12.5dvh)/2)); aspect-ratio:4/5; width:auto;
+      max-width:18.8vw; margin:auto; container-type:inline-size; }
+  .shopCompact { position:relative; width:100%; height:100%; overflow:hidden; border-radius:1.15dvh;
+      border:1px solid rgba(231,199,106,.72); background:#111a31; color:#fff4d5;
+      box-shadow:0 .65dvh 1.25dvh rgba(0,0,0,.48); isolation:isolate; }
+  .shopCompactBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-2; }
+  .shopCompactShade { position:absolute; z-index:-1; inset:0; background:linear-gradient(180deg,rgba(4,9,20,.78) 0 14%,transparent 32% 60%,rgba(4,9,20,.94) 77%); }
+  .shopCompactName { position:absolute; z-index:5; top:3%; left:5%; right:5%; overflow:hidden;
+      font:900 clamp(13px,9.4cqw,24px)/1.05 'Yu Mincho','Hiragino Mincho ProN',serif;
+      white-space:nowrap; text-align:center; text-shadow:0 2px 4px #000; }
+  .shopCompactArt { position:absolute; z-index:2; top:12%; left:4%; width:92%; height:63%; display:grid; place-items:center; }
+  .shopCompactArt img { width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 .4dvh .7dvh rgba(0,0,0,.55)); }
+  .shopCompactArt svg { width:62%; height:62%; }
+  .shopCompactArt .tok2 { width:64%!important; height:auto!important; aspect-ratio:1; font-size:clamp(11px,7cqw,20px); }
+  .shopCompactFooter { position:absolute; z-index:4; left:3%; right:3%; bottom:3%; min-height:21%;
+      display:flex; align-items:flex-end; justify-content:space-between; gap:3%; }
+  .shopCompactPrice { display:inline-flex; align-items:center; gap:.2em; min-height:4.4dvh; padding:.15dvh .65dvh;
+      border-radius:999px; background:rgba(9,15,35,.94); color:#ffe58a;
+      font:900 clamp(12px,8.5cqw,21px)/1 Marudeco,sans-serif; white-space:nowrap; }
+  .shopCompactPrice img { width:1.1em; height:1.1em; object-fit:contain; }
+  .shopCompactStats { display:flex; align-items:center; justify-content:flex-end; gap:.2em; min-width:0;
+      color:#fff5d0; font:900 clamp(12px,8.5cqw,22px)/1 Marudeco,sans-serif; white-space:nowrap; }
+  .shopCompactStats .statIconDisk { width:1.35em; height:1.35em; flex:none; padding:.18em; }
+  .shopCompactKind { color:#fff2c4; font:900 clamp(12px,7.5cqw,20px)/1 Marudeco,sans-serif; white-space:nowrap; }
   .shopPrice { display:inline-flex; align-items:center; gap:.35em; margin-top:.55dvh; padding:.45dvh 1.1dvh;
       border-radius:999px; background:rgba(16,13,36,.9); color:#ffe58a; font-weight:900; font-size:max(1.8dvh,12px); }
   .shopPrice img { height:1.8em; } .shopOld { opacity:.6; text-decoration:line-through; margin-right:.35em; }
@@ -190,10 +222,22 @@
       text-align:center; text-shadow:0 2px 5px #000; white-space:nowrap; }
   .removeCard b { font-size:clamp(14px,9cqw,30px); } .removeCard span { font-size:clamp(30px,24cqw,74px); }
   #shopExit { position:absolute; right:3vw; bottom:1.5dvh; z-index:4; }
-  #shopDetail { position:fixed; inset:0; z-index:75; display:none; place-items:center; background:rgba(5,6,16,.88); }
-  #shopDetail.on { display:grid; } #shopDetailCard { width:min(42vw,30dvh); aspect-ratio:5/7; container-type:inline-size; }
+  #shopDetail { position:fixed; inset:0; z-index:75; display:none; align-items:center; justify-content:center;
+      overflow:hidden; background:rgba(5,8,20,.92); backdrop-filter:blur(5px); }
+  #shopDetail.on { display:flex; }
+  #shopDetailStage { width:min(82vw,150dvh); height:88dvh; display:grid;
+      grid-template-columns:minmax(30dvh,36%) minmax(0,1fr); gap:2.6vw; align-items:center; }
+  #shopDetailCard { position:relative; justify-self:end; height:86dvh; max-width:36vw;
+      aspect-ratio:300/470; container-type:inline-size; filter:drop-shadow(0 1.3dvh 2.4dvh rgba(0,0,0,.72)); }
   #shopDetailCard>.face { position:relative; width:100%; height:100%; overflow:hidden; }
-  #shopDetailActions { display:flex; gap:1dvh; justify-content:center; margin-top:1.2dvh; }
+  #shopDetailInfo { position:relative; height:82dvh; min-width:0; box-sizing:border-box; overflow:hidden;
+      padding:2.5dvh 3vw 9dvh; color:#f7efd9; text-align:left; border:2px solid #b89038;
+      border-radius:1.2dvh; background:linear-gradient(145deg,rgba(9,25,44,.98),rgba(4,13,27,.98));
+      box-shadow:inset 0 0 0 1px rgba(240,205,102,.17),0 1dvh 3dvh rgba(0,0,0,.55); }
+  #shopDetailScroll { height:100%; overflow-y:auto; padding-right:.8vw; }
+  #shopDetailScroll .galDetailScroll { height:auto; overflow:visible; padding-right:0; }
+  #shopDetailPrice { margin:1.1dvh 0 0; }
+  #shopDetailActions { position:absolute; right:2vw; bottom:2dvh; display:flex; gap:1dvh; justify-content:flex-end; }
   #phoneUlt { position:fixed; inset:0; z-index:90; display:none; overflow:hidden; background:#03050c; }
   #phoneUlt.on { display:block; } #phoneUltArt { position:absolute; z-index:1; inset:0; width:100%; height:100%; object-fit:contain; }
   #phoneUlt.on #phoneUltArt { animation:phoneUltHero 4.9s cubic-bezier(.18,.82,.22,1) both; }
@@ -215,9 +259,10 @@
   #phoneUltWho { color:#f2d062; font-size:max(1.8dvh,12px); letter-spacing:.15em; }
   #phoneUltDesc { margin-top:.5dvh; font-size:max(2.2dvh,14px); }
   @media (max-width:700px) and (orientation:portrait) {
-    #shopScene .keeper,#shopScene .bubble { display:none; }
-    #shopShelf { inset:7dvh .25vw 7dvh; grid-template-columns:repeat(3,minmax(96px,1fr)); gap:.55dvh .25vw; align-content:start; padding:.35dvh; }
-    .shopProduct .shopCard { width:min(32.5vw,23dvh); }
+    #shopShelf { inset:7dvh .25vw 7dvh; grid-template-columns:repeat(3,minmax(96px,1fr));
+        grid-template-rows:none; gap:.55dvh .25vw; align-content:start; padding:.35dvh; }
+    .shopProduct:nth-child(n) { grid-area:auto; }
+    .shopProduct .shopCard { width:min(32.5vw,23dvh); height:auto; max-width:none; }
     #shopGold { left:2vw!important; top:1dvh!important; }
   }
   /* ドロー開帳 */
@@ -594,7 +639,7 @@
   .creatureCard .ccElem.none { font:700 8cqw/1 Marudeco,sans-serif; }
   .creatureCard .ccName { grid-column:2; margin:0; color:#fff4d5; font:700 clamp(14px,10cqw,30px)/1 Marudeco,sans-serif;
       text-align:center; letter-spacing:.02em; white-space:nowrap; text-shadow:0 2px 0 rgba(14,45,78,.24); }
-  .creatureCard .ccCost { position:absolute; z-index:8; top:65.2%; left:3.2%; width:31%; aspect-ratio:320/112; }
+  .creatureCard .ccCost { position:absolute; z-index:20; top:62.8%; left:3.2%; width:31%; aspect-ratio:320/112; }
   .creatureCard .ccCostFrame { position:absolute; inset:0; width:100%; height:100%; }
   .creatureCard .ccCoin { position:absolute; left:6%; top:19%; width:19%; height:62%; }
   .creatureCard .ccCostValue { position:absolute; inset:0 4% 0 27%; display:grid; place-items:center;
@@ -635,7 +680,7 @@
       display:grid; grid-template-columns:11.5% 1fr 11.5%; align-items:center; }
   .spellCard .spName { grid-column:2; margin:0; color:#fff4d5; font:900 clamp(14px,9.2cqw,28px)/1 'Yu Mincho','Hiragino Mincho ProN',serif;
       text-align:center; letter-spacing:.02em; white-space:nowrap; text-shadow:0 2px 4px rgba(10,5,25,.8); }
-  .spellCard .ccCost { position:absolute; z-index:12; top:65.2%; left:3.2%; width:31%; aspect-ratio:320/112; }
+  .spellCard .ccCost { position:absolute; z-index:20; top:62.8%; left:3.2%; width:31%; aspect-ratio:320/112; }
   .spellCard .ccCostFrame { position:absolute; inset:0; width:100%; height:100%; }
   .spellCard .ccCoin { position:absolute; left:6%; top:19%; width:19%; height:62%; }
   .spellCard .ccCostValue { position:absolute; inset:0 4% 0 27%; display:grid; place-items:center;
@@ -659,7 +704,7 @@
       color:#fff4e8; filter:drop-shadow(0 6px 10px rgba(0,0,0,.5)); }
   .supportCard .suArt svg { width:62%; height:62%; }
   .supportCard .suArt img { max-width:88%; max-height:88%; object-fit:contain; }
-  .supportCard .ccCost { position:absolute; z-index:12; top:65.2%; left:3.2%; width:31%; aspect-ratio:320/112; }
+  .supportCard .ccCost { position:absolute; z-index:20; top:62.8%; left:3.2%; width:31%; aspect-ratio:320/112; }
   .supportCard .ccCostFrame { position:absolute; inset:0; width:100%; height:100%; }
   .supportCard .ccCoin { position:absolute; left:6%; top:19%; width:19%; height:62%; }
   .supportCard .ccCostValue { position:absolute; inset:0 4% 0 27%; display:grid; place-items:center; font:700 clamp(16px,4.6cqw,22px)/1 Marudeco,sans-serif; }
@@ -730,7 +775,8 @@
   <div id="rotate"><div class="ic"><svg viewBox="0 0 24 24" width="52" height="52" fill="none" stroke="#C9A227" stroke-width="1.6"><rect x="7" y="2.5" width="10" height="19" rx="2.2"/><circle cx="12" cy="18.4" r="1" fill="#C9A227" stroke="none"/></svg></div>スマホを横向きにしてください</div>
 
   <div id="join">
-    <img src="/assets/logo.png">
+    <button id="joinFsBtn" aria-label="全画面">全画面</button>
+    <img src="/assets/summons-code-gold.svg" alt="SUMMONS CODE">
     <input id="codeIn" placeholder="ルームコード" maxlength="4" autocapitalize="characters">
     <input id="nameIn" placeholder="なまえ" maxlength="8">
     <button id="joinBtn">参加する</button>
@@ -743,14 +789,14 @@
       <div class="st" id="myStat"></div></div></div>
     <div id="diceDock"></div>
     <div id="topTools"><button class="abtn" id="contextBtn">行動</button>
+      <button id="ultBtn" aria-label="必殺技" disabled>必殺技</button>
       <button class="phoneToolBtn" id="mapBtn" aria-label="領地を見る">領地を見る</button>
       <button class="phoneToolBtn" id="galleryBtn" aria-label="カード一覧">カード一覧</button>
       <button class="phoneToolBtn" id="deckBtn" aria-label="デッキ">デッキ</button>
       <button class="phoneToolBtn" id="fsBtn" aria-label="全画面">全画面</button>
-      <button id="ultBtn" aria-label="必殺技">必殺技</button></div>
+      <div id="msg" style="display:none"></div></div>
   </header>
-  <div id="midRow"><div id="msg" style="display:none"></div>
-  <div id="action" style="display:none"></div></div>
+  <div id="midRow"><div id="action" style="display:none"></div></div>
   <div id="handWrap" style="display:none"><div id="hand"></div><div id="lpHint">カードを長押しで拡大</div></div>
 
   <div id="mapOv"><div id="mapOvTitle"></div>
@@ -763,16 +809,16 @@
   <div id="cardZoom"><div id="cardZoomCard"></div><div class="tap">タップで閉じる</div></div>
 
   <div id="shopScene">
-    <img class="keeper" id="pKeeper" src="/assets/keeper.png">
-    <div class="bubble" id="pBubble">いらっしゃい、旅の召喚士どの</div>
     <div id="shopGold" style="position:absolute; left:calc(2vw + env(safe-area-inset-left)); top:3dvh;
       background:rgba(16,13,36,.8); border:1px solid var(--gold); border-radius:999px;
       color:var(--gold-soft); font-size:max(2.4dvh, 14px); letter-spacing:1px; padding:1dvh 2.4dvh;"></div>
     <div id="shopShelf"></div>
     <button class="abtn ghost" id="shopExit">市場を出る</button>
   </div>
-  <div id="shopDetail"><div><div id="shopDetailCard"></div><div id="shopDetailPrice" class="shopPrice"></div>
-    <div id="shopDetailActions"><button class="abtn" id="shopBuy">購入する</button><button class="abtn ghost" id="shopCancel">戻る</button></div></div></div>
+  <div id="shopDetail"><div id="shopDetailStage"><div id="shopDetailCard"></div>
+    <div id="shopDetailInfo"><div id="shopDetailScroll"></div><div id="shopDetailActions">
+      <button class="abtn ghost" id="shopCancel">戻る</button><button class="abtn" id="shopBuy">購入する</button>
+    </div></div></div></div>
   <div id="phoneUlt"><img id="phoneUltArt"><div id="ultFxHost"></div><div id="phoneUltSlash"></div><div id="phoneUltFlash"></div><div id="phoneUltInfo"><div id="phoneUltWho"></div><div id="phoneUltDesc"></div></div></div>
   <div id="deckOv"><h2>デッキ確認</h2><div id="deckScroll"></div>
     <button class="abtn ghost" id="deckClose">閉じる</button></div>
@@ -960,12 +1006,14 @@ $('joinBtn').onclick = async () => {
     try { localStorage.removeItem('sc_session'); } catch (e2) {}
   }
 })();
-$('fsBtn').onclick = async () => {
+async function toggleFullscreen() {
   if (!document.fullscreenElement) {
     await document.documentElement.requestFullscreen({ navigationUI:'hide' }).catch(() => {});
     try { await screen.orientation.lock('landscape'); } catch (e) {}
-  } else document.exitFullscreen();
-};
+  } else await document.exitFullscreen().catch(() => {});
+}
+$('fsBtn').onclick = toggleFullscreen;
+$('joinFsBtn').onclick = toggleFullscreen;
 // ===== デッキビューア(カード表示) =====
 function dkCard(c, n, pickId, zone) {
   return `<div class="dkCard ${pickId ? 'pick' : ''}" onclick="${pickId ? `choose('${pickId}')` : `openCardZoom('${c}')`}">
@@ -1279,10 +1327,7 @@ function openShopDetail(slotId) {
   const visit = state && state.shopVisit;
   const item = visit && visit.items.find(x => x.slotId === slotId);
   if (!item || item.sold) return;
-  $('shopDetailCard').innerHTML = item.kind === 'remove'
-    ? REMOVE_CARD_HTML
-    : bigCardHTML(item.card);
-  $('shopDetailPrice').innerHTML = `<img src="/assets/ic_gold.png">${visit.half ? `<span class="shopOld">${item.basePrice}G</span>` : ''}${item.price}G`;
+  renderShopDetail(item, visit);
   $('shopBuy').disabled = item.price > me().gold;
   $('shopBuy').textContent = item.price > me().gold ? 'ゴールド不足' : '購入する';
   $('shopBuy').onclick = async () => {
@@ -1294,7 +1339,7 @@ function openShopDetail(slotId) {
   $('shopDetail').classList.add('on');
   try { fetch('/api/action', { method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ room, type:'shop_preview', playerId:pid, slotId }) }); } catch (e) {}
-  afterUiPaint(() => fitCreatureNames($('shopDetailCard')));
+  afterUiPaint(() => fitCreatureNames($('shopDetailStage')));
 }
 $('shopCancel').onclick = () => {
   $('shopDetail').classList.remove('on');
@@ -1347,12 +1392,18 @@ function spellFaceBody(cid, spl) {
 }
 function supportFaceBody(cid, sup) {
   const art = supportArt(cid);
-  const power = sup.jinx ? '呪具' : sup.st ? `AT＋${sup.st}` : `DF＋${sup.hp}`;
-  const text = sup.jinx ? '相手の支援カードを無効化する。戦闘時に使用し、使用後は捨て札へ送る。'
-    : `${sup.st ? '攻撃力' : '防御力'}を${sup.st || sup.hp}上昇させる。戦闘時に使用し、使用後は捨て札へ送る。`;
+  const power = supportPower(sup);
+  const text = supportDescription(sup);
   return `<img class="suBg" src="/assets/cards/bg-weapon-v1.webp" alt=""><div class="suHead"><div class="suName" data-card-name>${sup.name}</div></div>
     <div class="suArt">${art}</div><div class="ccCost"><img class="ccCostFrame" src="/assets/cards/cost-frame.svg" alt=""><img class="ccCoin" src="/assets/cards/cost-coin.svg" alt=""><span class="ccCostValue">${sup.cost || 0}G</span></div>
     <div class="ccBrush"></div><div class="suInfo"><h2 class="suPower">${power}</h2><p class="suText">${text}</p></div>`;
+}
+function supportPower(sup) {
+  return sup.jinx ? '呪具' : sup.st ? `AT＋${sup.st}` : `DF＋${sup.hp}`;
+}
+function supportDescription(sup) {
+  return sup.jinx ? '相手の支援カードを無効化する。戦闘時に使用し、使用後は捨て札へ送る。'
+    : `${sup.st ? '攻撃力' : '防御力'}を${sup.st || sup.hp}上昇させる。戦闘時に使用し、使用後は捨て札へ送る。`;
 }
 function fitCreatureNames(root) {
   (root || document).querySelectorAll('[data-card-name]').forEach(el => {
@@ -1399,21 +1450,18 @@ function galleryDetailValues(cid, cr, evo) {
   return { name:evo ? cr.evo : cr.name, at:evo ? cr.evoSt : cr.st, hp:evo ? cr.evoHp : cr.hp,
     effect:fx ? effect : { title:'能力なし', body:'固有効果なし' } };
 }
-function renderGalleryDetail() {
-  if (!galleryIds.length) return;
-  const cid = galleryIds[galleryDetailIndex], cr = state.catalog.CREATURES[cid];
-  if (!cr.evo) galleryDetailEvo = false;
-  const evo = galleryDetailEvo && !!cr.evo, v = galleryDetailValues(cid, cr, evo);
+function creatureDetailInfoHTML(cid, cr, evo, includeModes) {
+  const v = galleryDetailValues(cid, cr, evo);
   const elemName = { fire:'火属性', wind:'風属性', earth:'土属性', water:'水属性' }[cr.elem] || '無属性';
   const elem = cr.elem
     ? `<span class="galElem"><svg viewBox="-34 -36 68 72">${ELEM_MINI[cr.elem]}</svg>${elemName}</span>`
     : `<span class="galElem neutral">◇ ${elemName}</span>`;
   const abilityTitle = v.effect.title === '能力なし' ? '能力なし' : `【${v.effect.title}】`;
-  $('galZoomCard').innerHTML = `<div class="face front creatureCard">${creatureFaceBody(cid, cr, evo)}</div>`;
-  $('galZoomInfo').innerHTML = `<div class="galModeTabs">
+  const tabs = includeModes ? `<div class="galModeTabs">
       <button class="galModeBtn ${!evo ? 'active' : ''}" data-mode="base">基本形</button>
       <button class="galModeBtn ${evo ? 'active' : ''}" data-mode="evo" ${cr.evo ? '' : 'disabled'}>${cr.evo ? '進化後' : '進化なし'}</button>
-    </div><div class="galDetailScroll">
+    </div>` : '';
+  return `${tabs}<div class="galDetailScroll">
       <h2 class="galDetailName">${v.name}</h2>
       <div class="galMeta">${elem}<span class="galBadge">${cr.rarity || 'N'}</span><span class="galBadge">${cr.cost || 0}G</span></div>
       <div class="galStats"><div class="galStat"><i class="statIconDisk"><img src="/assets/cards/stat-at-icon.svg" alt="AT"></i><small>AT</small>${v.at}</div>
@@ -1421,6 +1469,14 @@ function renderGalleryDetail() {
       <h3 class="galAbilityName">${abilityTitle}</h3>
       <p class="galAbilityText">${v.effect.body || '固有効果なし'}</p>
     </div>`;
+}
+function renderGalleryDetail() {
+  if (!galleryIds.length) return;
+  const cid = galleryIds[galleryDetailIndex], cr = state.catalog.CREATURES[cid];
+  if (!cr.evo) galleryDetailEvo = false;
+  const evo = galleryDetailEvo && !!cr.evo;
+  $('galZoomCard').innerHTML = `<div class="face front creatureCard">${creatureFaceBody(cid, cr, evo)}</div>`;
+  $('galZoomInfo').innerHTML = creatureDetailInfoHTML(cid, cr, evo, true);
   $('galZoomPosition').textContent = `${galleryDetailIndex + 1} / ${galleryIds.length}`;
   $('galZoomInfo').querySelector('[data-mode="base"]').onclick = () => { galleryDetailEvo = false; renderGalleryDetail(); };
   const evoBtn = $('galZoomInfo').querySelector('[data-mode="evo"]');
@@ -1478,6 +1534,57 @@ function bigCardHTML(c) {
   if (spl) return `<div class="face front spellCard">${spellFaceBody(c, spl)}</div>`;
   const cr = state.catalog.CREATURES[c];
   return `<div class="face front creatureCard">${creatureFaceBody(c, cr, /_f$/.test(c))}</div>`;
+}
+function shopPriceHTML(item, visit) {
+  return `<img src="/assets/ic_gold.png" alt="">${visit.half ? `<span class="shopOld">${item.basePrice}G</span>` : ''}<span>${item.price}G</span>`;
+}
+function shopCompactHTML(item, visit) {
+  const C = state.catalog, cr = C.CREATURES[item.card], spl = C.SPELLS[item.card], sup = C.SUPPORTS[item.card];
+  let name = 'カードを削除', bg = '', art = '<img src="/assets/cards/shop-remove-v2.webp" alt="">';
+  let kind = '削除', stats = '';
+  if (cr) {
+    const bid = item.card.replace(/_f$/, '');
+    name = cr.name; bg = `<img class="shopCompactBg" src="/assets/cards/bg-${cr.elem || 'neutral'}.webp" alt="">`;
+    art = HAS_ART.has(bid) ? `<img src="/assets/cards/c_${bid}.webp" alt="">`
+      : `<div class="tok2" style="background:${RUNE[cr.elem] || '#6E7288'}">${name.slice(0,4)}</div>`;
+    stats = `<div class="shopCompactStats"><i class="statIconDisk"><img src="/assets/cards/stat-at-icon.svg" alt="AT"></i>${cr.st}
+      <i class="statIconDisk"><img src="/assets/cards/stat-hp-icon.svg" alt="HP"></i>${cr.hp}</div>`;
+  } else if (spl) {
+    name = spl.name; kind = 'スペル';
+    const dedicated = dedicatedSpellAsset(item.card);
+    bg = `<img class="shopCompactBg" src="${dedicated || '/assets/cards/bg-spell-v1.webp'}" alt="">`;
+    art = dedicated ? '' : spellArt(item.card, '100%');
+    stats = `<div class="shopCompactKind">${kind}</div>`;
+  } else if (sup) {
+    name = sup.name; kind = supportPower(sup);
+    bg = '<img class="shopCompactBg" src="/assets/cards/bg-weapon-v1.webp" alt="">';
+    art = supportArt(item.card); stats = `<div class="shopCompactKind">${kind}</div>`;
+  }
+  return `<div class="shopCompact ${cr ? 'creature' : spl ? 'spell' : sup ? 'support' : 'remove'}">${bg}
+    <div class="shopCompactShade"></div><div class="shopCompactName" data-card-name>${name}</div>
+    <div class="shopCompactArt">${art}</div><div class="shopCompactFooter">
+      <div class="shopCompactPrice">${shopPriceHTML(item, visit)}</div>${stats || `<div class="shopCompactKind">${kind}</div>`}
+    </div></div>`;
+}
+function renderShopDetail(item, visit) {
+  const C = state.catalog, cr = C.CREATURES[item.card], spl = C.SPELLS[item.card], sup = C.SUPPORTS[item.card];
+  $('shopDetailCard').innerHTML = item.kind === 'remove' ? REMOVE_CARD_HTML : bigCardHTML(item.card);
+  let info;
+  if (cr) {
+    info = creatureDetailInfoHTML(item.card, cr, false, false);
+  } else if (spl) {
+    info = `<h2 class="galDetailName">${spl.name}</h2><div class="galMeta"><span class="galBadge">スペル</span>
+      <span class="galBadge">${spl.rarity || 'N'}</span></div><h3 class="galAbilityName">効果</h3>
+      <p class="galAbilityText">${spl.desc || '効果なし'}</p>`;
+  } else if (sup) {
+    info = `<h2 class="galDetailName">${sup.name}</h2><div class="galMeta"><span class="galBadge">支援カード</span>
+      <span class="galBadge">${supportPower(sup)}</span></div><h3 class="galAbilityName">効果</h3>
+      <p class="galAbilityText">${supportDescription(sup)}</p>`;
+  } else {
+    info = `<h2 class="galDetailName">カードを削除</h2><div class="galMeta"><span class="galBadge">デッキ整理</span></div>
+      <h3 class="galAbilityName">効果</h3><p class="galAbilityText">手札または捨て札からカードを1枚選んで削除する。対象を確定するまで料金は消費しない。</p>`;
+  }
+  $('shopDetailScroll').innerHTML = `${info}<div id="shopDetailPrice" class="shopPrice">${shopPriceHTML(item, visit)}</div>`;
 }
 
 const me = () => state.players.find(p => p.id === pid);
@@ -1787,6 +1894,7 @@ function showCardActionConfirm(c, optionId) {
 }
 function setContextActions(title, options) {
   const btn = $('contextBtn');
+  $('topTools').classList.toggle('hasContext', options.length > 0);
   if (!options.length) { btn.style.display = 'none'; btn.onclick = null; return; }
   btn.style.display = 'inline-flex';
   btn.textContent = browsingActionHand ? '選択肢に戻る' : (options.length === 1 ? iconize(options[0].label) : '行動');
@@ -1806,7 +1914,11 @@ function render() {
   $('deckBtn').style.display = showGui ? '' : 'none';
   $('mapBtn').style.display = showGui ? '' : 'none';
   $('fsBtn').style.display = showGui ? '' : 'none';
-  $('ultBtn').classList.toggle('on', !!(showGui && p && p.type === 'roll' && p.options.some(o => o.id === 'ult')));
+  const canUlt = !!(showGui && p && p.type === 'roll' && p.options.some(o => o.id === 'ult'));
+  $('ultBtn').style.display = showGui ? '' : 'none';
+  $('ultBtn').disabled = !canUlt;
+  $('ultBtn').classList.toggle('on', canUlt);
+  $('ultBtn').ariaDisabled = String(!canUlt);
   $('msg').classList.toggle('big', !showGui);
   setContextActions('', []);
   $('myFace').src = m.charId ? '/assets/f_' + m.charId + '.png' : '';
@@ -1926,6 +2038,7 @@ function render() {
   $('diceDock').innerHTML = p
     ? `<div style="font-size:max(1.8dvh,12px);color:var(--gold-soft);text-align:center">${['tile','pick_creature','support'].includes(p.type) ? 'カードまたは行動を選択' : '行動選択中'}</div>`
     : '<div class="waitDots">● ● ●</div>';
+  $('msg').textContent = p ? p.prompt : '';
 
   const pnow = pend();
   if (!pnow || !['forget', 'overflow', 'forge', 'swap_pick'].includes(pnow.type)) closePickOv();
@@ -2072,14 +2185,10 @@ function render() {
     $('shopScene').classList.add('on');
     $('shopGold').innerHTML = '<img src="/assets/ic_gold.png" style="height:2.4dvh;vertical-align:-0.4dvh"> ' + m.gold + ' G';
     const visit = state.shopVisit;
-    const shopFace = item => item.kind === 'remove'
-      ? REMOVE_CARD_HTML
-      : bigCardHTML(item.card);
     $('shopShelf').innerHTML = visit ? visit.items.map(item => {
       const cls = `${item.sold ? ' sold' : ''}${!item.sold && item.price > m.gold ? ' unaffordable' : ''}`;
-      const old = visit.half ? `<span class="shopOld">${item.basePrice}G</span>` : '';
-      return `<div class="shopProduct${cls}" data-slot="${item.slotId}"><div class="shopCard">${shopFace(item)}</div>
-        <div class="shopPrice"><img src="/assets/ic_gold.png">${old}${item.price}G</div>${item.sold ? '<div class="shopSold">売り切れ</div>' : ''}</div>`;
+      return `<div class="shopProduct${cls}" data-slot="${item.slotId}"><div class="shopCard">${shopCompactHTML(item, visit)}</div>
+        ${item.sold ? '<div class="shopSold">売り切れ</div>' : ''}</div>`;
     }).join('') : '';
     document.querySelectorAll('.shopProduct:not(.sold)').forEach(el => el.onclick = () => openShopDetail(el.dataset.slot));
     $('shopExit').onclick = () => choose('done');

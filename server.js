@@ -1,4 +1,4 @@
-// Summons Crest 統合サーバー v0.1(段階①: ゲームエンジン)
+// SUMMONS CODE 統合サーバー v0.1(段階①: ゲームエンジン)
 // 仕様書v0.2準拠: 勝利点12先取 / 土地レベル / 連鎖通行料 / 支援カード付き侵略戦闘 /
 // 祠(巡礼称号) / 市場(公開商品の購入・カード削除) / 覇者称号 / キャラ選択のダイス競合
 // 起動: node server.js
@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.20';
+const VERSION = '1.23';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
@@ -126,9 +126,9 @@ const CREATURES = {
   strauk:  { name: 'ストラウク', elem: null, st: 10, hp: 70, cost: 120,
              fx: '【地脈適応】どの属性の土地からでも地形補正を得る', rarity: 'L' },
   samurai_saga:{ name: 'サムライ・サガ', elem: null, st: 50, hp: 50, cost: 120,
-             fx: '【地脈改変】どの属性の土地からでも地形補正を得る。召喚した土地を好きな属性に変更できる', rarity: 'L' },
+             fx: '【地脈改変】全属性の土地で地形補正を得る。召喚した土地を任意の属性へ変更できる', rarity: 'L' },
   marlow:  { name: 'マーロー', elem: 'wind', st: 30, hp: 30, cost: 50,
-             fx: '【風渡り】自領地に止まった時、配置中のマーロー1体を空いている風属性土地へ移動できる', rarity: 'R' },
+             fx: '【風渡り】自領地停止時、配置中のマーロー1体を空いている風属性土地へ移動できる', rarity: 'R' },
   shuterio:{ name: 'シュテリオ', evo: 'エアロシュティレ', elem: 'wind', st: 30, hp: 30, cost: 70,
              evoSt: 40, evoHp: 50, fx: '【支援】戦闘時、手札のクリーチャーを支援カードとして使える', rarity: 'R' },
 };
@@ -2722,7 +2722,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log('Summons Crest 統合サーバー起動');
+  console.log('SUMMONS CODE 統合サーバー起動');
   console.log(`  共有ボード: http://localhost:${PORT}`);
   console.log(process.env.PUBLIC_URL
     ? `  公開URL: ${process.env.PUBLIC_URL}`

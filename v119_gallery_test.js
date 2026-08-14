@@ -30,9 +30,9 @@ for (const [id, file] of Object.entries({ mapBtn:'phone-btn-land-v1', galleryBtn
   ok(fs.existsSync(path.join(__dirname, 'public', 'assets', 'ui', `${file}.webp`)), `${file} asset exists`);
 }
 ok(/id="galleryBtn" aria-label="カード一覧">カード一覧</.test(html), 'gallery utility is renamed to card list');
-ok(/id="ultBtn" aria-label="必殺技">必殺技</.test(html), 'ultimate uses unified button label');
+ok(/id="ultBtn" aria-label="必殺技"[^>]*>必殺技</.test(html), 'ultimate uses unified button label');
 ok(/o\.id !== 'roll' && o\.id !== 'ult'/.test(html), 'ultimate is removed from generic context actions');
-ok(fs.existsSync(path.join(__dirname, 'public', 'assets', 'ui', 'phone-btn-ultimate-v1.webp')), 'generated ultimate button asset exists');
+ok(fs.existsSync(path.join(__dirname, 'public', 'assets', 'ui', 'phone-btn-ultimate-v2.webp')), 'generated square ultimate button asset exists');
 ok(fs.existsSync(path.join(__dirname, 'public', 'assets', 'ui', 'phone-game-bg-v1.png')), 'phone background asset exists');
 ok(/#hand \.card \{ filter:drop-shadow/.test(html), 'hand cards have background-separating shadow');
 ok(/\.diceImgBtn img \{[^}]*filter:none/.test(html), 'dice image has no added shadow');
