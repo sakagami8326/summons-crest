@@ -90,7 +90,7 @@ for (const id of ['weapon','gweapon','shield','gshield','jinx'])
   r.battle = { tile:21, attacker:atk.id, defender:def.id, atkCreature:'alter',
     supports:{ [atk.id]:{kind:'none'}, [def.id]:{kind:'none'} }, startedAt:1 };
   G.resolveBattle(r);
-  eq([r.lastBattle.st, r.lastBattle.atkDf], [40,10], 'Soul Eater adds AT and DF while attacking');
+  eq([r.lastBattle.st, r.lastBattle.atkDf], [30,10], 'Soul Eater adds DF only while attacking');
   ok(r.lastBattle.notes.some(n => n.includes('魂喰らい') && n.includes('廃棄2枚')), 'attack bonus is logged');
   G.rooms.delete(r.code);
 }
@@ -101,7 +101,7 @@ for (const id of ['weapon','gweapon','shield','gshield','jinx'])
   r.battle = { tile:21, attacker:atk.id, defender:def.id, atkCreature:'marlow',
     supports:{ [atk.id]:{kind:'none'}, [def.id]:{kind:'none'} }, startedAt:2 };
   G.resolveBattle(r);
-  eq([r.lastBattle.defSt, r.lastBattle.df], [45,15], 'Soul Eater adds AT and DF while defending');
+  eq([r.lastBattle.defSt, r.lastBattle.df], [30,15], 'Soul Eater adds DF only while defending');
   G.rooms.delete(r.code);
 }
 

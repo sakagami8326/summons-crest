@@ -799,27 +799,44 @@
 
   #summonCut.on #scText { animation:scText .45s ease .32s backwards; }
   @keyframes scText { from { transform:translateY(28px); opacity:0; } }
-  /* HUD拡大+属性バッジ */
-  #hud { width:322px !important; }
-  .plate { width:322px !important; height:112px !important; padding:14px 18px 12px 20px !important; }
-  .plate .face { width:60px !important; height:60px !important; left:-16px !important; top:20px !important; }
-  .plate .row1 { margin-left:40px !important; }
-  .plate .pname { font-size:17.5px !important; }
-  .plate .pts { font-size:29px !important; letter-spacing:0; white-space:nowrap; }
-  .plate .row2 { margin-left:46px !important; font-size:12.5px !important; gap:8px !important; margin-top:6px !important;
-      white-space:nowrap; overflow:hidden; }
-  .plate .row3 { margin-left:50px !important; gap:8px !important; margin-top:7px !important; }
-  .plate .ic img { width:17px !important; height:17px !important; }
-  .ebadge { min-width:44px !important; height:26px !important; font-size:14px !important; }
-  .plate { background-image:linear-gradient(90deg,rgba(10,12,25,.82),rgba(10,12,25,.42)),var(--hud-bg) !important;
-      background-position:center !important; background-size:cover !important; border:1px solid rgba(255,255,255,.34);
-      border-radius:9px; color:#fff7df !important; box-shadow:0 6px 18px rgba(0,0,0,.38),inset 0 0 20px rgba(255,255,255,.08); }
+  /* TV HUD: 胸上の召喚士を前面に出した横長プレート */
+  #hud { top:40px !important; left:30px !important; width:456px !important; }
+  .plate { width:456px !important; height:114px !important; padding:13px 18px 11px 20px !important;
+      isolation:isolate; overflow:hidden; }
+  .plate::before { content:""; position:absolute; z-index:-1; inset:0; pointer-events:none;
+      border:1px solid rgba(255,255,255,.42); border-left:5px solid var(--hud-color,#C9A227);
+      border-radius:12px; box-shadow:inset 0 0 24px rgba(255,255,255,.08); }
+  .plate::after { content:""; position:absolute; z-index:-1; right:6px; top:5px; width:118px; height:100px;
+      opacity:.17; pointer-events:none; border-radius:50%;
+      background:repeating-conic-gradient(from 8deg,var(--hud-color,#C9A227) 0 1.2deg,transparent 1.2deg 18deg);
+      -webkit-mask:radial-gradient(circle,transparent 0 42%,#000 43% 45%,transparent 46% 60%,#000 61% 63%,transparent 64%);
+      mask:radial-gradient(circle,transparent 0 42%,#000 43% 45%,transparent 46% 60%,#000 61% 63%,transparent 64%); }
+  .hudPortrait { position:absolute; z-index:2; left:0; bottom:0; width:146px; height:114px;
+      overflow:hidden; pointer-events:none; border-radius:11px 0 0 11px; }
+  .hudBust { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:center bottom;
+      transform:translateY(2px);
+      filter:drop-shadow(0 3px 6px rgba(0,0,0,.7)); }
+  .hudBust.fallback { inset:8px; width:calc(100% - 16px); height:calc(100% - 16px); border-radius:12px; }
+  .plate .row1 { position:relative; z-index:3; margin-left:126px !important; }
+  .plate .pname { font-size:18px !important; }
+  .plate .pts { font-size:31px !important; letter-spacing:0; white-space:nowrap; }
+  .plate .row2 { position:relative; z-index:3; margin-left:134px !important; font-size:13px !important;
+      gap:10px !important; margin-top:7px !important; white-space:nowrap; overflow:hidden; }
+  .plate .row3 { position:relative; z-index:3; margin-left:138px !important; gap:8px !important; margin-top:7px !important; }
+  .plate .ic img { width:18px !important; height:18px !important; }
+  .ebadge { min-width:48px !important; height:26px !important; font-size:14px !important; }
+  .plate { background-image:linear-gradient(90deg,rgba(5,9,19,.35) 0 29%,rgba(8,12,28,.9) 35%,rgba(8,12,28,.7)),var(--hud-bg) !important;
+      background-position:center !important; background-size:cover !important; border:0;
+      border-radius:12px; color:#fff7df !important; box-shadow:0 7px 20px rgba(0,0,0,.42); }
   .plate.turn { filter:drop-shadow(0 0 9px var(--hud-color,#F2D062)) brightness(1.08); }
   .plate .pname { font-family:'Reggae One','Yu Mincho',serif; font-weight:700; color:#fff7df;
       text-shadow:0 2px 5px rgba(0,0,0,.9); }
   .plate .pts,.plate .row2,.plate .row3,.plate .rankBadge { font-family:var(--font-mincho)!important; }
   .plate .pts { color:#fff7df !important; text-shadow:0 2px 6px rgba(0,0,0,.9) !important; }
   .plate .pts small,.plate .row2 { color:rgba(255,247,223,.9) !important; text-shadow:0 1px 4px rgba(0,0,0,.9); }
+  @media (max-width:1400px), (max-height:800px) {
+    #hud { transform:scale(.84); transform-origin:top left; }
+  }
   .titleChip { display:inline-block; background:linear-gradient(180deg,#E8C55A,#B8901F); color:#241C05;
       border-radius:4px; font-size:11px; padding:1px 6px; margin-left:4px; vertical-align:1px; font-family:sans-serif; }
   .ebadge { min-width:38px; height:23px; border-radius:5px; display:inline-flex; align-items:center;
@@ -2457,7 +2474,7 @@ function tileInfoHTML(i) {
           if (fx.uplift) b2.push('リストア(防衛DF+10)');
           return b2.length ? `<div class="tiSub" style="color:#F2D062">${b2.join(' / ')}</div>` : ''; })()}
         ${cr.fx ? `<div class="tiFx">${cr.fx}</div>` : ''}
-        ${soulCount !== null ? `<div class="tiSoul">廃棄札 ${soulCount}枚<br>【魂喰らい】AT・DF +${soulCount * 5}</div>` : ''}
+        ${soulCount !== null ? `<div class="tiSoul">廃棄札 ${soulCount}枚<br>【魂喰らい】DF +${soulCount * 5}</div>` : ''}
         <div class="tiToll">通行料 ${Math.round(toll)}G</div>
       </div>
     </div>`;
@@ -2904,7 +2921,8 @@ function renderHUD() {
     const crowns = (state.titles.conqueror === p.id ? '<img class="titleIc" src="/assets/ic_conqueror.png" title="覇者">' : '') +
       (state.titles.pilgrim === p.id ? '<img class="titleIc" src="/assets/ic_pilgrim.png" title="大巡礼者">' : '');
     el.innerHTML = `
-      <img class="face" src="${p.charId ? '/assets/f_' + p.charId + '.png' : ''}">
+      ${p.charId ? `<div class="hudPortrait"><img class="hudBust hudBust-${p.charId}" src="/assets/hud_${p.charId}.png?v=1275"
+        onerror="this.onerror=null;this.src='/assets/f_${p.charId}.png';this.classList.add('fallback')"></div>` : ''}
       <div class="row1">
         <div class="rankBadge ${rank < 3 ? 'rank' + (rank+1) : ''}">${rank + 1}</div>
         <div class="pname">${p.name}${p.isBot ? ' <small style="color:#F2D062">BOT</small>' : ''}${crowns}</div>
@@ -3146,7 +3164,7 @@ function battleDetailHTML(pid, cid, level, mods = [], exileCount = null) {
   const soulCount = bid === 'alter' ? Number(exileCount ?? (pl && pl.exileCount) ?? 0) : null;
   return `<div class="bdTop">${pl ? pl.name : ''} ／ ${elem}属性 ／ ${c.cost || 0}G</div>
     <div class="bdName">${name}</div><div class="bdBase">基礎 AT ${at}　HP ${hp}</div>
-    ${soulCount !== null ? `<div class="bdSoul">廃棄札 ${soulCount}枚　【魂喰らい】AT・DF +${soulCount * 5}</div>` : ''}
+    ${soulCount !== null ? `<div class="bdSoul">廃棄札 ${soulCount}枚　【魂喰らい】DF +${soulCount * 5}</div>` : ''}
     <div class="bdAbility"><b>【${title}】</b><p>${body}</p></div>
     <div class="bdMods">${mods.filter(Boolean).map(x=>`<span>${x}</span>`).join('') || '<span>戦闘補正なし</span>'}</div>`;
 }
@@ -3593,7 +3611,7 @@ function render() {
   if (!state) return;
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.26' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.28' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');

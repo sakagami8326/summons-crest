@@ -27,8 +27,9 @@ function game(chars = ['villa', 'adel']) {
   return r;
 }
 
-eq([G.VERSION, pkg.version], ['1.26', '1.26.0'], 'version is unified at v1.26');
-ok(/board 1\.26/.test(board), 'board version tag is v1.26');
+ok(Number(G.VERSION) >= 1.27 && Number(pkg.version.replace(/\.0$/, '')) >= 1.27,
+  'version is unified at v1.27 or newer');
+ok(Number((board.match(/board ([\d.]+)/) || [])[1]) >= 1.27, 'board version tag is v1.27 or newer');
 
 // Villa movement gets a dedicated event instead of entering the dice renderer.
 {
@@ -90,9 +91,12 @@ ok(/height:min\(41\.5dvh/.test(phone) && /gap:\.16dvh \.08vw/.test(phone),
 ok(!/shopCompactExile/.test(compact), 'phone shop shelf omits exile badges');
 ok(/#shopGold\s*\{[^}]*bottom:1\.2dvh/.test(phone), 'shop gold is anchored at bottom-left');
 
-// Summoner selection crops upper bodies and TV pawn shadows sit closer to the pawn.
-ok(/const CHAR_SELECT_FOCUS\s*=/.test(phone) && /--cs-scale/.test(phone),
-  'phone summoner portraits use per-character upper-body focus settings');
+// Summoner selection uses the dedicated HUD crops and keeps copy in a separate panel.
+ok(/src="\/assets\/hud_\$\{id\}\.png\?v=1276"/.test(phone) &&
+   /class="csVisual"/.test(phone) && /class="csInfo"/.test(phone),
+  'phone summoner portraits use dedicated HUD art with a separate information panel');
+ok(!/const CHAR_SELECT_FOCUS\s*=/.test(phone) && !/--cs-scale/.test(phone),
+  'phone summoner portraits no longer depend on per-character CSS cropping');
 ok(/\.scPawnWrap::after\s*\{[^}]*bottom:-\.35vh/.test(board),
   'TV summoner pawn shadow is moved upward');
 

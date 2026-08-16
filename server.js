@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.26';
+const VERSION = '1.28';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
@@ -19,8 +19,8 @@ const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 1
 // キャラ別初期デッキ12枚(初期デッキ仕様案v0.1 第12節)
 // v0.53: 黄金・ひらめきを全員1枚、衰弱=レダーニ/交代=リンネイ・グリース/移動=ミオ
 const CHAR_DECKS = {
-  redani: ['gecko', 'gecko', 'gecko', 'gaston', 'gaston', 'cleo',
-           'sp_gold', 'sp_insight', 'sp_weaken',
+  redani: ['gecko', 'gecko', 'gecko', 'kamadoma', 'kamadoma', 'cleo',
+           'sp_gold', 'sp_insight', 'sp_bloodstained_blade',
            'weapon', 'weapon', 'jinx'],
   linnei: ['orphe', 'orphe', 'orphe', 'nome', 'nome', 'cleo',
            'sp_gold', 'sp_insight', 'sp_swap',
@@ -137,7 +137,12 @@ const CREATURES = {
   gaust:   { name: 'ガウスト', evo: 'マスターガウスト', elem: 'wind', st: 30, hp: 30, cost: 70,
              evoSt: 40, evoHp: 50, fx: '【魂の選別】配置時、1枚引き、手札1枚を廃棄する', rarity: 'N' },
   alter:   { name: 'オルター', evo: 'オルボロス', elem: 'wind', st: 30, hp: 40, cost: 70,
-             evoSt: 40, evoHp: 50, fx: '【魂喰らい】戦闘時、自分の廃棄1枚につきAT・DF+5', rarity: 'R' },
+             evoSt: 40, evoHp: 50, fx: '【魂喰らい】戦闘時、自分の廃棄1枚につきDF+5', rarity: 'R' },
+  toxy:    { name: 'トキシー', evo: 'マッドミスト', elem: 'wind', st: 30, hp: 40, cost: 120,
+             evoSt: 30, evoHp: 50, fx: '【瘴気連鎖】配置中、自分のカード廃棄時、敵1人の手札を1枚捨てる', rarity: 'R' },
+  kamadoma:{ name: 'カマドーマ', evo: 'ダイテッカン', elem: 'fire', st: 20, hp: 40, cost: 60,
+             evoSt: 30, evoHp: 60, fx: '【武具錬成】配置時、武器1枚を手札に加える',
+             evoFx: '【武具錬成】配置時に武器を得る。【再鍛造】戦闘勝利時、廃棄の支援1枚を回収', rarity: 'N' },
 };
 const ITEMS = {}; // v0.34: 呪いアイテムは廃止(スペル「衰弱の呪文」に移行)
 const SPELLS = {
@@ -201,7 +206,7 @@ const SUPPORTS = {
 EXILE_SPELLS = new Set(Object.entries(SPELLS).filter(([, sp]) => sp.exileAfterUse).map(([id]) => id));
 const CHARS = {
   redani: { name: 'レダーニ', color: '#D85A30', elem: 'fire',
-            style: '侵略・攻撃', deckNote: 'ゲッコー2+武器2 ─ 衰弱で崩して攻める' },
+            style: '侵略・攻撃', deckNote: 'ゲッコー3+カマドーマ2 ─ 武具錬成と血染めの刃で攻める' },
   linnei: { name: 'リンネイ', color: '#378ADD', elem: 'water',
             style: '経済・通行料', deckNote: 'オルフェ2+黄金2 ─ 資金と収入を伸ばす' },
   grease: { name: 'グリース', color: '#C69A32', elem: 'earth',
@@ -228,7 +233,7 @@ for (const [cid, c] of Object.entries({ ...CREATURES }))
   if (c.evo) CREATURES[cid + '_f'] = { name: c.evo, elem: c.elem, st: c.evoSt, hp: c.evoHp,
     cost: c.cost, fx: c.evoFx || c.fx, rarity: c.rarity, forged: true };
 
-const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral','bunnyhop','strauk','samurai_saga','marlow','shuterio','gaust','alter'];
+const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral','bunnyhop','strauk','samurai_saga','marlow','shuterio','gaust','alter','toxy','kamadoma'];
 // アートが存在するクリーチャーID(assetsのc_*.pngを起動時に走査 ─ v0.82)。
 // クライアントはcatalog.artIds経由で受け取る。手書きリストの二重管理はしない
 // (新クリーチャーはIDとファイル名を一致させて置くだけで盤面・カード・戦闘に反映される)
@@ -317,6 +322,7 @@ function makeRoom(mode = 'normal') {
     pending: {},                          // playerId → { type, prompt, options }
     titles: { conqueror: null, pilgrim: null },
     duel: null, lastBattle: null, winner: null, barrier: {}, ultSequence: null, ultTimer: null,
+    effectQueue: [], effectResume: null, battleAfter: null,
     elemOv: {},                           // 属性変更スペル: マスi → 'fire'等
     tileFx: {},                           // 土地継続効果: マスi → {vortex,tide:{by},uplift,roots}
     curses: {},                           // tileIdx → { by, hp }
@@ -380,6 +386,51 @@ function universalTerrain(creatureId) {
 function cardName(cardId) {
   return (CREATURES[cardId] || SPELLS[cardId] || SUPPORTS[cardId] || { name: cardId }).name;
 }
+function placedToxyCount(r, playerId) {
+  return r.owners.reduce((n, o) => n + (o && o.player === playerId && baseId(o.creature) === 'toxy' ? 1 : 0), 0);
+}
+function exileCard(r, p, cardId, source = 'effect', battle = false) {
+  if (!Array.isArray(p.exile)) p.exile = [];
+  p.exile.push(cardId);
+  if (!Array.isArray(r.effectQueue)) r.effectQueue = [];
+  const triggers = placedToxyCount(r, p.id);
+  for (let n = 0; n < triggers; n++)
+    r.effectQueue.push({ type: 'toxy', owner: p.id, card: cardId, source, battle: !!battle, order: n + 1 });
+  return triggers;
+}
+function finishEffectResume(r, resume) {
+  r.effectResume = null;
+  if (!resume) return;
+  const p = resume.player ? pById(r, resume.player) : null;
+  if (resume.type === 'roll') return p && !p.bankrupt ? askRoll(r, p) : settleAll(r);
+  if (resume.type === 'market') return p && !p.bankrupt ? askMarket(r, p) : settleAll(r);
+  if (resume.type === 'placement') return p ? resumeAfterPlacement(r, p, resume.pend || {}) : settleAll(r);
+  if (resume.type === 'post_battle') return continuePostBattle(r);
+}
+function processEffectQueue(r) {
+  if (!Array.isArray(r.effectQueue)) r.effectQueue = [];
+  while (r.effectQueue.length) {
+    const effect = r.effectQueue.shift();
+    if (!effect || effect.type !== 'toxy') continue;
+    const owner = pById(r, effect.owner);
+    if (!owner || owner.bankrupt) continue;
+    const targets = r.players.filter(q => !q.bankrupt && q.id !== owner.id && (q.hand || []).length > 0);
+    if (!targets.length) {
+      log(r, `【瘴気連鎖】${owner.name}が廃棄したが、手札のある敵がいないため不発`);
+      continue;
+    }
+    ask(r, owner.id, 'toxy_target', `【瘴気連鎖】手札を捨てさせる敵を選ぶ(${effect.order}体目)`,
+      targets.map(q => ({ id: 'tx:' + q.id, player: q.id, label: `${q.name}(手札${q.hand.length}枚)` })));
+    Object.assign(r.pending[owner.id], { effect });
+    return true;
+  }
+  const resume = r.effectResume;
+  return finishEffectResume(r, resume);
+}
+function resumeAfterExileEffects(r, resume) {
+  if (resume) r.effectResume = resume;
+  return processEffectQueue(r);
+}
 function askMandatoryHandExile(r, p, type, prompt, extra = {}) {
   if (!p.hand.length) return false;
   ask(r, p.id, type, prompt, p.hand.map((c, i) => ({
@@ -391,14 +442,7 @@ function askMandatoryHandExile(r, p, type, prompt, extra = {}) {
 }
 function resumeAfterPlacement(r, p, pend) {
   if (pend.after === 'swap') return askRoll(r, p);
-  if (pend.after === 'battle') {
-    const winner = pById(r, pend.battleWinner || p.id);
-    if (winner && !winner.bankrupt) {
-      log(r, `戦勝の報酬 ─ ${winner.name}は3枚のカードから1枚を選ぶ`);
-      return startDraft(r, winner, 'battle');
-    }
-    return settleAll(r);
-  }
+  if (pend.after === 'battle') return continuePostBattle(r);
   return endTurn(r);
 }
 function onCreatureSummoned(r, p, creatureId, reason, tile) {
@@ -410,6 +454,11 @@ function onCreatureSummoned(r, p, creatureId, reason, tile) {
   if (baseId(creatureId) === 'trooper' && !isEvolved({ creature: creatureId })) {
     gainToDeck(r, p, ['sp_flame_vortex'], 'trooper');
     log(r, `【火種】${CREATURES.trooper.name}の配置で「炎の渦」1枚を山札へ加えた`);
+  }
+  if (baseId(creatureId) === 'kamadoma') {
+    p.hand.push('weapon');
+    r.lastGain = { player: p.id, n: 1, cards: ['weapon'], reason: 'kamadoma', at: stamp(r) };
+    log(r, `【武具錬成】${CREATURES.kamadoma.name}の配置で${p.name}は武器1枚を手札に加えた`);
   }
   if (baseId(creatureId) === 'gaust') {
     const got = drawCards(r, p, 1);
@@ -1121,7 +1170,8 @@ function consumeBattleSupport(r, pid, choice) {
     p.gold = Math.max(0, p.gold - cost);
     p.discard.push(c.cardId);
   } else {
-    (SUPPORTS[c.cardId].exileAfterUse ? p.exile : p.discard).push(c.cardId);
+    if (SUPPORTS[c.cardId].exileAfterUse) exileCard(r, p, c.cardId, 'battle_support', true);
+    else p.discard.push(c.cardId);
   }
 }
 function resolveBattle(r) {
@@ -1160,8 +1210,8 @@ function resolveBattle(r) {
   let st = aBase.st + (aEff ? aEff.st : 0);
   const atkSoul = baseId(b.atkCreature) === 'alter' ? (atk.exile || []).length * 5 : 0;
   const defSoul = baseId(o.creature) === 'alter' ? (def.exile || []).length * 5 : 0;
-  if (atkSoul) { st += atkSoul; notes.push(`【魂喰らい】廃棄${atk.exile.length}枚で侵略側AT・DF+${atkSoul}!`); }
-  if (defSoul) notes.push(`【魂喰らい】廃棄${def.exile.length}枚で防衛側AT・DF+${defSoul}!`);
+  if (atkSoul) notes.push(`【魂喰らい】廃棄${atk.exile.length}枚で侵略側DF+${atkSoul}!`);
+  if (defSoul) notes.push(`【魂喰らい】廃棄${def.exile.length}枚で防衛側DF+${defSoul}!`);
   if (baseId(b.atkCreature) === 'grayble' && carried > 0) {
     const chase = atkEvolved ? 20 : 10;
     st += chase;
@@ -1224,7 +1274,7 @@ function resolveBattle(r) {
   const atkDF = (aEff ? aEff.hp : 0) + atkShadeDF + atkSoul;
   const atkCarried = mvSrc ? (mvSrc.dmg || 0) : (corridor ? (b.atkCarry || 0) : 0);
   const atkEffHp = Math.max(1, aBase.hp - atkCarried);
-  const defSt = dBase.st + (dEff ? dEff.st : 0) + defSoul;
+  const defSt = dBase.st + (dEff ? dEff.st : 0);
 
   // ===== v0.57 戦闘シーケンス: 戦闘耐久値 = 現在HP + DF =====
   const hits = baseId(b.atkCreature) === 'avalanche' ? 2 : 1;      // 【双撃】侵略時のみ2回
@@ -1267,7 +1317,9 @@ function resolveBattle(r) {
     defPreHp: effHp, defPostHp: effHp,
     defPreDf: Math.max(0, defDF - (dEff ? dEff.hp : 0)), defPostDf: defDF,
     atkExileCount: (atk.exile || []).length, defExileCount: (def.exile || []).length,
+    // v1.28: 旧フィールド名は保存・旧UI互換のため残し、値はDF補正として扱う。
     atkSoulBonus: atkSoul, defSoulBonus: defSoul,
+    atkSoulDfBonus: atkSoul, defSoulDfBonus: defSoul,
     hits: hitsDone, preempt,
     moveFrom: b.moveFrom,
     remainHp: win ? 0 : effHp - dealt,
@@ -1358,15 +1410,41 @@ function resolveBattle(r) {
   // v0.74: 戦勝報酬は共通山札から3枚ドラフト(勝者=攻守どちらでも)。
   // ドラフト完了後にsettleAll→endTurnへ続く(進行を直列化し、r.draftの競合を防ぐ)
   const bWinner = win ? atk : def;
+  r.battleAfter = { winner: bWinner.id, attacker: atk.id, defender: def.id, tile: b.tile,
+    invasionWon: !!win, recoveryDone: false };
   if (win && onCreatureSummoned(r, atk, b.atkCreature, 'battle', b.tile)) {
     Object.assign(r.pending[atk.id], { battleWinner: bWinner.id });
     return;
   }
-  if (!bWinner.bankrupt) {
-    log(r, `戦${win ? '勝' : '果'}の報酬 ─ ${bWinner.name}は3枚のカードから1枚を選ぶ`);
-    return startDraft(r, bWinner, 'battle');
+  return continuePostBattle(r);
+}
+
+function continuePostBattle(r) {
+  const state = r.battleAfter;
+  if (!state) return settleAll(r);
+  const winner = pById(r, state.winner);
+  if (!winner || winner.bankrupt || r.winner) {
+    r.battleAfter = null;
+    r.effectResume = null;
+    return settleAll(r);
   }
-  settleAll(r);
+  if ((r.effectQueue || []).length) return resumeAfterExileEffects(r, { type: 'post_battle' });
+  if (!state.recoveryDone) {
+    state.recoveryDone = true;
+    const placed = r.owners[state.tile];
+    if (placed && placed.player === winner.id && baseId(placed.creature) === 'kamadoma' && isEvolved(placed)) {
+      const opts = (winner.exile || []).map((card, i) => SUPPORTS[card]
+        ? { id: 'dr:' + i, card, label: `${cardName(card)}を手札に戻す` } : null).filter(Boolean);
+      if (opts.length) {
+        ask(r, winner.id, 'daitekkan_recover', '【再鍛造】廃棄された支援カード1枚を選ぶ', opts);
+        return;
+      }
+    }
+  }
+  r.battleAfter = null;
+  r.effectResume = null;
+  log(r, `戦${state.invasionWon ? '勝' : '果'}の報酬 ─ ${winner.name}は3枚のカードから1枚を選ぶ`);
+  return startDraft(r, winner, 'battle');
 }
 
 // ===== アクションハンドラ =====
@@ -1383,28 +1461,51 @@ function handleChoose(r, playerId, optionId) {
     return resolvePickDraw(r, p, +optionId.slice(3));  // optionIdはpd:0/pd:1のみ(冒頭で検証済み)
   }
 
+  if (pend.type === 'toxy_target') {
+    const target = pById(r, optionId.slice(3));
+    if (target && target.id !== p.id && !target.bankrupt && target.hand.length) {
+      const i = Math.floor(Math.random() * target.hand.length);
+      const card = target.hand.splice(i, 1)[0];
+      target.discard.push(card);
+      log(r, `【瘴気連鎖】${p.name}の瘴気が${target.name}の手札「${cardName(card)}」を捨てさせた`);
+    }
+    return processEffectQueue(r);
+  }
+
+  if (pend.type === 'daitekkan_recover') {
+    const i = +optionId.slice(3);
+    const card = (p.exile || [])[i];
+    if (i >= 0 && SUPPORTS[card]) {
+      p.exile.splice(i, 1);
+      p.hand.push(card);
+      r.lastGain = { player: p.id, n: 1, cards: [card], reason: 'daitekkan', at: stamp(r) };
+      log(r, `【再鍛造】${p.name}のダイテッカンが廃棄から「${cardName(card)}」を手札に戻した`);
+    }
+    return continuePostBattle(r);
+  }
+
   if (pend.type === 'gaust_exile') {
     const i = +optionId.slice(3);
     if (i >= 0 && i < p.hand.length) {
       const card = p.hand.splice(i, 1)[0];
-      p.exile.push(card);
+      exileCard(r, p, card, 'gaust');
       log(r, `【魂の選別】${p.name}は「${cardName(card)}」を廃棄した`);
     }
-    return resumeAfterPlacement(r, p, pend);
+    return resumeAfterExileEffects(r, { type: 'placement', player: p.id, pend });
   }
 
   if (pend.type === 'fatal_exile') {
     const i = +optionId.slice(3);
     if (i >= 0 && i < p.hand.length) {
       const card = p.hand.splice(i, 1)[0];
-      p.exile.push(card);
+      exileCard(r, p, card, 'fatal_reward');
       log(r, `フェイタルリワード ─ ${p.name}は「${cardName(card)}」を廃棄した`);
     }
     const resolving = Array.isArray(p.resolving) ? p.resolving : [];
     const ri = resolving.indexOf('sp_fatal_reward');
     if (ri >= 0) p.discard.push(resolving.splice(ri, 1)[0]);
     spellFx(r, 'sp_fatal_reward', [], p.id, { exiled: true });
-    return askRoll(r, p);
+    return resumeAfterExileEffects(r, { type: 'roll', player: p.id });
   }
 
   if (pend.type === 'ult_villa_recover') {
@@ -1448,18 +1549,7 @@ function handleChoose(r, playerId, optionId) {
   if (pend.type === 'samurai_elem') {
     const i = pend.tile;
     const o = r.owners[i];
-    const resume = () => {
-      if (pend.after === 'swap') return askRoll(r, p);
-      if (pend.after === 'battle') {
-        const winner = pById(r, pend.battleWinner || p.id);
-        if (winner && !winner.bankrupt) {
-          log(r, `戦勝の報酬 ─ ${winner.name}は3枚のカードから1枚を選ぶ`);
-          return startDraft(r, winner, 'battle');
-        }
-        return settleAll(r);
-      }
-      return endTurn(r);
-    };
+    const resume = () => resumeAfterPlacement(r, p, pend);
     if (!o || o.player !== p.id || baseId(o.creature) !== 'samurai_saga') return resume();
     if (optionId !== 'se:none') {
       const elem = optionId.slice(3);
@@ -1536,7 +1626,7 @@ function handleChoose(r, playerId, optionId) {
     if (!p.hand.includes(sid) || spellCost > p.gold) return askRoll(r, p);
     const castLog = () => {
       p.hand.splice(p.hand.indexOf(sid), 1);
-      if (EXILE_SPELLS.has(sid)) { p.exile.push(sid); }
+      if (EXILE_SPELLS.has(sid)) { exileCard(r, p, sid, 'spell'); }
       else p.discard.push(sid);
       if (spellCost) p.gold -= spellCost;
       p.spellCast = true;
@@ -1599,7 +1689,7 @@ function handleChoose(r, playerId, optionId) {
       r.barrier[p.id] = true;
       log(r, `${p.name}の全領地に結界が張られた(次の手番まで侵略不可)`);
       spellFx(r, 'sp_ward', r.owners.map((o, i) => o && o.player === p.id ? i : null).filter(x => x !== null), p.id);
-      return askRoll(r, p);
+      return resumeAfterExileEffects(r, { type: 'roll', player: p.id });
     }
     if (sid === 'sp_weaken') {
       const opts = r.owners.map((o, i) => o && o.player !== p.id
@@ -1692,14 +1782,14 @@ function handleChoose(r, playerId, optionId) {
       const item = r.shopVisit && r.shopVisit.player === p.id && r.shopVisit.items.find(x => x.slotId === 'remove');
       if (item && !item.sold && i < zone.length && p.gold >= item.price) {
         const c = zone.splice(i, 1)[0];
-        p.exile.push(c);
+        exileCard(r, p, c, 'shop_remove');
         p.gold -= item.price;
         item.sold = true;
         const nameOf = x => (CREATURES[x] || SPELLS[x] || SUPPORTS[x] || { name: x }).name;
         log(r, `${p.name}は「${nameOf(c)}」を忘却した(ゲームから廃棄)`);
       }
     }
-    return askMarket(r, p);
+    return resumeAfterExileEffects(r, { type: 'market', player: p.id });
   }
   if (pend.type === 'spell_target') {
     const sid = p.pendSpell;
@@ -1714,7 +1804,7 @@ function handleChoose(r, playerId, optionId) {
     if (!o) return askRoll(r, p);
     const pay = () => {
       p.hand.splice(p.hand.indexOf(sid), 1);
-      if (EXILE_SPELLS.has(sid)) p.exile.push(sid); else p.discard.push(sid);
+      if (EXILE_SPELLS.has(sid)) exileCard(r, p, sid, 'spell'); else p.discard.push(sid);
       p.gold -= spellCost;
       p.spellCast = true;
       onSpellCast(r, p);
@@ -1747,7 +1837,7 @@ function handleChoose(r, playerId, optionId) {
       log(r, `⛰ リストア! ${CREATURES[o.creature].name}の負傷${before}→${o.dmg}。次の戦闘でDF+10`);
       spellFx(r, 'sp_bedrock_uplift', [i], p.id);
     }
-    return askRoll(r, p);
+    return resumeAfterExileEffects(r, { type: 'roll', player: p.id });
   }
   if (pend.type === 'step_a') {
     if (optionId === 'st:cancel') return askRoll(r, p);
@@ -1915,7 +2005,7 @@ function handleChoose(r, playerId, optionId) {
       if (!o || o.player === p.id || o.level < 2 || !p.hand.includes('sp_quake') || p.gold < spellCost)
         return askRoll(r, p);
       p.hand.splice(p.hand.indexOf('sp_quake'), 1);
-      p.exile.push('sp_quake');
+      exileCard(r, p, 'sp_quake', 'spell');
       p.gold -= spellCost;
       p.spellCast = true;
       onSpellCast(r, p);
@@ -1925,7 +2015,7 @@ function handleChoose(r, playerId, optionId) {
       log(r, `⛰ ${p.name}の地割れで${pById(r, o.player).name}の領地(${i}番)がLv${o.level}に崩れた!`);
       spellFx(r, 'sp_quake', [i], p.id);
     }
-    return askRoll(r, p);
+    return resumeAfterExileEffects(r, { type: 'roll', player: p.id });
   }
 
   if (pend.type === 'draft') {
@@ -2291,6 +2381,13 @@ function botChooseOption(r, p, pend) {
   }
   if (pend.type === 'gaust_exile' || pend.type === 'fatal_exile')
     return (botBest(r, opts.filter(o => o.card), o => botCardScore(r, p, o.card), true) || opts[0]).id;
+  if (pend.type === 'toxy_target')
+    return (botBest(r, opts, o => {
+      const target = pById(r, o.player || String(o.id).slice(3));
+      return target ? target.hand.length * 20 + points(r, target) * 4 : 0;
+    }) || opts[0]).id;
+  if (pend.type === 'daitekkan_recover')
+    return (botBest(r, opts, o => botCardScore(r, p, o.card)) || opts[0]).id;
   if (pend.type === 'ult_villa_recover') {
     const confirm = byId('vr:confirm');
     if ((pend.selected || []).length >= Math.min(3, (p.exile || []).length)) return confirm.id;
@@ -2484,7 +2581,7 @@ function publicState(r, viewerId) {
             resume: r.draft ? r.draft.resume : null }]
         : v.type === 'pick_draw' && k !== viewerId
           ? [k, { type: v.type, prompt: v.prompt, options: [], until: v.until }]  // 候補カードは本人だけに見せる
-          : ['gaust_exile', 'fatal_exile', 'ult_villa_recover'].includes(v.type) && k !== viewerId
+          : ['gaust_exile', 'fatal_exile', 'ult_villa_recover', 'daitekkan_recover'].includes(v.type) && k !== viewerId
             ? [k, { type: v.type, prompt: v.prompt, options: [], selectedCount: (v.selected || []).length }]
           : v.type === 'support' && k !== viewerId
             ? [k, { type: v.type, prompt: '支援カードを選択中', options: [] }]
@@ -2536,7 +2633,7 @@ const ROOM_PERSIST_KEYS = new Set([                                            /
   'code', 'phase', 'players', 'owners', 'deck', 'market', 'turn', 'round', 'log',
   'pending', 'titles', 'duel', 'lastBattle', 'winner', 'barrier', 'elemOv', 'tileFx',
   'curses', 'boardToken', 'atSeq', 'saveRev', 'battle', 'draft',
-  'dirPend', 'halfMarket', 'shopVisit',
+  'dirPend', 'halfMarket', 'shopVisit', 'effectQueue', 'effectResume', 'battleAfter',
   'lastEvent', 'lastDice', 'lastUlt', 'ultSequence', 'lastHeal', 'lastSeal', 'lastRuin', 'lastDraw', 'lastGain',
   'lastBarrierHit', 'lastSpellFx', 'botMode',
 ]);
@@ -2625,6 +2722,9 @@ function restoreRoom(save) {
     return { error: `ルーム${d.code}は使用中のため復元できません(既存のルームを閉じてから再試行してください)`, status: 409 };
   const room = Object.assign(d, { clients: new Set(), lastActivity: Date.now(), botTimer: null, botActionSeq: 0, ultTimer: null });
   if (room.botMode == null) room.botMode = false;
+  if (!Array.isArray(room.effectQueue)) room.effectQueue = [];
+  if (room.effectResume == null) room.effectResume = null;
+  if (room.battleAfter == null) room.battleAfter = null;
   delete room.treasureCost;
   for (const p of room.players) {
     delete p.gems; delete p.treasures; delete p.gemThisStop; delete p.forgetThisStop;

@@ -414,24 +414,26 @@
       border-radius:1.25dvh; border:0; background:#16364f; cursor:pointer; transition:transform .15s;
       overflow:hidden; isolation:isolate; box-shadow:0 5px 16px rgba(0,0,0,.5); }
   .csCard:active { transform:scale(.97); }
-  .csCard .csBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-3; }
-  .csCard .csArt { position:absolute; z-index:2; inset:9% 2% 12%; width:96%; height:79%; object-fit:contain;
-      transform:translate(var(--cs-x,0),var(--cs-y,7%)) scale(var(--cs-scale,1.42)); transform-origin:center 30%;
-      filter:drop-shadow(0 0 5px rgba(255,255,255,.5)) drop-shadow(0 5px 8px rgba(0,0,0,.45)); }
-  .csCard .csTop { position:absolute; z-index:6; top:2.5%; left:4%; right:4%; height:12%; display:grid;
-      grid-template-columns:15% 1fr 15%; align-items:center; }
-  .csCard .csTop::before { content:""; position:absolute; z-index:-1; inset:-45% -10% -75%;
-      background:linear-gradient(180deg,rgba(4,8,18,.88),rgba(4,8,18,.58) 58%,transparent); pointer-events:none; }
+  .csCard .csVisual { position:absolute; z-index:1; inset:0 0 30%; overflow:hidden; }
+  .csCard .csBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-1; }
+  .csCard .csArt { position:absolute; z-index:2; inset:1% 1% 0; width:98%; height:99%; object-fit:contain;
+      object-position:center bottom; filter:drop-shadow(0 5px 8px rgba(0,0,0,.48)); }
+  .csCard .csInfo { position:absolute; z-index:6; inset:auto 0 0; height:30%; padding:3% 5% 2.5%;
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.25dvh;
+      background:linear-gradient(180deg,#fff2d5 0%,#f6e9c8 30%,#e9d3a6 100%); color:#172536;
+      box-shadow:0 -2px 8px rgba(5,13,25,.32); }
+  .csCard .csInfo::before { content:""; position:absolute; left:0; bottom:99%; width:100%; height:36%;
+      background:url('/assets/cards/brush-boundary-b-paper.png') center/100% 100% no-repeat; pointer-events:none; }
+  .csCard .csTop { position:relative; z-index:2; width:100%; min-height:48%; display:grid;
+      grid-template-columns:minmax(2.8dvh,15%) 1fr minmax(2.8dvh,15%); align-items:center; }
   .csCard .csElem { width:100%; height:100%; display:grid; place-items:center; }
-  .csCard .csElem svg { width:88%; height:88%; } .csCard .csElem svg * { fill:#fff !important; }
-  .csCard .csName { grid-column:2; min-width:0; color:#fff4d5; font:700 clamp(14px,3dvh,24px)/1 Marudeco,sans-serif;
-      letter-spacing:.02em; text-align:center; white-space:nowrap; text-shadow:0 2px 4px rgba(0,0,0,.65); }
-  .csCard .csBottom { position:absolute; z-index:5; inset:auto 0 0; min-height:18%; padding:3.5% 5% 3%;
-      display:flex; align-items:center; justify-content:center; background:#f6e9c8; color:#172536;
-      font-size:clamp(13px,2dvh,17px); font-weight:700; text-align:center; line-height:1.25; }
-  .csCard .csBottom::before { content:""; position:absolute; left:0; bottom:99%; width:100%; height:42%;
-      background:url('/assets/cards/brush-boundary-b-paper.png') center/100% 100% no-repeat; }
-  .csCard .csState { position:absolute; z-index:8; inset:auto 4% 3%; padding:.5dvh 1dvh; border-radius:999px;
+  .csCard .csElem svg { width:min(3.9dvh,88%); height:min(3.9dvh,88%); }
+  .csCard .csName { grid-column:2; min-width:0; color:#172536; font:700 clamp(14px,2.65dvh,22px)/1 Marudeco,sans-serif;
+      letter-spacing:.02em; text-align:center; white-space:nowrap; text-shadow:0 1px 0 rgba(255,255,255,.62); }
+  .csCard .csBottom { position:relative; z-index:2; width:100%; min-height:38%; display:flex;
+      align-items:center; justify-content:center; color:#31445a; font-size:clamp(11px,1.65dvh,15px);
+      font-weight:700; text-align:center; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .csCard .csState { position:absolute; z-index:8; top:3%; right:4%; padding:.45dvh 1dvh; border-radius:999px;
       background:rgba(20,18,39,.88); color:#fff4d5; font-size:clamp(13px,1.8dvh,16px); text-align:center; }
   .csCard.mine { box-shadow:0 0 0 3px #F2D062, 0 0 20px rgba(242,208,98,.5); }
   .csCard.dim { filter:brightness(.5) saturate(.5); cursor:default; }
@@ -1725,10 +1727,6 @@ function closeCharDetail() {
   $('charDetail').classList.remove('on');
   $('charDetail').innerHTML = '';
 }
-const CHAR_SELECT_FOCUS = {
-  redani:[1.44,'0%','8%'], linnei:[1.46,'0%','8%'], grease:[1.40,'0%','9%'],
-  mio:[1.45,'0%','8%'], lia:[1.48,'0%','10%'], adel:[1.46,'0%','9%'], villa:[1.48,'0%','9%']
-};
 function confirmCharacter(id) {
   if (charSubmitting) return;
   const p = pend();
@@ -1776,11 +1774,12 @@ function renderCharSelection(m, C, p) {
     const mine = m.charId === id;
     const enabled = opts.includes(id);
     const elemIcon = `<span class="csElem"><svg viewBox="-34 -36 68 72">${ELEM_MINI[c.elem]}</svg></span>`;
-    const focus = CHAR_SELECT_FOCUS[id] || [1.42,'0%','7%'];
-    return `<div class="csCard ${mine ? 'mine' : ''} ${(!enabled && !mine) ? 'dim' : ''}" data-id="${id}"
-      style="--cs-scale:${focus[0]};--cs-x:${focus[1]};--cs-y:${focus[2]}">
-      <img class="csBg" src="/assets/cards/bg-${c.elem}.webp" alt=""><div class="csTop">${elemIcon}<div class="csName">${c.name}</div></div>
-      <img class="csArt" src="/assets/full_${id}.png" alt="${c.name}"><div class="csBottom">${c.style || ''}</div>
+    return `<div class="csCard ${mine ? 'mine' : ''} ${(!enabled && !mine) ? 'dim' : ''}" data-id="${id}">
+      <div class="csVisual"><img class="csBg" src="/assets/cards/bg-${c.elem}.webp" alt="">
+        <img class="csArt" src="/assets/hud_${id}.png?v=1276" alt="${c.name}"
+          onerror="this.onerror=null;this.src='/assets/full_${id}.png'"></div>
+      <div class="csInfo"><div class="csTop">${elemIcon}<div class="csName">${c.name}</div></div>
+        <div class="csBottom">${c.style || ''}</div></div>
       ${(mine || taken) ? `<div class="csState">${mine ? '選択済み' : taken.name + 'が使用中'}</div>` : ''}</div>`;
   });
   cards.push(`<div class="csUpcoming empty" aria-disabled="true" data-id="upcoming-earth">
@@ -2239,6 +2238,18 @@ function render() {
           selected:picked.has(+o.id.slice(3)), zone:picked.has(+o.id.slice(3)) ? '選択済み' : 'タップして選択' })) },
     ], null);
     $('deckScroll').innerHTML += '<button class="abtn" style="display:block;margin:2dvh auto 4dvh" onclick="pickOvChoose(\'vr:confirm\')">決定</button>';
+  } else if (p.type === 'daitekkan_recover') {
+    $('msg').innerHTML = iconize(p.prompt);
+    A.innerHTML = '';
+    buildPickOv('再鍛造 ─ 廃棄から戻す支援カードを1枚選ぶ', [
+      { name:'廃棄', entries:p.options.map(o => ({ card:o.card, pickId:o.id, zone:'手札に戻す' })) },
+    ], null);
+  } else if (p.type === 'toxy_target') {
+    $('msg').innerHTML = iconize(p.prompt);
+    A.innerHTML = '';
+    showActionOverlay('瘴気連鎖 ─ 手札を捨てさせる敵を選ぶ',
+      p.options.map(o => ({ id:o.id, label:iconize(o.label), desc:'対象の手札からランダムに1枚捨てさせます' })),
+      { key:`toxy|${p.options.map(o => o.id).join(',')}` });
   } else if (p.type === 'curse_target' || p.type === 'quake_target' || p.type === 'ult_mio' || p.type === 'ult_lia' ||
              p.type === 'move_a' || p.type === 'move_b' || p.type === 'swap_land' || p.type === 'upgrade' ||
              p.type === 'marlow_src' || p.type === 'marlow_dest' ||

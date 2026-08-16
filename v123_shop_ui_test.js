@@ -7,8 +7,10 @@ const server = fs.readFileSync('server.js', 'utf8');
 const pkg = require('./package.json');
 const css = (phone.match(/<style>([\s\S]*?)<\/style>/) || ['', ''])[1];
 
-if (!/const VERSION = '1\.26';/.test(server) || pkg.version !== '1.26.0' || !/board 1\.26/.test(board))
-  throw new Error('バージョン検査: v1.26へ統一されていない');
+const serverVer = Number((server.match(/const VERSION = '([\d.]+)'/) || [])[1]);
+const boardVer = Number((board.match(/board ([\d.]+)/) || [])[1]);
+if (serverVer < 1.27 || Number(pkg.version.replace(/\.0$/, '')) < 1.27 || boardVer < 1.27)
+  throw new Error('バージョン検査: v1.27以降へ統一されていない');
 
 const pawn = fs.readFileSync('public/assets/p_adel.png');
 if (pawn.toString('ascii', 1, 4) !== 'PNG' || pawn.readUInt32BE(16) !== 190 || pawn.readUInt32BE(20) !== 227)

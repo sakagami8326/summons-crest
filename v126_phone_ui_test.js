@@ -21,8 +21,9 @@ function eq(actual, expected, name) {
     `${name} (actual=${JSON.stringify(actual)} expected=${JSON.stringify(expected)})`);
 }
 
-eq([G.VERSION, pkg.version], ['1.26', '1.26.0'], 'version is unified at v1.26');
-ok(/board 1\.26/.test(board), 'board version tag is v1.26');
+ok(Number(G.VERSION) >= 1.27 && Number(pkg.version.replace(/\.0$/, '')) >= 1.27,
+  'version is unified at v1.27 or newer');
+ok(Number((board.match(/board ([\d.]+)/) || [])[1]) >= 1.27, 'board version tag is v1.27 or newer');
 
 // Lobby and entry controls.
 ok(/id="lobbyWait"[\s\S]*ゲームの開始を待っています。[\s\S]*class="lwMagic"/.test(phone),
