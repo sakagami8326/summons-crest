@@ -477,6 +477,7 @@
   .cdHero .csBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-2; }
   .cdHero .cdArt { position:absolute; inset:10% 2% 2%; width:96%; height:88%; object-fit:contain;
       filter:drop-shadow(0 0 7px rgba(255,255,255,.48)) drop-shadow(0 7px 12px rgba(0,0,0,.55)); }
+  .cdHero .cdArt.cdArtNerasio { inset:2% -8% -8%; width:116%; height:106%; }
   .cdHero .cdName { position:absolute; z-index:3; top:3%; left:5%; right:5%; color:#fff4d5;
       font:700 clamp(18px,4dvh,34px)/1 Marudeco,sans-serif; text-align:center; text-shadow:0 2px 5px #000; }
   .cdBody { min-width:0; min-height:0; display:flex; flex-direction:column; gap:1.2dvh; }
@@ -1745,7 +1746,7 @@ function openCharDetail(id, readonly = false) {
   charPreview = id;
   const elemJa = { fire:'火', water:'水', earth:'土', wind:'風' }[c.elem] || '';
   $('charDetail').innerHTML = `<div class="cdHero"><img class="csBg" src="/assets/cards/bg-${c.elem}.webp" alt="">
-      <div class="cdName">${c.name}</div><img class="cdArt" src="/assets/full_${id}.png" alt="${c.name}"></div>
+      <div class="cdName">${c.name}</div><img class="cdArt${id === 'nerasio' ? ' cdArtNerasio' : ''}" src="/assets/full_${id}.png" alt="${c.name}"></div>
     <div class="cdBody"><div class="cdInfo">
       <div class="cdSec"><h2>${sic('ult','2.5dvh')}【${u ? u.name : '固有スキル'}】</h2>${u ? u.desc : ''}</div>
       <div class="cdSec"><h2>属性親和：${elemJa}</h2>同属性の土地の強化費を20%軽減する。</div>

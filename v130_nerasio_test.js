@@ -135,7 +135,14 @@ ok(phone.includes("'ult_nerasio_land'") && phone.includes("p.type === 'ult_neras
   'phone implements map selection and element selection');
 ok(phone.includes('選択中 ${selected.length}/${multiMax}') && phone.includes('multiMax = p.type === \'ult_nerasio_land\' ? 2 : 3'),
   'phone clearly displays the two-land selection limit');
+ok(phone.includes("cdArt${id === 'nerasio' ? ' cdArtNerasio' : ''}") &&
+   phone.includes('.cdHero .cdArt.cdArtNerasio'),
+  'Nerasio uses the enlarged summoner-detail artwork treatment');
 ok(!phone.includes('data-id="upcoming-earth"'),'obsolete upcoming earth placeholder is removed');
+const board = fs.readFileSync(path.join(__dirname,'public','board.html'),'utf8');
+ok(board.includes("sp.name.length <= 8 ? '5.1vh' : '4.2vh'") &&
+   board.includes('#spellCard .spName { grid-column:2; min-width:0;'),
+  'long spell names use the compact TV card heading without overflow');
 for (const asset of ['full_nerasio.png','p_nerasio.png','f_nerasio.png','hud_nerasio.png',
   'summoner-still-nerasio.webp','ult_nerasio.webp'])
   ok(fs.existsSync(path.join(__dirname,'public','assets',asset)), asset + ' exists');
