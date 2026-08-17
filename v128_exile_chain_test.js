@@ -22,7 +22,7 @@ function game(chars = ['redani', 'villa', 'adel']) {
   return r;
 }
 
-eq(G.VERSION, '1.28', 'server version');
+ok(Number(G.VERSION) >= 1.28, 'server version is v1.28 or newer');
 eq([G.CREATURES.toxy.name, G.CREATURES.toxy.evo, G.CREATURES.toxy.elem,
   G.CREATURES.toxy.rarity, G.CREATURES.toxy.cost, G.CREATURES.toxy.st,
   G.CREATURES.toxy.hp, G.CREATURES.toxy.evoSt, G.CREATURES.toxy.evoHp],

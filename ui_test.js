@@ -105,8 +105,8 @@ const scripts = timingSrc + '\n' +
       !/#cardZoomCard \.ccEffect p/.test(css))
     throw new Error('カード本文検査: 通常表示の省略または拡大時の全文表示がない');
   if (!/grid-template-columns:repeat\(4,minmax\(0,1fr\)\);\s*grid-template-rows:repeat\(2,minmax\(0,1fr\)\)/.test(css) ||
-      !/土属性召喚士・準備中/.test(html))
-    throw new Error('召喚士選択検査: 将来8人用の4×2レイアウトまたは第8枠がない');
+      /土属性召喚士・準備中/.test(html))
+    throw new Error('召喚士選択検査: 8人用の4×2レイアウトまたはネラシオ正式解禁表示が不正');
   const boardHtml = fs.readFileSync('public/board.html', 'utf8');
   if (!/jinx:'support-jinx-v2\.webp'/.test(boardHtml))
     throw new Error('呪具アート検査: 戦闘支援公開へ専用アートが未接続');

@@ -1199,7 +1199,7 @@ function mmCellContent(t, o) {
 function tileTargets(p) {
   const m = {};
   p.options.forEach(o => {
-    const mt = /^(up|ct|qt|mt|mv|mb|sw|sl|st|sd|tg|lu):(\d+)$/.exec(o.id);
+    const mt = /^(up|ct|qt|mt|mv|mb|sw|sl|st|sd|tg|lu|nu):(\d+)$/.exec(o.id);
     if (mt) m[+mt[2]] = o.id;
   });
   return m;
@@ -1263,9 +1263,10 @@ function advanceReveal() {
 function renderMiniMap(p) {
   const targets = tileTargets(p);
   const cancel = p.options.find(o => /cancel$|^pass$/.test(o.id));
-  const liaMulti = p.type === 'ult_lia';
-  const liaSelected = liaMulti && Array.isArray(p.selected) ? p.selected : [];
-  const confirm = liaMulti ? p.options.find(o => o.id === 'lu:confirm') : null;
+  const multi = p.type === 'ult_lia' || p.type === 'ult_nerasio_land';
+  const selected = multi && Array.isArray(p.selected) ? p.selected : [];
+  const multiMax = p.type === 'ult_nerasio_land' ? 2 : 3;
+  const confirm = multi ? p.options.find(o => o.id === (p.type === 'ult_nerasio_land' ? 'nu:confirm' : 'lu:confirm')) : null;
   $('msg').innerHTML = iconize(p.prompt);
   $('action').innerHTML = '';
   const cells = [];
@@ -1276,18 +1277,18 @@ function renderMiniMap(p) {
     const own = o ? `<div class="mmOwn" style="background:${(state.players.find(q => q.id === o.player) || {}).color || '#888'}"></div>` : '';
     const meHere = state.players.some(q => q.pos === i && q.id === pid) ? `<div class="mmMe" style="background:${(me() || {}).color || '#fff'}"></div>` : '';
     const cls = targets[i] ? 'pickable' : 'dim';
-    const selectedHere = liaMulti ? liaSelected.includes(i) : mmSel === i;
+    const selectedHere = multi ? selected.includes(i) : mmSel === i;
     cells.push(`<div class="mmT ${cls} ${selectedHere ? 'sel' : ''}" style="grid-column:${gx + 1}; grid-row:${gy + 1}; background:${bg}"
       ${targets[i] ? `onclick="mmTap(${i})"` : ''}>${glyph}${own}${meHere}</div>`);
   });
   const selOpt = mmSel !== null && targets[mmSel];
   const selLabel = selOpt ? ((p.options.find(o => o.id === selOpt) || {}).label || '') : '';
-  $('mapOvTitle').innerHTML = iconize(p.prompt) + ` <span style="opacity:.75">─ ${liaMulti ? '最大3か所を選択' : '光っているマスをタップ'}</span>`;
+  $('mapOvTitle').innerHTML = iconize(p.prompt) + ` <span style="opacity:.75">─ ${multi ? `最大${multiMax}か所を選択` : '光っているマスをタップ'}</span>`;
   $('mapOvMap').innerHTML = `<div id="miniMap">${cells.join('')}</div>`;
-  $('mapOvSide').innerHTML = liaMulti
-    ? `<div id="mapOvSel"><b>選択中 ${liaSelected.length}/3</b>${liaSelected.length
-        ? liaSelected.map(i => `<div class="tdSub" style="margin-top:.6dvh">${tileDetailHTML(i)}</div>`).join('')
-        : '<div class="tdSub" style="margin-top:.8dvh">発動する敵領地を選択してください</div>'}</div>
+  $('mapOvSide').innerHTML = multi
+    ? `<div id="mapOvSel"><b>選択中 ${selected.length}/${multiMax}</b>${selected.length
+        ? selected.map(i => `<div class="tdSub" style="margin-top:.6dvh">${tileDetailHTML(i)}</div>`).join('')
+        : `<div class="tdSub" style="margin-top:.8dvh">${p.type === 'ult_nerasio_land' ? '属性を変える自領地' : '発動する敵領地'}を選択してください</div>`}</div>
       ${confirm ? `<button class="abtn" onclick="hideMapOv(); choose('${confirm.id}')">決定</button>` : ''}
       ${cancel ? `<button class="abtn ghost" onclick="hideMapOv(); choose('${cancel.id}')">${cancel.label}</button>` : ''}`
     : `<div id="mapOvSel">${selOpt
@@ -1301,7 +1302,7 @@ function renderMiniMap(p) {
 let upPvT = 0;
 function mmTap(i) {
   const active = pend();
-  if (active && active.type === 'ult_lia') {
+  if (active && (active.type === 'ult_lia' || active.type === 'ult_nerasio_land')) {
     if (liaTapLock) return;
     const oid = tileTargets(active)[i];
     if (oid) {
@@ -1782,10 +1783,6 @@ function renderCharSelection(m, C, p) {
         <div class="csBottom">${c.style || ''}</div></div>
       ${(mine || taken) ? `<div class="csState">${mine ? '選択済み' : taken.name + 'が使用中'}</div>` : ''}</div>`;
   });
-  cards.push(`<div class="csUpcoming empty" aria-disabled="true" data-id="upcoming-earth">
-    <img class="csuBg" src="/assets/cards/bg-earth.webp" alt="">
-    <span class="csuElem"><svg viewBox="-34 -36 68 72">${ELEM_MINI.earth}</svg></span>
-    <div class="csuName">未発表</div><div class="csuState">土属性召喚士・準備中</div></div>`);
   $('csRow').innerHTML = cards.join('');
   document.querySelectorAll('.csCard:not(.dim)').forEach(el => el.onclick = () => openCharDetail(el.dataset.id));
   document.querySelectorAll('.csUpcoming.revealed').forEach(el => el.onclick = () => openCharDetail(el.dataset.id, true));
@@ -2071,10 +2068,10 @@ function render() {
     const pov = $('pickOv');
     if (pov.classList.contains('on')) { pov.classList.remove('on'); pov.dataset.k = ''; }
   }
-  const MAP_TYPES = ['curse_target','quake_target','ult_mio','ult_lia','move_a','move_b','swap_land','upgrade','marlow_src','marlow_dest',
+  const MAP_TYPES = ['curse_target','quake_target','ult_mio','ult_lia','ult_nerasio_land','move_a','move_b','swap_land','upgrade','marlow_src','marlow_dest',
     'sell','step_a','step_b','spell_target'];
   if (!mapView && (!p || !MAP_TYPES.includes(p.type))) hideMapOv();
-  const liaSelectedKey = p && p.type === 'ult_lia' ? (p.selected || []).join(',') : '';
+  const liaSelectedKey = p && (p.type === 'ult_lia' || p.type === 'ult_nerasio_land') ? `${p.type}|${(p.selected || []).join(',')}` : '';
   if (liaSelectedKey !== lastLiaSelectedKey) {
     lastLiaSelectedKey = liaSelectedKey;
     liaTapLock = false;
@@ -2250,7 +2247,14 @@ function render() {
     showActionOverlay('瘴気連鎖 ─ 手札を捨てさせる敵を選ぶ',
       p.options.map(o => ({ id:o.id, label:iconize(o.label), desc:'対象の手札からランダムに1枚捨てさせます' })),
       { key:`toxy|${p.options.map(o => o.id).join(',')}` });
-  } else if (p.type === 'curse_target' || p.type === 'quake_target' || p.type === 'ult_mio' || p.type === 'ult_lia' ||
+  } else if (p.type === 'ult_nerasio_elem') {
+    $('msg').innerHTML = iconize(p.prompt);
+    A.innerHTML = '';
+    showActionOverlay('天地転成 ─ 変更後の属性を選択', p.options.map(o => ({
+      id:o.id, label:iconize(o.label),
+      desc:o.elem ? `${ELEM_JA[o.elem]}属性の連鎖・通行料・地形補正へ即時反映します` : '領地の選択へ戻ります'
+    })), { key:`nerasio-elem|${(p.selected || []).join(',')}` });
+  } else if (p.type === 'curse_target' || p.type === 'quake_target' || p.type === 'ult_mio' || p.type === 'ult_lia' || p.type === 'ult_nerasio_land' ||
              p.type === 'move_a' || p.type === 'move_b' || p.type === 'swap_land' || p.type === 'upgrade' ||
              p.type === 'marlow_src' || p.type === 'marlow_dest' ||
              p.type === 'sell' || p.type === 'step_a' || p.type === 'step_b' ||

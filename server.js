@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.28';
+const VERSION = '1.30';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
@@ -40,6 +40,9 @@ const CHAR_DECKS = {
   villa:  ['gaust', 'gaust', 'alter', 'alter', 'marlow', 'cleo',
            'sp_gold', 'sp_insight', 'sp_fatal_reward',
            'shield', 'weapon', 'jinx'],
+  nerasio:['komao', 'komao', 'nome', 'nome', 'fugorm', 'cleo',
+           'sp_gold', 'sp_insight', 'sp_earth_mother_stone',
+           'shield', 'shield', 'jinx'],
 };
 // 廃棄スペル(使用後ゲームから除外)
 let EXILE_SPELLS = new Set();
@@ -143,6 +146,9 @@ const CREATURES = {
   kamadoma:{ name: 'カマドーマ', evo: 'ダイテッカン', elem: 'fire', st: 20, hp: 40, cost: 60,
              evoSt: 30, evoHp: 60, fx: '【武具錬成】配置時、武器1枚を手札に加える',
              evoFx: '【武具錬成】配置時に武器を得る。【再鍛造】戦闘勝利時、廃棄の支援1枚を回収', rarity: 'N' },
+  komao:   { name: 'コマオー', evo: 'シシガルム', elem: 'earth', st: 30, hp: 30, cost: 70,
+             evoSt: 30, evoHp: 50, fx: '【地脈転成】配置した土地を土属性に変える',
+             evoFx: '【地脈転成】配置土地を土属性化。【獅子地脈】自分の土領地1つにつきDF+5', rarity: 'N' },
 };
 const ITEMS = {}; // v0.34: 呪いアイテムは廃止(スペル「衰弱の呪文」に移行)
 const SPELLS = {
@@ -219,6 +225,8 @@ const CHARS = {
             style: '回復・クリーチャー支援', deckNote: '水連鎖を築き、支援と回復で守り抜く', selectable: true, upcoming: false },
   villa:  { name: 'ヴィラ',   color: '#42B875', elem: 'wind',
             style: '廃棄・墓守戦術', deckNote: '廃棄を蓄え、魂喰らいと墓守の協奏曲で再利用する', selectable: true, upcoming: false },
+  nerasio:{ name: 'ネラシオ', color: '#C49545', elem: 'earth',
+            style: '地脈・属性連鎖', deckNote: '土地属性を再構成し、連鎖と地形補正を組み替える', selectable: true, upcoming: false },
 };
 const ULTS = {
   redani: { name: '烈火の進軍', desc: 'サイコロを3個振って移動する' },
@@ -228,12 +236,13 @@ const ULTS = {
   lia:    { name: '紅蓮の方程式', desc: '敵領地を最大3か所選び、炎の渦を発生させる' },
   adel:   { name: '氷晶の勅令', desc: '自分の全クリーチャーを20回復し、次の防衛戦闘でDF+10' },
   villa:  { name: '墓守の協奏曲', desc: '廃棄枚数だけ進み、廃棄から最大3枚を手札へ戻す。その後ダイスを振る' },
+  nerasio:{ name: '天地転成', desc: '自分の領地を1〜2か所選び、選んだ属性へ永続的に変更する' },
 };
 for (const [cid, c] of Object.entries({ ...CREATURES }))
   if (c.evo) CREATURES[cid + '_f'] = { name: c.evo, elem: c.elem, st: c.evoSt, hp: c.evoHp,
     cost: c.cost, fx: c.evoFx || c.fx, rarity: c.rarity, forged: true };
 
-const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral','bunnyhop','strauk','samurai_saga','marlow','shuterio','gaust','alter','toxy','kamadoma'];
+const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral','bunnyhop','strauk','samurai_saga','marlow','shuterio','gaust','alter','toxy','kamadoma','komao'];
 // アートが存在するクリーチャーID(assetsのc_*.pngを起動時に走査 ─ v0.82)。
 // クライアントはcatalog.artIds経由で受け取る。手書きリストの二重管理はしない
 // (新クリーチャーはIDとファイル名を一致させて置くだけで盤面・カード・戦闘に反映される)
@@ -447,6 +456,12 @@ function resumeAfterPlacement(r, p, pend) {
 }
 function onCreatureSummoned(r, p, creatureId, reason, tile) {
   if (!['summon', 'swap', 'battle'].includes(reason)) return false;
+  if (baseId(creatureId) === 'komao' && Number.isInteger(tile)) {
+    const before = tileElem(r, tile);
+    if (TILES[tile]?.e === 'earth') delete r.elemOv[tile];
+    else r.elemOv[tile] = 'earth';
+    log(r, `【地脈転成】${CREATURES.komao.name}が土地${tile}を${before === 'earth' ? '土属性に固定した' : '土属性へ変えた'}`);
+  }
   if (baseId(creatureId) === 'cresteria' && reason !== 'battle') {
     gainToDeck(r, p, ['shield'], 'cresteria');
     log(r, `【真珠】${CREATURES.cresteria.name}の召喚で支援「盾」1枚を山札へ加えた`);
@@ -652,6 +667,23 @@ function resolveUltSequence(r) {
     return performMove(r, p, steps,
       { value: steps, ultimate: true, villaUlt: true, presentation: 'villa_move', moveSteps: steps },
       `【墓守の協奏曲】廃棄${steps}枚の力で${steps}マス進んだ`);
+  } else if (seq.charId === 'nerasio') {
+    const elem = d.elem;
+    const targets = [...new Set((d.targets || []).map(Number))].filter(i => {
+      const o = r.owners[i];
+      return i >= 0 && i < TILES.length && TILES[i].t === 'land' && o && o.player === p.id;
+    }).slice(0, 2);
+    if (!['fire', 'water', 'earth', 'wind'].includes(elem) || !targets.length) {
+      r.ultSequence = null;
+      return askRoll(r, p);
+    }
+    for (const i of targets) {
+      if (TILES[i].e === elem) delete r.elemOv[i];
+      else r.elemOv[i] = elem;
+    }
+    updateTitles(r);
+    r.lastEvent = { type: 'ult_nerasio', player: p.id, targets: targets.slice(), elem, at: stamp(r) };
+    log(r, `🌐 ${p.name}は【天地転成】で領地${targets.join('・')}を${ELEM_JA[elem]}属性へ再構成した`);
   }
   r.ultSequence = null;
   return askRoll(r, p);
@@ -664,6 +696,8 @@ function askRoll(r, p) {
       ? r.owners.some(o => o && o.player === p.id)
       : p.charId === 'villa'
         ? (p.exile || []).length > 0
+      : p.charId === 'nerasio'
+        ? r.owners.some((o, i) => o && o.player === p.id && TILES[i].t === 'land')
       : true;
   if (!p.fixedDice && !p.ultUsed && ULTS[p.charId] && ultAvailable)
     opts.push({ id: 'ult', label: `固有スキル【${ULTS[p.charId].name}】` });
@@ -706,6 +740,33 @@ function askLiaUlt(r, p, selected = []) {
   opts.push({ id: 'lu:cancel', label: 'やめる' });
   ask(r, p.id, 'ult_lia', '🔥【紅蓮の方程式】炎の渦を発生させる敵領地を1〜3か所選択', opts);
   r.pending[p.id].selected = chosen;
+}
+function askNerasioUlt(r, p, selected = []) {
+  const valid = new Set(r.owners.map((o, i) =>
+    o && o.player === p.id && TILES[i].t === 'land' ? i : null).filter(i => i !== null));
+  const chosen = [...new Set(selected.map(Number))].filter(i => valid.has(i)).slice(0, 2);
+  const opts = [];
+  for (const i of valid) {
+    if (chosen.length >= 2 && !chosen.includes(i)) continue;
+    const o = r.owners[i];
+    opts.push({ id: 'nu:' + i, tile: i,
+      label: `${chosen.includes(i) ? '✓ ' : ''}#${i} ${CREATURES[o.creature].name}(Lv${o.level}・${ELEM_JA[tileElem(r, i)]})` });
+  }
+  if (chosen.length) opts.push({ id: 'nu:confirm', label: `決定(${chosen.length}か所)` });
+  opts.push({ id: 'nu:cancel', label: 'やめる' });
+  ask(r, p.id, 'ult_nerasio_land', '🌐【天地転成】属性を再構成する自領地を1〜2か所選択', opts);
+  r.pending[p.id].selected = chosen;
+}
+function askNerasioElem(r, p, targets) {
+  const selected = [...new Set((targets || []).map(Number))].filter(i => {
+    const o = r.owners[i];
+    return TILES[i]?.t === 'land' && o && o.player === p.id;
+  }).slice(0, 2);
+  if (!selected.length) return askRoll(r, p);
+  ask(r, p.id, 'ult_nerasio_elem', '🌐【天地転成】変更後の属性を選択',
+    ['fire','water','earth','wind'].map(elem => ({ id: 'ne:' + elem, elem,
+      label: `${ELEM_JA[elem]}属性へ変更` })).concat({ id: 'ne:cancel', label: '領地選択へ戻る' }));
+  r.pending[p.id].selected = selected;
 }
 function startVillaRecovery(r, p, availableAt = 0, selected = []) {
   const valid = new Set((p.exile || []).map((_, i) => i));
@@ -1210,8 +1271,14 @@ function resolveBattle(r) {
   let st = aBase.st + (aEff ? aEff.st : 0);
   const atkSoul = baseId(b.atkCreature) === 'alter' ? (atk.exile || []).length * 5 : 0;
   const defSoul = baseId(o.creature) === 'alter' ? (def.exile || []).length * 5 : 0;
+  const atkEarthChain = baseId(b.atkCreature) === 'komao' && atkEvolved
+    ? chainCount(r, atk.id, 'earth') * 5 : 0;
+  const defEarthChain = baseId(o.creature) === 'komao' && defEvolved
+    ? chainCount(r, def.id, 'earth') * 5 : 0;
   if (atkSoul) notes.push(`【魂喰らい】廃棄${atk.exile.length}枚で侵略側DF+${atkSoul}!`);
   if (defSoul) notes.push(`【魂喰らい】廃棄${def.exile.length}枚で防衛側DF+${defSoul}!`);
+  if (atkEarthChain) notes.push(`【獅子地脈】土領地${atkEarthChain / 5}つで侵略側DF+${atkEarthChain}!`);
+  if (defEarthChain) notes.push(`【獅子地脈】土領地${defEarthChain / 5}つで防衛側DF+${defEarthChain}!`);
   if (baseId(b.atkCreature) === 'grayble' && carried > 0) {
     const chase = atkEvolved ? 20 : 10;
     st += chase;
@@ -1260,7 +1327,7 @@ function resolveBattle(r) {
   if (iceWard) notes.push('【氷晶の勅令】防衛DF+10!');
   const shadeDF = baseId(o.creature) === 'beruf' ? (o.shade || 0) * 10 : 0;
   if (shadeDF) notes.push(`【死影】蓄えた影が防衛DFを${shadeDF}高める!`);
-  let defDF = terrain + queenBonus + (dEff ? dEff.hp : 0) + upliftDF + boneArmor + iceWard + shadeDF + defSoul;
+  let defDF = terrain + queenBonus + (dEff ? dEff.hp : 0) + upliftDF + boneArmor + iceWard + shadeDF + defSoul + defEarthChain;
   if (corrosion) {
     const reduced = Math.min(defDF, corrosion);
     defDF = Math.max(0, defDF - corrosion);
@@ -1271,7 +1338,7 @@ function resolveBattle(r) {
   const atkShadeDF = baseId(b.atkCreature) === 'beruf'
     ? ((mvSrc && mvSrc.shade) || b.atkShade || 0) * 10 : 0;
   if (atkShadeDF) notes.push(`【死影】蓄えた影が侵略側DFを${atkShadeDF}高める!`);
-  const atkDF = (aEff ? aEff.hp : 0) + atkShadeDF + atkSoul;
+  const atkDF = (aEff ? aEff.hp : 0) + atkShadeDF + atkSoul + atkEarthChain;
   const atkCarried = mvSrc ? (mvSrc.dmg || 0) : (corridor ? (b.atkCarry || 0) : 0);
   const atkEffHp = Math.max(1, aBase.hp - atkCarried);
   const defSt = dBase.st + (dEff ? dEff.st : 0);
@@ -1312,7 +1379,7 @@ function resolveBattle(r) {
     atkHp: atkEffHp, atkDf: atkDF, counterSt, counterDealt, atkSurvived,
     atkPreAt: atkDmg - (aEff ? aEff.st : 0), atkPostAt: atkDmg,
     atkPreHp: atkEffHp, atkPostHp: atkEffHp,
-    atkPreDf: atkSoul + atkShadeDF, atkPostDf: atkDF,
+    atkPreDf: atkSoul + atkShadeDF + atkEarthChain, atkPostDf: atkDF,
     defPreAt: defSt - (dEff ? dEff.st : 0), defPostAt: defSt,
     defPreHp: effHp, defPostHp: effHp,
     defPreDf: Math.max(0, defDF - (dEff ? dEff.hp : 0)), defPostDf: defDF,
@@ -1320,6 +1387,7 @@ function resolveBattle(r) {
     // v1.28: 旧フィールド名は保存・旧UI互換のため残し、値はDF補正として扱う。
     atkSoulBonus: atkSoul, defSoulBonus: defSoul,
     atkSoulDfBonus: atkSoul, defSoulDfBonus: defSoul,
+    atkEarthChainBonus: atkEarthChain, defEarthChainBonus: defEarthChain,
     hits: hitsDone, preempt,
     moveFrom: b.moveFrom,
     remainHp: win ? 0 : effHp - dealt,
@@ -1579,6 +1647,7 @@ function handleChoose(r, playerId, optionId) {
       return ask(r, p.id, 'ult_mio', '⚡【追い風の導き】どのマスへ舞い降りる?', opts);
     }
     if (p.charId === 'lia') return askLiaUlt(r, p);
+    if (p.charId === 'nerasio') return askNerasioUlt(r, p);
     if (p.charId === 'adel') {
       const targets = r.owners.map((o, i) => o && o.player === p.id ? i : null).filter(i => i != null);
       if (!targets.length) return askRoll(r, p);
@@ -1619,6 +1688,36 @@ function handleChoose(r, playerId, optionId) {
     if (at >= 0) selected.splice(at, 1);
     else if (selected.length < 3) selected.push(i);
     return askLiaUlt(r, p, selected);
+  }
+  if (pend.type === 'ult_nerasio_land') {
+    if (optionId === 'nu:cancel') return askRoll(r, p);
+    const selected = Array.isArray(pend.selected) ? pend.selected.slice() : [];
+    if (optionId === 'nu:confirm') {
+      const targets = [...new Set(selected)].filter(i => {
+        const o = r.owners[i];
+        return TILES[i]?.t === 'land' && o && o.player === p.id;
+      }).slice(0, 2);
+      return askNerasioElem(r, p, targets);
+    }
+    const i = +optionId.slice(3);
+    const o = r.owners[i];
+    if (!o || o.player !== p.id || TILES[i]?.t !== 'land') return askNerasioUlt(r, p, selected);
+    const at = selected.indexOf(i);
+    if (at >= 0) selected.splice(at, 1);
+    else if (selected.length < 2) selected.push(i);
+    return askNerasioUlt(r, p, selected);
+  }
+  if (pend.type === 'ult_nerasio_elem') {
+    const selected = Array.isArray(pend.selected) ? pend.selected.slice() : [];
+    if (optionId === 'ne:cancel') return askNerasioUlt(r, p, selected);
+    const elem = optionId.slice(3);
+    if (!['fire', 'water', 'earth', 'wind'].includes(elem)) return askNerasioElem(r, p, selected);
+    const targets = [...new Set(selected)].filter(i => {
+      const o = r.owners[i];
+      return TILES[i]?.t === 'land' && o && o.player === p.id;
+    }).slice(0, 2);
+    if (!targets.length) return askRoll(r, p);
+    return beginUltSequence(r, p, { targets, elem });
   }
   if (pend.type === 'roll' && optionId.startsWith('sp:')) {
     const sid = optionId.slice(3);
@@ -2471,6 +2570,28 @@ function botChooseOption(r, p, pend) {
       return (byId('lu:confirm') || opts[0]).id;
     const targets = opts.filter(o => /^lu:\d+$/.test(o.id) && !(pend.selected || []).includes(+o.id.slice(3)));
     return (botBest(r, targets, o => landValue(r, +o.id.slice(3))) || byId('lu:confirm') || byId('lu:cancel')).id;
+  }
+  if (pend.type === 'ult_nerasio_land') {
+    const confirm = byId('nu:confirm');
+    if ((pend.selected || []).length >= Math.min(2, r.owners.filter((o, i) =>
+      o && o.player === p.id && TILES[i].t === 'land').length)) return (confirm || opts[0]).id;
+    const targets = opts.filter(o => /^nu:\d+$/.test(o.id) && !(pend.selected || []).includes(+o.id.slice(3)));
+    return (botBest(r, targets, o => {
+      const i = +o.id.slice(3);
+      return landValue(r, i) + (tileElem(r, i) === CHARS[p.charId]?.elem ? -100 : 100);
+    }) || confirm || byId('nu:cancel')).id;
+  }
+  if (pend.type === 'ult_nerasio_elem') {
+    const selected = new Set(pend.selected || []);
+    return (botBest(r, opts.filter(o => o.id.startsWith('ne:') && o.id !== 'ne:cancel'), o => {
+      const elem = o.id.slice(3);
+      let count = 0, levels = 0;
+      r.owners.forEach((owner, i) => {
+        if (!owner || owner.player !== p.id || TILES[i].t !== 'land') return;
+        if (selected.has(i) || tileElem(r, i) === elem) { count++; levels += owner.level || 1; }
+      });
+      return count * 40 + levels * 5 + (elem === CHARS[p.charId]?.elem ? 15 : 0);
+    }) || opts[0]).id;
   }
   if (pend.type === 'samurai_elem') {
     const wanted = CHARS[p.charId]?.elem;
