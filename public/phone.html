@@ -32,6 +32,12 @@
   #join input { font-family:inherit; font-size:17px; text-align:center; letter-spacing:3px;
         background:var(--ink2); color:var(--parchment); border:1px solid var(--gold);
         border-radius:10px; padding:11px; width:min(70vw, 300px); }
+  #roomPreset { display:none; width:min(70vw,300px); padding:11px 14px; text-align:center;
+        color:var(--gold-soft); background:rgba(30,27,60,.9); border:1px solid var(--gold);
+        border-radius:10px; font-size:15px; letter-spacing:2px; }
+  #roomPreset strong { color:#fff3c4; font-size:19px; letter-spacing:4px; }
+  #join.qr-room #roomPreset { display:block; }
+  #join.qr-room #codeIn { display:none; }
   #join button { font-family:inherit; font-size:16px; letter-spacing:3px; padding:12px;
         width:min(70vw, 300px); background:linear-gradient(180deg,#E8C55A,#B8901F);
         color:#241C05; border:1px solid #F2D062; border-radius:10px; cursor:pointer; }
@@ -823,6 +829,7 @@
   <div id="join">
     <button id="joinFsBtn" aria-label="全画面">全画面</button>
     <img src="/assets/summons-code-gold.svg" alt="SUMMONS CODE">
+    <div id="roomPreset" role="status" aria-live="polite"></div>
     <input id="codeIn" placeholder="ルームコード" maxlength="4" autocapitalize="characters">
     <input id="nameIn" placeholder="なまえ" maxlength="8">
     <button id="joinBtn">参加する</button>
@@ -917,6 +924,8 @@
 const $ = id => document.getElementById(id);
 const REMOVE_CARD_HTML = '<div class="face removeCard"><div class="removeTitle">カードを削除</div><img src="/assets/cards/shop-remove-v2.webp" alt="カード削除"></div>';
 let room = null, pid = null, state = null, selected = null, rolling = false;
+const ROOM_CODE_PATTERN = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{4}$/;
+let presetRoom = null;
 let inShopHand = false, prevHandKey = '', moveT = null;
 let charPreview = null, charSubmitting = false, fitResizeT = null;
 let actionOverlayKey = '', actionSubmitting = false, browsingActionHand = false;
@@ -1037,28 +1046,80 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden && room && Date.now() - lastMsgAt > 8000) connect();
 });
 $('joinBtn').onclick = async () => {
+  $('err').textContent = '';
   const r = await fetch('/api/join', { method:'POST', body: JSON.stringify({
-    room: $('codeIn').value.trim().toUpperCase(), name: $('nameIn').value.trim() }) });
+    room: presetRoom || $('codeIn').value.trim().toUpperCase(), name: $('nameIn').value.trim() }) });
   const d = await r.json();
   if (d.error) { $('err').textContent = d.error; return; }
   room = d.room; pid = d.playerId;
   try { localStorage.setItem('sc_session', JSON.stringify({ room, pid })); } catch (e) {}
   enterGame();
 };
-// 保存済みセッションがあれば自動復帰
-(async () => {
+function readSavedSession() {
   let sess = null;
   try { sess = JSON.parse(localStorage.getItem('sc_session') || 'null'); } catch (e) {}
-  if (!sess) return;
+  return sess;
+}
+function clearSavedSession() {
+  try { localStorage.removeItem('sc_session'); } catch (e) {}
+}
+function showPresetRoom(code) {
+  presetRoom = code;
+  $('codeIn').value = code;
+  $('roomPreset').innerHTML = `ルーム <strong>${code}</strong> に参加`;
+  $('join').classList.add('qr-room');
+}
+function showManualRoom(message = '') {
+  presetRoom = null;
+  $('codeIn').value = '';
+  $('join').classList.remove('qr-room');
+  $('joinBtn').disabled = false;
+  if (message) $('err').textContent = message;
+}
+async function resumeSavedSession(sess) {
+  if (!sess || !sess.room || !sess.pid) return false;
   try {
     const r = await fetch('/api/resume', { method:'POST',
       body: JSON.stringify({ room: sess.room, playerId: sess.pid }) });
-    if (!r.ok) throw 0;
-    room = sess.room; pid = sess.pid;
+    if (!r.ok) return false;
+    room = String(sess.room).toUpperCase(); pid = sess.pid;
     enterGame();
-  } catch (e) {
-    try { localStorage.removeItem('sc_session'); } catch (e2) {}
+    return true;
+  } catch (e) { return false; }
+}
+// QRの明示ルームを保存済みの別ルームより優先し、同じルームだけ自動復帰する。
+(async () => {
+  const params = new URLSearchParams(location.search);
+  const hasRoomParam = params.has('room');
+  const candidate = String(params.get('room') || '').trim().toUpperCase();
+  const sess = readSavedSession();
+  if (hasRoomParam) {
+    if (!ROOM_CODE_PATTERN.test(candidate)) {
+      showManualRoom('QRコードのルーム情報が正しくありません。ルームコードを入力してください');
+      return;
+    }
+    showPresetRoom(candidate);
+    $('joinBtn').disabled = true;
+    try {
+      const r = await fetch('/api/room?code=' + encodeURIComponent(candidate));
+      const d = await r.json();
+      if (!d.exists) {
+        showManualRoom('このルームは見つかりません。ルームコードを確認してください');
+        return;
+      }
+    } catch (e) {
+      showManualRoom('ルームを確認できませんでした。ルームコードを入力してください');
+      return;
+    }
+    $('joinBtn').disabled = false;
+    if (sess && String(sess.room || '').toUpperCase() === candidate) {
+      if (await resumeSavedSession(sess)) return;
+      clearSavedSession();
+    }
+    return;
   }
+  if (!sess) return;
+  if (!await resumeSavedSession(sess)) clearSavedSession();
 })();
 async function toggleFullscreen() {
   if (!document.fullscreenElement) {

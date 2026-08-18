@@ -1,10 +1,10 @@
 {
   "name": "summons-crest",
-  "version": "1.30.0",
+  "version": "1.31.0",
   "private": true,
   "scripts": {
     "start": "node server.js",
-    "test": "node phaser_test.js && node timing_test.js && node v100_test.js && node v101_new_creatures_test.js && node v102_wind_creatures_test.js && node v106_castle_test.js && node v107_balance_test.js && node v108_shop_test.js && node v109_ult_cutin_test.js && node v113_balance_test.js && node v119_gallery_test.js && node v120_villa_test.js && node v121_brand_test.js && node v122_phone_ui_test.js && node v123_shop_ui_test.js && node v124_villa_exile_test.js && node v125_ui_test.js && node v126_phone_ui_test.js && node v127_tv_hud_test.js && node v128_exile_chain_test.js && node v129_earth_chain_test.js && node v130_nerasio_test.js && node bot_test.js && node bot_mode_test.js && node ui_test.js && node save_test.js",
+    "test": "node phaser_test.js && node timing_test.js && node v100_test.js && node v101_new_creatures_test.js && node v102_wind_creatures_test.js && node v106_castle_test.js && node v107_balance_test.js && node v108_shop_test.js && node v109_ult_cutin_test.js && node v113_balance_test.js && node v119_gallery_test.js && node v120_villa_test.js && node v121_brand_test.js && node v122_phone_ui_test.js && node v123_shop_ui_test.js && node v124_villa_exile_test.js && node v125_ui_test.js && node v126_phone_ui_test.js && node v127_tv_hud_test.js && node v128_exile_chain_test.js && node v129_earth_chain_test.js && node v130_nerasio_test.js && node v131_qr_join_test.js && node bot_test.js && node bot_mode_test.js && node ui_test.js && node save_test.js",
     "test:v100": "node v100_test.js",
     "test:v101": "node v101_new_creatures_test.js",
     "test:v102": "node v102_wind_creatures_test.js",
@@ -22,6 +22,7 @@
     "test:v128": "node v128_exile_chain_test.js",
     "test:v129": "node v129_earth_chain_test.js",
     "test:v130": "node v130_nerasio_test.js",
+    "test:v131": "node v131_qr_join_test.js",
     "test:bot": "node bot_test.js",
     "test:bot-mode": "node bot_mode_test.js",
     "test:ui": "node ui_test.js",

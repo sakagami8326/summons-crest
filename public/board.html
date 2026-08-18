@@ -1173,7 +1173,7 @@
     padding:8px 14px; line-height:1.8;"></div>
 
   <div class="overlay on" id="lobby">
-    <p class="hint">スマホで <b id="phoneUrl">…</b> を開き、コードを入力して参加</p>
+    <p class="hint">QRを読み取り、名前を入力して参加　<span style="opacity:.72">直接開く場合はルームコードを入力</span><br><b id="phoneUrl">…</b></p>
     <div class="bigcode" id="bigcode">----</div>
     <div id="qrBox" style="margin-top:4px"></div>
     <div class="joined" id="joined"></div>
@@ -3611,7 +3611,7 @@ function render() {
   if (!state) return;
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.30' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.31' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');

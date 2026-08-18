@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.30';
+const VERSION = '1.31';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
@@ -2937,6 +2937,10 @@ const lanIP = () => {
     for (const it of l || []) if (it.family === 'IPv4' && !it.internal) return it.address;
   return 'localhost';
 };
+const publicBaseUrl = () => process.env.PUBLIC_URL
+  ? process.env.PUBLIC_URL.replace(/\/$/, '')
+  : `http://${lanIP()}:${PORT}`;
+const phoneUrlForRoom = code => `${publicBaseUrl()}/phone?room=${encodeURIComponent(String(code || '').toUpperCase())}`;
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
@@ -2956,10 +2960,7 @@ const server = http.createServer(async (req, res) => {
   if (p === '/api/create' && req.method === 'POST') {
     const b = await readBody(req);
     const r = makeRoom(b.mode === 'bot' ? 'bot' : 'normal');
-    const base = process.env.PUBLIC_URL
-      ? process.env.PUBLIC_URL.replace(/\/$/, '')
-      : `http://${lanIP()}:${PORT}`;
-    return json(res, { code: r.code, phoneUrl: `${base}/phone`, boardToken: r.boardToken });
+    return json(res, { code: r.code, phoneUrl: phoneUrlForRoom(r.code), boardToken: r.boardToken });
   }
   if (p === '/api/join' && req.method === 'POST') {
     const b = await readBody(req);
@@ -3003,11 +3004,8 @@ const server = http.createServer(async (req, res) => {
     if (b.__tooLarge) return json(res, { error: 'セーブデータが大きすぎます' }, 413);
     const out = restoreRoom(b);
     if (out.error) return json(res, { error: out.error }, out.status || 400);
-    const base = process.env.PUBLIC_URL
-      ? process.env.PUBLIC_URL.replace(/\/$/, '')
-      : `http://${lanIP()}:${PORT}`;
     console.log(`ルーム${out.room.code}をセーブデータから復元`);
-    return json(res, { code: out.room.code, phoneUrl: `${base}/phone`,
+    return json(res, { code: out.room.code, phoneUrl: phoneUrlForRoom(out.room.code),
                        boardToken: out.room.boardToken, warn: out.warn || null });
   }
   if (p === '/api/resume' && req.method === 'POST') {
@@ -3036,11 +3034,8 @@ const server = http.createServer(async (req, res) => {
   if (p === '/api/room') {
     const r = rooms.get((url.searchParams.get('code') || '').toUpperCase());
     if (!r) return json(res, { exists: false });
-    const base = process.env.PUBLIC_URL
-      ? process.env.PUBLIC_URL.replace(/\/$/, '')
-      : `http://${lanIP()}:${PORT}`;
     return json(res, { exists: true, phase: r.phase, players: r.players.length,
-                       phoneUrl: `${base}/phone` });
+                       phoneUrl: phoneUrlForRoom(r.code) });
   }
   if (p === '/api/action' && req.method === 'POST') {
     const b = await readBody(req);
