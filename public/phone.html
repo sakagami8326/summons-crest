@@ -32,9 +32,9 @@
   #join input { font-family:inherit; font-size:17px; text-align:center; letter-spacing:3px;
         background:var(--ink2); color:var(--parchment); border:1px solid var(--gold);
         border-radius:10px; padding:11px; width:min(70vw, 300px); }
-  #roomPreset { display:none; width:min(70vw,300px); padding:11px 14px; text-align:center;
-        color:var(--gold-soft); background:rgba(30,27,60,.9); border:1px solid var(--gold);
-        border-radius:10px; font-size:15px; letter-spacing:2px; }
+  #roomPreset { display:none; width:min(70vw,300px); padding:5px 0; text-align:center;
+        color:var(--gold-soft); background:transparent; border:0;
+        border-radius:0; font-size:15px; letter-spacing:2px; }
   #roomPreset strong { color:#fff3c4; font-size:19px; letter-spacing:4px; }
   #join.qr-room #roomPreset { display:block; }
   #join.qr-room #codeIn { display:none; }
@@ -276,14 +276,10 @@
   #phoneUlt { position:fixed; inset:0; z-index:90; display:none; overflow:hidden; background:#03050c; }
   #phoneUlt.on { display:block; } #phoneUltArt { position:absolute; z-index:1; inset:0; width:100%; height:100%; object-fit:contain; }
   #phoneUlt.on #phoneUltArt { animation:phoneUltHero 4.9s cubic-bezier(.18,.82,.22,1) both; }
-  @keyframes phoneUltHero { 0%{opacity:0;transform:translateX(-110%) scale(1.08);filter:blur(10px)} 12%{opacity:1;transform:translateX(2%) scale(1.05);filter:none}
-    20%,52%{transform:translateX(0) scale(1)} 55%,82%{opacity:1;filter:brightness(.62)} 100%{opacity:0;transform:translateX(32%);filter:blur(8px)} }
+  @keyframes phoneUltHero { 0%{opacity:0;transform:scale(1.08);filter:blur(10px)} 12%{opacity:1;transform:scale(1.05);filter:none}
+    20%,52%{transform:scale(1)} 55%,82%{opacity:1;filter:brightness(.62)} 100%{opacity:0;transform:scale(1.03);filter:blur(8px)} }
   #phoneUlt #ultFxHost { position:absolute; z-index:2; inset:0; pointer-events:none; }
-  #phoneUltSlash { position:absolute; z-index:4; inset:-30%; opacity:0; transform:translateX(-90%) rotate(-9deg);
-      background:linear-gradient(100deg,transparent 43%,#fff 49%,#ffe7a0 50%,transparent 56%); pointer-events:none; }
-  #phoneUlt.on #phoneUltSlash { animation:phoneUltSlash 4.9s ease both; }
-  @keyframes phoneUltSlash { 0%,88%{opacity:0} 91%{opacity:1;transform:translateX(-60%) rotate(-9deg)}
-      97%{opacity:1;transform:translateX(65%) rotate(-9deg)} 100%{opacity:0;transform:translateX(75%) rotate(-9deg)} }
+  #phoneUltSlash { display:none; }
   #phoneUltFlash { position:absolute; z-index:5; inset:0; opacity:0; background:#fff; pointer-events:none; }
   #phoneUlt.on #phoneUltFlash { animation:phoneUltFlash 4.9s ease both; }
   @keyframes phoneUltFlash { 0%,92%,100%{opacity:0} 95%{opacity:.92} 98%{opacity:.12} }
@@ -505,8 +501,17 @@
       border:2px solid #C9A227; font:700 max(2dvh,13px)/1 Marudeco,sans-serif; }
   .cdActions { flex:none; display:flex; justify-content:flex-end; gap:1.5dvh; }
   /* ダイス画像ボタン */
-  .diceImgBtn { background:none; border:none; cursor:pointer; padding:0; height:100%;
+  .diceImgBtn { position:relative; isolation:isolate; background:none; border:none; cursor:pointer; padding:0; height:100%;
         display:flex; align-items:center; justify-content:center; }
+  .diceImgBtn::before { content:""; position:absolute; z-index:-1; width:19dvh; height:19dvh; border-radius:50%;
+        border:clamp(2px,.7dvh,4px) solid rgba(255,226,117,.92);
+        box-shadow:0 0 1.8dvh rgba(255,209,69,.95), 0 0 4.2dvh rgba(255,175,30,.68), inset 0 0 1.4dvh rgba(255,235,142,.5);
+        animation:diceReadyGlow 1.15s ease-in-out infinite; pointer-events:none; }
+  @keyframes diceReadyGlow {
+    0%,100% { opacity:.48; transform:scale(.9); }
+    50% { opacity:1; transform:scale(1.08); }
+  }
+  @media (prefers-reduced-motion:reduce) { .diceImgBtn::before { animation:none; opacity:.85; } }
   .diceImgBtn img { height:23dvh; max-height:100%; filter:none; transition:transform .12s; }
   .diceImgBtn:active img { transform:scale(.93); }
 

@@ -3274,8 +3274,14 @@ function updateBattleCompare() {
   };
   $('bCmpAtkAt').textContent = read('bAtkStats', 'at');
   $('bCmpDefAt').textContent = read('bDefStats', 'at');
-  $('bCmpAtkHp').textContent = read('bAtkStats', 'hp');
-  $('bCmpDefHp').textContent = read('bDefStats', 'hp');
+  const totalDurability = rootId => {
+    const hp = Number(read(rootId, 'hp'));
+    const df = Number(read(rootId, 'df'));
+    if (!Number.isFinite(hp)) return '―';
+    return Math.max(0, hp) + (Number.isFinite(df) ? Math.max(0, df) : 0);
+  };
+  $('bCmpAtkHp').textContent = totalDurability('bAtkStats');
+  $('bCmpDefHp').textContent = totalDurability('bDefStats');
   const mirrorBar = (sourceId, selector, targetId) => {
     const source = $(sourceId) && $(sourceId).querySelector(selector), target = $(targetId);
     if (!source || !target) return;
@@ -3611,7 +3617,7 @@ function render() {
   if (!state) return;
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.31' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.32' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');

@@ -63,7 +63,7 @@ ok(board.includes('animation:ultInfo 2.9s 1.45s'),'effect message remains readab
 ok(board.includes('.tvShopArt img') && board.includes('object-fit:contain'),'TV shop keeps product art inside its frame');
 ok(board.includes("artKind = item.kind === 'support'"),'TV shop distinguishes support, spell, and creature art');
 ok(board.includes('tvShopCardBg') && board.includes('tsCost') && board.includes('tsInfo'),'TV shop renders complete card faces');
-ok(phone.includes('phoneUltSlash') && phone.includes('phoneUltFlash'),'phone cut-in exits with slash and flash');
+ok(phone.includes('#phoneUltSlash { display:none; }') && phone.includes('phoneUltFlash'),'phone cut-in exits with flash without horizontal slash');
 ok(board.includes("statLabel('at')") && board.includes("statLabel('hp')"),'battle uses AT and HP symbols with labels');
 ok(phone.includes('inlineStatSymbol') && phone.includes('stat-at-icon.svg'),'phone territory details use stat symbols');
 for(const file of ['stat-at-icon.svg','stat-hp-icon.svg']) {
