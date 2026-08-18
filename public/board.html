@@ -333,7 +333,7 @@
   .sfrontB { transform:rotateY(180deg); background:url('/assets/cards/bg-weapon-v1.webp') center / cover;
            border:2px solid #2C2A4A; color:#fff4d5; gap:2px; overflow:hidden; padding:.5vh; box-sizing:border-box;
            text-shadow:0 1px 3px rgba(0,0,0,.9); }
-  .sfrontB img { width:78%; height:68%; object-fit:contain; transform:translateY(-.7vh); filter:drop-shadow(0 .3vh .35vh rgba(0,0,0,.65)); }
+  .sfrontB img { width:88%; height:74%; object-fit:contain; transform:translateY(-.35vh); filter:drop-shadow(0 .3vh .35vh rgba(0,0,0,.65)); }
   .sfrontB .supportExileTag { position:absolute; right:7%; bottom:6%; color:#ff5361;
       font:900 1.7vh/1 Marudeco,sans-serif; text-shadow:0 2px 4px #000; }
   .sfrontB.creatureSupport { padding:0; gap:0; background:rgba(8,7,20,.9); border-color:#c9a227; }
@@ -377,8 +377,8 @@
   .tvShopCardBg.dedicatedSpell { z-index:-1; object-fit:cover; }
   .tvShopArt { position:absolute; z-index:-1; top:9%; left:3%; width:94%; height:58%; display:grid; place-items:center; overflow:hidden; }
   .tvShopArt img { display:block; width:100%; height:100%; object-fit:contain; }
-  .tvShopArt.support { top:9%; left:8%; width:84%; height:50%; padding:0; box-sizing:border-box; overflow:visible; }
-  .tvShopArt.support img,.tvShopArt.support.weapon img,.tvShopArt.support.shield img {
+  .tvShopArt.support { top:12%; left:8%; width:84%; height:50%; padding:0; box-sizing:border-box; overflow:visible; }
+  .tvShopArt.support img {
       position:absolute; inset:0; display:block; width:100% !important; height:100% !important;
       max-width:100%; max-height:100%; object-fit:contain; object-position:center center; transform:none; }
   .tvShopArt.spell img { width:88%; height:88%; }
@@ -2234,11 +2234,11 @@ async function runFxHarness(name) {
     state.phase = 'playing'; state.turn = 0;
     state.pending = { [pid]: { type:'market', options:[] } };
     state.shopVisit = { id:'fixture-shop', player:pid, half:false, selected:null, items:[
-      { slotId:'step', kind:'card', card:'sp_step', basePrice:100, price:100, sold:false },
-      { slotId:'move', kind:'card', card:'sp_move', basePrice:100, price:100, sold:false },
-      { slotId:'insight', kind:'card', card:'sp_insight', basePrice:60, price:60, sold:false },
-      { slotId:'swap', kind:'card', card:'sp_swap', basePrice:100, price:100, sold:false },
-      { slotId:'dice1', kind:'card', card:'sp_dice_1', basePrice:100, price:100, sold:false },
+      { slotId:'random-weapon', kind:'support', card:'weapon', basePrice:60, price:60, sold:false },
+      { slotId:'random-shield', kind:'support', card:'shield', basePrice:60, price:60, sold:false },
+      { slotId:'random-gweapon', kind:'support', card:'gweapon', basePrice:120, price:120, sold:false },
+      { slotId:'random-gshield', kind:'support', card:'gshield', basePrice:120, price:120, sold:false },
+      { slotId:'random-jinx', kind:'support', card:'jinx', basePrice:100, price:100, sold:false },
       { slotId:'weapon', kind:'support', card:'weapon', basePrice:60, price:60, sold:false },
       { slotId:'shield', kind:'support', card:'shield', basePrice:60, price:60, sold:false },
       { slotId:'jinx', kind:'support', card:'jinx', basePrice:100, price:100, sold:false },
@@ -3105,9 +3105,12 @@ function playBattleOpening(key) {
 }
 const supportCardId = sup => typeof sup === 'string' ? sup : sup && sup.cardId;
 const hasBattleSupport = sup => !!sup && sup !== 'none';
-const battleSupportArt = sup => ({ weapon:'support-weapon-v1.webp', gweapon:'support-weapon-v1.webp',
-  shield:'support-shield-v1.webp', gshield:'support-shield-v1.webp',
-  jinx:'support-jinx-v2.webp' })[supportCardId(sup)];
+const SUPPORT_ART_FILE = {
+  weapon:'support-sword-v1.webp', gweapon:'support-heavy-axe-v1.webp',
+  shield:'support-shield-v2.webp', gshield:'support-big-shield-v1.webp',
+  jinx:'support-disarm-v1.webp'
+};
+const battleSupportArt = sup => SUPPORT_ART_FILE[supportCardId(sup)];
 const battleSupportName = sup => {
   if (!sup || sup === 'none') return '支援なし';
   if (typeof sup === 'object') return sup.name || sup.cardId || '支援カード';
@@ -3617,7 +3620,7 @@ function render() {
   if (!state) return;
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.32' +
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.34' +
     (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
@@ -3778,7 +3781,7 @@ function render() {
         const dedicatedArt = state.catalog.SPELLS[item.card] ? dedicatedSpellAsset(item.card) : null;
         const dedicatedSpell = !!dedicatedArt;
         const art = item.kind === 'support'
-          ? `/assets/cards/support-${item.card}-${item.card === 'jinx' ? 'v2' : 'v1'}.webp`
+          ? `/assets/cards/${SUPPORT_ART_FILE[item.card]}`
           : state.catalog.SPELLS[item.card]
             ? (dedicatedArt || `/assets/c_${item.card}.png`)
             : `/assets/cards/c_${item.card}.webp`;

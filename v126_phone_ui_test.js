@@ -42,10 +42,9 @@ ok(!/\.shopProduct\.unaffordable\s*\{[^}]*filter:/.test(phone),
 ok(/unaffordable \.shopCompactBg,.shopProduct\.unaffordable \.shopCompactArt/.test(phone) &&
    /shopFunds[^}]*color:#ffb3aa/.test(phone) && /G不足/.test(phone),
   'insufficient funds lightly dim art and show a shortage label');
-ok(/support-weapon[^}]*width:48%[^}]*height:74%/.test(phone) &&
-   /support-shield[^}]*width:60%[^}]*height:70%/.test(phone) &&
-   /support-jinx[^}]*width:58%[^}]*height:68%/.test(phone),
-  'weapon, shield and jinx use their shelf-only safe areas');
+ok(/\.shopCompact\.support \.shopCompactArt\s*\{[^}]*left:8%[^}]*width:84%[^}]*height:63%/.test(phone) &&
+   /\.shopCompact\.support \.shopCompactArt img\s*\{[^}]*width:100%[^}]*height:100%[^}]*object-fit:contain/.test(phone),
+  'all support products use the shared 2:3 shelf safe area');
 ok(/shopCompactShade[^}]*rgba\(4,9,20,\.42\)[^}]*rgba\(4,9,20,\.62\)/.test(phone),
   'normal shelf cards use a weak localized gradient');
 

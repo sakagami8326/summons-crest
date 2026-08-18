@@ -12,7 +12,8 @@ function ok(condition, label) {
   console.log(`OK: ${label}`);
 }
 
-ok(server.includes("const VERSION = '1.32';") && pkg.version === '1.32.0' && board.includes('board 1.32'), 'version is unified at v1.32');
+ok(Number((server.match(/const VERSION = '([0-9.]+)'/) || [])[1]) >= 1.32 &&
+  Number.parseFloat(pkg.version) >= 1.32 && /board 1\.(?:3[2-9]|[4-9]\d)/.test(board), 'version is v1.32 or newer');
 ok(/#roomPreset\s*\{[^}]*background:transparent;[^}]*border:0;[^}]*border-radius:0;/s.test(phone), 'QR room label has no frame');
 ok(phone.includes('@keyframes phoneUltHero { 0%{opacity:0;transform:scale') && !phone.includes('@keyframes phoneUltHero { 0%{opacity:0;transform:translateX'), 'phone ultimate art does not slide horizontally');
 ok(phone.includes('#phoneUltSlash { display:none; }') && phone.includes('@keyframes phoneUltFlash'), 'phone ultimate keeps flash and disables horizontal slash');

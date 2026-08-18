@@ -33,8 +33,8 @@ eq([G.CREATURES.kamadoma.name, G.CREATURES.kamadoma.evo, G.CREATURES.kamadoma.el
   ['カマドーマ', 'ダイテッカン', 'fire', 'N', 60, 20, 40, 30, 60], 'Kamadoma catalog');
 const market = G.makeDeck();
 eq([count(market, 'toxy'), count(market, 'kamadoma')], [2, 3], 'market copies are R2/N3');
-eq(G.CHAR_DECKS.redani, ['gecko','gecko','gecko','kamadoma','kamadoma','cleo',
-  'sp_gold','sp_insight','sp_bloodstained_blade','weapon','weapon','jinx'], 'Redani approved starter deck');
+eq(G.CHAR_DECKS.redani, ['kamadoma','kamadoma','swordgear','gecko','gecko','cleo',
+  'sp_gold','sp_insight','sp_bloodstained_blade','weapon','weapon','gweapon'], 'Redani weapon starter deck');
 
 // Every Toxy/Mad Mist placed when exile occurs creates an independent target choice.
 {

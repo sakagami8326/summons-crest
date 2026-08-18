@@ -138,6 +138,10 @@ ok(phone.includes('選択中 ${selected.length}/${multiMax}') && phone.includes(
 ok(phone.includes("cdArt${id === 'nerasio' ? ' cdArtNerasio' : ''}") &&
    phone.includes('.cdHero .cdArt.cdArtNerasio'),
   'Nerasio uses the enlarged summoner-detail artwork treatment');
+ok(phone.includes("const villaIndex = entries.findIndex(([id]) => id === 'villa')") &&
+   phone.includes("const nerasioIndex = entries.findIndex(([id]) => id === 'nerasio')") &&
+   phone.includes('[entries[villaIndex], entries[nerasioIndex]] = [entries[nerasioIndex], entries[villaIndex]]'),
+  'phone swaps Villa and Nerasio positions without changing the shared catalog order');
 ok(!phone.includes('data-id="upcoming-earth"'),'obsolete upcoming earth placeholder is removed');
 const board = fs.readFileSync(path.join(__dirname,'public','board.html'),'utf8');
 ok(board.includes("sp.name.length <= 8 ? '5.1vh' : '4.2vh'") &&

@@ -77,7 +77,7 @@ ok(board.includes('.tvShopCard .tsBrush') && board.includes('brush-boundary-b-pa
 ok(!board.includes('.tvShopCard .tsRule') && !board.includes('class="tsRule"'),'TV shop creature card omits the stat/effect divider');
 ok(board.includes('.tvShopCard { position:relative; aspect-ratio:5/7; border:0;'),'TV shop removes extra outer border');
 ok(!board.includes('.tvShopCard::after'),'TV shop removes extra inner border');
-ok(board.includes('.tvShopArt.support { top:9%; left:8%; width:84%; height:50%;'),'TV shop contains support art');
+ok(board.includes('.tvShopArt.support { top:12%; left:8%; width:84%; height:50%;'),'TV shop contains support art');
 ok(phone.includes('height:min(41.5dvh'),'phone shop enlarges product cards');
 ok(board.includes('.statIconDisk { width:100%; aspect-ratio:1;') && phone.includes('.statIconDisk { width:100%; aspect-ratio:1;'),
   'card stat pedestals remain perfect circles');
@@ -115,10 +115,10 @@ ok(board.includes('Number.isFinite(Number(from))') && board.includes('Number.isF
   'battle stat count-up falls back safely when old payload values are missing');
 ok(board.includes('battleTeam.atk { grid-template-columns') && board.includes('battleFighter'),
   'battle uses detail support fighter layout');
-ok(board.includes('.tvShopArt.support { top:9%; left:8%; width:84%; height:50%; padding:0;') &&
-  board.includes('.tvShopArt.support img,.tvShopArt.support.weapon img,.tvShopArt.support.shield img') &&
+ok(board.includes('.tvShopArt.support { top:12%; left:8%; width:84%; height:50%; padding:0;') &&
+  board.includes('.tvShopArt.support img {') &&
   board.includes('width:100%; height:100%; object-fit:contain;'),
-  'TV shop keeps weapon and shield clear of the lower brush');
+  'TV shop keeps every support art clear of the lower brush');
 ok(src.includes('terrainElem: tileElem(r, b.tile)') && board.includes("terrain.style.setProperty('--terrain-color', RUNE[elem]"),
   'battle terrain element persists in the payload and colors its label band');
 ok(board.includes('id="bCmpAtkDf"') && board.includes('id="bCmpDefDf"') && board.includes('支援 DF+'),

@@ -225,9 +225,8 @@
       white-space:nowrap; text-align:center; text-shadow:0 2px 4px #000; }
   .shopCompactArt { position:absolute; z-index:2; top:12%; left:4%; width:92%; height:63%; display:grid; place-items:center; }
   .shopCompactArt img { width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 .4dvh .7dvh rgba(0,0,0,.55)); }
-  .shopCompact.support-weapon .shopCompactArt img,.shopCompact.support-gweapon .shopCompactArt img { width:48%; height:74%; }
-  .shopCompact.support-shield .shopCompactArt img,.shopCompact.support-gshield .shopCompactArt img { width:60%; height:70%; }
-  .shopCompact.support-jinx .shopCompactArt img { width:58%; height:68%; }
+  .shopCompact.support .shopCompactArt { top:15%; left:8%; width:84%; height:63%; }
+  .shopCompact.support .shopCompactArt img { width:100%; height:100%; object-fit:contain; }
   .shopCompactArt svg { width:62%; height:62%; }
   .shopCompactArt .tok2 { width:64%!important; height:auto!important; aspect-ratio:1; font-size:clamp(11px,7cqw,20px); }
   .shopCompactFooter { position:absolute; z-index:4; left:3%; right:3%; bottom:3%; min-height:21%;
@@ -752,12 +751,12 @@
   .supportCard .suBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-3; }
   .supportCard .suHead { position:absolute; z-index:8; top:3.1%; left:4.7%; right:4.7%; height:9.5%;
       display:grid; grid-template-columns:11.5% 1fr 11.5%; align-items:center; }
-  .supportCard .suName { grid-column:2; color:#fff4d5; font:900 clamp(14px,9.2cqw,28px)/1 'Yu Mincho','Hiragino Mincho ProN',serif; text-align:center;
+  .supportCard .suName { grid-column:2; color:#fff4d5; font:900 clamp(12px,8.6cqw,28px)/1 'Yu Mincho','Hiragino Mincho ProN',serif; text-align:center;
       white-space:nowrap; text-shadow:0 2px 5px rgba(30,0,20,.85); }
-  .supportCard .suArt { position:absolute; z-index:4; top:10.5%; left:16%; width:68%; height:49%; display:grid; place-items:center;
+  .supportCard .suArt { position:absolute; z-index:4; top:10.5%; left:8%; width:84%; height:49%; display:grid; place-items:center;
       color:#fff4e8; filter:drop-shadow(0 6px 10px rgba(0,0,0,.5)); }
   .supportCard .suArt svg { width:62%; height:62%; }
-  .supportCard .suArt img { max-width:88%; max-height:88%; object-fit:contain; }
+  .supportCard .suArt img { width:100%; height:100%; object-fit:contain; }
   .supportCard .ccCost { position:absolute; z-index:20; top:62.8%; left:3.2%; width:31%; aspect-ratio:320/112; }
   .supportCard .ccCostFrame { position:absolute; inset:0; width:100%; height:100%; }
   .supportCard .ccCoin { position:absolute; left:6%; top:19%; width:19%; height:62%; }
@@ -988,11 +987,11 @@ const ELEM_MINI = {"fire": "<g transform=\"scale(0.0636) translate(-364.2,-542.7
 const GLYPH = { weapon: () => sic('sword', '7.5dvh'), gweapon: () => sic('sword', '7.5dvh'),
   shield: () => sic('up', '7.5dvh'), gshield: () => sic('up', '7.5dvh'), jinx: () => '❂' };
 const SUPPORT_ART = {
-  weapon: '/assets/cards/support-weapon-v1.webp',
-  gweapon: '/assets/cards/support-weapon-v1.webp',
-  shield: '/assets/cards/support-shield-v1.webp',
-  gshield: '/assets/cards/support-shield-v1.webp',
-  jinx: '/assets/cards/support-jinx-v2.webp'
+  weapon: '/assets/cards/support-sword-v1.webp',
+  gweapon: '/assets/cards/support-heavy-axe-v1.webp',
+  shield: '/assets/cards/support-shield-v2.webp',
+  gshield: '/assets/cards/support-big-shield-v1.webp',
+  jinx: '/assets/cards/support-disarm-v1.webp'
 };
 const supportArt = cid => SUPPORT_ART[cid]
   ? `<img src="${SUPPORT_ART[cid]}" alt="">`
@@ -1404,7 +1403,7 @@ function tileDetailHTML(i) {
   const t = state.tiles[i], o = state.owners[i];
   const st2 = { castle: ['🏰 城', '総資産8000G以上で通過すると勝利。刻印があれば一周ボーナス'],
     shrine: ['⛩ 祠', '止まると+100Gとカード1枚。参拝4回で称号「大巡礼者」'],
-    market: ['🏪 市場', '公開されたカード・武器・盾を購入できる'],
+    market: ['🏪 市場', '公開されたカードと支援カードを購入できる'],
     gate: ['🚪 変化の門', '通過で刻印を取得。止まると恩恵を選べる'] }[t.t];
   if (st2) return `<div class="tdRow"><b style="font-size:max(2.4dvh,15px)">${iconize(st2[0])}</b></div>
     <div class="tdSub">${st2[1]}</div>`;
@@ -1553,7 +1552,7 @@ function supportFaceBody(cid, sup) {
     ${sup.exileAfterUse ? '<div class="cardExileTag">廃棄</div>' : ''}`;
 }
 function supportPower(sup) {
-  return sup.jinx ? '呪具' : sup.st ? `AT＋${sup.st}` : `DF＋${sup.hp}`;
+  return sup.jinx ? sup.name : sup.st ? `AT＋${sup.st}` : `DF＋${sup.hp}`;
 }
 function supportDescription(sup) {
   return sup.jinx ? '相手の支援カードを無効化する。'
@@ -1830,7 +1829,12 @@ function renderCharSelection(m, C, p) {
   $('charSel').classList.add('on');
   $('csMsg').textContent = p ? '使用する召喚士を選んでください'
     : (m.charId ? C.CHARS[m.charId].name + ' で決定 ─ 他のプレイヤーを待っています' : '…');
-  const cards = Object.entries(C.CHARS).map(([id, c]) => {
+  const entries = Object.entries(C.CHARS);
+  const villaIndex = entries.findIndex(([id]) => id === 'villa');
+  const nerasioIndex = entries.findIndex(([id]) => id === 'nerasio');
+  if (villaIndex >= 0 && nerasioIndex >= 0)
+    [entries[villaIndex], entries[nerasioIndex]] = [entries[nerasioIndex], entries[villaIndex]];
+  const cards = entries.map(([id, c]) => {
     if (c.selectable === false || c.upcoming) {
       const elemIcon = `<span class="csuElem"><svg viewBox="-34 -36 68 72">${ELEM_MINI[c.elem]}</svg></span>`;
       return `<div class="csUpcoming revealed" data-id="${id}" role="button" aria-label="${c.name}の準備中情報を見る">

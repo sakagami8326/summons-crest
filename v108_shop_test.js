@@ -12,7 +12,7 @@ let pass = 0;
 const ok = (v, n) => { if (!v) throw new Error('FAIL: ' + n); pass++; };
 const eq = (a, b, n) => ok(JSON.stringify(a) === JSON.stringify(b), `${n} (${JSON.stringify(a)} !== ${JSON.stringify(b)})`);
 ok(Number(G.VERSION) >= 1.08, 'version is v1.08 or newer');
-eq(G.CREATURES.cresteria.fx, '【真珠】召喚時、支援「盾」1枚をデッキに加える', 'Cresteria text');
+eq(G.CREATURES.cresteria.fx, '【真珠】召喚時、支援「シールド」1枚をデッキに加える', 'Cresteria text');
 
 const p = { id:'p1', name:'P1', charId:'linnei', gold:1000, hand:['shield'], deck:[], discard:['weapon'], exile:[],
   battleWins:0, shrineVisits:0, pos:7, lap:1, seal:false };
@@ -23,9 +23,10 @@ eq(r.shopVisit.items.length, 9, 'five cards plus four fixed products');
 eq(new Set(r.shopVisit.items.slice(0, 5).map(x => x.card)).size, 5, 'no duplicate random cards');
 eq(r.shopVisit.items.slice(5).map(x => [x.slotId, x.price]), [['weapon',60],['shield',60],['jinx',100],['remove',80]], 'fixed products, order, and prices');
 for (const item of r.shopVisit.items.slice(0, 5)) {
-  const info = G.CREATURES[item.card] || G.SPELLS[item.card];
-  ok(info && !/_f$/.test(item.card) && !G.SUPPORTS[item.card], 'random slot is a base market card');
-  eq(item.price, {N:60,R:100,L:160}[info.rarity], 'rarity price');
+  const info = G.CREATURES[item.card] || G.SPELLS[item.card] || G.SUPPORTS[item.card];
+  ok(info && !/_f$/.test(item.card) && (!G.SUPPORTS[item.card] || ['gweapon','gshield'].includes(item.card)),
+    'random slot is a base market card or rare support');
+  eq(item.price, G.SUPPORTS[item.card] ? G.SUPPORTS[item.card].cost : {N:60,R:100,L:160}[info.rarity], 'rarity/support price');
 }
 const first = r.shopVisit.items[0], visitId = r.shopVisit.id;
 const before = p.gold;
