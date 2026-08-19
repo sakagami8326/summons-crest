@@ -175,6 +175,11 @@ for (const [id,[name,file]] of Object.entries(completedCombatSpellArt)) {
   ok(board.includes(`${id}:'/assets/cards/${file}'`) && phone.includes(`${id}:'/assets/cards/${file}'`),
     `${id} completed art is wired to TV and phone card renderers`);
 }
+ok(fs.existsSync(path.join(__dirname,'public','assets','cards','spell-restore-art-v1.webp')),
+  'Restore dedicated art exists');
+ok(board.includes("sp_bedrock_uplift:'/assets/cards/spell-restore-art-v1.webp'") &&
+   phone.includes("sp_bedrock_uplift:'/assets/cards/spell-restore-art-v1.webp'"),
+  'Restore dedicated art is wired to TV and phone card renderers');
 ok(src.includes("sp_bedrock_uplift:    { name: 'リストア'") && !src.includes("name: '岩盤隆起'"),
   'bedrock uplift is renamed Restore while keeping its card ID');
 ok(!src.includes('sp_cornucopia:') && !board.includes("'sp_cornucopia'") && !phone.includes("'sp_cornucopia'"),
