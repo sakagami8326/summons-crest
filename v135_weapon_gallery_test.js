@@ -46,6 +46,8 @@ ok(G.SUPPORTS.jinx.fx.includes('ウェポン'), 'server exposes Weapon terminolo
 ok(G.CREATURES.survey.fx.includes('ウェポンとして使える'), 'Support ability explains creature-as-Weapon');
 ok(G.CREATURES.shuterio.fx.includes('ウェポンとして使える'), 'Shuterio keeps Support ability with new terminology');
 ok(src.includes('ウェポンなしで挑む') && board.includes('ウェポンなし'), 'battle no-weapon wording is unified');
+ok(/#contextBtn[^}]+white-space:normal[^}]+overflow-wrap:anywhere/.test(phone),
+  'phone battle context button wraps long no-weapon wording inside its bounds');
 ok(!phone.includes('支援カード') && !board.includes('支援カード'), 'active UI has no old category label');
 ok(/v1\.35/.test(manual) && /スマホカード一覧/.test(manual), 'manual documents v1.35 gallery');
 
