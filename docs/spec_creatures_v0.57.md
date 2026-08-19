@@ -1,4 +1,4 @@
-# Summons Crest クリーチャー調整・追加仕様 v0.57
+# SUMMONS CODE クリーチャー調整・追加仕様 v0.57
 
 ## 1. 対象
 

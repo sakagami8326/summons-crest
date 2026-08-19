@@ -1,5 +1,5 @@
 [Unit]
-Description=Summons Crest game server
+Description=SUMMONS CODE game server
 Wants=network-online.target
 After=network-online.target
 

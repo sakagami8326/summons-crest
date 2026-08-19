@@ -1,4 +1,4 @@
-﻿# Summons Crest 追加スペル実装仕様 v0.53
+﻿# SUMMONS CODE 追加スペル実装仕様 v0.53
 
 ## 1. 対象
 

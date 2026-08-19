@@ -1,6 +1,6 @@
-# Summons Crest: AWS Lightsail deployment
+# SUMMONS CODE: AWS Lightsail deployment
 
-Summons Crest uses an in-memory room server, Server-Sent Events, and runtime BOT timers. Run exactly one persistent Node.js process; do not place multiple app instances behind a load balancer.
+SUMMONS CODE uses an in-memory room server, Server-Sent Events, and runtime BOT timers. Run exactly one persistent Node.js process; do not place multiple app instances behind a load balancer.
 
 ## Recommended instance
 

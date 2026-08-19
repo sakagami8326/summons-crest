@@ -121,7 +121,7 @@
 
 ```text
 Use case: stylized-concept
-Asset type: full-frame spell card artwork for Summons Crest
+Asset type: full-frame spell card artwork for SUMMONS CODE
 Primary request: a tarot-inspired ritual spell illustration centered on one large magical six-sided die; the largest visible front face shows exactly <出目> circular pips in the standard dice arrangement
 Scene: the die floats in the upper-middle of a deep indigo ritual space, backed by a single large geometric magic circle; the lower third fades into simple mist and broad shadow shapes
 Style: stylized 2D game illustration, large flat color masses, restrained cel shading, light paper grain, dry-brush edges, simple silhouettes, not photorealistic

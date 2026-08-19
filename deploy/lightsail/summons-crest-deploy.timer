@@ -1,5 +1,5 @@
 [Unit]
-Description=Check GitHub for Summons Crest updates
+Description=Check GitHub for SUMMONS CODE updates
 
 [Timer]
 OnBootSec=2min

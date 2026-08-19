@@ -1,4 +1,4 @@
-# Summons Crest スペルアート生成プロンプト規格 v1.16
+# SUMMONS CODE スペルアート生成プロンプト規格 v1.16
 
 ## 1. この文書の用途
 
@@ -51,7 +51,7 @@
 ### 画風
 
 - タロットカード風の儀式魔術。
-- Summons Crestのダイススペルと同じシリーズに見える画風。
+- SUMMONS CODEのダイススペルと同じシリーズに見える画風。
 - スタイライズされた2Dゲームイラスト。
 - 大きな色面と2～3段階の控えめなセル塗り。
 - 軽い紙の粒子感と乾いたブラシ輪郭。
@@ -80,13 +80,13 @@
 
 ```text
 Use case: stylized-concept
-Asset type: full-frame spell card artwork for Summons Crest
+Asset type: full-frame spell card artwork for SUMMONS CODE
 
 Create a tarot-inspired ritual spell illustration centered on <MAIN_SYMBOL>, clearly expressing the single action <ACTION>.
 
 The main symbol floats in the upper-middle of a deep indigo ritual space. Behind it is <GEOMETRY>. The lower third fades into simple mist, broad shadow shapes, and restrained magical afterglow.
 
-Use the supplied Summons Crest dice spell cards and Weaken spell artwork only as visual style references. Match their stylized 2D game illustration style, large flat color masses, restrained two-to-three-step cel shading, light paper grain, dry-brush edges, simple bold silhouettes, saturation, contrast, and detail density. Do not copy their subject matter.
+Use the supplied SUMMONS CODE dice spell cards and Weaken spell artwork only as visual style references. Match their stylized 2D game illustration style, large flat color masses, restrained two-to-three-step cel shading, light paper grain, dry-brush edges, simple bold silhouettes, saturation, contrast, and detail density. Do not copy their subject matter.
 
 Composition: exact 2:3 portrait, 1024 by 1536 pixels. Place the center of the main symbol around 50 percent width and 35 percent height. Keep the top 13 percent, lower 30 percent, and lower-left cost area free of important details. Keep all important silhouettes above 58 percent height. Use one dominant symbol and at most two supporting motifs. The subject must remain recognizable at 80-pixel card width.
 

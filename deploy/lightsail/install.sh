@@ -81,7 +81,7 @@ fi
 
 for attempt in {1..15}; do
   if curl -fsS http://127.0.0.1:3000/api/fixture >/dev/null; then
-    echo "Summons Crest is running at ${PUBLIC_URL}"
+    echo "SUMMONS CODE is running at ${PUBLIC_URL}"
     exit 0
   fi
   sleep 1

@@ -1,7 +1,7 @@
 # 盤面・戦闘演出 実装発注書（Phaser 4 / v0.75以降）
 
 発注日: 2026-07-26  
-対象プロジェクト: Summons Crest（クレストサーキット）  
+対象プロジェクト: SUMMONS CODE
 対象リポジトリ: `E:\クレストサーキット\repo\summons-crest`  
 対象環境: Phaser 4.2.1  
 前提バージョン: board v0.74

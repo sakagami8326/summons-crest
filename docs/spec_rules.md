@@ -1,4 +1,4 @@
-# Summons Crest ─ ルール・仕様まとめ(v0.62)
+# SUMMONS CODE ─ ルール・仕様まとめ(v0.62)
 
 実装(server.js)を正とした現行ルールの全体像。**このファイルは常に最新版を維持する**(ファイル名にバージョンを付けない)。
 カード個別の詳細は `spec_creatures_v0.57.md` / `spec_spells_v0.53.md`、ドローの詳細は `spec_draw_v0.61.md`、セーブ/再開は `spec_save_v0.62.md`、遊び方の読み物は `manual.md` を参照。

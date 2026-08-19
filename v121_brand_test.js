@@ -31,6 +31,16 @@ if (board.includes('/assets/logo.png') || phone.includes('/assets/logo.png')) {
   throw new Error('ブランドロゴ検査: 旧ロゴ参照が残っている');
 }
 
+if (!board.includes('summons-code-save-${meta.code')) {
+  throw new Error('ブランド名検査: セーブファイル名がSUMMONS CODEに統一されていない');
+}
+
+for (const oldName of ['Summons Crest', 'クレストサーキット']) {
+  if (board.includes(oldName) || phone.includes(oldName)) {
+    throw new Error(`ブランド名検査: 画面に旧称 ${oldName} が残っている`);
+  }
+}
+
 const serverVersion = Number((server.match(/const VERSION = '([0-9.]+)'/) || [])[1]);
 const packageVersion = Number(pkg.version.split('.').slice(0, 2).join('.'));
 if (serverVersion < 1.21 || packageVersion < 1.21) {

@@ -2152,7 +2152,7 @@ async function restoreFromSave(meta) {
     const blob = new Blob([JSON.stringify(meta)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `summons-crest-save-${meta.code || 'game'}.json`;
+    a.download = `summons-code-save-${meta.code || 'game'}.json`;
     document.body.appendChild(a);
     a.click();
     a.remove();

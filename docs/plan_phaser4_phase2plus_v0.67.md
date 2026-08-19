@@ -1,7 +1,7 @@
 # Phaser 4 盤面演出・戦闘演出 実装計画（Phase 2以降・v0.67）
 
 作成日: 2026-07-26  
-対象: Summons Crest（クレストサーキット）  
+対象: SUMMONS CODE
 前提: `docs/spec_phaser4_migration_v0.67.md`の受入完了後  
 対象Phaser: 4.2.1固定
 

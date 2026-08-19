@@ -1,4 +1,4 @@
-# Summons Crest ドロー・デッキ回転改善仕様 v0.61
+# SUMMONS CODE ドロー・デッキ回転改善仕様 v0.61
 
 ## 1. 目的
 

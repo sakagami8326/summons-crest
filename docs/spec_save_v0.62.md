@@ -1,4 +1,4 @@
-# Summons Crest セーブ/再開 実装仕様(v0.62)
+# SUMMONS CODE セーブ/再開 実装仕様(v0.62)
 
 実装済み。設計の経緯とレビュー対応は `plan_save_v0.62.md` を参照。本書は実装された挙動の記録。
 
@@ -36,7 +36,7 @@
 
 - **自動セーブ**: SSE受信時に`state.saveRev`が保存済みrevより進んでいれば`/api/save`→`localStorage['sc_save']`へ上書き(スロット1つ)。in-flight 1本+rev比較で、レスポンス逆順による巻き戻りを防止。保存メタ: rev/savedAt/code/phase/round/プレイヤー名。
 - **タイトル画面**: セーブがあれば「続きから再開 ─ 第N周(名前…) M/D HH:MM保存」ボタン(終了済みゲームのセーブでは非表示)。
-- **ファイル書き出し**: `summons-crest-save-<CODE>.json`をダウンロード。**ファイルから再開**: メタ付き/生セーブJSONの両形式を受け付ける。
+- **ファイル書き出し**: `summons-code-save-<CODE>.json`をダウンロード。**ファイルから再開**: メタ付き/生セーブJSONの両形式を受け付ける。
 - 復元成功で`sc_board`/`sc_btoken`を更新し、そのままルームに入る。エラーはタイトルの`saveMsg`に表示。
 - `/api/close`(ロビー中止・前回ルームを閉じる)はトークン付きで呼ぶ。
 

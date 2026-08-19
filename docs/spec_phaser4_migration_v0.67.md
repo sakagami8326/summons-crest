@@ -1,7 +1,7 @@
 # Phaser 4移行 要件仕様書（v0.67）
 
 作成日: 2026-07-26  
-対象プロジェクト: Summons Crest（クレストサーキット）  
+対象プロジェクト: SUMMONS CODE
 対象リポジトリ: `E:\クレストサーキット\repo\summons-crest`  
 移行元: Phaser 3.90.0  
 移行先: Phaser 4.2.1（Giedi、2026-07-09公開）

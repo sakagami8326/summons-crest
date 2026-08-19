@@ -1,4 +1,4 @@
-# Summons Crest 属性エフェクト素材 v1
+# SUMMONS CODE 属性エフェクト素材 v1
 
 作成日: 2026-07-26  
 用途: Phaser 4盤面・スペル・ハイブリッド戦闘演出  
@@ -77,7 +77,7 @@ small impact / large impact / hollow-center summon ring / disperse
 
 共通条件:
 
-- クレストサーキットのセル塗りクリーチャーと並ぶ、太く読みやすい2DファンタジーゲームFX
+- SUMMONS CODEのセル塗りクリーチャーと並ぶ、太く読みやすい2DファンタジーゲームFX
 - 写実表現なし
 - 内部ディテールを増やしすぎない
 - 小表示でも大きな形が読める

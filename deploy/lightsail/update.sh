@@ -19,7 +19,7 @@ fi
 # Prevent a manual deployment and the timer from running together.
 exec 9>"${LOCK_FILE}"
 if ! flock -n 9; then
-  echo "Another Summons Crest deployment is already running."
+  echo "Another SUMMONS CODE deployment is already running."
   exit 0
 fi
 

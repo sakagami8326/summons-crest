@@ -1,4 +1,4 @@
-# Summons Crest ─ 開発ガイド(CLAUDE.md)
+# SUMMONS CODE ─ 開発ガイド(CLAUDE.md)
 
 カルドセプト/いただきストリート風の「すごろく×デッキ構築」Web対戦ゲーム(2〜4人)。
 テレビで共有ボード(board.html)を映し、各プレイヤーはスマホ横持ち(phone.html)で操作する。

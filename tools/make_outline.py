@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# make_outline.py ─ Summons Crest アート加工ツール(再作成版)
+# make_outline.py ─ SUMMONS CODE アート加工ツール(再作成版)
 # 使い方: python3 make_outline.py 入力.png 出力.png --width 12 --color auto
 # 処理: 白背景の透過(必要時) → トリム → 元解像度で縁取り → width300へリサイズ
 import argparse, collections

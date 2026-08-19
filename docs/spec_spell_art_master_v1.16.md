@@ -1,4 +1,4 @@
-# Summons Crest スペルカード統合アート制作規格 v1.17
+# SUMMONS CODE スペルカード統合アート制作規格 v1.17
 
 ## 1. 目的
 
@@ -228,12 +228,12 @@
 
 ```text
 Use case: stylized-concept
-Asset type: full-frame spell card artwork for Summons Crest
+Asset type: full-frame spell card artwork for SUMMONS CODE
 Primary request: a tarot-inspired ritual spell illustration centered on <主役モチーフ>, clearly expressing <効果の動き>
 Scene: the main symbol floats in the upper-middle of a deep indigo ritual space, backed by one large geometric magic circle; the lower third fades into simple mist, broad shadow shapes and restrained magical afterglow
 Style: stylized 2D game illustration, large flat color masses, restrained cel shading, light paper grain, dry-brush edges, simple bold silhouettes, not photorealistic
 Composition: exact 2:3 portrait, 1024 by 1536; main symbol centered around 50% width and 35% height; keep the top 13%, lower 30%, and lower-left cost area free of important details; no important silhouette below 58% height
-Palette: deep indigo, blue-violet and dark plum base, parchment-gold primary light, with restrained <カード固有の差し色>; match the contrast, saturation and detail density of the Summons Crest dice spell card series
+Palette: deep indigo, blue-violet and dark plum base, parchment-gold primary light, with restrained <カード固有の差し色>; match the contrast, saturation and detail density of the SUMMONS CODE dice spell card series
 Variant motif: <カード別の背後・動き・幾何学>
 Readability: one dominant symbol, at most two supporting motifs, recognizable at 80-pixel card width, clear separation from the dark background
 Constraints: no text, letters, numerals, logo, watermark, card frame, UI, cost panel, effect panel, people, hands, summoners, creatures, detailed scenery, dense particles, realistic 3D rendering, photographic materials, excessive lens flare
