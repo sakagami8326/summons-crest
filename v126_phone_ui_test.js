@@ -33,7 +33,7 @@ ok(/state\.phase === 'lobby'[\s\S]*lobbyWait[\s\S]*classList\.toggle\('on', lobb
 ok(/width:clamp\(40px,9\.5dvh,66px\)/.test(phone) && /height:clamp\(40px,9\.5dvh,66px\)/.test(phone),
   'join fullscreen button uses the reduced size');
 ok(/\$\('diceDock'\)\.innerHTML = '';[\s\S]*\$\('msg'\)\.textContent = p \? p\.prompt/.test(phone) &&
-   /otherSupport \? '相手の支援カードを待っています…'/.test(phone),
+   /otherSupport \? '相手のウェポンを待っています…'/.test(phone),
   'idle guidance is routed to msg instead of diceDock');
 
 // Shop visibility and support-art safe areas.
@@ -43,7 +43,7 @@ ok(/unaffordable \.shopCompactBg,.shopProduct\.unaffordable \.shopCompactArt/.te
    /shopFunds[^}]*color:#ffb3aa/.test(phone) && /G不足/.test(phone),
   'insufficient funds lightly dim art and show a shortage label');
 ok(/\.shopCompact\.support \.shopCompactArt\s*\{[^}]*left:8%[^}]*width:84%[^}]*height:63%/.test(phone) &&
-   /\.shopCompact\.support \.shopCompactArt img\s*\{[^}]*width:100%[^}]*height:100%[^}]*object-fit:contain/.test(phone),
+   /\.shopCompact\.support \.shopCompactArt img\s*\{[^}]*var\(--weapon-art-scale\)[^}]*var\(--weapon-art-scale\)[^}]*object-fit:contain/.test(phone),
   'all support products use the shared 2:3 shelf safe area');
 ok(/shopCompactShade[^}]*rgba\(4,9,20,\.42\)[^}]*rgba\(4,9,20,\.62\)/.test(phone),
   'normal shelf cards use a weak localized gradient');

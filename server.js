@@ -1,5 +1,5 @@
 // SUMMONS CODE 統合サーバー v0.1(段階①: ゲームエンジン)
-// 仕様書v0.2準拠: 勝利点12先取 / 土地レベル / 連鎖通行料 / 支援カード付き侵略戦闘 /
+// 仕様書v0.2準拠: 勝利点12先取 / 土地レベル / 連鎖通行料 / ウェポン付き侵略戦闘 /
 // 祠(巡礼称号) / 市場(公開商品の購入・カード削除) / 覇者称号 / キャラ選択のダイス競合
 // 起動: node server.js
 const http = require('http');
@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.34';
+const VERSION = '1.35';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
@@ -103,14 +103,14 @@ const CREATURES = {
   // マーケット
   magado:  { name: 'マガドー', evo: 'マグナガルム', elem: 'fire', st: 55, hp: 35, cost: 120, evoSt: 75, evoHp: 55, rarity: 'R' },
   qbaby:   { name: 'クイーンベビー', evo: 'クイーン', elem: 'fire', st: 35, hp: 30, cost: 120, evoSt: 55, evoHp: 50, fx: '【女王の威光】自分の火領地の防衛DF+10(進化+20)', rarity: 'L' },
-  cresteria:{ name: 'クレステリア',    elem: 'water', st: 20, hp: 50, cost: 90, fx: '【真珠】召喚時、支援「シールド」1枚をデッキに加える', rarity: 'N' },
+  cresteria:{ name: 'クレステリア',    elem: 'water', st: 20, hp: 50, cost: 90, fx: '【真珠】召喚時、ウェポン「シールド」1枚をデッキに加える', rarity: 'N' },
   kbaby:   { name: 'キングベビー', evo: 'キング', elem: 'water', st: 30, hp: 40, cost: 120, evoSt: 50, evoHp: 60, fx: '【王の徴収】配置土地の通行料1.5倍(進化後2倍)', rarity: 'L' },
-  ludi:    { name: 'ルディ', evo: 'シンルー', elem: 'wind', st: 25, hp: 40, cost: 120, evoSt: 45, evoHp: 60, fx: '【雲隠れ】防衛時、相手の支援を無効化', rarity: 'R' },
+  ludi:    { name: 'ルディ', evo: 'シンルー', elem: 'wind', st: 25, hp: 40, cost: 120, evoSt: 45, evoHp: 60, fx: '【雲隠れ】防衛時、相手のウェポンを無効化', rarity: 'R' },
   garble:  { name: 'ガーブル', evo: 'ガレス・ゲイル', elem: 'wind', st: 35, hp: 25, cost: 100, evoSt: 55, evoHp: 45, fx: '【風刃】攻撃時、相手の地形補正を無視', rarity: 'R' },
   barbaro: { name: 'バルバロ', evo: 'バーグランダ', elem: 'earth', st: 30, hp: 45, cost: 120, evoSt: 50, evoHp: 65, fx: '【逆鱗】防衛成功時、相手から30G奪う(進化50G)', rarity: 'R' },
   detropas:{ name: 'デトロパス', evo: 'クラーケンイービル', elem: 'fire', st: 30, hp: 25, cost: 60, evoSt: 50, evoHp: 45, fx: '【群れ】攻撃時、自分の火領地1つにつきAT+10', rarity: 'N' },
   goagoa:  { name: 'ゴアゴア', evo: 'ノーク・ゴーア', elem: 'water', st: 40, hp: 40, cost: 100, evoSt: 60, evoHp: 65, fx: '【深海】防衛成功時、自分の負傷を10回復する', rarity: 'R' },
-  fugorm:  { name: 'フーゴルム', evo: 'ゴーレムアイン', elem: 'earth', st: 35, hp: 40, cost: 80, evoSt: 55, evoHp: 60, fx: '【鍛冶】召喚時、支援「ソード」を得る', rarity: 'N' },
+  fugorm:  { name: 'フーゴルム', evo: 'ゴーレムアイン', elem: 'earth', st: 35, hp: 40, cost: 80, evoSt: 55, evoHp: 60, fx: '【鍛冶】召喚時、ウェポン「ソード」を得る', rarity: 'N' },
   bedebero:{ name: 'ベデベロ',         elem: 'earth', st: 30, hp: 60, cost: 120, fx: '【不動】受けるスペルダメージを10軽減する', rarity: 'R' },
   zati:    { name: 'ザーティー', evo: 'ザンティアー', elem: 'wind', st: 40, hp: 30, cost: 60, evoSt: 60, evoHp: 50, fx: '【略奪】侵略成功時、相手から50G奪う', rarity: 'N' },
   pakawata:{ name: 'パカワタ',         elem: 'wind',  st: 50, hp: 25, cost: 130, fx: '【先制】防衛時、侵略側より先に攻撃する', rarity: 'L' },
@@ -124,7 +124,7 @@ const CREATURES = {
   trooper: { name: 'トルーパー', evo: 'グリゴール', elem: 'fire', st: 25, hp: 40, cost: 90, evoSt: 45, evoHp: 60,
              fx: '【火種】配置時、「炎の渦」1枚を山札へ加えてシャッフルする', evoFx: '【魔導節約】配置中、自分のスペルコストを20G下げる', rarity: 'N' },
   survey:  { name: 'サーベイ', evo: 'ザシャック', elem: 'water', st: 35, hp: 35, cost: 80, evoSt: 55, evoHp: 50,
-             fx: '【支援】戦闘時、手札のクリーチャーを支援カードとして使える', evoFx: '【支援】戦闘時、手札のクリーチャーを支援カードとして使える', rarity: 'N' },
+             fx: '【支援】戦闘時、手札のクリーチャーをウェポンとして使える', evoFx: '【支援】戦闘時、手札のクリーチャーをウェポンとして使える', rarity: 'N' },
   palecoral:{ name: 'パレコラル', evo: 'コラルグレイヴ', elem: 'water', st: 20, hp: 50, cost: 90, evoSt: 40, evoHp: 70,
              fx: '【珊瑚再生】水領地が2つ以上ならターン開始時にHPを10回復', evoFx: '【珊瑚再生】水領地が2つ以上ならターン開始時にHPを20回復', rarity: 'N' },
   bunnyhop:{ name: 'バニホップ', evo: 'ロードバンプ', elem: 'fire', st: 10, hp: 10, cost: 60, evoSt: 40, evoHp: 60,
@@ -136,7 +136,7 @@ const CREATURES = {
   marlow:  { name: 'マーロー', elem: 'wind', st: 30, hp: 30, cost: 50,
              fx: '【風渡り】自領地停止時、配置中のマーロー1体を空いている風属性土地へ移動できる', rarity: 'R' },
   shuterio:{ name: 'シュテリオ', evo: 'エアロシュティレ', elem: 'wind', st: 30, hp: 30, cost: 70,
-             evoSt: 40, evoHp: 50, fx: '【支援】戦闘時、手札のクリーチャーを支援カードとして使える', rarity: 'R' },
+             evoSt: 40, evoHp: 50, fx: '【支援】戦闘時、手札のクリーチャーをウェポンとして使える', rarity: 'R' },
   gaust:   { name: 'ガウスト', evo: 'マスターガウスト', elem: 'wind', st: 30, hp: 30, cost: 70,
              evoSt: 40, evoHp: 50, fx: '【魂の選別】配置時、1枚引き、手札1枚を廃棄する', rarity: 'N' },
   alter:   { name: 'オルター', evo: 'オルボロス', elem: 'wind', st: 30, hp: 40, cost: 70,
@@ -145,7 +145,7 @@ const CREATURES = {
              evoSt: 30, evoHp: 50, fx: '【瘴気連鎖】配置中、自分のカード廃棄時、敵1人の手札を1枚捨てる', rarity: 'R' },
   kamadoma:{ name: 'カマドーマ', evo: 'ダイテッカン', elem: 'fire', st: 20, hp: 40, cost: 60,
              evoSt: 30, evoHp: 60, fx: '【武具錬成】配置時、ソード1枚を手札に加える',
-             evoFx: '【武具錬成】配置時にソードを得る。【再鍛造】戦闘勝利時、廃棄の支援1枚を回収', rarity: 'N' },
+             evoFx: '【武具錬成】配置時にソードを得る。【再鍛造】戦闘勝利時、廃棄のウェポン1枚を回収', rarity: 'N' },
   swordgear:{ name: 'ソードギア', evo: 'イグニスナイト', elem: 'fire', st: 40, hp: 30, cost: 100,
              evoSt: 40, evoHp: 50, fx: '【武装熟練】ソード／ヘビーアックスのAT補正をさらに+10',
              evoFx: '【武装熟練】ソード／ヘビーアックスのAT補正をさらに+20', rarity: 'R' },
@@ -211,12 +211,12 @@ const SUPPORTS = {
   shield:  { name: 'シールド',         st: 0,  hp: 20, cost: 60, exileAfterUse: true },
   gshield: { name: 'ビッグシールド',   st: 0,  hp: 40, cost: 120, exileAfterUse: true },
   jinx:    { name: 'ディスアーム',     st: 0,  hp: 0,  cost: 100, jinx: true,
-             fx: '相手の支援を無効化', exileAfterUse: true },
+             fx: '相手のウェポンを無効化', exileAfterUse: true },
 };
 EXILE_SPELLS = new Set(Object.entries(SPELLS).filter(([, sp]) => sp.exileAfterUse).map(([id]) => id));
 const CHARS = {
   redani: { name: 'レダーニ', color: '#D85A30', elem: 'fire',
-            style: '武器・火力侵略', deckNote: 'カマドーマ2+ソードギア ─ 武器支援を鍛えて攻める' },
+            style: 'ウェポン・火力侵略', deckNote: 'カマドーマ2+ソードギア ─ ウェポンを鍛えて攻める' },
   linnei: { name: 'リンネイ', color: '#378ADD', elem: 'water',
             style: '経済・通行料', deckNote: 'オルフェ2+黄金2 ─ 資金と収入を伸ばす' },
   grease: { name: 'グリース', color: '#C69A32', elem: 'earth',
@@ -226,7 +226,7 @@ const CHARS = {
   lia:    { name: 'リーア',   color: '#E6868F', elem: 'fire',
             style: '負傷・火力侵略', deckNote: '炎の渦で傷を刻み、追撃で侵略する' },
   adel:   { name: 'アーデル', color: '#9DDFF2', elem: 'water',
-            style: '回復・クリーチャー支援', deckNote: '水連鎖を築き、支援と回復で守り抜く', selectable: true, upcoming: false },
+            style: '回復・クリーチャーウェポン', deckNote: '水連鎖を築き、ウェポンと回復で守り抜く', selectable: true, upcoming: false },
   villa:  { name: 'ヴィラ',   color: '#42B875', elem: 'wind',
             style: '廃棄・墓守戦術', deckNote: '廃棄を蓄え、魂喰らいと墓守の協奏曲で再利用する', selectable: true, upcoming: false },
   nerasio:{ name: 'ネラシオ', color: '#C49545', elem: 'earth',
@@ -482,7 +482,7 @@ function onCreatureSummoned(r, p, creatureId, reason, tile) {
   }
   if (baseId(creatureId) === 'cresteria' && reason !== 'battle') {
     gainToDeck(r, p, ['shield'], 'cresteria');
-    log(r, `【真珠】${CREATURES.cresteria.name}の召喚で支援「シールド」1枚を山札へ加えた`);
+    log(r, `【真珠】${CREATURES.cresteria.name}の召喚でウェポン「シールド」1枚を山札へ加えた`);
   }
   if (baseId(creatureId) === 'trooper' && !isEvolved({ creature: creatureId })) {
     gainToDeck(r, p, ['sp_flame_vortex'], 'trooper');
@@ -1145,7 +1145,7 @@ function startDraft(r, p, resume, availableAt) {
   ask(r, p.id, 'draft', 'カードを1枚選んで獲得(残りは山札の底へ)', cards.map(c => ({
     id: 'take:' + c,
     label: SUPPORTS[c]
-      ? `${SUPPORTS[c].name}(${SUPPORTS[c].jinx ? '相手の支援を無効化' : SUPPORTS[c].st ? `AT+${SUPPORTS[c].st}` : `DF+${SUPPORTS[c].hp}`})`
+      ? `${SUPPORTS[c].name}(${SUPPORTS[c].jinx ? '相手のウェポンを無効化' : SUPPORTS[c].st ? `AT+${SUPPORTS[c].st}` : `DF+${SUPPORTS[c].hp}`})`
       : SPELLS[c]
       ? `呪文「${SPELLS[c].name}」 ${SPELLS[c].desc}`
       : `${CREATURES[c].name}(AT${CREATURES[c].st}/HP${CREATURES[c].hp})${CREATURES[c].fx ? ' ' + CREATURES[c].fx : ''}`,
@@ -1213,11 +1213,11 @@ function askSupports(r) {
         const cc = CREATURES[c];
         if (cc.cost <= p.gold)
           opts.push({ id: 'sup:c:' + c, card: c,
-            label: `【クリーチャー支援】${cc.name}(−${cc.cost}G / AT+${cc.st}・DF+${cc.hp})` });
+            label: `【クリーチャーウェポン】${cc.name}(−${cc.cost}G / AT+${cc.st}・DF+${cc.hp})` });
       });
     }
-    opts.push({ id: 'sup:none', label: '支援なしで挑む' });
-    ask(r, pid, 'support', '⚔ 支援カードを秘密裏に選べ', opts);
+    opts.push({ id: 'sup:none', label: 'ウェポンなしで挑む' });
+    ask(r, pid, 'support', '⚔ ウェポンを秘密裏に選べ', opts);
   }
 }
 function supportChoice(raw) {
@@ -1269,13 +1269,13 @@ function resolveBattle(r) {
   const defEvolved = isEvolved(o);
   const notes = [];
 
-  // --- 支援カード(ディスアーム・雲隠れによる無効化) ---
+  // --- ウェポン(ディスアーム・雲隠れによる無効化) ---
   const aSup = supportStats(b.supports[atk.id]);
   const dSup = supportStats(b.supports[def.id]);
   let aJinxed = dSup && dSup.jinx, dJinxed = aSup && aSup.jinx;
   if (baseId(o.creature) === 'ludi' && aSup && !aJinxed) {
     aJinxed = true;
-    notes.push('【雲隠れ】' + dc.name + 'が相手の支援を無効化!');
+    notes.push('【雲隠れ】' + dc.name + 'が相手のウェポンを無効化!');
   }
   const aEff = aJinxed ? null : aSup, dEff = dJinxed ? null : dSup;
 
@@ -1306,8 +1306,8 @@ function resolveBattle(r) {
   if (defSoul) notes.push(`【魂喰らい】廃棄${def.exile.length}枚で防衛側DF+${defSoul}!`);
   if (atkEarthChain) notes.push(`【獅子地脈】土領地${atkEarthChain / 5}つで侵略側DF+${atkEarthChain}!`);
   if (defEarthChain) notes.push(`【獅子地脈】土領地${defEarthChain / 5}つで防衛側DF+${defEarthChain}!`);
-  if (atkWeaponMastery) notes.push(`【武装熟練】侵略側の攻撃支援AT補正をさらに+${atkWeaponMastery}!`);
-  if (defWeaponMastery) notes.push(`【武装熟練】防衛側の攻撃支援AT補正をさらに+${defWeaponMastery}!`);
+  if (atkWeaponMastery) notes.push(`【武装熟練】侵略側の攻撃ウェポンAT補正をさらに+${atkWeaponMastery}!`);
+  if (defWeaponMastery) notes.push(`【武装熟練】防衛側の攻撃ウェポンAT補正をさらに+${defWeaponMastery}!`);
   if (baseId(b.atkCreature) === 'grayble' && carried > 0) {
     const chase = atkEvolved ? 20 : 10;
     st += chase;
@@ -1341,7 +1341,7 @@ function resolveBattle(r) {
   const curse = (r.curses[b.tile] && baseId(o.creature) !== 'beruf') ? r.curses[b.tile].hp : 0;
   const hp = dBase.hp + terrain + queenBonus + (dEff ? dEff.hp : 0) - curse;
 
-  // 支援カードは勝敗問わず消費
+  // ウェポンは勝敗問わず消費
   for (const [pid, sc] of Object.entries(b.supports)) consumeBattleSupport(r, pid, sc);
 
   // ===== v0.47 戦闘: AT / HP / DF モデル =====
@@ -1534,7 +1534,7 @@ function continuePostBattle(r) {
       const opts = (winner.exile || []).map((card, i) => SUPPORTS[card]
         ? { id: 'dr:' + i, card, label: `${cardName(card)}を手札に戻す` } : null).filter(Boolean);
       if (opts.length) {
-        ask(r, winner.id, 'daitekkan_recover', '【再鍛造】廃棄された支援カード1枚を選ぶ', opts);
+        ask(r, winner.id, 'daitekkan_recover', '【再鍛造】廃棄されたウェポン1枚を選ぶ', opts);
         return;
       }
     }
@@ -2070,7 +2070,7 @@ function handleChoose(r, playerId, optionId) {
         p.discard.push(oldC);                 // 元のクリーチャーは捨て札へ
         p.hand.splice(p.hand.indexOf(c), 1);
         o.creature = c; o.dmg = 0; o.shade = 0; delete o.iceWard;  // 新クリーチャーは全快で配置
-        if (baseId(c) === 'fugorm') { gainToDeck(r, p, ['weapon'], 'fugorm'); log(r, `【鍛冶】${p.name}は支援「ソード」を山札に得た`); }
+        if (baseId(c) === 'fugorm') { gainToDeck(r, p, ['weapon'], 'fugorm'); log(r, `【鍛冶】${p.name}はウェポン「ソード」を山札に得た`); }
         p.hand.splice(p.hand.indexOf('sp_swap'), 1);
         p.discard.push('sp_swap');
         p.gold -= spellCost + CREATURES[c].cost;
@@ -2274,7 +2274,7 @@ function handleChoose(r, playerId, optionId) {
       p.hand.splice(p.hand.indexOf(c), 1);
       r.owners[i] = { player: p.id, level: 1, creature: c };
       log(r, `${p.name}は${CREATURES[c].name}を召喚し、土地を領地化!`);
-      if (baseId(c) === 'fugorm') { gainToDeck(r, p, ['weapon'], 'fugorm'); log(r, `【鍛冶】${p.name}は支援「ソード」を山札に得た`); }
+      if (baseId(c) === 'fugorm') { gainToDeck(r, p, ['weapon'], 'fugorm'); log(r, `【鍛冶】${p.name}はウェポン「ソード」を山札に得た`); }
       const summonPaused = onCreatureSummoned(r, p, c, 'summon', i);
       updateTitles(r); if (checkVictory(r)) return; if (summonPaused) return; return endTurn(r);
     }
@@ -2680,7 +2680,7 @@ function scheduleBotAction(r) {
 
 // ===== 公開状態とHTTP =====
 // 進行中の戦闘はテレビ画面へ段階だけを公開する。
-// 支援カードIDと「支援なし」の区別は、両者が回答してlastBattleになるまで秘匿する。
+// ウェポンIDと「ウェポンなし」の区別は、両者が回答してlastBattleになるまで秘匿する。
 function publicBattle(r) {
   const b = r.battle;
   if (!b) return null;
@@ -2735,7 +2735,7 @@ function publicState(r, viewerId) {
           : ['gaust_exile', 'fatal_exile', 'ult_villa_recover', 'daitekkan_recover'].includes(v.type) && k !== viewerId
             ? [k, { type: v.type, prompt: v.prompt, options: [], selectedCount: (v.selected || []).length }]
           : v.type === 'support' && k !== viewerId
-            ? [k, { type: v.type, prompt: '支援カードを選択中', options: [] }]
+            ? [k, { type: v.type, prompt: 'ウェポンを選択中', options: [] }]
             : [k, v])),
     lastDraw: r.lastDraw || null,
     lastGain: r.lastGain ? Object.assign({}, r.lastGain,

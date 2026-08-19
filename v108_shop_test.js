@@ -12,7 +12,7 @@ let pass = 0;
 const ok = (v, n) => { if (!v) throw new Error('FAIL: ' + n); pass++; };
 const eq = (a, b, n) => ok(JSON.stringify(a) === JSON.stringify(b), `${n} (${JSON.stringify(a)} !== ${JSON.stringify(b)})`);
 ok(Number(G.VERSION) >= 1.08, 'version is v1.08 or newer');
-eq(G.CREATURES.cresteria.fx, '【真珠】召喚時、支援「シールド」1枚をデッキに加える', 'Cresteria text');
+eq(G.CREATURES.cresteria.fx, '【真珠】召喚時、ウェポン「シールド」1枚をデッキに加える', 'Cresteria text');
 
 const p = { id:'p1', name:'P1', charId:'linnei', gold:1000, hand:['shield'], deck:[], discard:['weapon'], exile:[],
   battleWins:0, shrineVisits:0, pos:7, lap:1, seal:false };

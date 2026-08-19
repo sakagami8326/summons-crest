@@ -24,7 +24,7 @@ for (const [id, values] of Object.entries(expected)) {
   ok(s.exileAfterUse, `${id} is exiled after use`);
 }
 ok(G.SUPPORTS.jinx.jinx, 'Disarm keeps support-nullification effect');
-eq(G.SUPPORTS.jinx.fx, '相手の支援を無効化', 'Disarm exposes its effect text to every card surface');
+eq(G.SUPPORTS.jinx.fx, '相手のウェポンを無効化', 'Disarm exposes its effect text to every card surface');
 
 const deck = G.makeDeck();
 eq(deck.filter(x => x === 'gweapon').length, 2, 'common deck has two Heavy Axes');
@@ -74,7 +74,8 @@ for (const [id, file] of Object.entries(art)) {
 }
 ok(!/support-(?:weapon|shield)-v1\.webp|support-jinx-v2\.webp/.test(phone + board), 'active UI no longer references legacy art');
 ok(/\.shopCompact\.support \.shopCompactArt\s*\{[^}]*top:15%/.test(phone), 'phone shop lowers support art within its safe area');
-ok(/\.shopCompact\.support \.shopCompactArt img\s*\{[^}]*width:100%;[^}]*height:100%;[^}]*object-fit:contain/s.test(phone), 'phone shop uses shared 2:3 support safe area');
+ok(/--weapon-art-scale:\.88/.test(phone), 'phone defines one 88% weapon-art scale');
+ok(/\.shopCompact\.support \.shopCompactArt img\s*\{[^}]*var\(--weapon-art-scale\)[^}]*var\(--weapon-art-scale\)[^}]*object-fit:contain[^}]*translateY\(4%\)/s.test(phone), 'phone shop uses the shared scaled safe area and keeps its lower placement');
 ok(/\.tvShopArt\.support\s*\{[^}]*top:12%/.test(board), 'TV shop lowers support art within its safe area');
 ok(/\.tvShopArt\.support img\s*\{[^}]*width:100% !important;[^}]*height:100% !important;[^}]*object-fit:contain/s.test(board), 'TV shop uses shared support safe area');
 

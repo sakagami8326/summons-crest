@@ -121,8 +121,8 @@ ok(board.includes('.tvShopArt.support { top:12%; left:8%; width:84%; height:50%;
   'TV shop keeps every support art clear of the lower brush');
 ok(src.includes('terrainElem: tileElem(r, b.tile)') && board.includes("terrain.style.setProperty('--terrain-color', RUNE[elem]"),
   'battle terrain element persists in the payload and colors its label band');
-ok(board.includes('id="bCmpAtkDf"') && board.includes('id="bCmpDefDf"') && board.includes('支援 DF+'),
-  'battle support DF gains appear below the HP bar in blue');
+ok(board.includes('id="bCmpAtkDf"') && board.includes('id="bCmpDefDf"') && board.includes('ウェポン DF+'),
+  'battle weapon DF gains appear below the HP bar in blue');
 ok(board.includes('spell-dice-${die[1]}.webp') && phone.includes('const spellAsset = c =>'),
   'dice spell cards resolve their dedicated WebP assets across shop and phone views');
 ok(board.includes('const dedicatedArt = state.catalog.SPELLS[item.card] ? dedicatedSpellAsset(item.card) : null') &&
