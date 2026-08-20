@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SUMMONS CODE Brand Assets</title>
+  <link rel="stylesheet" href="./design-system.css">
+  <style>
+    * { box-sizing: border-box; }
+    html { background: #ede7d8; }
+    body { margin: 0; color: #172536; background: #f4f0e7; font-family: var(--sc-font-body); }
+    .brand-sheet { width: min(1500px, 100%); margin: auto; padding: clamp(28px, 5vw, 76px); }
+    .sheet-head { display:flex; align-items:flex-end; justify-content:space-between; gap:32px; padding-bottom:32px; border-bottom:1px solid #cfc6b2; }
+    .sheet-kicker { margin:0 0 8px; color:#8a6a1e; font:700 12px/1 var(--sc-font-body); letter-spacing:.22em; }
+    h1 { margin:0; color:#141227; font:600 clamp(38px,5vw,76px)/.96 var(--sc-font-display); letter-spacing:-.035em; }
+    .sheet-meta { max-width:340px; margin:0; color:#5b5b67; font-size:13px; line-height:1.7; }
+    .board-grid { display:grid; grid-template-columns:minmax(0, .9fr) minmax(0, 1.45fr); gap:0; }
+    .column { min-width:0; padding-top:38px; }
+    .column:first-child { padding-right:40px; border-right:1px solid #cfc6b2; }
+    .column:last-child { padding-left:40px; }
+    section + section { margin-top:42px; }
+    h2 { margin:0 0 18px; color:#141227; font:700 16px/1.2 var(--sc-font-body); letter-spacing:.08em; }
+    .swatches { display:grid; grid-template-columns:repeat(3,1fr); gap:20px 16px; }
+    .swatch-color { height:88px; border:1px solid rgb(20 18 39 / 12%); }
+    .swatch b,.swatch small { display:block; }
+    .swatch b { margin-top:8px; color:#292737; font-size:11px; }
+    .swatch small { margin-top:3px; color:#77717a; font:10px/1.2 ui-monospace,monospace; }
+    .type-card { padding:24px; border:1px solid #d6cebd; background:#faf8f3; }
+    .type-line + .type-line { margin-top:25px; padding-top:22px; border-top:1px solid #ded7c9; }
+    .type-ja-display { font:600 clamp(25px,3vw,42px)/1.35 var(--sc-font-display); }
+    .type-ja-body { font:400 clamp(18px,2vw,26px)/1.55 var(--sc-font-body); }
+    .type-card-display { font:700 clamp(25px,3vw,42px)/1.2 var(--sc-font-card); }
+    .spec { display:block; margin-top:7px; color:#77717a; font:10px/1.5 ui-monospace,monospace; }
+    .logo-stage { min-height:230px; display:grid; place-items:center; padding:34px; background:#fff; border:1px solid #e1dbcf; }
+    .logo-stage.dark { background:linear-gradient(145deg,#1e1b3c,#0b0d18); }
+    .logo-stage img { width:min(410px,90%); height:auto; filter:drop-shadow(0 8px 18px rgb(0 0 0 / 16%)); }
+    .heading-stage { min-height:190px; display:grid; place-items:center; padding:38px; background:#141227; border:1px solid #27234b; }
+    .heading-stage img { width:min(680px,96%); height:auto; }
+    .asset-caption { display:flex; justify-content:space-between; gap:12px; margin-top:8px; color:#68636b; font-size:10px; }
+    .asset-caption code { font-size:9px; }
+    .motif-stage { min-height:170px; display:flex; align-items:center; justify-content:center; gap:70px; padding:30px; color:#efd98f; background:#141227; }
+    .motif-stage img { width:82px; height:82px; filter:brightness(0) saturate(100%) invert(88%) sepia(31%) saturate(638%) hue-rotate(355deg) brightness(102%) contrast(87%); }
+    .motif-stage img:last-child { width:150px; }
+    .character-stage { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; padding:18px 18px 0; overflow:hidden; background:linear-gradient(145deg,#1e1b3c,#0b0d18); }
+    .character { min-width:0; text-align:center; }
+    .character img { width:100%; height:210px; object-fit:contain; object-position:center bottom; filter:drop-shadow(0 12px 14px rgb(0 0 0 / 45%)); }
+    .character b { display:block; margin:6px 0 12px; color:#efd98f; font:700 10px/1 var(--sc-font-body); letter-spacing:.12em; text-transform:uppercase; }
+    .pattern-stage { position:relative; min-height:245px; overflow:hidden; display:grid; place-items:center; padding:28px; background:url('../assets/summoner-select-bg-v1.png') center/cover; }
+    .pattern-stage::after { content:""; position:absolute; inset:0; background:rgb(11 13 24 / 22%); }
+    .sample-panel { position:relative; z-index:1; width:min(440px,92%); padding:30px; border:1px solid #c9a227; color:#fff8e7; background:rgb(20 18 39 / 90%); box-shadow:inset 0 0 0 6px rgb(239 217 143 / 8%); text-align:center; }
+    .sample-panel b { display:block; font:600 28px/1.2 var(--sc-font-display); }
+    .sample-panel span { display:block; margin-top:8px; color:#efd98f; font-size:12px; letter-spacing:.12em; }
+    .ui-row { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+    .ui-stage { min-height:250px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; padding:28px; background:#141227; }
+    .ui-stage.light { background:#f1e8d0; }
+    .ui-stage.light .mini-title { color:#141227; }
+    .mini-title { color:#fff8e7; font:600 26px/1.25 var(--sc-font-display); text-align:center; }
+    .card-row { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; padding:18px; background:#141227; }
+    .card-row img { width:100%; aspect-ratio:2/3; object-fit:cover; border:1px solid rgb(239 217 143 / 45%); box-shadow:0 8px 22px rgb(0 0 0 / 35%); }
+    .usage-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .usage { min-height:120px; padding:18px; border:1px solid #d6cebd; background:#faf8f3; }
+    .usage.good { border-top:5px solid #5b8f78; }
+    .usage.bad { border-top:5px solid #b95d55; }
+    .usage b { display:block; margin-bottom:8px; font-size:12px; }
+    .usage p { margin:0; color:#615d66; font-size:11px; line-height:1.65; }
+    @media (max-width:900px) {
+      .sheet-head { display:block; } .sheet-meta { margin-top:18px; }
+      .board-grid { display:block; }
+      .column:first-child { padding-right:0; border-right:0; }
+      .column:last-child { padding-left:0; }
+    }
+    @media (max-width:560px) {
+      .brand-sheet { padding:24px 16px 48px; }
+      .swatches { grid-template-columns:repeat(2,1fr); }
+      .character-stage { grid-template-columns:repeat(2,1fr); }
+      .ui-row,.usage-grid { grid-template-columns:1fr; }
+    }
+    @media print {
+      @page { size:A3 landscape; margin:0; }
+      body { print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+      .brand-sheet { width:100%; padding:14mm; }
+    }
+  </style>
+</head>
+<body>
+  <main class="brand-sheet">
+    <header class="sheet-head">
+      <div><p class="sheet-kicker">OFFICIAL VISUAL GUIDE / 2026</p><h1>SUMMONS CODE<br>Brand Assets</h1></div>
+      <p class="sheet-meta">テレビの共有盤面と、スマホに隠された手札。古いタロットカードの神秘性を、濃紺・金・羊皮紙で統一する。</p>
+    </header>
+
+    <div class="board-grid">
+      <div class="column">
+        <section>
+          <h2>カラー</h2>
+          <div class="swatches">
+            <div class="swatch"><div class="swatch-color" style="background:#0b0d18"></div><b>Void Ink</b><small>#0B0D18</small></div>
+            <div class="swatch"><div class="swatch-color" style="background:#141227"></div><b>Crest Navy</b><small>#141227</small></div>
+            <div class="swatch"><div class="swatch-color" style="background:#1e1b3c"></div><b>Arcane Indigo</b><small>#1E1B3C</small></div>
+            <div class="swatch"><div class="swatch-color" style="background:#c9a227"></div><b>Ritual Gold</b><small>#C9A227</small></div>
+            <div class="swatch"><div class="swatch-color" style="background:#efd98f"></div><b>Soft Gold</b><small>#EFD98F</small></div>
+            <div class="swatch"><div class="swatch-color" style="background:#f1e8d0"></div><b>Parchment</b><small>#F1E8D0</small></div>
+          </div>
+        </section>
+
+        <section>
+          <h2>属性カラー</h2>
+          <div class="swatches">
+            <div class="swatch"><div class="swatch-color" style="background:#ff7a45"></div><b>Fire</b><small>#FF7A45</small></div>
+            <div class="swatch"><div class="swatch-color" style="background:#56a8e8"></div><b>Water</b><small>#56A8E8</small></div>
+            <div class="swatch"><div class="swatch-color" style="background:#d9b64f"></div><b>Earth</b><small>#D9B64F</small></div>
+            <div class="swatch"><div class="swatch-color" style="background:#5be0d0"></div><b>Wind</b><small>#5BE0D0</small></div>
+          </div>
+        </section>
+
+        <section>
+          <h2>タイポグラフィ</h2>
+          <div class="type-card">
+            <div class="type-line type-ja-display">一つの盤面を囲み、<br>手元の秘密で勝負する。</div>
+            <span class="spec">Display / Shippori Mincho — weight 600 — line-height 135%</span>
+            <div class="type-line type-ja-body">テレビとスマホで遊ぶ、2〜4人用デッキ構築ボードゲーム。</div>
+            <span class="spec">Body & UI / Shippori Mincho — weight 400 — line-height 155%</span>
+            <div class="type-line type-card-display">SUMMONS CODE</div>
+            <span class="spec">Card & label / Marudeco — weight 700</span>
+          </div>
+        </section>
+
+        <section>
+          <h2>使用ルール</h2>
+          <div class="usage-grid">
+            <div class="usage good"><b>推奨</b><p>濃紺を主面、金を境界、羊皮紙を本文に使う。装飾は見出しとカード外枠に限定する。</p></div>
+            <div class="usage bad"><b>非推奨</b><p>属性色を全面背景にする。人物の顔を切る。金色を長文の本文色にする。</p></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="column">
+        <section>
+          <h2>ロゴ</h2>
+          <div class="ui-row">
+            <div>
+              <div class="logo-stage"><img src="../assets/summons-code-blue.svg" alt="SUMMONS CODE"></div>
+              <div class="asset-caption"><span>Blue / light surface</span><code>summons-code-blue.svg</code></div>
+            </div>
+            <div>
+              <div class="logo-stage dark"><img src="../assets/summons-code-gold.svg" alt="SUMMONS CODE"></div>
+              <div class="asset-caption"><span>Gold / dark surface</span><code>summons-code-gold.svg</code></div>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2>英字セクション見出し</h2>
+          <div class="heading-stage"><img src="../assets/site/heading-concept-a.png" alt="CONCEPT"></div>
+          <div class="asset-caption"><span>Single-color silhouette / approved style A</span><a href="./concept-section.html">セクション試作を見る</a></div>
+        </section>
+
+        <section>
+          <h2>装飾モチーフ</h2>
+          <div class="motif-stage">
+            <img src="../assets/site/spark-star.svg" alt="光芒形スター">
+            <img src="../assets/site/spark-star-cluster.svg" alt="大小の光芒形スター">
+          </div>
+          <div class="asset-caption"><span>Single-color spark motif</span><code>/assets/site/spark-star*.svg</code></div>
+        </section>
+
+        <section>
+          <h2>召喚士</h2>
+          <div class="character-stage">
+            <div class="character"><img src="../assets/summoner-still-lia.webp" alt="リーア"><b>Lia</b></div>
+            <div class="character"><img src="../assets/summoner-still-adel.webp" alt="アーデル"><b>Adel</b></div>
+            <div class="character"><img src="../assets/summoner-still-villa.webp" alt="ヴィラ"><b>Villa</b></div>
+            <div class="character"><img src="../assets/summoner-still-nerasio.webp" alt="ネラシオ"><b>Nerasio</b></div>
+          </div>
+          <div class="asset-caption"><span>Representative summoners / transparent still art</span><code>/assets/summoner-still-*.webp</code></div>
+        </section>
+
+        <section>
+          <h2>背景パターン</h2>
+          <div class="pattern-stage"><div class="sample-panel"><b>盤面を開き、<br>召喚を始めよう。</b><span>EARLY ACCESS — 2026.08.31</span></div></div>
+          <div class="asset-caption"><span>Hero background with dark overlay</span><code>/assets/summoner-select-bg-v1.png</code></div>
+        </section>
+
+        <section>
+          <h2>UIサンプル</h2>
+          <div class="ui-row">
+            <div class="ui-stage"><span class="sc-badge">EARLY ACCESS</span><div class="mini-title">一つの盤面を囲み、<br>手元の秘密で勝負する。</div><a class="sc-button" href="#">ゲームを始める</a></div>
+            <div class="ui-stage light"><span class="sc-eyebrow">HOW TO PLAY</span><div class="mini-title">スマホで参加する</div><a class="sc-button sc-button--secondary" href="#">遊び方を見る</a></div>
+          </div>
+        </section>
+
+        <section>
+          <h2>カードアート</h2>
+          <div class="card-row">
+            <img src="../assets/cards/spell-flame-vortex-art-v1.webp" alt="炎の渦">
+            <img src="../assets/cards/spell-restore-art-v1.webp" alt="リストア">
+            <img src="../assets/cards/spell-wind-turn-art-v1.webp" alt="風属性スペル">
+          </div>
+          <div class="asset-caption"><span>Featured spell art / no text overlay</span><code>/assets/cards/spell-*-art-v1.webp</code></div>
+        </section>
+      </div>
+    </div>
+  </main>
+  <a class="sc-game-launcher" href="#" aria-label="ゲームを始める">GAME<br>START</a>
+</body>
+</html>

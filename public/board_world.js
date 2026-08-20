@@ -20,26 +20,10 @@ const PW = (() => {
   // '#RRGGBB' → 数値。Phaserの色変換APIに依存しない(v3/v4差異の影響を受けない)
   const hexInt = s => parseInt(String(s || '#F2D062').replace('#', ''), 16);
 
-  // ===== Phase 2A: 品質コントローラ(plan_phaser4_phase2plus §4.2-4.3) =====
-  // 設定は再読み込みなしで即時反映される。イベントの意味・尺は品質で変えない
-  const QUALITY_FACTOR = { high: 1, standard: 0.65, lite: 0.3 };
-  let quality = 'standard';
-  let reduceFx = false;
-  try {
-    quality = localStorage.getItem('sc_quality') || 'standard';
-    reduceFx = localStorage.getItem('sc_reduce_fx') === '1';
-  } catch (e) {}
-  if (!QUALITY_FACTOR[quality]) quality = 'standard';
-  const qf = () => QUALITY_FACTOR[quality];
-  function setQuality(q) {
-    if (!QUALITY_FACTOR[q]) return;
-    quality = q;
-    try { localStorage.setItem('sc_quality', q); } catch (e) {}
-  }
-  function setReduceFx(b) {
-    reduceFx = !!b;
-    try { localStorage.setItem('sc_reduce_fx', b ? '1' : '0'); } catch (e) {}
-  }
+  // v1.37: テレビ演出はStandard品質・演出低減なしへ固定する。
+  const quality = 'standard';
+  const reduceFx = false;
+  const qf = () => 0.65;
 
   // ===== 属性エフェクト素材基盤(発注書v0.75 §3 / M2) =====
   // 参照はfx_manifest.jsのFX_ASSETS経由のみ。未配置・読込失敗はGraphicsへフォールバック
@@ -1311,7 +1295,6 @@ const PW = (() => {
            snapshot, debugCounts, pump, isReady: () => ready, hasFailed: () => failed,
            setHighlights,   // 強化候補ハイライト(発注書v0.75 §6)
            // Phase 2A: 演出基盤
-           play, shake, fxDebug, setQuality, setReduceFx,
-           getQuality: () => ({ quality, reduceFx }),
+            play, shake, fxDebug,
            _debugScene: () => scene };  // 診断用(製品コードからは使用しない)
 })();

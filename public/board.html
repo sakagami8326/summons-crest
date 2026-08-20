@@ -706,9 +706,6 @@
   #titleSettingsPanel.on { display:block; }
   #titleSoundToggle { border:1px solid #9f7a31; background:#f4e8c9; color:#352914; padding:.6vh 1.4vw;
       cursor:pointer; font-weight:700; }
-  @media (prefers-reduced-motion:reduce) {
-    #titleOv::before,#titleOv::after,.titleCard,.titleCardShadow { animation:none; }
-  }
 
   /* 実況吹き出し(手番立ち絵の横) */
   #tpBubble { position:fixed; right:calc(12px + 22vh); bottom:26vh; z-index:33; max-width:300px;
@@ -793,8 +790,6 @@
   #ultCut.on #ultInfo { animation:ultInfo 2.9s 1.45s ease both; }
   @keyframes ultInfo { 0%{opacity:0;transform:translate(-50%,24px)} 12%,88%{opacity:1;transform:translate(-50%,0)} 100%{opacity:0} }
   #ultSub { font-size:2.1vh; letter-spacing:.25em; color:#f2d062; } #ultDesc { margin-top:.7vh; font-size:2.8vh; letter-spacing:.08em; }
-  @media (prefers-reduced-motion:reduce) { #ultCut.on #ultArt { animation:ultHeroLite 4.9s ease both; }
-    @keyframes ultHeroLite { 0%,100%{opacity:0} 6%,88%{opacity:1} 40%,88%{filter:brightness(.65)} } #ultSlash{display:none} }
   .dRow { display:flex; gap:2.5vh; }
 
   #summonCut.on #scText { animation:scText .45s ease .32s backwards; }
@@ -1042,10 +1037,6 @@
       font:700 clamp(10px,1.2vh,14px)/1 Marudeco,sans-serif; white-space:nowrap; }
   #selectOv.departing .selCard:nth-child(-n+2) { transform:translateX(-32vw) scale(.94)!important; }
   #selectOv.departing .selCard:nth-child(n+3) { transform:translateX(32vw) scale(.94)!important; }
-  @media (prefers-reduced-motion:reduce) {
-    #selectOv .selCard,.scFlip { transition:none; }
-    .summonerOrbit,.summonerOrbit::before { animation:none; }
-  }
   @property --entry-wipe { syntax:"<percentage>"; inherits:false; initial-value:0%; }
   #gameEntry { --entry-wipe:0%; position:fixed; inset:0; z-index:79; display:none; pointer-events:none;
       background:url('/assets/summoner-select-bg-v1.png') center/cover no-repeat,#f3ead1;
@@ -1060,10 +1051,6 @@
   @keyframes gameEntryReveal { to { --entry-wipe:145%; } }
   @keyframes entryRingExpand { 0% { opacity:0; transform:translate(-50%,-50%) scale(.2); }
       18% { opacity:1; } 100% { opacity:0; transform:translate(-50%,-50%) scale(17); } }
-  @media (prefers-reduced-motion:reduce) {
-    #gameEntry.reveal { animation-duration:.18s; }
-    #gameEntry.reveal .entryRing { display:none; }
-  }
   #titleResumeWrap { display:none; align-items:center; gap:8px; width:100%; }
   #titleResumeWrap .gbtn { flex:1; min-width:0; }
   .saveSmall { background:transparent; border:1px solid rgba(201,162,39,.6); color:var(--gold-soft);
@@ -1109,14 +1096,17 @@
     <div id="optQr"></div>
     <div id="optPhoneUrl" style="font-size:11px; color:rgba(241,232,208,.6); letter-spacing:1px;"></div>
     <button class="saveSmall" id="optSaveQuit" style="font-size:15px; padding:10px 18px; width:100%;">セーブして終了</button>
-    <button class="saveSmall" id="optRender" style="width:100%;"></button>
-    <button class="saveSmall" id="optQuality" style="width:100%;"></button>
-    <button class="saveSmall" id="optReduce" style="width:100%;"></button>
     <button class="saveSmall" id="optBotSpeed" style="width:100%; display:none;">BOT演出速度: 通常</button>
     <div id="optMsg" style="font-size:12px; color:rgba(241,232,208,.7); min-height:1.1em;"></div>
     <button class="saveSmall" id="optClose" style="width:100%;">閉じる</button>
   </div>
   <div id="phaserHost" style="position:fixed; inset:0; z-index:0; pointer-events:none;"></div>
+  <div id="renderError" style="display:none; position:fixed; inset:0; z-index:120; background:#0d1020;
+    color:#f5e6bd; align-items:center; justify-content:center; text-align:center; padding:32px;">
+    <div><div style="font-size:24px; margin-bottom:14px;">盤面を表示できませんでした</div>
+    <div style="font-size:15px; opacity:.85;">ページを再読み込みしてください。</div>
+    <button class="saveSmall" style="margin-top:20px;" onclick="location.reload()">再読み込み</button></div>
+  </div>
   <div id="fxDom" style="position:fixed; inset:0; z-index:30; pointer-events:none;"></div>
   <div id="world"><div id="stage"></div><div id="pawnLayer"></div><div id="spot"></div></div>
   <div id="tileInfo"></div>
@@ -1356,38 +1346,22 @@ const botPresentationActive = actorId => !!(state && state.botMode && state.pres
   state.players && state.players.some(p => p.id === (actorId || state.players[state.turn]?.id) && p.isBot));
 const presentationMs = (ms, actorId) => GAME_TIMING.scaled(ms, botPresentationActive(actorId) ? 2 : 1);
 const wait = ms => new Promise(r => setTimeout(r, presentationMs(ms)));
-// ===== v0.66 描画モード(phaser=新ワールド描画 / dom=旧描画) =====
-const RENDER_MODE = (() => {
-  const q = new URLSearchParams(location.search).get('render');
-  if (q === 'dom' || q === 'phaser') return q;
-  try {
-    const fb = +localStorage.getItem('sc_render_fail') || 0;
-    if (Date.now() - fb < 60 * 60 * 1000) return 'dom';   // 直近1時間に自動退避済みならDOMで起動(無限リトライ防止)
-    return localStorage.getItem('sc_render') || 'phaser';
-  } catch (e) { return 'phaser'; }
-})();
-let renderModeActive = RENDER_MODE;
-function worldFallbackToDom(why) {
-  if (renderModeActive === 'dom') return;
-  renderModeActive = 'dom';
-  try { localStorage.setItem('sc_render_fail', String(Date.now())); } catch (e) {}
+// v1.37: テレビ盤面はPhaser・Standard品質・通常演出へ固定する。
+const renderModeActive = 'phaser';
+function showRenderError(why) {
+  console.error('Phaser盤面を初期化できませんでした:', why);
   $('phaserHost').style.display = 'none';
-  $('world').style.display = '';
-  ownersCache = '';   // DOM側の盤面を作り直させる
-  console.log('Phaser描画を初期化できないためDOM描画へ退避: ' + why);
-  if (state) render();
+  $('renderError').style.display = 'flex';
 }
-if (RENDER_MODE === 'phaser') {
-  $('world').style.display = 'none';
-  PW.init({
-    onFail: worldFallbackToDom,
-    onReady: () => { if (state) { renderBoard(); renderPawns(); applyZoom(); } },
-  });
-  window.addEventListener('error', e => {
-    if (renderModeActive === 'phaser' && /board_world|phaser/i.test((e.filename || '') + ' ' + (e.message || '')))
-      worldFallbackToDom('runtime: ' + (e.message || '').slice(0, 60));
-  });
-}
+$('world').style.display = 'none';
+PW.init({
+  onFail: showRenderError,
+  onReady: () => { if (state) { renderBoard(); renderPawns(); applyZoom(); } },
+});
+window.addEventListener('error', e => {
+  if (/board_world|phaser/i.test((e.filename || '') + ' ' + (e.message || '')))
+    showRenderError('runtime: ' + (e.message || '').slice(0, 60));
+});
 const ELEM = {"fire": "<g transform=\"scale(0.0636) translate(-364.2,-542.7)\" fill=\"#FF7A45\">\n  \n  <g id=\"_レイヤー_1-2\" data-name=\"レイヤー 1\">\n    <g>\n      <path class=\"cls-1\" d=\"M502.96,875.18c20.7,1.95,39.15,7.09,58.74,14.54-43.77,9.03-79.6,29.35-112.36,60.41-39.53,38.23-65.33,84-86.12,135.36-35.43-90.99-97.53-174.86-198.25-195.78,18.26-7.38,37.21-12.26,57.75-14.52-2.88-27.94-29.1-44.35-54.23-53.16-16.27-5.71-31.56-11.33-46.99-19.1C42.5,763.12-1.91,686.81.06,598.13c.87-39.27,12.06-76.51,33.38-109.32l-1.27,35.33c.55,23.13,7.03,45.18,20.01,64.07,13.05,18.98,36.27,37.2,58.34,29.97,10.94-3.58,18.09-13.55,20.1-24.81,3.74-20.99-6.85-39.2-17.8-56.7-9.63-15.39-17.32-31.41-20.64-49.46-11.95-65.01,22.27-137.39,67.09-184.91-8.39,43.48-9.38,86.8,14.2,123.64,8.42,13.16,18.97,24.19,33,30.91,5.43,2.6,12.52,3.31,17.47-.2,10.73-7.62,9.28-27.96,2.85-41.97-20.05-43.72-14.79-88.55,4.15-132.01,11.3-25.94,26.38-48.84,44.03-70.93l39.07-48.91c13.62-17.05,24.01-35.47,32.29-55.67,15.07-36.76,15.18-68.74,5.01-107.14,38.76,43.25,60.82,98.08,51.01,156.05-2.06,12.18-5.43,23.43-8.89,35.18l-10.01,33.97c-5.3,22.07-3.06,45.01,8.04,64.73,4.83,8.58,11.47,15.6,20.23,19.61,14.59,6.68,30.43-.19,36.21-15.03,8.22-21.08-3.31-42.01,4.98-70.96,5.72-19.96,17.2-36.54,33.3-50.1l.82,1.13c-13.25,28.33-11.54,54.43,5.95,79.96,6.64,9.69,13.54,18.57,18.55,29.36,10.94,23.53,13.31,49.4,8.45,74.97-3.67,19.31-11.35,36.65-21.72,53.17-6.19,9.86-9.16,21.21-6.55,32.59,2.17,9.46,10.12,15.09,19.71,14.54,6.76-.39,13-2.65,18.68-6.36,30.5-19.89,45.21-58.61,46.55-94.7.73-19.8-1.96-38.21-4.52-58.79,47.94,52.05,84.36,136.93,61,204.61-10.73,31.09-33.56,49.27-35.62,78.1-.89,12.39,2.84,24.63,12.84,32.17,19.68,14.85,46.62-1.72,61.85-21.33,14.05-18.09,21.53-39.63,23.54-62.52l-.52-41.69c32.87,50.66,40.44,113.71,26.34,171.7-15.11,62.14-56.63,112.8-113.4,141.68-17.61,8.96-35.5,15.28-54.29,21.66-22.7,7.7-48.02,25.07-50.9,51.49ZM363.33,955.02c13.81-61.5,38.41-114.16,89.31-151.63,17.65-13,35.81-23.58,55.15-33.79,11.38-6.01,22.1-12.01,32.23-19.79,20.67-15.87,33.46-38.35,28.29-64.62-5.4-27.39-22.52-51.29-42.71-70.31-4.9,31.51-21.04,59.29-52.4,66.97-10.97,2.14-21.79,1.24-31.33-4.17-14.37-8.15-20.35-24.21-14.61-39.8,2.96-8.05,7.99-14.86,12.94-21.92l19.79-28.19c6.21-10.43,11.43-21.3,12.51-33.68s-3.73-23.7-11.66-32.47l-28.03-30.98c-35.2-38.9-64.75-87.38-79.07-138.71-15.65,48.77-41.16,95.25-70.71,137.78l-18.94,29.12c-6.18,9.49-9.8,20.71-9.46,32.29.76,25.72,21.35,50.54,35.99,71.67,4.72,6.82,8.4,14.13,9.59,22.24,2.03,13.78-4.31,26.02-16.36,32.67-9.49,5.24-20.47,6.37-31.43,4.22-31.23-6.11-49.22-35.78-53.42-66.98-19.88,18.05-37.09,42.46-42.82,68.87-4.17,19.23,1.3,37.7,14.16,52.49,9.28,10.67,20.75,18.63,33.3,25.56l44.47,24.55c19.28,10.64,35.8,24.02,51.5,39.48,35.09,36.95,52.32,79.43,63.72,129.14Z\"/>\n      <path class=\"cls-1\" d=\"M363.05,847.33c-16.83-45.53-44.66-91.38-92.3-110.16,36.86-13.23,56.29-41.76,70.59-76.15,9.14-21.99,15.8-44.44,21.78-67.18,5.91,22.93,12.33,44.22,20.74,65.69,14.73,35.11,33.5,64.13,71.34,77.59-47.87,19.57-74.15,63.27-92.15,110.21Z\"/>\n    </g>\n  </g>\n</g>", "water": "<g transform=\"scale(0.0906) translate(-257.0,-380.9)\" fill=\"#56A8E8\">\n  \n  <g id=\"_レイヤー_1-2\" data-name=\"レイヤー 1\">\n    <g>\n      <path class=\"cls-1\" d=\"M19.05,562.68c-11.22-21.93-17.99-44.02-19.05-68.72,13.15,26.51,30.6,49.14,53.23,68.12,58.5,49.04,139.18,69.99,213.08,47.73,62.24-18.75,112.53-70.62,113.37-137.33.35-27.99-9.48-54.29-28.75-74.11-27.57-28.35-69.6-37.97-105.93-22.99-24.04,10.23-40.73,29.34-46.61,55.61-11.57-40.42,14.37-84.41,49.59-106.41,59.46-37.13,135.42-24,186.46,22.28,33.2,30.11,53.1,72.37,55.31,117.58,2.16,43.96-11.88,86.39-36.36,122.52-27.43,40.49-68.5,71.26-111.93,93.16l-47.23,23.81c-23.27,12.98-46.71,29.38-49.61,57.93-22.02-25.43-11.47-59.44,10.34-83.41-93.01,8.43-190.79-31.36-235.93-115.76Z\"/>\n      <path class=\"cls-1\" d=\"M125.83,409.61c6.28,54.11,50.15,95.1,105.96,92.42,19.84-.95,37.87-7.97,51.93-21.62,13.65-13.47,18.88-30.72,17.04-50.94,11.08,16.53,12.57,36.55,7.61,55.47-5.68,21.7-20.06,39.13-38.79,51.31-16.04,9.55-33.05,15.18-51.89,17.25-39.58,4.34-78.36-5.84-111.75-27.17-36.11-23.06-62.21-57.76-74.25-98.97-7.4-25.33-9.54-51.14-5.39-77.29,4.33-27.26,13.34-52.47,26.55-76.64,13.36-24.46,29.29-46.34,47.85-67.1l45.76-51.21c12.95-14.49,23.91-29.5,33.82-46.13,10.54-18.83,17.65-38.38,19.8-59.89,1.66-16.66-1.02-32.23-4.69-49.12,12.97,10.38,21.7,23.15,28.14,37.74,20.14,45.67,11.1,99.33-9.05,144.19-7.3,16.25-15.93,30.81-24.51,46.33,26.46-30.98,63.42-61.88,105.37-60.6,25.67.78,47.65,14.98,57.96,38.4,6.31,16.18,7.3,33.5,1.09,51.03-12.08-29.59-45.94-37.43-76.65-34.33-19.44,2.11-37.34,7.78-54.63,17.21-43.82,23.9-76.62,64.15-91.57,111.85-5.97,19.05-7.99,38.13-5.71,57.81Z\"/>\n      <circle class=\"cls-1\" cx=\"451.74\" cy=\"228.23\" r=\"29.57\"/>\n      <circle class=\"cls-1\" cx=\"496.55\" cy=\"316.35\" r=\"17.43\"/>\n    </g>\n  </g>\n</g>", "earth": "<g transform=\"scale(0.0906) translate(-288.8,-380.6)\" fill=\"#D9B64F\">\n  \n  <g id=\"_レイヤー_1-2\" data-name=\"レイヤー 1\">\n    <g>\n      <polygon class=\"cls-1\" points=\"352.8 488.32 289.43 571.63 176.59 422.15 289.31 273.16 334.44 331.7 402.31 422.02 352.8 488.32\"/>\n      <polygon class=\"cls-1\" points=\"350.15 303.53 289.43 222.91 228.57 303.43 211.93 262.28 190.53 234.85 289.49 0 349.12 140.82 388.54 234.79 366.88 262.01 350.15 303.53\"/>\n      <polygon class=\"cls-1\" points=\"119.04 541.65 67.79 510.21 0 467.42 18.32 433.28 67.47 343.02 162.25 391.41 141.41 422.24 204.2 509.31 119.04 541.65\"/>\n      <polygon class=\"cls-1\" points=\"459.42 541.65 375.34 509.51 440.05 422.27 417.45 390.53 510.49 343.1 534.2 386.87 577.6 467.49 554.13 482.31 459.42 541.65\"/>\n      <polygon class=\"cls-1\" points=\"198.78 668.62 151.35 632.63 82.57 579.08 151.62 552.64 216.45 528.24 262.09 588.9 242.75 612.84 198.78 668.62\"/>\n      <polygon class=\"cls-1\" points=\"476.79 593.97 380.16 668.64 316.69 588.82 362.67 528.24 496.25 579.04 476.79 593.97\"/>\n      <polygon class=\"cls-1\" points=\"199.66 333.79 174.23 371.48 103.81 317.22 90.34 206.22 175.14 261.71 199.66 333.79\"/>\n      <polygon class=\"cls-1\" points=\"404.48 371.32 378.84 333.97 403.48 261.64 487.98 206.1 479.02 278.07 474.37 317.29 404.48 371.32\"/>\n      <polygon class=\"cls-1\" points=\"289.38 761.18 245.51 648.62 289.23 597.38 333.14 648.4 289.38 761.18\"/>\n      <polygon class=\"cls-1\" points=\"378.21 724.35 334.35 697.53 343.37 658.8 358.06 676.09 378.21 724.35\"/>\n      <polygon class=\"cls-1\" points=\"244.25 697.61 199.98 724.71 221.07 676.13 235.37 658.6 244.25 697.61\"/>\n    </g>\n  </g>\n</g>", "wind": "<g transform=\"scale(0.0704) translate(-308.9,-489.7)\" fill=\"#5BE0D0\">\n  \n  <g id=\"_レイヤー_1-2\" data-name=\"レイヤー 1\">\n    <g>\n      <path class=\"cls-1\" d=\"M155.69,420.63c-33.71,46.8-40.32,106.48,5.67,145.45,19.26,16.33,42.38,25.85,67.55,28.52,54.45,5.79,105.18-22,130.17-71.49,3.3,12.52,3.52,23.9,2.1,36.22-7.35,63.37-57.02,106.94-118.32,119.63-105.77,21.89-215.06-47.34-232.99-154.48-11.27-67.3,16.7-135.76,55.4-190.12,15.33-21.53,31.22-41.48,49.03-61.02l65.32-71.65c22.93-25.15,44.26-50.56,62.68-79.2,21.95-34.12,40.33-77.47,38.74-118.35-.05-1.25,1.64-3.76,2.8-4.08,5.27-1.45,16.85,19.29,21,29.47,6.17,15.14,9.55,30.24,11.18,46.79,6.08,61.72-12.41,122.46-52.72,171.66,25.82-6.68,50.42-12.68,76.77-16,48.11-6.06,98.34-5.09,144.25,11.03,33.61,11.81,63.46,31.1,87.01,58.12,32.74,37.57,50.1,87.66,45.79,138.7-13.14-22.47-25.3-41.3-43.32-57.32-18.72-18.02-40.02-31.48-63.71-42.27-59.71-26.59-132.13-28.95-195.71-15.72-61.1,12.71-122.02,45.17-158.7,96.1Z\"/>\n      <path class=\"cls-1\" d=\"M6.56,687.4c-3.92-12.14-7.02-23-6.5-36.03,25.83,39.01,63.46,65.6,106.14,81.84,59.13,22.5,123.5,25.37,184.59,8.79,67.2-18.24,130.03-62.41,153.23-129.68,17.56-50.91,2.93-105.64-46.71-129.54-37.32-17.97-82.18-17.12-118.58,2.86-22.02,12.08-37.81,30.77-45.7,55.14-13.34-14.17-17.48-33.71-13.73-52.52,7.29-36.56,39.24-66.37,72.22-82.71,78.85-39.06,174.86-22.79,234.97,42.31,53.67,58.12,60.86,141.46,30.51,213.11-17.63,41.61-44.96,76.78-80.15,104.98l-46.52,32.54c-22.37,15.65-45.15,29.34-66.4,46.49-18.16,14.66-34.31,30.05-48.7,48.33-20.14,25.5-33.83,53.58-41.94,86.17-12.21-25.44-15.2-52.32-12.3-79.25,4.55-30.52,16.84-57.92,36.59-82.18-54.06,12.14-105.83,13.47-158.1-3.22-61.41-19.98-112.72-64.89-132.92-127.42Z\"/>\n    </g>\n  </g>\n</g>"};
 const ELEM_DARK = {"fire": "<g transform=\"scale(0.0636) translate(-364.2,-542.7)\" fill=\"#141219\">\n  \n  <g id=\"_レイヤー_1-2\" data-name=\"レイヤー 1\">\n    <g>\n      <path class=\"cls-1\" d=\"M502.96,875.18c20.7,1.95,39.15,7.09,58.74,14.54-43.77,9.03-79.6,29.35-112.36,60.41-39.53,38.23-65.33,84-86.12,135.36-35.43-90.99-97.53-174.86-198.25-195.78,18.26-7.38,37.21-12.26,57.75-14.52-2.88-27.94-29.1-44.35-54.23-53.16-16.27-5.71-31.56-11.33-46.99-19.1C42.5,763.12-1.91,686.81.06,598.13c.87-39.27,12.06-76.51,33.38-109.32l-1.27,35.33c.55,23.13,7.03,45.18,20.01,64.07,13.05,18.98,36.27,37.2,58.34,29.97,10.94-3.58,18.09-13.55,20.1-24.81,3.74-20.99-6.85-39.2-17.8-56.7-9.63-15.39-17.32-31.41-20.64-49.46-11.95-65.01,22.27-137.39,67.09-184.91-8.39,43.48-9.38,86.8,14.2,123.64,8.42,13.16,18.97,24.19,33,30.91,5.43,2.6,12.52,3.31,17.47-.2,10.73-7.62,9.28-27.96,2.85-41.97-20.05-43.72-14.79-88.55,4.15-132.01,11.3-25.94,26.38-48.84,44.03-70.93l39.07-48.91c13.62-17.05,24.01-35.47,32.29-55.67,15.07-36.76,15.18-68.74,5.01-107.14,38.76,43.25,60.82,98.08,51.01,156.05-2.06,12.18-5.43,23.43-8.89,35.18l-10.01,33.97c-5.3,22.07-3.06,45.01,8.04,64.73,4.83,8.58,11.47,15.6,20.23,19.61,14.59,6.68,30.43-.19,36.21-15.03,8.22-21.08-3.31-42.01,4.98-70.96,5.72-19.96,17.2-36.54,33.3-50.1l.82,1.13c-13.25,28.33-11.54,54.43,5.95,79.96,6.64,9.69,13.54,18.57,18.55,29.36,10.94,23.53,13.31,49.4,8.45,74.97-3.67,19.31-11.35,36.65-21.72,53.17-6.19,9.86-9.16,21.21-6.55,32.59,2.17,9.46,10.12,15.09,19.71,14.54,6.76-.39,13-2.65,18.68-6.36,30.5-19.89,45.21-58.61,46.55-94.7.73-19.8-1.96-38.21-4.52-58.79,47.94,52.05,84.36,136.93,61,204.61-10.73,31.09-33.56,49.27-35.62,78.1-.89,12.39,2.84,24.63,12.84,32.17,19.68,14.85,46.62-1.72,61.85-21.33,14.05-18.09,21.53-39.63,23.54-62.52l-.52-41.69c32.87,50.66,40.44,113.71,26.34,171.7-15.11,62.14-56.63,112.8-113.4,141.68-17.61,8.96-35.5,15.28-54.29,21.66-22.7,7.7-48.02,25.07-50.9,51.49ZM363.33,955.02c13.81-61.5,38.41-114.16,89.31-151.63,17.65-13,35.81-23.58,55.15-33.79,11.38-6.01,22.1-12.01,32.23-19.79,20.67-15.87,33.46-38.35,28.29-64.62-5.4-27.39-22.52-51.29-42.71-70.31-4.9,31.51-21.04,59.29-52.4,66.97-10.97,2.14-21.79,1.24-31.33-4.17-14.37-8.15-20.35-24.21-14.61-39.8,2.96-8.05,7.99-14.86,12.94-21.92l19.79-28.19c6.21-10.43,11.43-21.3,12.51-33.68s-3.73-23.7-11.66-32.47l-28.03-30.98c-35.2-38.9-64.75-87.38-79.07-138.71-15.65,48.77-41.16,95.25-70.71,137.78l-18.94,29.12c-6.18,9.49-9.8,20.71-9.46,32.29.76,25.72,21.35,50.54,35.99,71.67,4.72,6.82,8.4,14.13,9.59,22.24,2.03,13.78-4.31,26.02-16.36,32.67-9.49,5.24-20.47,6.37-31.43,4.22-31.23-6.11-49.22-35.78-53.42-66.98-19.88,18.05-37.09,42.46-42.82,68.87-4.17,19.23,1.3,37.7,14.16,52.49,9.28,10.67,20.75,18.63,33.3,25.56l44.47,24.55c19.28,10.64,35.8,24.02,51.5,39.48,35.09,36.95,52.32,79.43,63.72,129.14Z\"/>\n      <path class=\"cls-1\" d=\"M363.05,847.33c-16.83-45.53-44.66-91.38-92.3-110.16,36.86-13.23,56.29-41.76,70.59-76.15,9.14-21.99,15.8-44.44,21.78-67.18,5.91,22.93,12.33,44.22,20.74,65.69,14.73,35.11,33.5,64.13,71.34,77.59-47.87,19.57-74.15,63.27-92.15,110.21Z\"/>\n    </g>\n  </g>\n</g>", "water": "<g transform=\"scale(0.0906) translate(-257.0,-380.9)\" fill=\"#141219\">\n  \n  <g id=\"_レイヤー_1-2\" data-name=\"レイヤー 1\">\n    <g>\n      <path class=\"cls-1\" d=\"M19.05,562.68c-11.22-21.93-17.99-44.02-19.05-68.72,13.15,26.51,30.6,49.14,53.23,68.12,58.5,49.04,139.18,69.99,213.08,47.73,62.24-18.75,112.53-70.62,113.37-137.33.35-27.99-9.48-54.29-28.75-74.11-27.57-28.35-69.6-37.97-105.93-22.99-24.04,10.23-40.73,29.34-46.61,55.61-11.57-40.42,14.37-84.41,49.59-106.41,59.46-37.13,135.42-24,186.46,22.28,33.2,30.11,53.1,72.37,55.31,117.58,2.16,43.96-11.88,86.39-36.36,122.52-27.43,40.49-68.5,71.26-111.93,93.16l-47.23,23.81c-23.27,12.98-46.71,29.38-49.61,57.93-22.02-25.43-11.47-59.44,10.34-83.41-93.01,8.43-190.79-31.36-235.93-115.76Z\"/>\n      <path class=\"cls-1\" d=\"M125.83,409.61c6.28,54.11,50.15,95.1,105.96,92.42,19.84-.95,37.87-7.97,51.93-21.62,13.65-13.47,18.88-30.72,17.04-50.94,11.08,16.53,12.57,36.55,7.61,55.47-5.68,21.7-20.06,39.13-38.79,51.31-16.04,9.55-33.05,15.18-51.89,17.25-39.58,4.34-78.36-5.84-111.75-27.17-36.11-23.06-62.21-57.76-74.25-98.97-7.4-25.33-9.54-51.14-5.39-77.29,4.33-27.26,13.34-52.47,26.55-76.64,13.36-24.46,29.29-46.34,47.85-67.1l45.76-51.21c12.95-14.49,23.91-29.5,33.82-46.13,10.54-18.83,17.65-38.38,19.8-59.89,1.66-16.66-1.02-32.23-4.69-49.12,12.97,10.38,21.7,23.15,28.14,37.74,20.14,45.67,11.1,99.33-9.05,144.19-7.3,16.25-15.93,30.81-24.51,46.33,26.46-30.98,63.42-61.88,105.37-60.6,25.67.78,47.65,14.98,57.96,38.4,6.31,16.18,7.3,33.5,1.09,51.03-12.08-29.59-45.94-37.43-76.65-34.33-19.44,2.11-37.34,7.78-54.63,17.21-43.82,23.9-76.62,64.15-91.57,111.85-5.97,19.05-7.99,38.13-5.71,57.81Z\"/>\n      <circle class=\"cls-1\" cx=\"451.74\" cy=\"228.23\" r=\"29.57\"/>\n      <circle class=\"cls-1\" cx=\"496.55\" cy=\"316.35\" r=\"17.43\"/>\n    </g>\n  </g>\n</g>", "earth": "<g transform=\"scale(0.0906) translate(-288.8,-380.6)\" fill=\"#141219\">\n  \n  <g id=\"_レイヤー_1-2\" data-name=\"レイヤー 1\">\n    <g>\n      <polygon class=\"cls-1\" points=\"352.8 488.32 289.43 571.63 176.59 422.15 289.31 273.16 334.44 331.7 402.31 422.02 352.8 488.32\"/>\n      <polygon class=\"cls-1\" points=\"350.15 303.53 289.43 222.91 228.57 303.43 211.93 262.28 190.53 234.85 289.49 0 349.12 140.82 388.54 234.79 366.88 262.01 350.15 303.53\"/>\n      <polygon class=\"cls-1\" points=\"119.04 541.65 67.79 510.21 0 467.42 18.32 433.28 67.47 343.02 162.25 391.41 141.41 422.24 204.2 509.31 119.04 541.65\"/>\n      <polygon class=\"cls-1\" points=\"459.42 541.65 375.34 509.51 440.05 422.27 417.45 390.53 510.49 343.1 534.2 386.87 577.6 467.49 554.13 482.31 459.42 541.65\"/>\n      <polygon class=\"cls-1\" points=\"198.78 668.62 151.35 632.63 82.57 579.08 151.62 552.64 216.45 528.24 262.09 588.9 242.75 612.84 198.78 668.62\"/>\n      <polygon class=\"cls-1\" points=\"476.79 593.97 380.16 668.64 316.69 588.82 362.67 528.24 496.25 579.04 476.79 593.97\"/>\n      <polygon class=\"cls-1\" points=\"199.66 333.79 174.23 371.48 103.81 317.22 90.34 206.22 175.14 261.71 199.66 333.79\"/>\n      <polygon class=\"cls-1\" points=\"404.48 371.32 378.84 333.97 403.48 261.64 487.98 206.1 479.02 278.07 474.37 317.29 404.48 371.32\"/>\n      <polygon class=\"cls-1\" points=\"289.38 761.18 245.51 648.62 289.23 597.38 333.14 648.4 289.38 761.18\"/>\n      <polygon class=\"cls-1\" points=\"378.21 724.35 334.35 697.53 343.37 658.8 358.06 676.09 378.21 724.35\"/>\n      <polygon class=\"cls-1\" points=\"244.25 697.61 199.98 724.71 221.07 676.13 235.37 658.6 244.25 697.61\"/>\n    </g>\n  </g>\n</g>", "wind": "<g transform=\"scale(0.0704) translate(-308.9,-489.7)\" fill=\"#141219\">\n  \n  <g id=\"_レイヤー_1-2\" data-name=\"レイヤー 1\">\n    <g>\n      <path class=\"cls-1\" d=\"M155.69,420.63c-33.71,46.8-40.32,106.48,5.67,145.45,19.26,16.33,42.38,25.85,67.55,28.52,54.45,5.79,105.18-22,130.17-71.49,3.3,12.52,3.52,23.9,2.1,36.22-7.35,63.37-57.02,106.94-118.32,119.63-105.77,21.89-215.06-47.34-232.99-154.48-11.27-67.3,16.7-135.76,55.4-190.12,15.33-21.53,31.22-41.48,49.03-61.02l65.32-71.65c22.93-25.15,44.26-50.56,62.68-79.2,21.95-34.12,40.33-77.47,38.74-118.35-.05-1.25,1.64-3.76,2.8-4.08,5.27-1.45,16.85,19.29,21,29.47,6.17,15.14,9.55,30.24,11.18,46.79,6.08,61.72-12.41,122.46-52.72,171.66,25.82-6.68,50.42-12.68,76.77-16,48.11-6.06,98.34-5.09,144.25,11.03,33.61,11.81,63.46,31.1,87.01,58.12,32.74,37.57,50.1,87.66,45.79,138.7-13.14-22.47-25.3-41.3-43.32-57.32-18.72-18.02-40.02-31.48-63.71-42.27-59.71-26.59-132.13-28.95-195.71-15.72-61.1,12.71-122.02,45.17-158.7,96.1Z\"/>\n      <path class=\"cls-1\" d=\"M6.56,687.4c-3.92-12.14-7.02-23-6.5-36.03,25.83,39.01,63.46,65.6,106.14,81.84,59.13,22.5,123.5,25.37,184.59,8.79,67.2-18.24,130.03-62.41,153.23-129.68,17.56-50.91,2.93-105.64-46.71-129.54-37.32-17.97-82.18-17.12-118.58,2.86-22.02,12.08-37.81,30.77-45.7,55.14-13.34-14.17-17.48-33.71-13.73-52.52,7.29-36.56,39.24-66.37,72.22-82.71,78.85-39.06,174.86-22.79,234.97,42.31,53.67,58.12,60.86,141.46,30.51,213.11-17.63,41.61-44.96,76.78-80.15,104.98l-46.52,32.54c-22.37,15.65-45.15,29.34-66.4,46.49-18.16,14.66-34.31,30.05-48.7,48.33-20.14,25.5-33.83,53.58-41.94,86.17-12.21-25.44-15.2-52.32-12.3-79.25,4.55-30.52,16.84-57.92,36.59-82.18-54.06,12.14-105.83,13.47-158.1-3.22-61.41-19.98-112.72-64.89-132.92-127.42Z\"/>\n    </g>\n  </g>\n</g>"};
 const RUNE = { fire:'#FF7A45', water:'#56A8E8', earth:'#D9B64F', wind:'#5BE0D0',
@@ -1437,7 +1411,7 @@ function hopStep() {
   renderPawns();
   if (idx === 0 && hopState.castleEv) {
     const ev = hopState.castleEv;
-    setZoom(0);
+    const castleCameraToken = beginPresentationZoom(0, 'castle');
     cutBusy++;
     hopState.holdUntil = Date.now() + presentationMs(GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown, hopState.id);
     setTimeout(() => {
@@ -1446,7 +1420,7 @@ function hopStep() {
       for (const h of (ev.healed || [])) fxAt(typeof h === 'number' ? h : h.tile, 'fxRing', '#8FE08A');
     }, presentationMs(GAME_TIMING.castleZoom, hopState.id));
     setTimeout(() => {
-      hideCastleBreakdown();
+      hideCastleBreakdown(castleCameraToken);
       cutBusy = Math.max(0, cutBusy - 1);
       if (!ev.drew && hopState) {
         hopState.holding = false;
@@ -1480,9 +1454,9 @@ function showCastleBreakdown(ev) {
   el.classList.add('on');
   bannerUntil = Math.max(bannerUntil, Date.now() + GAME_TIMING.castleBreakdown);
 }
-function hideCastleBreakdown() {
+function hideCastleBreakdown(cameraToken) {
   $('castleBreakdown').classList.remove('on');
-  setZoom(null);
+  endPresentationZoom(cameraToken);
 }
 const D_PIPS = { 1:[[30,30]], 2:[[16,16],[44,44]], 3:[[16,16],[30,30],[44,44]],
   4:[[16,16],[44,16],[16,44],[44,44]], 5:[[16,16],[44,16],[30,30],[16,44],[44,44]],
@@ -1527,8 +1501,8 @@ async function playUlt(u) {
   art.style.animation = 'none'; void art.offsetWidth; art.style.animation = '';
   bannerUntil = Math.max(bannerUntil, Date.now() + 3600);
   $('ultCut').classList.add('on');
-  if (window.UltFxWorld) UltFxWorld.play(matchMedia('(prefers-reduced-motion:reduce)').matches);
-  if (seUltCutin) { seUltCutin.currentTime = 0; seUltCutin.play().catch(() => {}); }
+  if (window.UltFxWorld) UltFxWorld.play(false);
+  playSe(seUltCutin);
   setTimeout(() => $('bflash').classList.remove('go'), 500);
   await wait(4950);
   $('ultCut').classList.remove('on');
@@ -1565,18 +1539,20 @@ function showSpot(i, ms = 1600) {
   spotT = setTimeout(() => $('spot').classList.remove('show'), ms);
 }
 // マス変化のクローズアップ: カメラズーム+中央下メッセージ(設計思想: マスに変化があれば必ず見せる)
-let tileMsgT = null, closeupTile = null;
+let tileMsgT = null, closeupTile = null, closeupCameraToken = null;
 function tileCloseup(i, html, dur = 2800) {
-  closeupTile = i;          // updateTileInfoがこのマスへのズームを維持する
-  setZoom(i);
+  closeupTile = i;
+  const cameraToken = beginPresentationZoom(i, 'tile-closeup');
+  closeupCameraToken = cameraToken;
   const el = $('tileMsg');
   el.innerHTML = iconize(html);
   el.classList.add('show');
   clearTimeout(tileMsgT);
   tileMsgT = setTimeout(() => {
     el.classList.remove('show');
-    closeupTile = null;
-    render();               // ズームを通常状態に戻す
+    if (endPresentationZoom(cameraToken)) closeupTile = null;
+    if (closeupCameraToken === cameraToken) closeupCameraToken = null;
+    render();
   }, dur);
   bannerUntil = Math.max(bannerUntil, Date.now() + dur + 200);
 }
@@ -1648,10 +1624,9 @@ function flyCoins(fromPid, toPid) {
   };
   const from = ptOf(fromPid), to = ptOf(toPid);
   if (!from || !to) return;
-  // 2D plan§8.1: 弧軌道で受取側HUDへ吸い込み。品質差 High7枚+光跡 / Standard5 / Lite3
-  const q = (renderModeActive === 'phaser' && PW.getQuality) ? PW.getQuality().quality : 'standard';
-  const n = q === 'high' ? 7 : q === 'lite' ? 3 : 5;
-  const trail = q === 'high';
+  // v1.37 Standard固定: 5枚の弧軌道で受取側HUDへ吸い込む。
+  const n = 5;
+  const trail = false;
   for (let k = 0; k < n; k++) {
     setTimeout(() => {
       const c = document.createElement('div');
@@ -1798,17 +1773,36 @@ document.getElementById('titleSettings').onclick = () => {
 document.getElementById('titleSoundToggle').onclick = e => {
   e.stopPropagation();
   initAudio();
-  bgmMuted = !bgmMuted;
-  const label = bgmMuted ? '音声 OFF' : '音声 ON';
-  document.getElementById('titleSoundToggle').textContent = label;
-  const globalBtn = document.getElementById('bgmBtn');
-  globalBtn.textContent = bgmMuted ? '♪ OFF' : '♪ ON';
-  if (bgmMuted) { if (bgmCur) bgmCur.pause(); }
-  else { setBgm('select'); if (bgmCur) bgmCur.play().catch(() => {}); }
+  setAudioMuted(!bgmMuted, 'select');
 };
 let bgmN = null, bgmR = null, bgmBattle = null, bgmSelect = null, bgmMuted = false, bgmCur = null;
 let bgmFadeTimer = null, bgmFadeFrom = null;
 let seTelop = null, seSummon = null, seEvolve = null, seBattleFinish = null, seCastleBonus = null, seUltCutin = null;
+const audioList = () => [bgmN, bgmR, bgmBattle, bgmSelect,
+  seTelop, seSummon, seEvolve, seBattleFinish, seCastleBonus, seUltCutin].filter(Boolean);
+function stopAudio(a) {
+  if (!a) return;
+  try { a.pause(); a.currentTime = 0; } catch (e) {}
+}
+function syncAudioButtons() {
+  const titleBtn = document.getElementById('titleSoundToggle');
+  const gameBtn = document.getElementById('bgmBtn');
+  if (titleBtn) titleBtn.textContent = bgmMuted ? '音声 OFF' : '音声 ON';
+  if (gameBtn) gameBtn.textContent = bgmMuted ? '♪ OFF' : '♪ ON';
+}
+function setAudioMuted(muted, resumeBgm) {
+  bgmMuted = !!muted;
+  syncAudioButtons();
+  if (bgmMuted) {
+    clearInterval(bgmFadeTimer); bgmFadeTimer = null;
+    bgmFadeFrom = null;
+    audioList().forEach(stopAudio);
+    return;
+  }
+  audioList().forEach(a => { a.muted = false; });
+  if (resumeBgm) setBgm(resumeBgm);
+  else if (bgmCur) bgmCur.play().catch(() => {});
+}
 function initAudio() {
   if (bgmN) return;
   bgmN = new Audio('/assets/bgm_normal.mp3');
@@ -1825,8 +1819,8 @@ function initAudio() {
   seBattleFinish.volume = 0.82; seCastleBonus.volume = 0.78; seUltCutin.volume = 0.9;
   [seTelop, seSummon, seEvolve, seBattleFinish, seCastleBonus, seUltCutin].forEach(a => {
     a.preload = 'auto'; a.muted = true;
-    a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; })
-      .catch(() => { a.muted = false; });
+    a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = bgmMuted; })
+      .catch(() => { a.muted = bgmMuted; });
   });
   [bgmN, bgmR, bgmBattle, bgmSelect].forEach(a => {
     a.loop = true; a.volume = 0.35; a.preload = 'auto';
@@ -1834,11 +1828,10 @@ function initAudio() {
   const btn = document.getElementById('bgmBtn');
   btn.style.display = 'block';
   btn.onclick = () => {
-    bgmMuted = !bgmMuted;
-    btn.textContent = bgmMuted ? '♪ OFF' : '♪ ON';
-    if (bgmCur) { bgmMuted ? bgmCur.pause() : bgmCur.play().catch(() => {}); }
+    setAudioMuted(!bgmMuted);
     if (!bgmMuted && bgmCur && !bgmCur.paused) btn.classList.remove('needsAudio');
   };
+  syncAudioButtons();
 }
 function playSe(a) {
   if (!a || bgmMuted) return;
@@ -1995,12 +1988,17 @@ function connectBoard() {
     $('connBar').style.display = 'none';
     const next = JSON.parse(e.data);
     if (state && next.stateRev != null && next.stateRev <= (state.stateRev || 0)) return;
+    if (state && (next.phase !== state.phase || next.turn !== state.turn || next.turnEpoch !== state.turnEpoch))
+      resetPresentationCamera('phase-or-turn-change');
     state = next;
     syncHasArt();
     render();
     maybeAutoSave();
   };
-  es.onerror = () => { $('connBar').style.display = 'block'; };
+  es.onerror = () => {
+    resetPresentationCamera('sse-reconnect');
+    $('connBar').style.display = 'block';
+  };
 }
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && code && Date.now() - lastMsgAt > 8000) connectBoard();
@@ -2039,44 +2037,35 @@ $('optBtn').onclick = () => {
     $('optCode').textContent = code || '';
     $('optPhoneUrl').textContent = phoneUrlG || '';
     $('optQr').innerHTML = phoneUrlG ? QR.svg(phoneUrlG, 4) : '';
-    $('optRender').textContent = '描画方式: ' + (renderModeActive === 'phaser' ? 'Phaser(新)' : 'DOM(旧)') + ' ─ 切り替える';
     $('optBotSpeed').style.display = state && state.botMode ? 'block' : 'none';
     $('optBotSpeed').textContent = 'BOT演出速度: ' + (state && state.presentationSpeed === 2 ? '2倍' : '通常');
-    syncFxOptLabels();
   }
 };
-// v0.68: 演出品質・演出低減(再読み込み不要で即時反映 ─ plan_phaser4_phase2plus §4.2-4.3)
-const Q_LABEL = { high: 'High(全演出)', standard: 'Standard(標準)', lite: 'Lite(軽量)' };
-function syncFxOptLabels() {
-  const q = PW.getQuality();
-  $('optQuality').textContent = '演出品質: ' + (Q_LABEL[q.quality] || q.quality) + ' ─ 切替';
-  $('optReduce').textContent = '演出低減(揺れ/点滅を抑える): ' + (q.reduceFx ? 'オン' : 'オフ') + ' ─ 切替';
-}
-$('optQuality').onclick = () => {
-  const order = ['high', 'standard', 'lite'];
-  const cur = PW.getQuality().quality;
-  PW.setQuality(order[(order.indexOf(cur) + 1) % order.length]);
-  syncFxOptLabels();
-};
-$('optReduce').onclick = () => {
-  PW.setReduceFx(!PW.getQuality().reduceFx);
-  syncFxOptLabels();
-};
+let botSpeedSaving = false;
 $('optBotSpeed').onclick = async () => {
-  if (!state || !state.botMode) return;
+  if (!state || !state.botMode || botSpeedSaving) return;
+  const btn = $('optBotSpeed');
+  const previous = state.presentationSpeed === 2 ? 2 : 1;
   const speed = state.presentationSpeed === 2 ? 1 : 2;
-  const res = await fetch('/api/action', { method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ room:code, type:'set_presentation_speed', token:boardToken, speed }) });
-  const out = await res.json();
-  if (!res.ok) $('optMsg').textContent = out.error || '速度を変更できませんでした';
-};
-// v0.66: 描画方式の手動切替(URL入力不要でその場で復旧できる)
-$('optRender').onclick = () => {
+  state.presentationSpeed = speed;
+  btn.textContent = 'BOT演出速度: ' + (speed === 2 ? '2倍' : '通常');
+  btn.disabled = true;
+  botSpeedSaving = true;
+  $('optMsg').textContent = 'BOT演出速度を変更中…';
   try {
-    localStorage.setItem('sc_render', renderModeActive === 'phaser' ? 'dom' : 'phaser');
-    localStorage.removeItem('sc_render_fail');
-  } catch (e) {}
-  location.reload();
+    const res = await fetch('/api/action', { method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ room:code, type:'set_presentation_speed', token:boardToken, speed }) });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(out.error || '速度を変更できませんでした');
+    $('optMsg').textContent = 'BOT演出速度を' + (speed === 2 ? '2倍' : '通常') + 'に変更しました';
+  } catch (e) {
+    state.presentationSpeed = previous;
+    btn.textContent = 'BOT演出速度: ' + (previous === 2 ? '2倍' : '通常');
+    $('optMsg').textContent = e.message || '速度を変更できませんでした';
+  } finally {
+    botSpeedSaving = false;
+    btn.disabled = false;
+  }
 };
 $('optClose').onclick = () => { $('optMenu').style.display = 'none'; };
 $('optSaveQuit').onclick = async () => {
@@ -2444,21 +2433,36 @@ async function runFxHarness(name) {
 }
 
 // ===== 停止マスへのズームと詳細ウィンドウ =====
-let worldFit = 1, zoomTile = null;
+let worldFit = 1, zoomTile = null, cameraGeneration = 0, cameraOwner = null;
 function applyZoom() {
-  if (renderModeActive === 'phaser') return PW.setCamera(zoomTile);
-  const w = $('world');
-  if (zoomTile === null) { w.style.transform = `translateX(-50%) scale(${worldFit})`; return; }
-  const { x, y } = worldPos(zoomTile);
-  const S = worldFit * 1.5;
-  const dx = -(x - 640) * S;
-  const dy = innerHeight * 0.46 - y * S;
-  w.style.transform = `translateX(-50%) translate(${dx}px, ${dy}px) scale(${S})`;
+  return PW.setCamera(zoomTile);
 }
 function setZoom(ti) {
   if (zoomTile === ti) return;
   zoomTile = ti;
   applyZoom();
+}
+function beginPresentationZoom(tile, owner) {
+  const token = ++cameraGeneration;
+  cameraOwner = { token, owner };
+  setZoom(tile);
+  return token;
+}
+function endPresentationZoom(token) {
+  if (!cameraOwner || cameraOwner.token !== token) return false;
+  cameraOwner = null;
+  setZoom(null);
+  return true;
+}
+function resetPresentationCamera(reason) {
+  cameraGeneration++;
+  cameraOwner = null;
+  closeupTile = null;
+  closeupCameraToken = null;
+  clearTimeout(tileMsgT);
+  $('tileMsg').classList.remove('show');
+  setZoom(null);
+  if (reason) console.debug('camera reset:', reason);
 }
 function tileInfoHTML(i) {
   const t = state.tiles[i], o = state.owners[i], C = state.catalog;
@@ -2497,8 +2501,8 @@ function tileInfoHTML(i) {
 }
 function updateTileInfo() {
   const el = $('tileInfo');
-  if (closeupTile !== null) {  // クローズアップ演出中はそのマスへのズームを優先
-    setZoom(closeupTile);
+  if (zoomTile !== null && !cameraOwner) resetPresentationCamera('watchdog');
+  if (closeupTile !== null) {
     el.classList.remove('on'); el.dataset.k = '';
     return;
   }
@@ -2508,7 +2512,6 @@ function updateTileInfo() {
     const pd = tp && state.pending[tp.id];
     if (pd && pd.type === 'tile') target = tp.pos;
   }
-  setZoom(target);
   if (target === null) { el.classList.remove('on'); el.dataset.k = ''; return; }
   const k = target + ':' + JSON.stringify(state.owners[target]) + ':' + JSON.stringify(state.curses[target] || 0);
   if (el.dataset.k !== k) { el.dataset.k = k; el.innerHTML = tileInfoHTML(target); }
@@ -3061,9 +3064,7 @@ function playTollCutin(ev) {
   }, 2100);
 }
 function showTelop(kind, sub) {
-  if ((kind === 'game' || kind === 'turn') && seTelop && !bgmMuted) {
-    try { seTelop.currentTime = 0; seTelop.play().catch(() => {}); } catch (e) {}
-  }
+  if (kind === 'game' || kind === 'turn') playSe(seTelop);
   const img = $('telopImg'), s = $('telopSub');
   img.classList.remove('play'); s.classList.remove('play');
   img.src = '/assets/telop_' + kind + '.png';
@@ -3600,6 +3601,7 @@ async function playBattle(b) {
     return showResult('防衛成功', 900);
   })();
   $('battle').classList.remove('on');
+  resetPresentationCamera('battle-close');
   activeBattleData = null;
   $('battleFx').innerHTML = '';
   hideLogo(false);
@@ -3637,8 +3639,7 @@ function render() {
   if (!state) return;
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.35' +
-    (renderModeActive === 'phaser' ? '' : ' (DOM描画)');
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.37';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -4120,7 +4121,15 @@ function render() {
     if (x) {
       const it = x.item;
       if (typeof it === 'function') {
-        try { it(); } catch (e) { console.log('演出例外(継続): ' + e.message); }  // 例外でもキューを止めない
+        try {
+          Promise.resolve(it()).catch(e => {
+            resetPresentationCamera('presentation-error');
+            console.log('演出例外(継続): ' + e.message);
+          });
+        } catch (e) {
+          resetPresentationCamera('presentation-error');
+          console.log('演出例外(継続): ' + e.message);
+        }
       } else showBanner(it[0], it[1], it[2]);
     }
   }
@@ -4190,6 +4199,7 @@ function render() {
              (!state.lastBattle || state.lastBattle.at === prev.battleAt)) {
     // 侵略キャンセル時は結果演出を待たず盤面へ戻る。
     $('battle').classList.remove('on');
+    resetPresentationCamera('battle-cancel');
     hideLogo(false);
     try { if (typeof BW !== 'undefined') BW.stop(); } catch (e) {}
     restoreBoardBgm();

@@ -1,0 +1,55 @@
+{
+  "brand": {
+    "name": "SUMMONS CODE",
+    "logoLight": "/assets/summons-code-blue.svg",
+    "logoDark": "/assets/summons-code-gold.svg",
+    "logoMonochrome": "/assets/summons-code-white.svg",
+    "sectionHeadings": {
+      "style": "single-color-silhouette-a",
+      "concept": "/assets/site/heading-concept-a.png",
+      "playStyle": "/assets/site/heading-play-style.png",
+      "howToPlay": "/assets/site/heading-how-to-play.png",
+      "gameSystem": "/assets/site/heading-game-system.png",
+      "cards": "/assets/site/heading-cards.png",
+      "summoners": "/assets/site/heading-summoners.png",
+      "earlyAccess": "/assets/site/heading-early-access.png",
+      "news": "/assets/site/heading-news.png"
+    },
+    "socialPreview": "/assets/site/og-summons-code-v1.png",
+    "heroBackground": "/assets/summoner-select-bg-v1.png",
+    "boardTexture": "/assets/bg.jpg"
+  },
+  "summoners": [
+    { "id": "redani", "image": "/assets/summoner-still-redani.webp" },
+    { "id": "linnei", "image": "/assets/summoner-still-linnei.webp" },
+    { "id": "grease", "image": "/assets/summoner-still-grease.webp" },
+    { "id": "mio", "image": "/assets/summoner-still-mio.webp" },
+    { "id": "lia", "image": "/assets/summoner-still-lia.webp" },
+    { "id": "adel", "image": "/assets/summoner-still-adel.webp" },
+    { "id": "villa", "image": "/assets/summoner-still-villa.webp" },
+    { "id": "nerasio", "image": "/assets/summoner-still-nerasio.webp" }
+  ],
+  "featuredCards": [
+    { "id": "sp_flame_vortex", "kind": "spell", "image": "/assets/cards/spell-flame-vortex-art-v1.webp" },
+    { "id": "sp_restore", "kind": "spell", "image": "/assets/cards/spell-restore-art-v1.webp" },
+    { "id": "sp_wind_turn", "kind": "spell", "image": "/assets/cards/spell-wind-turn-art-v1.webp" },
+    { "id": "cresteria", "kind": "creature", "image": "/assets/cards/c_cresteria.webp" },
+    { "id": "avalanche", "kind": "creature", "image": "/assets/cards/c_avalanche.webp" },
+    { "id": "palecoral", "kind": "creature", "image": "/assets/cards/c_palecoral.webp" }
+  ],
+  "icons": {
+    "sparkStar": "/assets/site/spark-star.svg",
+    "sparkStarCluster": "/assets/site/spark-star-cluster.svg",
+    "rule": "/assets/cards/rule-brush.svg",
+    "costFrame": "/assets/cards/cost-frame.svg",
+    "costCoin": "/assets/cards/cost-coin.svg",
+    "attack": "/assets/cards/stat-at-icon.svg",
+    "health": "/assets/cards/stat-hp-icon.svg"
+  },
+  "fonts": {
+    "shipporiMincho400": "/assets/site/fonts/shippori-mincho-400.woff2",
+    "shipporiMincho600": "/assets/site/fonts/shippori-mincho-600.woff2",
+    "shipporiMincho700": "/assets/site/fonts/shippori-mincho-700.woff2",
+    "license": "/assets/site/fonts/OFL.txt"
+  }
+}

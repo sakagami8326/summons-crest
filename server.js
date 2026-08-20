@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.36';
+const VERSION = '1.38';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
@@ -2940,13 +2940,19 @@ const readBody = req => new Promise(res => {
   req.on('end', () => { if (raw === null) return; try { res(JSON.parse(raw || '{}')); } catch (e) { res({}); } });
 });
 const json = (res, o, s = 200) => { res.writeHead(s, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(o)); };
-const MIME = { html: 'text/html', png: 'image/png', js: 'text/javascript', svg: 'image/svg+xml', jpg: 'image/jpeg' };
+const MIME = {
+  html: 'text/html', css: 'text/css', js: 'text/javascript', json: 'application/json',
+  png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', webm: 'video/webm',
+  svg: 'image/svg+xml', ico: 'image/x-icon', woff: 'font/woff', woff2: 'font/woff2', otf: 'font/otf'
+};
 function serveFile(res, rel) {
   const fp = path.join(__dirname, 'public', rel);
   if (!fp.startsWith(path.join(__dirname, 'public'))) { res.writeHead(403); return res.end(); }
   fs.readFile(fp, (err, data) => {
     if (err) { res.writeHead(404); return res.end('not found'); }
-    res.writeHead(200, { 'Content-Type': (MIME[fp.split('.').pop()] || 'application/octet-stream') + '; charset=utf-8' });
+    const type = MIME[fp.split('.').pop()] || 'application/octet-stream';
+    const charset = /^(?:text\/|application\/(?:javascript|json))/.test(type) ? '; charset=utf-8' : '';
+    res.writeHead(200, { 'Content-Type': type + charset });
     res.end(data);
   });
 }
@@ -2995,9 +3001,13 @@ const phoneUrlForRoom = code => `${publicBaseUrl()}/phone?room=${encodeURICompon
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const p = url.pathname;
-  if (p === '/') return serveFile(res, 'board.html');
+  if (p === '/') return serveFile(res, 'site/index.html');
+  if (p === '/play') return serveFile(res, 'board.html');
+  if (p === '/board') { res.writeHead(302, { Location: '/play' }); return res.end(); }
+  if (p === '/site') { res.writeHead(302, { Location: '/' }); return res.end(); }
   if (p === '/phone') return serveFile(res, 'phone.html');
   if (p.startsWith('/assets/')) return serveFile(res, p.slice(1));
+  if (p.startsWith('/site/')) return serveFile(res, p.slice(1));
   // v0.66: 共有タイミング定数・Phaserワールド描画・同梱ライブラリ
   if (p === '/game_timing.js' || p === '/board_world.js' || p === '/battle_world.js' || p === '/ult_fx_world.js' ||
       p === '/fx_manifest.js' || p.startsWith('/vendor/'))
