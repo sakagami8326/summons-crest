@@ -82,7 +82,11 @@ ok(/\.summoner-slide\.is-active[\s\S]*brightness\(1\.06\)/.test(css) && /\.summo
 ok(/border: 1px dashed/.test(css + conceptCss) && /homepage-spin/.test(css), 'simple dashed circles rotate');
 ok(/prefers-reduced-motion/.test(css) && /animation: none !important/.test(css), 'decorative motion respects reduced motion');
 
-ok(/og-summons-code-v1\.png/.test(html) && /rel="canonical"/.test(html) && /name="description"/.test(html), 'SEO and social metadata are present');
+ok(/\.hero h1\s*\{[^}]*white-space:\s*nowrap/.test(css), 'hero headline stays on one line');
+ok(/property="og:url" content="https:\/\/52-68-169-20\.sslip\.io\/"/.test(html), 'Open Graph URL is absolute');
+ok(/property="og:image" content="https:\/\/52-68-169-20\.sslip\.io\/assets\/site\/og-summons-code-v1\.png"/.test(html), 'Open Graph image URL is absolute');
+ok(/name="twitter:image" content="https:\/\/52-68-169-20\.sslip\.io\/assets\/site\/og-summons-code-v1\.png"/.test(html), 'Twitter image metadata uses the public image URL');
+ok(/rel="canonical" href="https:\/\/52-68-169-20\.sslip\.io\/"/.test(html) && /name="description"/.test(html), 'canonical and description metadata are present');
 ok(/class="skip-link"/.test(html) && /aria-live="polite"/.test(html), 'skip navigation and live carousel information are present');
 
 console.log(`V1.38 HOMEPAGE ALL ${pass} CHECKS PASSED`);
