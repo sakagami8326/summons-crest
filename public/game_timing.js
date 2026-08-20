@@ -14,4 +14,5 @@ const GAME_TIMING = {
   castleDraftLead: 4550,      // 城ズーム＋内訳表示後にドラフトUIを解禁
   moveWaitMax: 20000,         // 時計ずれ時のスマホ待機上限
 };
+GAME_TIMING.scaled = (ms, speed) => Math.max(1, Math.round(ms / (speed === 2 ? 2 : 1)));
 if (typeof module !== 'undefined') module.exports = GAME_TIMING;

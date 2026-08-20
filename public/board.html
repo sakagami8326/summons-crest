@@ -1112,6 +1112,7 @@
     <button class="saveSmall" id="optRender" style="width:100%;"></button>
     <button class="saveSmall" id="optQuality" style="width:100%;"></button>
     <button class="saveSmall" id="optReduce" style="width:100%;"></button>
+    <button class="saveSmall" id="optBotSpeed" style="width:100%; display:none;">BOT演出速度: 通常</button>
     <div id="optMsg" style="font-size:12px; color:rgba(241,232,208,.7); min-height:1.1em;"></div>
     <button class="saveSmall" id="optClose" style="width:100%;">閉じる</button>
   </div>
@@ -1351,7 +1352,10 @@ const QR = (() => {
 <script src="/ult_fx_world.js"></script>
 <script>
 const $ = id => document.getElementById(id);
-const wait = ms => new Promise(r => setTimeout(r, ms));
+const botPresentationActive = actorId => !!(state && state.botMode && state.presentationSpeed === 2 &&
+  state.players && state.players.some(p => p.id === (actorId || state.players[state.turn]?.id) && p.isBot));
+const presentationMs = (ms, actorId) => GAME_TIMING.scaled(ms, botPresentationActive(actorId) ? 2 : 1);
+const wait = ms => new Promise(r => setTimeout(r, presentationMs(ms)));
 // ===== v0.66 描画モード(phaser=新ワールド描画 / dom=旧描画) =====
 const RENDER_MODE = (() => {
   const q = new URLSearchParams(location.search).get('render');
@@ -1435,27 +1439,27 @@ function hopStep() {
     const ev = hopState.castleEv;
     setZoom(0);
     cutBusy++;
-    hopState.holdUntil = Date.now() + GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown;
+    hopState.holdUntil = Date.now() + presentationMs(GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown, hopState.id);
     setTimeout(() => {
       playSe(seCastleBonus);
       showCastleBreakdown(ev);
       for (const h of (ev.healed || [])) fxAt(typeof h === 'number' ? h : h.tile, 'fxRing', '#8FE08A');
-    }, GAME_TIMING.castleZoom);
+    }, presentationMs(GAME_TIMING.castleZoom, hopState.id));
     setTimeout(() => {
       hideCastleBreakdown();
       cutBusy = Math.max(0, cutBusy - 1);
       if (!ev.drew && hopState) {
         hopState.holding = false;
-        if (hopState.sN < hopState.steps) setTimeout(hopStep, GAME_TIMING.castleResume);
+        if (hopState.sN < hopState.steps) setTimeout(hopStep, presentationMs(GAME_TIMING.castleResume, hopState.id));
         else finishHop();
       }
-    }, GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown);
+    }, presentationMs(GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown, hopState.id));
     hopState.castleEv = null;
     hopState.holding = true;   // ドラフト完了までここで待機
     render();
     return;
   }
-  if (hopState.sN < hopState.steps) setTimeout(hopStep, GAME_TIMING.stepMs);
+  if (hopState.sN < hopState.steps) setTimeout(hopStep, presentationMs(GAME_TIMING.stepMs, hopState.id));
   else finishHop();
 }
 function showCastleBreakdown(ev) {
@@ -1989,7 +1993,9 @@ function connectBoard() {
   es.onmessage = e => {
     lastMsgAt = Date.now();
     $('connBar').style.display = 'none';
-    state = JSON.parse(e.data);
+    const next = JSON.parse(e.data);
+    if (state && next.stateRev != null && next.stateRev <= (state.stateRev || 0)) return;
+    state = next;
     syncHasArt();
     render();
     maybeAutoSave();
@@ -2034,6 +2040,8 @@ $('optBtn').onclick = () => {
     $('optPhoneUrl').textContent = phoneUrlG || '';
     $('optQr').innerHTML = phoneUrlG ? QR.svg(phoneUrlG, 4) : '';
     $('optRender').textContent = '描画方式: ' + (renderModeActive === 'phaser' ? 'Phaser(新)' : 'DOM(旧)') + ' ─ 切り替える';
+    $('optBotSpeed').style.display = state && state.botMode ? 'block' : 'none';
+    $('optBotSpeed').textContent = 'BOT演出速度: ' + (state && state.presentationSpeed === 2 ? '2倍' : '通常');
     syncFxOptLabels();
   }
 };
@@ -2053,6 +2061,14 @@ $('optQuality').onclick = () => {
 $('optReduce').onclick = () => {
   PW.setReduceFx(!PW.getQuality().reduceFx);
   syncFxOptLabels();
+};
+$('optBotSpeed').onclick = async () => {
+  if (!state || !state.botMode) return;
+  const speed = state.presentationSpeed === 2 ? 1 : 2;
+  const res = await fetch('/api/action', { method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ room:code, type:'set_presentation_speed', token:boardToken, speed }) });
+  const out = await res.json();
+  if (!res.ok) $('optMsg').textContent = out.error || '速度を変更できませんでした';
 };
 // v0.66: 描画方式の手動切替(URL入力不要でその場で復旧できる)
 $('optRender').onclick = () => {
@@ -3704,9 +3720,9 @@ function render() {
           castleEv: state.lastDice && state.lastDice.player === mover.id ? state.lastDice.castle : null };
         pawnAnim[mover.id] = from;
         const mine = state.lastDice && state.lastDice.player === mover.id;
-        setTimeout(hopStep, mine
+        setTimeout(hopStep, presentationMs(mine
           ? (state.lastDice.multi ? GAME_TIMING.moveStartDelayMulti : GAME_TIMING.moveStartDelay)
-          : GAME_TIMING.otherStartDelay);
+          : GAME_TIMING.otherStartDelay, mover.id));
       }
     } else if (hopState.holding) {
       if (hopState.holdUntil && Date.now() < hopState.holdUntil) {
@@ -3716,7 +3732,7 @@ function render() {
         const pd = state.pending[hopState.id];
         if (!pd || pd.type !== 'draft') {
           hopState.holding = false;
-          if (hopState.sN < hopState.steps) setTimeout(hopStep, GAME_TIMING.castleResume);
+          if (hopState.sN < hopState.steps) setTimeout(hopStep, presentationMs(GAME_TIMING.castleResume, hopState.id));
           else finishHop();
         }
       }

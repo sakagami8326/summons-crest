@@ -136,8 +136,10 @@ function setupGame() {
     source: 2, where: '自領地' } };
   const before = normalizeForDiff(G.serializeRoom(r));
   const out = G.restoreRoom(clone(G.serializeRoom(r)));
-  ok(!out.error && JSON.stringify(normalizeForDiff(G.serializeRoom(out.room))) === JSON.stringify(before),
-    'A-2b: マーロー移動pendingのsource・where・選択肢を保持して復元できる');
+  const restored = out.room.pending[p.id];
+  ok(!out.error && restored.source === 2 && restored.where === '自領地' && restored.options.length === 2 &&
+    Number.isInteger(restored.turnEpoch) && typeof restored.promptId === 'string',
+    'A-2b: マーロー移動pendingを保持し同期IDを補完して復元できる');
   G.rooms.delete(out.room.code);
 }
 

@@ -34,16 +34,17 @@ ok(!/setTimeout\(hopStep,\s*\d/.test(board), 'board: hopStepの遅延に数値�
 ok(!/\*\s*250\s*\+/.test(phone), 'phone: 1歩250msの直書き(*250+)がない');
 
 // 4) スマホの到着時刻計算が共有定数で構成されていること(式の構成要素を検査)
-const arrive = phone.match(/doneAt = ld\.at \+ init \+ steps \* GT\.stepMs \+ GT\.arriveBuf/);
+const arrive = phone.match(/doneAt = ld\.at \+ init \+ steps \* scale\(GT\.stepMs\) \+ scale\(GT\.arriveBuf\)/);
 ok(!!arrive, 'phone: 通常到着の式が共有定数で構成されている');
-ok(/castleAt \+ GT\.castleResume \+ remaining \* GT\.stepMs \+ GT\.arriveBufCastle/.test(phone),
+ok(/castleAt \+ scale\(GT\.castleResume\) \+ remaining \* scale\(GT\.stepMs\) \+ scale\(GT\.arriveBufCastle\)/.test(phone),
   'phone: 城経由の到着式が共有定数で構成されている');
-ok(/castleStep \|\| steps\) \* GT\.stepMs \+ GT\.castleDraftLead/.test(phone),
+ok(/castleStep \|\| steps\) \* scale\(GT\.stepMs\) \+ scale\(GT\.castleDraftLead\)/.test(phone),
   'phone: 城ドラフト表示の式が共有定数で構成されている');
 
 // 5) 盤面のホップ進行が共有定数で構成されていること
-ok(/setTimeout\(hopStep, GAME_TIMING\.stepMs\)/.test(board), 'board: 1歩の間隔が共有定数');
+ok(/setTimeout\(hopStep, presentationMs\(GAME_TIMING\.stepMs, hopState\.id\)\)/.test(board), 'board: 1歩の間隔が共有定数+速度倍率');
 ok(/GAME_TIMING\.moveStartDelayMulti : GAME_TIMING\.moveStartDelay/.test(board), 'board: 初動が共有定数');
-ok(/setTimeout\(hopStep, GAME_TIMING\.castleResume\)/.test(board), 'board: 城再開が共有定数');
+ok(/presentationMs\(GAME_TIMING\.castleResume, hopState\.id\)/.test(board), 'board: 城再開が共有定数+速度倍率');
+ok(GT.scaled(1000, 1) === 1000 && GT.scaled(1000, 2) === 500, 'game_timing: 通常/2倍の倍率');
 
 console.log(`TIMING ALL ${pass} CHECKS PASSED`);

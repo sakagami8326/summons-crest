@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.35';
+const VERSION = '1.36';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
@@ -342,7 +342,8 @@ function makeRoom(mode = 'normal') {
   const deck = makeDeck();
   const room = {
     code: code4(), phase: 'lobby', clients: new Set(), players: [],
-    botMode: mode === 'bot', botTimer: null, botActionSeq: 0,
+    botMode: mode === 'bot', botTimer: null, botActionSeq: 0, presentationSpeed: 1,
+    turnEpoch: 0, promptSeq: 0, stateRev: 0, processedActions: [],
     owners: TILES.map(() => null),        // { player, level, creature }
     deck, market: deck.splice(0, 5), shopVisit: null,
     turn: 0, round: 1, log: [],
@@ -369,6 +370,8 @@ function payTo(r, payer, receiver, amount) {
 const log = (r, m) => { r.log.push(m); if (r.log.length > 60) r.log.shift(); };
 const cur = r => r.players[r.turn];
 const pById = (r, id) => r.players.find(p => p.id === id);
+const presentationMs = (r, playerId, ms) => GAME_TIMING.scaled(ms,
+  r.botMode && r.presentationSpeed === 2 && pById(r, playerId)?.isBot ? 2 : 1);
 
 // ===== 得点・称号 =====
 // イベント刻印: 同一ミリ秒でも必ず増加する(クライアントのat比較による重複排除を確実にする)
@@ -589,7 +592,11 @@ function declareWin(r, p, why) {
 
 // ===== 手番進行 =====
 function ask(r, playerId, type, prompt, options) {
-  r.pending[playerId] = { type, prompt, options };
+  r.promptSeq = (r.promptSeq || 0) + 1;
+  r.pending[playerId] = { type, prompt, options, turnEpoch: r.turnEpoch || 0,
+    promptId: `${r.turnEpoch || 0}-${r.promptSeq}` };
+  if (r.phase === 'playing' && playerId === cur(r)?.id && r.turnReadyAt > Date.now())
+    r.pending[playerId].availableAt = r.turnReadyAt;
 }
 const ULT_CUTIN_MS = 5000;
 function clearUltTimer(r) {
@@ -847,7 +854,10 @@ function resolvePickDraw(r, p, idx) {
 }
 function beginTurn(r) {
   if (r.phase !== 'playing') return;
+  r.turnEpoch = (r.turnEpoch || 0) + 1;
   const p = cur(r);
+  // テレビの手番交代演出が終わる前にスマホが次ターンを開始しないためのサーバーロック。
+  r.turnReadyAt = Date.now() + presentationMs(r, p.id, 4300);
   p.spellCast = false;  // 呪文は1ターンに1回まで
   p.gale = false;
   p.fixedDice = null;
@@ -976,9 +986,9 @@ function performMove(r, p, steps, meta, moveLabel) {
       }
     });
     if (healed.length) log(r, `⛨ 帰還の癒し ─ ${p.name}の領地のクリーチャーが回復した(負傷-10 × ${healed.length}体)`);
-    const initial = meta.multi ? GAME_TIMING.moveStartDelayMulti : GAME_TIMING.moveStartDelay;
-    const availableAt = r.lastDice.at + initial + castleStep * GAME_TIMING.stepMs +
-      GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown;
+    const initial = presentationMs(r, p.id, meta.multi ? GAME_TIMING.moveStartDelayMulti : GAME_TIMING.moveStartDelay);
+    const availableAt = r.lastDice.at + initial + castleStep * presentationMs(r, p.id, GAME_TIMING.stepMs) +
+      presentationMs(r, p.id, GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown);
     r.lastDice.castle = { usedSeal, baseBonus: bonus, gold: bonus, landValue: lands, landRate,
       landBonus: lb, total: bonus + lb, drew: 1, healed, castleStep, availableAt };
     log(r, `${p.name}は${moveLabel}(城通過 +${bonus}G${lb ? `+領地ボーナス${lb}G` : ''}、カードを選択!)`);
@@ -989,9 +999,9 @@ function performMove(r, p, steps, meta, moveLabel) {
     return startDraft(r, p, meta && meta.villaUlt ? 'villa_recover' : 'tile', availableAt);
   }
   if (noSeal) {
-    const initial = meta.multi ? GAME_TIMING.moveStartDelayMulti : GAME_TIMING.moveStartDelay;
-    const availableAt = r.lastDice.at + initial + castleStep * GAME_TIMING.stepMs +
-      GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown;
+    const initial = presentationMs(r, p.id, meta.multi ? GAME_TIMING.moveStartDelayMulti : GAME_TIMING.moveStartDelay);
+    const availableAt = r.lastDice.at + initial + castleStep * presentationMs(r, p.id, GAME_TIMING.stepMs) +
+      presentationMs(r, p.id, GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown);
     r.lastDice.castle = { usedSeal: false, baseBonus: 0, gold: 0, landValue: 0, landRate: CASTLE_LAND_RATE,
       landBonus: 0, total: 0, drew: 0, healed: [], castleStep, availableAt };
     log(r, `${p.name}は${moveLabel} ─ 刻印がないため一周ボーナスなし…`);
@@ -2706,6 +2716,8 @@ function publicBattle(r) {
 function publicState(r, viewerId) {
   return {
     ver: VERSION, code: r.code, phase: r.phase, evoLevel: RULES.evoLevel, turn: r.turn, round: r.round, target: ASSET_GOAL, reachAt: ASSET_REACH,
+    stateRev: r.stateRev || 0, turnEpoch: r.turnEpoch || 0, serverNow: Date.now(),
+    presentationSpeed: r.presentationSpeed === 2 ? 2 : 1,
     botMode: !!r.botMode,
     selectionReady: isSelectionReady(r),
     tiles: TILES.map((t, i) => r.elemOv[i] ? Object.assign({}, t, { e: r.elemOv[i] }) : t),
@@ -2768,6 +2780,7 @@ function publicState(r, viewerId) {
 }
 function broadcast(r) {
   r.saveRev = (r.saveRev || 0) + 1;  // v0.62: 状態変化ごとに単調増加(盤面の自動セーブ契機)
+  r.stateRev = (r.stateRev || 0) + 1;
   for (const c of r.clients) {
     try { c.res.write(`data: ${JSON.stringify(publicState(r, c.viewerId))}\n\n`); }
     catch (e) { r.clients.delete(c); }
@@ -2779,14 +2792,14 @@ function broadcast(r) {
 const SAVE_VER = 1;
 // ルームのフィールド分類表。ルームに新しいキーを追加したら必ずどちらかに分類すること
 // (save_testが未分類キーを検出して失敗する)
-const ROOM_RUNTIME_KEYS = new Set(['clients', 'lastActivity', 'upgradePreview', 'botTimer', 'botActionSeq', 'ultTimer']);  // 保存しない
+const ROOM_RUNTIME_KEYS = new Set(['clients', 'lastActivity', 'upgradePreview', 'botTimer', 'botActionSeq', 'ultTimer', 'processedActions', 'turnReadyAt']);  // 保存しない
 const ROOM_PERSIST_KEYS = new Set([                                            // 保存する
   'code', 'phase', 'players', 'owners', 'deck', 'market', 'turn', 'round', 'log',
   'pending', 'titles', 'duel', 'lastBattle', 'winner', 'barrier', 'elemOv', 'tileFx',
   'curses', 'boardToken', 'atSeq', 'saveRev', 'battle', 'draft',
   'dirPend', 'halfMarket', 'shopVisit', 'effectQueue', 'effectResume', 'battleAfter',
   'lastEvent', 'lastDice', 'lastUlt', 'ultSequence', 'lastHeal', 'lastSeal', 'lastRuin', 'lastDraw', 'lastGain',
-  'lastBarrierHit', 'lastSpellFx', 'botMode',
+  'lastBarrierHit', 'lastSpellFx', 'botMode', 'presentationSpeed', 'turnEpoch', 'promptSeq', 'stateRev',
 ]);
 function serializeRoom(r) {
   const room = {};
@@ -2871,8 +2884,12 @@ function restoreRoom(save) {
   const existing = rooms.get(d.code);
   if (existing && existing.boardToken !== d.boardToken)
     return { error: `ルーム${d.code}は使用中のため復元できません(既存のルームを閉じてから再試行してください)`, status: 409 };
-  const room = Object.assign(d, { clients: new Set(), lastActivity: Date.now(), botTimer: null, botActionSeq: 0, ultTimer: null });
+  const room = Object.assign(d, { clients: new Set(), lastActivity: Date.now(), botTimer: null, botActionSeq: 0, ultTimer: null, processedActions: [] });
   if (room.botMode == null) room.botMode = false;
+  if (room.presentationSpeed !== 2) room.presentationSpeed = 1;
+  if (!Number.isInteger(room.turnEpoch)) room.turnEpoch = 0;
+  if (!Number.isInteger(room.promptSeq)) room.promptSeq = 0;
+  if (!Number.isInteger(room.stateRev)) room.stateRev = room.saveRev || 0;
   if (!Array.isArray(room.effectQueue)) room.effectQueue = [];
   if (room.effectResume == null) room.effectResume = null;
   if (room.battleAfter == null) room.battleAfter = null;
@@ -2888,8 +2905,11 @@ function restoreRoom(save) {
   if (room.shopVisit && Array.isArray(room.shopVisit.items))
     room.shopVisit.items = room.shopVisit.items.filter(item => !RETIRED_CARD_IDS.has(item.card));
   for (const pend of Object.values(room.pending || {}))
-    if (pend && Array.isArray(pend.options))
+    if (pend && Array.isArray(pend.options)) {
       pend.options = pend.options.filter(o => ![...RETIRED_CARD_IDS].some(c => o.card === c || String(o.id || '').includes(c)));
+      if (!Number.isInteger(pend.turnEpoch)) pend.turnEpoch = room.turnEpoch;
+      if (!pend.promptId) pend.promptId = `${room.turnEpoch}-${++room.promptSeq}`;
+    }
   // ここから先は失敗しない操作のみ(原子的な差し替え)
   if (existing) {
     for (const c of existing.clients) { try { c.res.end(); } catch (e) {} }
@@ -3084,9 +3104,23 @@ const server = http.createServer(async (req, res) => {
       const actor = pById(r, b.playerId);
       if (actor && actor.isBot) return json(res, { error: 'BOTは外部から操作できません' }, 403);
       const pend = r.pending[b.playerId];
+      if (!actor || !pend) return json(res, { error: 'この操作は終了しています', state: publicState(r, b.playerId) }, 409);
+      if (r.phase === 'playing' && (b.turnEpoch !== pend.turnEpoch || b.promptId !== pend.promptId))
+        return json(res, { error: '手番が更新されました', state: publicState(r, b.playerId) }, 409);
+      if (r.phase === 'playing' && (!b.actionId || (r.processedActions || []).includes(b.actionId)))
+        return json(res, { error: b.actionId ? 'この操作は処理済みです' : '操作IDがありません', state: publicState(r, b.playerId) }, 409);
+      if (!pend.options.some(o => o.id === b.optionId))
+        return json(res, { error: '選択肢が更新されました', state: publicState(r, b.playerId) }, 409);
       if (pend?.availableAt && Date.now() < pend.availableAt)
         return json(res, { error: '城の帰還演出中です' }, 425);
+      if (b.actionId) r.processedActions = [...(r.processedActions || []).slice(-99), b.actionId];
       handleChoose(r, b.playerId, b.optionId);
+    }
+    else if (b.type === 'set_presentation_speed') {
+      if (b.token !== r.boardToken) return json(res, { error: '権限がありません' }, 403);
+      if (!r.botMode) return json(res, { error: 'BOT戦でのみ変更できます' }, 409);
+      r.presentationSpeed = b.speed === 2 ? 2 : 1;
+      log(r, `BOT演出速度を${r.presentationSpeed === 2 ? '2倍' : '通常'}に変更`);
     }
     else if (b.type === 'upgrade_preview') {
       // 発注書v0.75 §6.3: 強化選択中の候補プレビュー(揮発・非保存・ルール影響なし)。

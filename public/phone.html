@@ -1060,14 +1060,17 @@ const spellArt = (c, h) => SPELL_ART.has(c)
   ? `<div class="art"${h ? ` style="height:${h}"` : ''}><img src="${spellAsset(c)}"></div>`
   : `<div class="glyph"${h ? ` style="height:${h}"` : ''}>${sic('spell', '9dvh')}</div>`;
 
-let es = null, lastMsgAt = 0;
+let es = null, lastMsgAt = 0, serverClockOffset = 0;
 function connect() {
   if (es) es.close();
   es = new EventSource('/api/events?room=' + room + '&me=' + pid);
   es.onmessage = e => {
     lastMsgAt = Date.now();
     $('connBar').style.display = 'none';
-    state = JSON.parse(e.data);
+    const next = JSON.parse(e.data);
+    if (state && next.stateRev != null && next.stateRev <= (state.stateRev || 0)) return;
+    state = next;
+    serverClockOffset = (state.serverNow || Date.now()) - Date.now();
     syncHasArt();
     render();
   };
@@ -1502,10 +1505,21 @@ function renderResult() {
   $('resultOv').classList.add('on');
 }
 $('resultBtn').onclick = () => { localStorage.removeItem('sc_session'); location.reload(); };
-const choose = optionId => fetch('/api/action', {
-  method:'POST', headers:{ 'Content-Type':'application/json' },
-  body: JSON.stringify({ room, type:'choose', playerId: pid, optionId })
-});
+const choose = async optionId => {
+  const p = pend();
+  if (!p) return;
+  const actionId = `${pid}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+  const res = await fetch('/api/action', {
+    method:'POST', headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify({ room, type:'choose', playerId:pid, optionId,
+      turnEpoch:p.turnEpoch, promptId:p.promptId, actionId })
+  });
+  if (res.status === 409) {
+    const out = await res.json();
+    if (out.state && (!state || out.state.stateRev >= (state.stateRev || 0))) { state = out.state; render(); }
+  }
+  return res;
+};
 let shopBuying = false;
 function openShopDetail(slotId) {
   const visit = state && state.shopVisit;
@@ -2242,7 +2256,7 @@ function render() {
   {
     // 即時発動スペル後は type/prompt が roll のままでも選択肢が変わる。
     // 選択肢まで状態キーへ含め、無効化済みの確認ボタンを確実に閉じる。
-    const pk = p ? p.type + '|' + p.prompt + '|' + p.options.map(o => o.id).join(',') : '';
+    const pk = p ? (p.promptId || '') + '|' + p.type + '|' + p.prompt + '|' + p.options.map(o => o.id).join(',') : '';
     if (pk !== lastPendKey) {
       lastPendKey = pk; pendSince = Date.now();
       actionSubmitting = false;
@@ -2250,30 +2264,41 @@ function render() {
       closeActionOverlay(true);
       if (mapView && p) { mapView = false; hideMapOv(); }  // 新しい選択が来たら閲覧モードを閉じる
     }
+    const promptServerNow = Date.now() + serverClockOffset;
+    if (p && p.availableAt && promptServerNow < p.availableAt) {
+      $('diceDock').innerHTML = '<div style="text-align:center"><div class="waitDots">● ● ●</div><div style="font-size:max(1.8dvh,12px);color:var(--gold-soft)">テレビ演出中</div></div>';
+      clearTimeout(moveT);
+      moveT = setTimeout(render, p.availableAt - promptServerNow + 40);
+      renderHand();
+      return;
+    }
     const ld = state.lastDice;
     if (p && ['tile', 'upgrade', 'market', 'draft', 'gate', 'forge'].includes(p.type) && ld && ld.player === pid) {
+      const speed = state.presentationSpeed === 2 && state.players.find(q => q.id === ld.player)?.isBot ? 2 : 1;
+      const scale = ms => GAME_TIMING.scaled(ms, speed);
       const GT = GAME_TIMING;  // 盤面と共有の移動タイミング(直書き禁止)
       const steps = ld.multi ? ld.multi.reduce((a, b) => a + b, 0) : ld.value;
-      const init = ld.multi ? GT.moveStartDelayMulti : GT.moveStartDelay;
-      let doneAt = ld.at + init + steps * GT.stepMs + GT.arriveBuf;
+      const init = scale(ld.multi ? GT.moveStartDelayMulti : GT.moveStartDelay);
+      let doneAt = ld.at + init + steps * scale(GT.stepMs) + scale(GT.arriveBuf);
       if (ld.castle && p.type !== 'draft') {
         // 城演出／ドラフト後の到着: 城以降の残り歩数を進む
         const castleAt = ld.castle.availableAt || pendSince;
         const remaining = Math.max(0, steps - (ld.castle.castleStep || 0));
-        doneAt = castleAt + GT.castleResume + remaining * GT.stepMs + GT.arriveBufCastle;
+        doneAt = castleAt + scale(GT.castleResume) + remaining * scale(GT.stepMs) + scale(GT.arriveBufCastle);
       }
       if (p.type === 'draft' && ld.castle) {
         // 城ドラフトはズームと内訳表示が終わってから表示する
         doneAt = p.availableAt || ld.castle.availableAt ||
-          ld.at + init + (ld.castle.castleStep || steps) * GT.stepMs + GT.castleDraftLead;
+          ld.at + init + (ld.castle.castleStep || steps) * scale(GT.stepMs) + scale(GT.castleDraftLead);
       }
       // サーバーとの時計ズレで「移動中…」から抜けなくなるのを防ぐ(最大8秒で強制解除)
       doneAt = Math.min(doneAt, pendSince + GT.moveWaitMax);
-      if (Date.now() < doneAt) {
+      const serverNow = Date.now() + serverClockOffset;
+      if (serverNow < doneAt) {
         $('diceDock').innerHTML = '<div style="text-align:center"><div class="waitDots">● ● ●</div><div style="font-size:max(1.8dvh,12px);color:var(--gold-soft)">移動中</div></div>';
         $('shopScene').classList.remove('on');
         clearTimeout(moveT);
-        moveT = setTimeout(render, doneAt - Date.now() + 40);
+        moveT = setTimeout(render, doneAt - serverNow + 40);
         renderHand();
         return;
       }
