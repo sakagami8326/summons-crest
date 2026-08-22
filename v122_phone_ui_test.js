@@ -31,9 +31,10 @@ for (const type of ['creatureCard', 'spellCard', 'supportCard']) {
   const re = new RegExp('\\.' + type + ' \\.ccCost\\s*\\{[^}]*z-index:20[^}]*top:62\\.8%');
   if (!re.test(css)) throw new Error(`コスト表示検査: ${type}の位置またはレイヤーが不正`);
 }
-if (!/const canUlt = !!\([\s\S]*?\$\('ultBtn'\)\.disabled = !canUlt/.test(phone) ||
-    !/#ultBtn:disabled\s*\{/.test(css))
-  throw new Error('必殺技状態検査: 常時配置または使用不可時の無効化がない');
+if (!/const ultStatus = m\.ultimateStatus/.test(phone) ||
+    !/\$\('ultBtn'\)\.disabled = false/.test(phone) ||
+    !/\$\('ultActivate'\)\.disabled = !us\.canActivate/.test(phone))
+  throw new Error('必殺技状態検査: 詳細は常時開き、発動だけを無効化する制御がない');
 
 let source = server.replace(/server\.listen\([\s\S]*?\}\);\s*$/, '');
 const internals = new Function('require', '__dirname', 'process', 'console', 'setInterval',

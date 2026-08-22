@@ -18,6 +18,15 @@
   .shadow { position:absolute; transform:translate(-50%,-50%); width:64px; height:20px;
             background:radial-gradient(ellipse, rgba(0,0,0,.45), transparent 70%); border-radius:50%; }
   .pawnEl { transition:left .5s ease, top .5s ease; }
+  .pawnEl.activeTurn img { transform:scale(1.12); filter:drop-shadow(0 0 8px #F2D062); }
+  .pawnTurnTag { position:absolute; left:50%; bottom:calc(100% + 12px); transform:translateX(-50%);
+      padding:3px 9px; border:1px solid #F2D062; border-radius:5px; background:#101028;
+      color:#FFF4C1; font:700 11px Georgia,serif; letter-spacing:1px; box-shadow:0 0 10px rgba(242,208,98,.7); }
+  .pawnTurnTag::after { content:""; position:absolute; left:50%; top:100%; transform:translateX(-50%);
+      border:5px solid transparent; border-top-color:#F2D062; }
+  #phaserHost { left:var(--board-safe-left,0px)!important; top:var(--board-safe-top,0px)!important;
+      right:var(--board-safe-right,0px)!important; bottom:var(--board-safe-bottom,0px)!important;
+      transition:left .25s ease,top .25s ease,right .25s ease,bottom .25s ease; }
   .tok { width:64px; height:64px; border-radius:50%; border:3px solid #2C2A4A; color:#F6EFDD;
          display:flex; align-items:center; justify-content:center; font-size:20px; letter-spacing:1px;
          text-shadow:0 1px 2px rgba(0,0,0,.6); box-shadow:0 3px 6px rgba(0,0,0,.4); }
@@ -192,6 +201,12 @@
       -webkit-box-orient:vertical; -webkit-line-clamp:5; overflow:hidden; }
   .bdMods { margin-top:1vh; padding:.8vh .65vw; background:rgba(255,255,255,.055); color:#d9ecff; font:700 1.35vh/1.5 sans-serif; }
   .bdMods span { display:block; }
+  .bdAbility.effect-active { border-color:#F2D062; box-shadow:inset .22vw 0 0 #F2D062; padding-left:.65vw; }
+  .bdAbility.effect-conditional { border-color:rgba(108,190,238,.62); }
+  .bdAbility.effect-inactive { filter:grayscale(1); opacity:.38; border-color:rgba(210,210,210,.28); }
+  .effectStateTag { display:inline-block; margin-left:.45vw; padding:.15vh .45vw; border:1px solid currentColor;
+      border-radius:999px; font:700 1.05vh/1.2 sans-serif; letter-spacing:.04em; vertical-align:.15vh; }
+  .effectReason { display:block; margin-top:.35vh; color:#c8d0d8; font:700 1.05vh/1.3 sans-serif; }
   .bsOwner,.bsCreature { display:none; }
   .bsValues { display:none; }
   .def .bsValues { justify-content:center; }
@@ -227,14 +242,30 @@
   .battleDfLabels { display:grid; grid-template-columns:minmax(8rem,1fr) 2.4ch 5.6vh 2.4ch minmax(8rem,1fr);
       margin-top:-.25vh; color:#65c7ff; font:700 1.45vh/1.2 Marudeco,sans-serif; text-shadow:0 1px 4px #001225; }
   #bCmpAtkDf { grid-column:1; justify-self:center; } #bCmpDefDf { grid-column:5; justify-self:center; }
-  .battleTerrain { display:flex; align-items:center; justify-content:center; gap:.7vw; width:18vh; min-height:3.5vh;
-      margin:.25vh auto 0; padding:0 1.2vh; box-sizing:border-box; border-radius:999px;
+  .battleTerrain { display:grid; grid-template-columns:5.1vh 1fr auto; align-items:center; gap:.75vh; width:36vh; min-height:7.2vh;
+      margin:.25vh auto 0; padding:.65vh 1.1vh; box-sizing:border-box; border-radius:1.2vh;
       border:1px solid color-mix(in srgb,var(--terrain-color,#777) 75%,#fff); color:#fff8e5;
       background:linear-gradient(90deg,color-mix(in srgb,var(--terrain-color,#777) 35%,#080818),color-mix(in srgb,var(--terrain-color,#777) 72%,#101020),color-mix(in srgb,var(--terrain-color,#777) 35%,#080818));
       box-shadow:0 0 1.2vh color-mix(in srgb,var(--terrain-color,#777) 42%,transparent);
-      font:700 1.5vh/1 Marudeco,sans-serif; letter-spacing:.08em; }
-  #bCmpTerrain { width:3.2vh; height:3.2vh; filter:drop-shadow(0 1px 3px #000); }
+      font:700 1.35vh/1.15 Marudeco,sans-serif; letter-spacing:.04em; }
+  #bCmpTerrain { width:4.8vh; height:4.8vh; padding:.45vh; border:1px solid rgba(255,255,255,.55);
+      border-radius:50%; filter:drop-shadow(0 1px 3px #000); }
   #bCmpTerrain svg { display:block; width:100%; height:100%; overflow:visible; }
+  .territoryMeta { min-width:0; display:grid; gap:.4vh; }
+  .territoryTitle { display:flex; align-items:center; gap:.45vh; white-space:nowrap; color:#fff8df; }
+  #bLandCreature { width:2.2vh; height:2.2vh; display:inline-grid; place-items:center; opacity:.94; }
+  #bLandCreature svg { width:100%; height:100%; }
+  #bLandLink { color:#F2D062; } #bLandLink.mismatch { color:#9aa0aa; }
+  .landPips { display:flex; align-items:center; gap:.55vh; }
+  .landPips i { width:1.15vh; height:1.15vh; transform:rotate(45deg); border:1px solid rgba(255,255,255,.5); background:rgba(0,0,0,.35); }
+  .landPips i.on { background:#F2D062; border-color:#fff0ad; box-shadow:0 0 .6vh #F2D062; }
+  #bLandFormula { color:#dce7ed; font:700 1.05vh/1.2 sans-serif; white-space:nowrap; }
+  #bLandFormula.inactive { color:#9aa0aa; text-decoration:line-through; }
+  .landShield { position:relative; min-width:7.2vh; min-height:5.5vh; display:grid; place-items:center; text-align:center;
+      padding:.5vh .65vh 1vh; color:#fff6c9; background:linear-gradient(160deg,#93701b,#2d2548 68%);
+      clip-path:polygon(50% 0,93% 17%,84% 75%,50% 100%,16% 75%,7% 17%); text-shadow:0 1px 4px #000; }
+  .landShield small { display:block; font-size:.85vh; color:#e7dcae; } .landShield b { display:block; font-size:1.75vh; }
+  .landShield.inactive { filter:grayscale(1); opacity:.58; }
   .supportRevealStage { position:fixed; inset:0; z-index:79; display:grid; place-items:center; pointer-events:none;
       background:radial-gradient(circle,rgba(245,217,117,.2),rgba(8,5,20,.72) 55%,transparent 75%); animation:supportStageIn .25s ease both; }
   .supportRevealStage .scardB { width:28vh; height:40.4vh; filter:drop-shadow(0 2vh 3vh rgba(0,0,0,.85)); }
@@ -626,19 +657,40 @@
   #tileInfo .tiHp small { font-size:1.4vh; color:rgba(241,232,208,.6); }
   #tileInfo .tiCurse { color:#B77CD8; font-size:1.7vh; }
   #tileInfo .tiFx { font-size:1.55vh; color:var(--gold-soft); margin-top:.5vh; line-height:1.5; }
+  #tileInfo .tiFx.effect-inactive { color:#a8a8ad; opacity:.4; filter:grayscale(1); }
+  #tileInfo .tiFx.effect-conditional { color:#b9dcf2; }
+  #tileInfo .tiFx small { display:block; font:700 1.15vh/1.3 sans-serif; color:inherit; }
+  .tiAffinity { margin:.8vh 0; padding:.65vh .65vw; display:grid; grid-template-columns:1fr auto 1fr;
+      align-items:center; gap:.5vw; border:1px solid rgba(255,255,255,.16); border-radius:.8vh;
+      background:rgba(0,0,0,.26); }
+  .tiAffinityNode { display:flex; align-items:center; justify-content:center; gap:.35vw; font:700 1.2vh/1.2 sans-serif; }
+  .tiAffinityNode svg { width:2.4vh; height:2.4vh; }
+  .tiAffinityLink { text-align:center; color:#F2D062; font:700 1.25vh/1.2 sans-serif; }
+  .tiAffinity.mismatch { filter:grayscale(1); opacity:.62; }
+  .tiAffinityBonus { grid-column:1/-1; text-align:center; color:#fff0a8; font:700 1.35vh/1.2 sans-serif; }
   #tileInfo .tiSoul { margin:.7vh auto 0; padding:.5vh .8vw; border:1px solid rgba(92,230,174,.55);
       border-radius:.7vh; color:#b9ffe2; background:rgba(15,78,61,.34); font:700 1.5vh/1.45 sans-serif; }
   #tileInfo .tiToll { font-size:1.9vh; color:var(--parchment); margin-top:.8vh;
       background:rgba(0,0,0,.35); border-radius:999px; padding:.3vh 1vw; display:inline-block; }
   #tileInfo .tiDesc { font-size:2vh; line-height:1.8; color:var(--parchment); }
   #tileInfo .tiSub { font-size:1.5vh; color:rgba(241,232,208,.6); margin-top:1vh; }
-  #turnPortrait { position:fixed; right:10px; bottom:0; z-index:32; pointer-events:none;
-      text-align:center; transition:opacity .4s; opacity:0; }
-  #turnPortrait.show { opacity:1; }
-  #turnPortrait img { height:42vh; filter:drop-shadow(0 0 16px rgba(0,0,0,.6)); }
-  #turnPortrait .tpn { position:absolute; left:50%; bottom:2.6vh; font-size:2.3vh !important; transform:translateX(-50%);
-      background:rgba(16,13,36,.85); border:1px solid var(--gold); border-radius:999px;
-      padding:.5vh 2.4vh; font-size:1.9vh; letter-spacing:2px; color:var(--gold-soft); white-space:nowrap; }
+  /* 左下情報レール: ログとテレビ用操作を一つの面にまとめる。 */
+  #leftUtility { position:fixed; left:18px; bottom:14px; z-index:35; width:328px;
+      max-width:calc(100vw - 36px); border:1px solid rgba(201,162,39,.42); border-radius:10px;
+      color:rgba(241,232,208,.92); background:linear-gradient(180deg,rgba(16,13,36,.9),rgba(9,8,24,.94));
+      box-shadow:0 8px 24px rgba(0,0,0,.35); overflow:visible; }
+  #ticker { max-height:min(25vh,190px); min-height:46px; overflow:hidden; padding:9px 12px 7px;
+      font-size:clamp(10px,.8vw,12px); letter-spacing:.7px; line-height:1.55; overflow-wrap:anywhere; }
+  #utilityFooter { min-height:35px; display:flex; align-items:center; gap:7px; padding:6px 8px;
+      border-top:1px solid rgba(201,162,39,.28); background:rgba(4,5,16,.28); border-radius:0 0 9px 9px; }
+  #optBtn,#bgmBtn { flex:none; min-height:24px; padding:3px 9px; border-radius:6px; cursor:pointer;
+      background:rgba(16,13,36,.72); border:1px solid rgba(201,162,39,.55); color:var(--gold-soft);
+      font-size:11px; letter-spacing:.7px; }
+  #verTag { margin-left:auto; font-size:9.5px; color:rgba(241,232,208,.46); letter-spacing:.6px; white-space:nowrap; }
+  #optMenu { display:none; position:absolute; left:calc(100% + 10px); bottom:0; z-index:75;
+      background:rgba(16,13,36,.98); border:1px solid var(--gold); border-radius:12px;
+      padding:16px; flex-direction:column; gap:10px; min-width:280px; align-items:center;
+      box-shadow:0 12px 30px rgba(0,0,0,.5); }
   .plate { height:80px !important; }
   .plate .row3 { display:flex; gap:10px; margin:2px 0 0 58px; font-size:11px; font-family:sans-serif; }
   #titleOv { z-index:95; overflow:hidden; gap:1.5vh; color:#172139;
@@ -707,14 +759,6 @@
   #titleSoundToggle { border:1px solid #9f7a31; background:#f4e8c9; color:#352914; padding:.6vh 1.4vw;
       cursor:pointer; font-weight:700; }
 
-  /* 実況吹き出し(手番立ち絵の横) */
-  #tpBubble { position:fixed; right:calc(12px + 22vh); bottom:26vh; z-index:33; max-width:300px;
-      background:var(--parchment); color:#3A2B18; font-size:1.9vh; letter-spacing:1px;
-      padding:1.2vh 2vh; border-radius:1.4vh; border:2px solid #8A6A1E;
-      box-shadow:0 3px 10px rgba(0,0,0,.5); opacity:0; transition:opacity .3s; pointer-events:none; }
-  #tpBubble.show { opacity:1; }
-  #tpBubble::after { content:""; position:absolute; right:-14px; bottom:22%;
-      border:10px solid transparent; border-left-color:var(--parchment); }
   /* マスの吹き出し */
   .callout { position:absolute; transform:translate(-50%,-100%); z-index:400; max-width:280px;
       background:var(--parchment); color:#3A2B18; font-size:14px; letter-spacing:1px;
@@ -795,31 +839,32 @@
   #summonCut.on #scText { animation:scText .45s ease .32s backwards; }
   @keyframes scText { from { transform:translateY(28px); opacity:0; } }
   /* TV HUD: 胸上の召喚士を前面に出した横長プレート */
-  #hud { top:40px !important; left:30px !important; width:456px !important; }
-  .plate { width:456px !important; height:114px !important; padding:13px 18px 11px 20px !important;
+  #hud { top:24px !important; left:18px !important; width:400px !important;
+      transform:scale(.82); transform-origin:top left; }
+  .plate { width:400px !important; height:96px !important; padding:11px 15px 9px 17px !important;
       isolation:isolate; overflow:hidden; }
   .plate::before { content:""; position:absolute; z-index:-1; inset:0; pointer-events:none;
       border:1px solid rgba(255,255,255,.42); border-left:5px solid var(--hud-color,#C9A227);
       border-radius:12px; box-shadow:inset 0 0 24px rgba(255,255,255,.08); }
-  .plate::after { content:""; position:absolute; z-index:-1; right:6px; top:5px; width:118px; height:100px;
+  .plate::after { content:""; position:absolute; z-index:-1; right:6px; top:5px; width:102px; height:84px;
       opacity:.17; pointer-events:none; border-radius:50%;
       background:repeating-conic-gradient(from 8deg,var(--hud-color,#C9A227) 0 1.2deg,transparent 1.2deg 18deg);
       -webkit-mask:radial-gradient(circle,transparent 0 42%,#000 43% 45%,transparent 46% 60%,#000 61% 63%,transparent 64%);
       mask:radial-gradient(circle,transparent 0 42%,#000 43% 45%,transparent 46% 60%,#000 61% 63%,transparent 64%); }
-  .hudPortrait { position:absolute; z-index:2; left:0; bottom:0; width:146px; height:114px;
+  .hudPortrait { position:absolute; z-index:2; left:0; bottom:0; width:124px; height:96px;
       overflow:hidden; pointer-events:none; border-radius:11px 0 0 11px; }
   .hudBust { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:center bottom;
       transform:translateY(2px);
       filter:drop-shadow(0 3px 6px rgba(0,0,0,.7)); }
   .hudBust.fallback { inset:8px; width:calc(100% - 16px); height:calc(100% - 16px); border-radius:12px; }
-  .plate .row1 { position:relative; z-index:3; margin-left:126px !important; }
-  .plate .pname { font-size:18px !important; }
-  .plate .pts { font-size:31px !important; letter-spacing:0; white-space:nowrap; }
-  .plate .row2 { position:relative; z-index:3; margin-left:134px !important; font-size:13px !important;
-      gap:10px !important; margin-top:7px !important; white-space:nowrap; overflow:hidden; }
-  .plate .row3 { position:relative; z-index:3; margin-left:138px !important; gap:8px !important; margin-top:7px !important; }
-  .plate .ic img { width:18px !important; height:18px !important; }
-  .ebadge { min-width:48px !important; height:26px !important; font-size:14px !important; }
+  .plate .row1 { position:relative; z-index:3; margin-left:107px !important; }
+  .plate .pname { font-size:16px !important; }
+  .plate .pts { font-size:27px !important; letter-spacing:0; white-space:nowrap; }
+  .plate .row2 { position:relative; z-index:3; margin-left:114px !important; font-size:11.5px !important;
+      gap:7px !important; margin-top:5px !important; white-space:nowrap; overflow:hidden; }
+  .plate .row3 { position:relative; z-index:3; margin-left:117px !important; gap:5px !important; margin-top:5px !important; }
+  .plate .ic img { width:15px !important; height:15px !important; }
+  .ebadge { min-width:42px !important; height:22px !important; font-size:12px !important; }
   .plate { background-image:linear-gradient(90deg,rgba(5,9,19,.35) 0 29%,rgba(8,12,28,.9) 35%,rgba(8,12,28,.7)),var(--hud-bg) !important;
       background-position:center !important; background-size:cover !important; border:0;
       border-radius:12px; color:#fff7df !important; box-shadow:0 7px 20px rgba(0,0,0,.42); }
@@ -830,7 +875,12 @@
   .plate .pts { color:#fff7df !important; text-shadow:0 2px 6px rgba(0,0,0,.9) !important; }
   .plate .pts small,.plate .row2 { color:rgba(255,247,223,.9) !important; text-shadow:0 1px 4px rgba(0,0,0,.9); }
   @media (max-width:1400px), (max-height:800px) {
-    #hud { transform:scale(.84); transform-origin:top left; }
+    #hud { top:18px !important; left:14px !important; transform:scale(.74); }
+    #leftUtility { left:14px; bottom:10px; width:296px; }
+    #ticker { max-height:min(25vh,158px); min-height:40px; padding:7px 10px 6px; }
+    #utilityFooter { min-height:32px; padding:5px 7px; gap:5px; }
+    #optBtn,#bgmBtn { min-height:22px; padding:2px 7px; font-size:10px; }
+    #verTag { font-size:8.5px; }
   }
   .titleChip { display:inline-block; background:linear-gradient(180deg,#E8C55A,#B8901F); color:#241C05;
       border-radius:4px; font-size:11px; padding:1px 6px; margin-left:4px; vertical-align:1px; font-family:sans-serif; }
@@ -1079,27 +1129,6 @@
   <div id="connBar" style="display:none; position:fixed; top:0; left:50%; transform:translateX(-50%);
     z-index:98; background:#5A1512; color:#F5B0A5; font-size:14px; letter-spacing:2px;
     padding:6px 26px; border-radius:0 0 10px 10px; border:1px solid #E86A5A; border-top:0;">再接続中…</div>
-  <button id="bgmBtn" style="display:none; position:fixed; left:10px; bottom:28px; z-index:20;
-    background:rgba(16,13,36,.7); border:1px solid rgba(201,162,39,.5); color:rgba(241,232,208,.8);
-    border-radius:7px; font-family:inherit; font-size:12px; padding:4px 10px; cursor:pointer;">♪ ON</button>
-  <div id="verTag" style="position:fixed; left:10px; bottom:8px; z-index:20; font-size:11px; color:rgba(241,232,208,.45); letter-spacing:1px;"></div>
-  <button id="optBtn" style="display:none; position:fixed; left:10px; bottom:64px; z-index:20;
-    font-family:inherit; font-size:13px; letter-spacing:1px; padding:6px 14px;
-    background:rgba(16,13,36,.8); color:var(--gold-soft); border:1px solid rgba(201,162,39,.6);
-    border-radius:8px; cursor:pointer;">オプション</button>
-  <div id="optMenu" style="display:none; position:fixed; left:10px; bottom:100px; z-index:75;
-    background:rgba(16,13,36,.96); border:1px solid var(--gold); border-radius:12px;
-    padding:16px; flex-direction:column; gap:10px; min-width:250px; align-items:center;">
-    <div style="font-size:12px; color:rgba(241,232,208,.7); letter-spacing:2px;">ルームコード ─ スマホで参加/復帰</div>
-    <div id="optCode" style="font-size:30px; letter-spacing:8px; color:var(--gold-soft);
-      font-family:'Reggae One','Yu Mincho',serif; text-shadow:0 0 10px rgba(242,208,98,.4);"></div>
-    <div id="optQr"></div>
-    <div id="optPhoneUrl" style="font-size:11px; color:rgba(241,232,208,.6); letter-spacing:1px;"></div>
-    <button class="saveSmall" id="optSaveQuit" style="font-size:15px; padding:10px 18px; width:100%;">セーブして終了</button>
-    <button class="saveSmall" id="optBotSpeed" style="width:100%; display:none;">BOT演出速度: 通常</button>
-    <div id="optMsg" style="font-size:12px; color:rgba(241,232,208,.7); min-height:1.1em;"></div>
-    <button class="saveSmall" id="optClose" style="width:100%;">閉じる</button>
-  </div>
   <div id="phaserHost" style="position:fixed; inset:0; z-index:0; pointer-events:none;"></div>
   <div id="renderError" style="display:none; position:fixed; inset:0; z-index:120; background:#0d1020;
     color:#f5e6bd; align-items:center; justify-content:center; text-align:center; padding:32px;">
@@ -1121,8 +1150,6 @@
   <div id="centerBanner"></div>
   <div id="castleBreakdown"><div class="castlePanel" id="castlePanel"></div></div>
   <div id="tileMsg"></div>
-  <div id="tpBubble"></div>
-  <div id="turnPortrait"><img id="tpImg"><div class="tpn" id="tpName"></div></div>
   <div class="overlay on" id="titleOv">
     <div class="titleCards" aria-hidden="true">
       <div class="titleCardSlot"><div class="titleCardShadow"></div><div class="titleCard"><img class="titleCardBg" src="/assets/cards/bg-water.webp"><img class="titleCardArt" src="/assets/cards/c_cresteria.webp"></div></div>
@@ -1158,10 +1185,25 @@
       <p class="hint">テレビ／大画面で開き、スマホから参加します</p>
     </div>
   </div>
-  <div id="ticker" style="position:fixed; right:16px; top:80px; z-index:35; width:340px;
-    font-size:12.5px; letter-spacing:1px; color:rgba(241,232,208,.9);
-    background:rgba(16,13,36,.7); border:1px solid rgba(201,162,39,.4); border-radius:8px;
-    padding:8px 14px; line-height:1.8;"></div>
+  <div id="leftUtility">
+    <div id="ticker" aria-live="polite"></div>
+    <div id="utilityFooter">
+      <button id="optBtn" style="display:none;">設定</button>
+      <button id="bgmBtn" style="display:none;">♪ ON</button>
+      <div id="verTag"></div>
+    </div>
+    <div id="optMenu">
+      <div style="font-size:12px; color:rgba(241,232,208,.7); letter-spacing:2px;">ルームコード ─ スマホで参加/復帰</div>
+      <div id="optCode" style="font-size:30px; letter-spacing:8px; color:var(--gold-soft);
+        font-family:'Reggae One','Yu Mincho',serif; text-shadow:0 0 10px rgba(242,208,98,.4);"></div>
+      <div id="optQr"></div>
+      <div id="optPhoneUrl" style="font-size:11px; color:rgba(241,232,208,.6); letter-spacing:1px;"></div>
+      <button class="saveSmall" id="optSaveQuit" style="font-size:15px; padding:10px 18px; width:100%;">セーブして終了</button>
+      <button class="saveSmall" id="optBotSpeed" style="width:100%; display:none;">BOT演出速度: 通常</button>
+      <div id="optMsg" style="font-size:12px; color:rgba(241,232,208,.7); min-height:1.1em;"></div>
+      <button class="saveSmall" id="optClose" style="width:100%;">閉じる</button>
+    </div>
+  </div>
 
   <div class="overlay on" id="lobby">
     <p class="hint">QRを読み取り、名前を入力して参加　<span style="opacity:.72">直接開く場合はルームコードを入力</span><br><b id="phoneUrl">…</b></p>
@@ -1226,7 +1268,12 @@
         <div class="battleCompareRow"><div id="bCmpAtkAtBar" class="battleCompareBar"></div><b id="bCmpAtkAt">―</b><img src="/assets/cards/stat-at-icon.svg" alt="AT"><b id="bCmpDefAt">―</b><div id="bCmpDefAtBar" class="battleCompareBar"></div></div>
         <div class="battleCompareRow"><div id="bCmpAtkHpBar" class="battleCompareBar"></div><b id="bCmpAtkHp">―</b><img src="/assets/cards/stat-hp-icon.svg" alt="HP"><b id="bCmpDefHp">―</b><div id="bCmpDefHpBar" class="battleCompareBar"></div></div>
         <div class="battleDfLabels"><span id="bCmpAtkDf"></span><span id="bCmpDefDf"></span></div>
-        <div class="battleTerrain"><span>領地の属性</span><span id="bCmpTerrain" aria-label="防衛領地属性"></span></div>
+        <div class="battleTerrain" aria-label="防衛領地のレベルと領地ボーナス">
+          <span id="bCmpTerrain" aria-label="防衛領地属性"></span>
+          <div class="territoryMeta"><div class="territoryTitle"><span>領地</span><span id="bLandLink">↔</span><span id="bLandCreature"></span><b id="bLandAffinity"></b></div>
+            <div class="landPips" id="bLandLevelPips"></div><div id="bLandFormula"></div></div>
+          <div class="landShield" id="bLandBonus"><span><small>領地BONUS</small><b>+0 DF</b></span></div>
+        </div>
       </div>
     </div>
     <div id="battleFooter"><div id="bcap"></div><div id="bnotes"></div></div>
@@ -1445,7 +1492,7 @@ function showCastleBreakdown(ev) {
       ? `マス${h + 1}：負傷 -10`
       : `マス${h.tile + 1}　${h.creature}：負傷 ${h.before} → ${h.after}`).join('<br>');
     panel.innerHTML = `<div class="castleTitle">城への帰還ボーナス</div>
-      <div class="castleLine"><span>帰還ボーナス</span><b>+${ev.baseBonus ?? ev.gold ?? 200}G</b></div>
+      <div class="castleLine"><span>周回ボーナス</span><b>${ev.completedLaps ?? Math.max(1, Math.round((ev.baseBonus || ev.gold || 100) / (ev.bonusPerLap || 100)))}周 × ${ev.bonusPerLap || 100}G = +${ev.baseBonus ?? ev.gold ?? 100}G</b></div>
       <div class="castleLine"><span>領地総価値</span><b>${ev.landValue ?? 0}G</b></div>
       <div class="castleLine"><span>領地ボーナス</span><b>${ev.landValue ?? 0}G × ${Math.round((ev.landRate ?? .2) * 100)}% = +${ev.landBonus ?? 0}G</b></div>
       <div class="castleLine total"><span>今回の獲得合計</span><b>+${ev.total ?? ((ev.gold || 0) + (ev.landBonus || 0))}G</b></div>
@@ -2178,8 +2225,30 @@ async function restoreFromSave(meta) {
     } catch (err) { $('saveMsg').textContent = 'ファイルを読み込めませんでした'; }
   };
 })();
+let lastBoardSafeKey = '';
 function fitWorld() {
-  const s = Math.min(innerWidth / 1310, (innerHeight - 16) / 960, 1);
+  const hud = $('hud');
+  const showHud = state && (state.phase === 'playing' || state.phase === 'ended') && hud && hud.children.length;
+  const hudRect = showHud ? hud.getBoundingClientRect() : null;
+  const utilityRect = showHud ? $('leftUtility').getBoundingClientRect() : null;
+  const railRight = showHud ? Math.max(hudRect.right, utilityRect.right) : 0;
+  const safeLeft = showHud ? Math.min(Math.ceil(railRight + 12), Math.floor(innerWidth * .32)) : 0;
+  const safeTop = showHud ? 8 : 0;
+  const safeRight = showHud ? 8 : 0;
+  const safeBottom = showHud ? 8 : 0;
+  const safeKey = [safeLeft, safeTop, safeRight, safeBottom].join(':');
+  if (safeKey !== lastBoardSafeKey) {
+    lastBoardSafeKey = safeKey;
+    document.documentElement.style.setProperty('--board-safe-left', safeLeft + 'px');
+    document.documentElement.style.setProperty('--board-safe-top', safeTop + 'px');
+    document.documentElement.style.setProperty('--board-safe-right', safeRight + 'px');
+    document.documentElement.style.setProperty('--board-safe-bottom', safeBottom + 'px');
+    $('world').style.left = (safeLeft + (innerWidth - safeLeft - safeRight) / 2) + 'px';
+    $('world').style.top = safeTop + 'px';
+    if (window.PW && PW.resize) requestAnimationFrame(() => PW.resize());
+  }
+  const s = Math.min((innerWidth - safeLeft - safeRight) / 1310,
+    (innerHeight - safeTop - safeBottom) / 960, 1);
   worldFit = s;
   applyZoom();
 }
@@ -2464,6 +2533,27 @@ function resetPresentationCamera(reason) {
   setZoom(null);
   if (reason) console.debug('camera reset:', reason);
 }
+function elemMark(elem, label) {
+  return elem && ELEM[elem]
+    ? `<svg viewBox="-34 -36 68 72" aria-label="${label || elem}">${ELEM[elem]}</svg>`
+    : '<span aria-label="全属性">◇</span>';
+}
+function affinityHTML(ui) {
+  if (!ui) return '';
+  const EJA = { fire:'火',water:'水',earth:'土',wind:'風',neutral:'全' };
+  const mismatch = ui.affinity === 'mismatch';
+  const affinity = ui.affinity === 'universal' ? '適応' : mismatch ? '不一致' : '一致';
+  return `<div class="tiAffinity ${mismatch ? 'mismatch' : ''}">
+    <div class="tiAffinityNode">${elemMark(ui.tileElem, '領地属性')}<span>領地・${EJA[ui.tileElem] || ''}</span></div>
+    <div class="tiAffinityLink">${mismatch ? '≠' : '＝'}<br>${affinity}</div>
+    <div class="tiAffinityNode">${elemMark(ui.creatureElem, 'クリーチャー属性')}<span>召喚獣・${EJA[ui.creatureElem] || '全'}</span></div>
+    <div class="tiAffinityBonus">領地BONUS ${ui.appliedBonus ? `+${ui.appliedBonus} DF` : '+0'}</div></div>`;
+}
+function effectStateClass(effect) { return effect ? `effect-${effect.state || 'conditional'}` : ''; }
+function effectStateLabel(effect) {
+  if (!effect) return '';
+  return effect.state === 'active' ? '発動' : effect.state === 'inactive' ? '不発動' : '条件成立時';
+}
 function tileInfoHTML(i) {
   const t = state.tiles[i], o = state.owners[i], C = state.catalog;
   const EJA = { fire: '火', water: '水', earth: '土', wind: '風' };
@@ -2480,6 +2570,8 @@ function tileInfoHTML(i) {
   const hp = evolved && cr.evoHp ? cr.evoHp : cr.hp;
   const soulCount = o.creature.replace(/_f$/, '') === 'alter' ? Number(pl.exileCount || 0) : null;
   const curse = state.curses && state.curses[i];
+  const combatUi = state.landCombat && state.landCombat[i];
+  const effect = combatUi && combatUi.effect;
   const dmg = o.dmg || 0;
   const toll = o.level * chain(o.player, t.e) * 30 * (o.creature.replace(/_f$/, '') === 'orphe' ? 1.2 : 1);
   return `<div class="tiHead">${eBadge}<span style="color:${pl.color}">${pl.name}</span>の領地 Lv${o.level}</div>
@@ -2487,13 +2579,15 @@ function tileInfoHTML(i) {
       <img class="tiChar" src="/assets/full_${pl.charId}.png">
       <div class="tiCre">${artHTML(o.creature, o.level, 92)}
         <div class="tiCreName">${cname(o.creature, o.level)}</div>
-        <div class="tiHp"><img class="inlineStatSymbol" src="/assets/cards/stat-hp-icon.svg" alt="">HP ${hp}${dmg ? `<span class="tiCurse"> −負傷${dmg}</span>` : ''}${curse ? `<span class="tiCurse"> −呪い${curse.hp}</span>` : ''} <small>+地形補正</small></div>
+        <div class="tiHp"><img class="inlineStatSymbol" src="/assets/cards/stat-hp-icon.svg" alt="">HP ${hp}${dmg ? `<span class="tiCurse"> −負傷${dmg}</span>` : ''}${curse ? `<span class="tiCurse"> −呪い${curse.hp}</span>` : ''}</div>
+        ${affinityHTML(combatUi)}
         ${(() => { const fx = (state.tileFx || {})[i]; if (!fx) return '';
           const b2 = [];
           if (fx.vortex) b2.push('炎の渦(侵略者AT+10)');
           if (fx.uplift) b2.push('リストア(防衛DF+10)');
           return b2.length ? `<div class="tiSub" style="color:#F2D062">${b2.join(' / ')}</div>` : ''; })()}
-        ${cr.fx ? `<div class="tiFx">${cr.fx}</div>` : ''}
+        ${(evolved ? (cr.evoFx || cr.fx) : cr.fx) ? `<div class="tiFx ${effectStateClass(effect)}">${evolved ? (cr.evoFx || cr.fx) : cr.fx}
+          ${effect ? `<small>${effectStateLabel(effect)}${effect.reason ? ` ─ ${effect.reason}` : ''}</small>` : ''}</div>` : ''}
         ${soulCount !== null ? `<div class="tiSoul">廃棄札 ${soulCount}枚<br>【魂喰らい】DF +${soulCount * 5}</div>` : ''}
         <div class="tiToll">通行料 ${Math.round(toll)}G</div>
       </div>
@@ -2753,8 +2847,9 @@ function pawnLayout() {
     const o = state.owners[pp];
     const lift = o ? (o.level - 1) * 7 : 0;
     const { x, y } = proj(GEO[pp][0], GEO[pp][1]);
-    return { id: p.id, charId: p.charId, x: x + dx, y: y - lift + dy, w,
-             z: GEO[pp][0] + GEO[pp][1] + 102 + (dy > 8 ? 1 : 0),
+    const active = state.phase === 'playing' && state.players[state.turn] && state.players[state.turn].id === p.id;
+    return { id: p.id, charId: p.charId, color: p.color, active, x: x + dx, y: y - lift + dy, w,
+             z: GEO[pp][0] + GEO[pp][1] + 102 + (dy > 8 ? 1 : 0) + (active ? 20 : 0),
              zs: GEO[pp][0] + GEO[pp][1] + 100 };
   });
 }
@@ -2773,7 +2868,8 @@ function renderPawnsDom(layout) {
       el = document.createElement('div'); el.className = 'sprite pawnEl'; el.id = 'pw-' + it.id;
       layer.appendChild(el);
     }
-    el.innerHTML = it.charId ? `<img src="/assets/p_${it.charId}.png" width="${it.w}" style="display:block">` : '';
+    el.innerHTML = it.charId ? `<img src="/assets/p_${it.charId}.png" width="${it.w}" style="display:block">${it.active ? '<span class="pawnTurnTag">TURN</span>' : ''}` : '';
+    el.classList.toggle('activeTurn', !!it.active);
     el.style.left = it.x + 'px'; el.style.top = it.y + 'px';
     el.style.zIndex = it.z;
     sh.style.left = it.x + 'px'; sh.style.top = (it.y - 5) + 'px';
@@ -2934,7 +3030,7 @@ function renderHUD() {
       hud.appendChild(el);
     }
     const rank = ranked.indexOf(p);
-    el.style.top = (rank * 122) + 'px';
+    el.style.top = (rank * 103) + 'px';
     const pe = p.charId && state.catalog.CHARS[p.charId] ? state.catalog.CHARS[p.charId].elem : 'neutral';
     el.style.setProperty('--hud-bg', `url('/assets/cards/bg-${pe || 'neutral'}.webp')`);
     el.style.setProperty('--hud-color', RUNE[pe] || '#C9A227');
@@ -2961,6 +3057,7 @@ function renderHUD() {
       }).join('')}</div>`;
     el.classList.toggle('turn', state.phase === 'playing' && state.players[state.turn] === p);
   });
+  fitWorld();
 }
 
 // ===== テロップ・ダイス・戦闘 =====
@@ -3171,7 +3268,7 @@ async function playInternalAbilityFx(sf) {
   }
 }
 
-function battleDetailHTML(pid, cid, level, mods = [], exileCount = null) {
+function battleDetailHTML(pid, cid, level, mods = [], exileCount = null, effectState = null) {
   const pl = player(pid), bid = cid ? cid.replace(/_f$/, '') : null;
   const c = bid ? state.catalog.CREATURES[bid] : null;
   if (!c) return `<div class="bdTop">${pl ? pl.name : ''}</div><div class="bdName">選択待ち</div>`;
@@ -3186,7 +3283,8 @@ function battleDetailHTML(pid, cid, level, mods = [], exileCount = null) {
   return `<div class="bdTop">${pl ? pl.name : ''} ／ ${elem}属性 ／ ${c.cost || 0}G</div>
     <div class="bdName">${name}</div><div class="bdBase">基礎 AT ${at}　HP ${hp}</div>
     ${soulCount !== null ? `<div class="bdSoul">廃棄札 ${soulCount}枚　【魂喰らい】DF +${soulCount * 5}</div>` : ''}
-    <div class="bdAbility"><b>【${title}】</b><p>${body}</p></div>
+    <div class="bdAbility ${effectStateClass(effectState)}"><b>【${title}】${effectState ? `<span class="effectStateTag">${effectStateLabel(effectState)}</span>` : ''}</b><p>${body}</p>
+      ${effectState && effectState.reason ? `<small class="effectReason">${effectState.reason}</small>` : ''}</div>
     <div class="bdMods">${mods.filter(Boolean).map(x=>`<span>${x}</span>`).join('') || '<span>戦闘補正なし</span>'}</div>`;
 }
 
@@ -3235,13 +3333,13 @@ function renderBattlePreview(bp) {
   if (isNew || atkReveal) {
     $('bAtk').innerHTML = battleCreatureHTML(bp.atkCreature, 1, atkReveal);
     $('bAtkStats').innerHTML = previewStatsHTML(bp.attacker, bp.atkCreature, 1, 0, 'atk');
-    $('bAtkDetail').innerHTML = battleDetailHTML(bp.attacker, bp.atkCreature, 1, ['ウェポン・能力補正は公開後に反映']);
+    $('bAtkDetail').innerHTML = battleDetailHTML(bp.attacker, bp.atkCreature, 1, ['ウェポン・能力補正は公開後に反映'], null, bp.effectStates && bp.effectStates.attacker);
     activeBattleAttacker = bp.atkCreature;
   }
   if (isNew) {
     $('bDef').innerHTML = battleCreatureHTML(bp.defCreature, bp.defLevel || 1, false);
     $('bDefStats').innerHTML = previewStatsHTML(bp.defender, bp.defCreature, bp.defLevel || 1, bp.defDamage || 0, 'def');
-    $('bDefDetail').innerHTML = battleDetailHTML(bp.defender, bp.defCreature, bp.defLevel || 1, ['地形・ウェポン・能力補正は公開後に反映']);
+    $('bDefDetail').innerHTML = battleDetailHTML(bp.defender, bp.defCreature, bp.defLevel || 1, ['地形・ウェポン・能力補正は公開後に反映'], null, bp.effectStates && bp.effectStates.defender);
   }
   updateBattleCompare();
   $('bAtkSupport').innerHTML = supportBackHTML(bp.supportReady.attacker ? '選択済み' : '選択中…');
@@ -3323,6 +3421,25 @@ function updateBattleCompare() {
   $('bCmpTerrain').innerHTML = elem && ELEM[elem] ? `<svg viewBox="-34 -36 68 72">${ELEM[elem]}</svg>` : '';
   const terrain = $('bCmpTerrain') && $('bCmpTerrain').closest('.battleTerrain');
   if (terrain) terrain.style.setProperty('--terrain-color', RUNE[elem] || '#6E7288');
+  const tb = battleState && battleState.terrainBreakdown;
+  if (tb) {
+    $('bLandCreature').innerHTML = elemMark(tb.creatureElem, '防衛クリーチャー属性');
+    $('bLandAffinity').textContent = tb.affinity === 'universal' ? '適応' : tb.affinity === 'match' ? '一致' : '不一致';
+    $('bLandLink').textContent = tb.affinity === 'mismatch' ? '≠' : '＝';
+    $('bLandLink').classList.toggle('mismatch', tb.affinity === 'mismatch');
+    $('bLandLevelPips').innerHTML = Array.from({length:4}, (_, i) => `<i class="${i < tb.level ? 'on' : ''}"></i>`).join('') + `<span>Lv${tb.level}</span>`;
+    const formula = tb.abilityBonus ? `Lv×10 ${tb.baseBonus} + 固有 ${tb.abilityBonus}` : `Lv×10 = ${tb.baseBonus}`;
+    $('bLandFormula').textContent = tb.nullifiedBy ? formula + '（風刃で無効）' : formula;
+    $('bLandFormula').classList.toggle('inactive', !!tb.nullifiedBy || tb.affinity === 'mismatch');
+    $('bLandBonus').innerHTML = `<span><small>領地BONUS</small><b>+${tb.appliedBonus} DF</b></span>`;
+    $('bLandBonus').classList.toggle('inactive', !tb.appliedBonus);
+  } else {
+    $('bLandCreature').innerHTML = '';
+    $('bLandAffinity').textContent = '';
+    $('bLandLevelPips').innerHTML = '';
+    $('bLandFormula').textContent = '';
+    $('bLandBonus').innerHTML = '<span><small>領地BONUS</small><b>+0 DF</b></span>';
+  }
 }
 
 function setAttackMeter(statsId, baseAt, at) {
@@ -3437,8 +3554,8 @@ async function playBattle(b) {
   $('bAtkStats').innerHTML = finalStatsHTML(b, 'atk', 'pre');
   $('bDefStats').innerHTML = finalStatsHTML(b, 'def', 'pre');
   updateBattleCompare();
-  $('bAtkDetail').innerHTML = battleDetailHTML(b.attacker, b.atkCreature, 1, battleDetailMods(b, 'atk'), b.atkExileCount);
-  $('bDefDetail').innerHTML = battleDetailHTML(b.defender, b.defCreature, dLv, battleDetailMods(b, 'def'), b.defExileCount);
+  $('bAtkDetail').innerHTML = battleDetailHTML(b.attacker, b.atkCreature, 1, battleDetailMods(b, 'atk'), b.atkExileCount, b.effectStates && b.effectStates.attacker);
+  $('bDefDetail').innerHTML = battleDetailHTML(b.defender, b.defCreature, dLv, battleDetailMods(b, 'def'), b.defExileCount, b.effectStates && b.effectStates.defender);
   $('bnotes').innerHTML = '';
   $('bcap').textContent = 'ウェポン ─ 攻撃側から公開';
   ['bAtk','bDef'].forEach(id => $(id).classList.remove('lungeL','lungeR','dead'));
@@ -3639,7 +3756,7 @@ function render() {
   if (!state) return;
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.37';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.39';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -3754,9 +3871,11 @@ function render() {
       flyCoins(payer.id, recv.id);
     }
   }
-  if (state.log && state.log.length)
-    $('ticker').innerHTML = state.log.slice(-5).map((l, k, a) =>
+  if (state.log && state.log.length) {
+    $('ticker').innerHTML = state.log.slice(-4).map((l, k, a) =>
       `<div style="opacity:${0.45 + 0.55 * (k + 1) / a.length}">${iconize(l)}</div>`).join('');
+    fitWorld();
+  }
   // ===== ショップ演出 =====
   const shopping = Object.entries(state.pending).find(([, x]) =>
     x.type === 'market' || (x.type === 'draft' && x.resume === 'market') ||
@@ -3890,21 +4009,6 @@ function render() {
     if (battleNow) setBgm('battle'); else restoreBoardBgm();
   } else if (state.phase === 'lobby' || state.phase === 'select') setBgm('select');
   else if (state.phase === 'ended') setBgm(null);
-  // 実況吹き出し(何を待っているか)
-  {
-    const pe = Object.entries(state.pending);
-    let bt = '';
-    if (state.phase === 'playing' && pe.length && (!animBusy || (hopState && hopState.holding))) {
-      const cur = state.players[state.turn];
-      if (pe.some(([, x]) => x.type === 'support')) bt = '両者、ウェポンを秘密裏に選択中…';
-      else if (cur && state.pending[cur.id])
-        bt = state.pending[cur.id].type === 'pick_draw' ? cur.name + 'がカードを選んでいます…'  // 候補は非公開
-           : state.pending[cur.id].prompt === 'あなたの手番です' ? '' : state.pending[cur.id].prompt;
-      else bt = player(pe[0][0]).name + 'が選択中…';
-    }
-    $('tpBubble').innerHTML = iconize(bt);
-    $('tpBubble').classList.toggle('show', !!bt);
-  }
   // ドラフトのオーラ通知(中身は見せず気配だけ)
   {
     const de = Object.entries(state.pending).find(([, x]) => x.type === 'draft');
@@ -4101,18 +4205,6 @@ function render() {
       prev['pts_' + p.id] = p.points;
     });
   }
-  // 手番プレイヤーの立ち絵(右下)
-  if (state.phase === 'playing') {
-    const tp = state.players[state.turn];
-    if (tp && tp.charId) {
-      if ($('tpImg').dataset.c !== tp.charId) {
-        $('tpImg').src = '/assets/full_' + tp.charId + '.png';
-        $('tpImg').dataset.c = tp.charId;
-      }
-      $('tpName').textContent = tp.name + 'の手番';
-      $('turnPortrait').classList.add('show');
-    }
-  } else $('turnPortrait').classList.remove('show');
   // キューされたバナーを順に表示(移動中・別バナー表示中は待つ)
   if (bq.length && !animBusy && !cutBusy && Date.now() > bannerUntil) {
     bq.sort((a, b) => a.pri - b.pri || a.seq - b.seq);

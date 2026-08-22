@@ -8,11 +8,11 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.38';
+const VERSION = '1.39';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
-const RULES = { startGold: 300, castleBonus: 200, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
+const RULES = { startGold: 300, castleBonusPerLap: 100, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
                 levelCost: { 2: 100, 3: 450, 4: 950 }, maxLevel: 4,  // v0.60: Lv3/Lv4強化を大型投資に
                 evoLevel: 3, forgeCost: 150,
                 startHand: 5, forgetCost: 80 };  // v0.44: 初期5枚+毎ターン1枚ドロー
@@ -413,6 +413,160 @@ function onSpellCast(r, p) {
 function universalTerrain(creatureId) {
   return ['cleo', 'strauk', 'samurai_saga'].includes(baseId(creatureId));
 }
+
+// v1.39: 戦闘UI用の状態は効果文を解析せず、実装IDから明示的に判定する。
+// 新しいクリーチャーはここへ分類し、未登録時は誤って無効表示せずconditionalへ退避する。
+const CREATURE_EFFECT_CONTEXT = Object.freeze({
+  gecko:'battle', orphe:'toll', nome:'battle', gaston:'battle', cleo:'battle', magado:'none',
+  qbaby:'battle', cresteria:'placement', kbaby:'toll', ludi:'battle', garble:'battle',
+  barbaro:'battle', detropas:'battle', goagoa:'battle', fugorm:'placement', bedebero:'spell',
+  zati:'battle', pakawata:'battle', avalanche:'battle', bonerex:'battle', morbill:'battle',
+  mimic:'battle', beruf:'battle', grayble:'battle', trooper:'other', survey:'battle',
+  palecoral:'turn', bunnyhop:'spell', strauk:'battle', samurai_saga:'battle', marlow:'land',
+  shuterio:'battle', gaust:'placement', alter:'battle', toxy:'exile', kamadoma:'other',
+  swordgear:'battle', komao:'other',
+});
+function terrainBreakdown(r, tile, attackerCreature = null) {
+  const o = r.owners[tile];
+  if (!o) return null;
+  const c = CREATURES[baseId(o.creature)] || {};
+  const landElem = tileElem(r, tile);
+  const universal = universalTerrain(o.creature);
+  const affinity = universal ? 'universal' : c.elem === landElem ? 'match' : 'mismatch';
+  const baseBonus = affinity === 'mismatch' ? 0 : (o.level || 1) * 10;
+  const abilityBonus = baseId(o.creature) === 'nome' && baseBonus
+    ? (isEvolved(o) ? 20 : 10) : 0;
+  const potentialBonus = baseBonus + abilityBonus;
+  const nullifiedBy = baseId(attackerCreature) === 'garble' && potentialBonus ? 'garble' : null;
+  return {
+    level: o.level || 1,
+    tileElem: landElem,
+    creatureElem: c.elem || 'neutral',
+    affinity,
+    baseBonus,
+    abilityBonus,
+    potentialBonus,
+    appliedBonus: nullifiedBy ? 0 : potentialBonus,
+    nullifiedBy,
+  };
+}
+function effectUi(state, reason, text) {
+  return { state, reason: reason || '', text: text || '' };
+}
+function creatureEffectUi(r, creatureId, tile, role, context = 'battle', result = null) {
+  const bid = baseId(creatureId);
+  const c = CREATURES[bid];
+  if (!c || (!c.fx && !c.evoFx)) return null;
+  const o = tile != null ? r.owners[tile] : null;
+  const evolved = !!(o && o.creature === creatureId && isEvolved(o)) || /_f$/.test(creatureId);
+  const text = evolved ? (c.evoFx || c.fx || '') : (c.fx || '');
+  const kind = CREATURE_EFFECT_CONTEXT[bid];
+  const inactive = reason => effectUi('inactive', reason, text);
+  const active = reason => effectUi('active', reason, text);
+  const conditional = reason => effectUi('conditional', reason, text);
+  if (!kind) return conditional('表示条件未登録');
+  if (kind === 'none') return null;
+  if (kind !== 'battle') {
+    if (context === 'land_stop' && kind === 'toll') return active('通行料に適用');
+    const reasons = { toll:'通行料効果', placement:'召喚・配置時のみ', spell:'スペル対象時のみ',
+      turn:'ターン開始時のみ', land:'自領地停止時のみ', exile:'カード廃棄時のみ', other:'この戦闘では発動しない' };
+    // 進化後だけ戦闘効果を持つカードを個別に扱う。
+    if (bid === 'trooper' || (bid === 'bunnyhop' && evolved)) return inactive('スペル使用時のみ');
+    if (bid === 'kamadoma' && evolved && role === 'attacker') {
+      if (!result) return conditional('戦闘勝利時');
+      return result.win ? active('戦闘勝利で発動') : inactive('侵略失敗');
+    }
+    if (bid === 'komao' && evolved) {
+      const owner = o ? pById(r, o.player) : null;
+      const n = owner ? chainCount(r, owner.id, 'earth') : 0;
+      return n ? active(`土領地${n}つ`) : inactive('土領地なし');
+    }
+    return inactive(reasons[kind] || 'この戦闘では発動しない');
+  }
+  const terrain = tile != null ? terrainBreakdown(r, tile, role === 'attacker' ? creatureId : null) : null;
+  const owner = role === 'attacker' && r.battle
+    ? pById(r, r.battle.attacker)
+    : (o ? pById(r, o.player) : null);
+  switch (bid) {
+    case 'gecko': return role === 'attacker' ? active('攻撃時に発動') : inactive('攻撃時のみ');
+    case 'nome': return role === 'defender'
+      ? (terrain && terrain.baseBonus ? active('地形補正に加算') : inactive('領地属性不一致'))
+      : inactive('防衛時のみ');
+    case 'gaston':
+      if (!result) return conditional('敗北時');
+      return (role === 'defender' ? result.win : !result.atkSurvived)
+        ? active('敗北したため発動') : inactive('敗北していない');
+    case 'cleo': case 'strauk': case 'samurai_saga':
+      return role === 'defender' ? active('全属性に適応') : inactive('防衛領地でのみ');
+    case 'qbaby':
+      return role === 'defender' && terrain && terrain.tileElem === 'fire'
+        ? active('火領地の防衛に適用') : inactive(role === 'defender' ? '火領地ではない' : '防衛時のみ');
+    case 'ludi':
+      if (role !== 'defender') return inactive('防衛時のみ');
+      if (!result) return conditional('相手のウェポン選択時');
+      return result.atkSupport && result.atkSupport.kind !== 'none'
+        ? active('相手ウェポンを無効化') : inactive('相手ウェポンなし');
+    case 'garble': return role === 'attacker'
+      ? (terrain && terrain.potentialBonus ? active('地形補正を無効化') : inactive('相手に地形補正なし'))
+      : inactive('攻撃時のみ');
+    case 'barbaro':
+      if (role !== 'defender') return inactive('防衛成功時のみ');
+      if (!result) return conditional('防衛成功時');
+      return result.win ? inactive('領地を奪われた') : active('防衛成功で発動');
+    case 'detropas': {
+      if (role !== 'attacker') return inactive('攻撃時のみ');
+      const n = owner ? chainCount(r, owner.id, 'fire') : 0;
+      return n ? active(`火領地${n}つ`) : conditional('火領地数に応じて発動');
+    }
+    case 'goagoa':
+      if (role !== 'defender') return inactive('防衛成功時のみ');
+      if (!result) return conditional('防衛成功時');
+      return result.win ? inactive('領地を奪われた') : active('防衛成功で発動');
+    case 'zati':
+      if (role !== 'attacker') return inactive('侵略成功時のみ');
+      if (!result) return conditional('侵略成功時');
+      return result.win ? active('侵略成功で発動') : inactive('侵略失敗');
+    case 'pakawata': return role === 'defender' ? active('先制攻撃') : inactive('防衛時のみ');
+    case 'avalanche': return role === 'attacker' ? active('侵略時に発動') : inactive('侵略時のみ');
+    case 'bonerex': return role === 'defender' ? active('防衛DFに加算') : inactive('防衛時のみ');
+    case 'morbill': return role === 'attacker' ? active('侵略時に発動') : inactive('侵略時のみ');
+    case 'mimic': return active('戦闘開始時に発動');
+    case 'beruf': return o && (o.shade || 0) > 0 ? active(`影${o.shade}`) : inactive('蓄積した影なし');
+    case 'grayble': return role === 'attacker'
+      ? (o && (o.dmg || 0) > 0 ? active('相手が負傷済み') : inactive('相手が負傷していない'))
+      : inactive('侵略時のみ');
+    case 'survey': case 'shuterio': return conditional('クリーチャー支援選択時');
+    case 'alter': {
+      const n = owner ? (owner.exile || []).length : 0;
+      return n ? active(`廃棄${n}枚`) : inactive('廃棄札なし');
+    }
+    case 'swordgear':
+      if (!result) return conditional('ソード系ウェポン選択時');
+      return result.selfSupport && ['weapon','gweapon'].includes(result.selfSupport.cardId)
+        ? active('ソード系ウェポンに適用') : inactive('対象ウェポンなし');
+    default: return conditional('条件成立時');
+  }
+}
+function battleEffectStates(r, battle, result = null) {
+  if (!battle) return { attacker: null, defender: null };
+  const owner = r.owners[battle.tile];
+  const resultBase = result ? Object.assign({ attacker: battle.attacker }, result) : null;
+  return {
+    attacker: battle.atkCreature ? creatureEffectUi(r, battle.atkCreature, battle.tile, 'attacker', 'battle',
+      resultBase && Object.assign({}, resultBase, { selfSupport: resultBase.atkSupport })) : null,
+    defender: owner ? creatureEffectUi(r, owner.creature, battle.tile, 'defender', 'battle',
+      resultBase && Object.assign({}, resultBase, { selfSupport: resultBase.defSupport })) : null,
+  };
+}
+function landCombatUi(r, tile) {
+  const o = r.owners[tile];
+  if (!o) return null;
+  const terrain = terrainBreakdown(r, tile);
+  return Object.assign({}, terrain, {
+    tile,
+    effect: creatureEffectUi(r, o.creature, tile, 'defender', 'land_stop'),
+  });
+}
 function cardName(cardId) {
   return (CREATURES[cardId] || SPELLS[cardId] || SUPPORTS[cardId] || { name: cardId }).name;
 }
@@ -563,6 +717,7 @@ function landValue(r, i) {
 }
 const CASTLE_LAND_RATE = 0.2;
 const castleLandBonus = lands => Math.round(lands * CASTLE_LAND_RATE);
+const castleLapBonus = completedLaps => Math.max(0, Number(completedLaps) || 0) * RULES.castleBonusPerLap;
 // 総資産 = 所持金+地価合計+称号500G
 function points(r, p) {
   const lands = r.owners.reduce((n, o, i) => n + (o && o.player === p.id ? landValue(r, i) : 0), 0);
@@ -766,6 +921,17 @@ function askLiaUlt(r, p, selected = []) {
   ask(r, p.id, 'ult_lia', '🔥【紅蓮の方程式】炎の渦を発生させる敵領地を1〜3か所選択', opts);
   r.pending[p.id].selected = chosen;
 }
+function ultimateStatus(r, p) {
+  const pending = r.pending[p.id];
+  const canActivate = !!(r.phase === 'playing' && cur(r) === p && pending && pending.type === 'roll' &&
+    pending.options.some(o => o.id === 'ult'));
+  if (canActivate) return { canActivate: true, used: false, reasonCode: '', reason: '' };
+  if (p.ultUsed) return { canActivate: false, used: true, reasonCode: 'used', reason: 'このゲームでは使用済みです' };
+  if (r.phase !== 'playing') return { canActivate: false, used: false, reasonCode: 'wrong_phase', reason: 'ゲーム中のみ使用できます' };
+  if (cur(r) !== p) return { canActivate: false, used: false, reasonCode: 'not_turn', reason: '他プレイヤーの手番です' };
+  if (!pending || pending.type !== 'roll') return { canActivate: false, used: false, reasonCode: 'wrong_step', reason: 'ダイス選択時に使用できます' };
+  return { canActivate: false, used: false, reasonCode: 'prerequisite', reason: '発動条件を満たしていません' };
+}
 function askNerasioUlt(r, p, selected = []) {
   const valid = new Set(r.owners.map((o, i) =>
     o && o.player === p.id && TILES[i].t === 'land' ? i : null).filter(i => i !== null));
@@ -953,13 +1119,15 @@ function performMove(r, p, steps, meta, moveLabel) {
   r.lastDice = Object.assign({ player: p.id, at: stamp(r) }, meta);
   const dir = (p.dir || 1) * (p.windShift ? -1 : 1);  // 風向転換: このターンのみ逆方向
   let bonus = 0, gotSeal = false, noSeal = false, castleStep = 0, usedSeal = false;
+  let completedLaps = Math.max(0, (p.lap || 1) - 1);
   for (let s2 = 0; s2 < steps; s2++) {
     p.pos = (p.pos + dir + TILES.length) % TILES.length;
     if (p.pos === GATE_TILE && !p.seal) { p.seal = true; gotSeal = true; }
     if (p.pos === 0) {
       castleStep = s2 + 1;
       p.lap = (p.lap || 1) + 1;  // 刻印の有無に関わらず周回は進む
-      if (p.seal) { bonus += RULES.castleBonus; p.seal = false; usedSeal = true; }
+      completedLaps = Math.max(1, p.lap - 1);
+      if (p.seal) { bonus += castleLapBonus(completedLaps); p.seal = false; usedSeal = true; }
       else noSeal = true;
     }
   }
@@ -989,7 +1157,8 @@ function performMove(r, p, steps, meta, moveLabel) {
     const initial = presentationMs(r, p.id, meta.multi ? GAME_TIMING.moveStartDelayMulti : GAME_TIMING.moveStartDelay);
     const availableAt = r.lastDice.at + initial + castleStep * presentationMs(r, p.id, GAME_TIMING.stepMs) +
       presentationMs(r, p.id, GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown);
-    r.lastDice.castle = { usedSeal, baseBonus: bonus, gold: bonus, landValue: lands, landRate,
+    r.lastDice.castle = { usedSeal, completedLaps, bonusPerLap: RULES.castleBonusPerLap,
+      baseBonus: bonus, gold: bonus, landValue: lands, landRate,
       landBonus: lb, total: bonus + lb, drew: 1, healed, castleStep, availableAt };
     log(r, `${p.name}は${moveLabel}(城通過 +${bonus}G${lb ? `+領地ボーナス${lb}G` : ''}、カードを選択!)`);
     // 勝利判定: ボーナス込みで総資産8000G以上
@@ -1002,7 +1171,8 @@ function performMove(r, p, steps, meta, moveLabel) {
     const initial = presentationMs(r, p.id, meta.multi ? GAME_TIMING.moveStartDelayMulti : GAME_TIMING.moveStartDelay);
     const availableAt = r.lastDice.at + initial + castleStep * presentationMs(r, p.id, GAME_TIMING.stepMs) +
       presentationMs(r, p.id, GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown);
-    r.lastDice.castle = { usedSeal: false, baseBonus: 0, gold: 0, landValue: 0, landRate: CASTLE_LAND_RATE,
+    r.lastDice.castle = { usedSeal: false, completedLaps, bonusPerLap: RULES.castleBonusPerLap,
+      baseBonus: 0, gold: 0, landValue: 0, landRate: CASTLE_LAND_RATE,
       landBonus: 0, total: 0, drew: 0, healed: [], castleStep, availableAt };
     log(r, `${p.name}は${moveLabel} ─ 刻印がないため一周ボーナスなし…`);
     if (points(r, p) >= ASSET_GOAL) return declareWin(r, p, `総資産${points(r, p)}Gで城に凱旋!`);
@@ -1336,13 +1506,12 @@ function resolveBattle(r) {
 
   // --- 防衛側HP(地形・女王・呪い) ---
   const tElem = tileElem(r, b.tile);
-  let terrain = (dc.elem === tElem || universalTerrain(o.creature)) ? o.level * 10 : 0;
-  if (universalTerrain(o.creature) && dc.elem !== tElem) notes.push('【地脈適応】属性を問わず地形補正を獲得!');
-  if (baseId(o.creature) === 'nome' && terrain) {
-    const rock = defEvolved ? 20 : 10;
-    terrain += rock; notes.push(`【岩壁】地形補正+${rock}!`);
-  }
-  if (baseId(b.atkCreature) === 'garble' && terrain) { terrain = 0; notes.push('【風刃】地形補正を無視!'); }
+  const terrainUi = terrainBreakdown(r, b.tile, b.atkCreature);
+  let terrain = terrainUi.appliedBonus;
+  if (terrainUi.affinity === 'universal' && dc.elem !== tElem)
+    notes.push('【地脈適応】属性を問わず地形補正を獲得!');
+  if (terrainUi.abilityBonus) notes.push(`【岩壁】地形補正+${terrainUi.abilityBonus}!`);
+  if (terrainUi.nullifiedBy === 'garble') notes.push('【風刃】地形補正を無視!');
   let queenBonus = 0;
   if (tElem === 'fire') for (const no of r.owners)
     if (no && no.player === def.id && baseId(no.creature) === 'qbaby')
@@ -1407,6 +1576,7 @@ function resolveBattle(r) {
     atkSurvived = counterDealt < atkEffHp;
   }
 
+  const battleResultUi = { win, atkSurvived, atkSupport: aSup, defSupport: dSup, attacker: atk.id };
   r.lastBattle = { tile: b.tile, attacker: atk.id, defender: def.id,
     terrainElem: tileElem(r, b.tile),
     atkCreature: b.atkCreature, defCreature: o.creature,
@@ -1431,7 +1601,9 @@ function resolveBattle(r) {
     hits: hitsDone, preempt,
     moveFrom: b.moveFrom,
     remainHp: win ? 0 : effHp - dealt,
-    terrain, curse, notes, win, at: stamp(r) };
+    terrain, terrainBreakdown: terrainUi,
+    effectStates: battleEffectStates(r, b, battleResultUi),
+    curse, notes, win, at: stamp(r) };
   log(r, `⚔ ${atk.name}の${ac.name}(AT${atkDmg}${hitsDone === 2 ? '×2回' : ''}) vs ${def.name}の${dc.name}(HP${effHp}/DF${defDF}) → 実ダメージ${dealt}`);
   for (const n of notes) log(r, n);
   if (iceWard) delete o.iceWard;
@@ -2707,6 +2879,8 @@ function publicBattle(r) {
     defCreature: owner ? owner.creature : null,
     defLevel: owner ? owner.level : 1,
     defDamage: owner ? (owner.dmg || 0) : 0,
+    terrainBreakdown: owner ? terrainBreakdown(r, b.tile, b.atkCreature) : null,
+    effectStates: owner ? battleEffectStates(r, b) : { attacker: null, defender: null },
     supportReady: {
       attacker: hasSupport(b.attacker),
       defender: hasSupport(b.defender),
@@ -2722,6 +2896,7 @@ function publicState(r, viewerId) {
     selectionReady: isSelectionReady(r),
     tiles: TILES.map((t, i) => r.elemOv[i] ? Object.assign({}, t, { e: r.elemOv[i] }) : t),
     tolls: r.owners.map((o, i) => o ? tollOf(r, i) : 0),
+    landCombat: r.owners.map((o, i) => o ? landCombatUi(r, i) : null),
     tileFx: r.tileFx,
     owners: r.owners, market: r.market, shopVisit: r.shopVisit || null, log: r.log,
     titles: r.titles, duel: r.duel, curses: r.curses, lastEvent: r.lastEvent || null,
@@ -2770,6 +2945,7 @@ function publicState(r, viewerId) {
       effectiveSpellCosts: p.id === viewerId
         ? Object.fromEntries(Object.keys(SPELLS).map(sid => [sid, effectiveSpellCost(r, p, sid)]))
         : undefined,
+      ultimateStatus: p.id === viewerId ? ultimateStatus(r, p) : undefined,
       points: r.phase === 'playing' || r.phase === 'ended' ? points(r, p) : 0,
       bankrupt: !!p.bankrupt,
       dir: p.dir || 1,

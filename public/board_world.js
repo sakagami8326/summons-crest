@@ -1072,13 +1072,42 @@ const PW = (() => {
   }
 
   // ===== コマ =====
+  function makeTurnAura() {
+    const aura = scene.add.container(0, 0).setVisible(false);
+    const ring = scene.add.graphics();
+    ring.fillStyle(0xFFF4C1, 0.12); ring.fillEllipse(0, 0, 62, 25);
+    ring.lineStyle(3, 0xF2D062, 0.98); ring.strokeEllipse(0, 0, 62, 25);
+    ring.lineStyle(1, 0xFFFFFF, 0.82); ring.strokeEllipse(0, 0, 48, 18);
+    aura.add(ring);
+    const marker = scene.add.container(0, -78).setVisible(false);
+    const mg = scene.add.graphics();
+    mg.fillStyle(0x101028, 0.94); mg.fillRoundedRect(-27, -13, 54, 24, 6);
+    mg.lineStyle(2, 0xF2D062, 1); mg.strokeRoundedRect(-27, -13, 54, 24, 6);
+    mg.fillStyle(0xF2D062, 1); mg.fillTriangle(-6, 13, 6, 13, 0, 23);
+    const mt = scene.add.text(0, -1, 'TURN', { fontFamily:'Georgia, serif', fontSize:'12px',
+      fontStyle:'bold', color:'#FFF4C1', letterSpacing:1 }).setOrigin(0.5);
+    mt.setShadow(0, 2, '#000000', 3);
+    marker.add([mg, mt]);
+    const tween = scene.tweens.add({ targets:ring, scaleX:{from:0.92,to:1.16}, scaleY:{from:0.92,to:1.16},
+      alpha:{from:1,to:0.38}, duration:820, yoyo:true, repeat:-1, ease:'Sine.easeInOut', paused:true });
+    return { aura, marker, tween };
+  }
   function syncPawns(layout) {
     if (failed) return;
     if (!ready) { pendingLayout = layout; return; }
     for (const it of layout) {
       let P = pawns[it.id];
       if (!P) {
-        P = pawns[it.id] = { spr: null, sh: scene.add.image(it.x, it.y - 5, 'pwShadow').setOrigin(0.5, 0.5).setDisplaySize(40, 13), tex: null, x: it.x, y: it.y, tw: null };
+        const turn = makeTurnAura();
+        P = pawns[it.id] = { spr: null, sh: scene.add.image(it.x, it.y - 5, 'pwShadow').setOrigin(0.5, 0.5).setDisplaySize(40, 13),
+          tex: null, x: it.x, y: it.y, tw: null, active:false,
+          aura:turn.aura, marker:turn.marker, auraTween:turn.tween };
+      }
+      if (P.active !== !!it.active) {
+        P.active = !!it.active;
+        P.aura.setVisible(P.active); P.marker.setVisible(P.active);
+        if (P.active) P.auraTween.resume();
+        else { P.auraTween.pause(); P.auraTween.restart(); P.auraTween.pause(); }
       }
       if (it.charId && P.tex !== 'pw_' + it.charId && P.tex !== 'loading_' + it.charId) {
         P.tex = 'loading_' + it.charId;
@@ -1132,12 +1161,15 @@ const PW = (() => {
     if (P.spr) {
       const base = it.w / P.spr.width;
       P.spr.setPosition(x, y).setDepth(it.z);
-      P.spr.setScale(base * (d ? d.sx : 1), base * (d ? d.sy : 1));
+      const focus = it.active ? 1.12 : 1;
+      P.spr.setScale(base * focus * (d ? d.sx : 1), base * focus * (d ? d.sy : 1));
     }
     const air = d ? d.air : 0;
     P.sh.setPosition(x, y - 5).setDepth(it.zs != null ? it.zs : it.z - 2);
     P.sh.setDisplaySize(40 * (1 - 0.35 * air), 13 * (1 - 0.35 * air));
     P.sh.setAlpha(1 - 0.5 * air);
+    if (P.aura) P.aura.setPosition(x, y - 6).setDepth(it.active ? it.z - 1 : it.z - 3);
+    if (P.marker) P.marker.setPosition(x, y - Math.max(70, it.w * 1.28) - air * 10).setDepth(it.z + 3);
   }
 
   // ===== 強化候補ハイライト(発注書v0.75 §6) =====
@@ -1282,6 +1314,10 @@ const PW = (() => {
     return { children: scene.children.length, pawns: Object.keys(pawns).length,
              boardObjs: boardObjs.length, zoom: scene.cameras.main.zoom };
   }
+  function resize() {
+    if (!ready || !game || !game.scale) return;
+    game.scale.refresh();
+  }
   // 非表示タブ(RAF停止)でも検証できるようループを手動で進める(テスト用)
   // 注意(Phaser 4): tween/カメラ効果は実時間基準のため、合成時刻での早送りは効かない。
   // 検証時は「実時間で待ちながら pump(2) を繰り返す」こと(時刻は単調増加を維持)
@@ -1291,7 +1327,7 @@ const PW = (() => {
     pumpT = Math.max(pumpT, performance.now());
     for (let k = 0; k < frames; k++) { pumpT += 16.7; game.loop.step(pumpT); }
   }
-  return { init, syncBoard, syncPawns, setCamera, worldToViewport, pawnViewport, fx,
+  return { init, syncBoard, syncPawns, setCamera, worldToViewport, pawnViewport, fx, resize,
            snapshot, debugCounts, pump, isReady: () => ready, hasFailed: () => failed,
            setHighlights,   // 強化候補ハイライト(発注書v0.75 §6)
            // Phase 2A: 演出基盤

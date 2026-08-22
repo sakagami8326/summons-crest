@@ -109,8 +109,9 @@ ok(board.includes('id="bCmpAtkAtBar"') && board.includes('id="bCmpDefHpBar"') &&
   'battle comparison bars and values share the same central grid rows');
 ok(board.includes('id="bCmpTerrain"') && board.includes('battleState.terrainElem') && board.includes('ELEM[elem]'),
   'battle comparison shows the defending land element below the HP symbol');
-ok(board.includes('<span>領地の属性</span><span id="bCmpTerrain"'),
-  'defending land element appears to the right of its label');
+ok(board.includes('class="battleTerrain"') && board.includes('<span id="bCmpTerrain"') &&
+  board.includes('id="bLandLevelPips"') && board.includes('id="bLandBonus"'),
+  'defending land element appears in the territory core with level and bonus');
 ok(board.includes('Number.isFinite(Number(from))') && board.includes('Number.isFinite(Number(to))'),
   'battle stat count-up falls back safely when old payload values are missing');
 ok(board.includes('battleTeam.atk { grid-template-columns') && board.includes('battleFighter'),
