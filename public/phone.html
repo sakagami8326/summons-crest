@@ -837,6 +837,7 @@
       font-family:'Reggae One','Yu Mincho',serif; }
   .gateBtns { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:2dvh;
       width:min(92vw, 130dvh); align-content:center; }
+  .gateBtns.single { grid-template-columns:minmax(280px,min(56vw,560px)); justify-content:center; }
   #gateOv .gateBtn { padding:2.8dvh 2.8dvh; }
   #gateOv .gbT { font-size:max(3dvh, 17px); }
   #gateOv .gbD { font-size:max(2dvh, 12px); margin-top:.8dvh; }
@@ -2085,13 +2086,15 @@ function cardHTML(c, i) {
 let handListKey = '', handServerKey = '', handOrderScope = '', handDisplay = [];
 let handGesture = null;
 let handClickSuppressUntil = 0;
+function handInventoryKey(hand) {
+  const counts = {};
+  (hand || []).forEach(c => counts[c] = (counts[c] || 0) + 1);
+  return Object.keys(counts).sort().map(c => `${c}:${counts[c]}`).join(',');
+}
 function handInteractionContextKey(s) {
   if (!s) return '';
   const player = Array.isArray(s.players) ? s.players.find(q => q.id === pid) : null;
-  const pending = s.pending && s.pending[pid];
-  const turnPlayer = Array.isArray(s.players) && s.players[s.turn] ? s.players[s.turn].id : s.turn;
-  return [s.phase || '', turnPlayer || '', s.turnEpoch || (pending && pending.turnEpoch) || '',
-    pending && pending.promptId || '', pending && pending.type || '', ((player && player.hand) || []).join(',')].join('|');
+  return [s.phase || '', player ? player.id : 'missing', handInventoryKey(player && player.hand)].join('|');
 }
 function openBlockingOverlay(target) {
   cancelHandGesture();
@@ -2236,9 +2239,12 @@ function beginHandPointer(e, el) {
   el.onpointercancel = () => cancelHandGesture();
 }
 function renderHand() {
-  const serverHand = me().hand.slice(), serverKey = serverHand.join(',');
+  const serverHand = me().hand.slice(), serverKey = handInventoryKey(serverHand);
   if (serverKey !== handServerKey && handGesture) cancelHandGesture({ rerender:false });
   handServerKey = serverKey;
+  // Remote turns, logs and other players' prompts refresh over SSE frequently.
+  // Preserve the active card node and pointer capture while our own hand is unchanged.
+  if (handGesture) return;
   const display = reconcileHandOrder(serverHand), list = display.join(',');
   $('hand').dataset.n = display.length;
   if (list !== handListKey) {
@@ -2367,6 +2373,8 @@ function showActionOverlay(title, options, config) {
   actionOverlayKey = key;
   $('actionOv').dataset.key = key;
   $('actionOvTitle').textContent = iconize(title || '行動を選んでください');
+  const actionButtonCount = options.length + (cfg.browseHand ? 1 : 0) + (cfg.closeable && !cfg.browseHand ? 1 : 0);
+  $('actionOvBtns').classList.toggle('single', actionButtonCount === 1);
   $('actionOvBtns').innerHTML = options.map(o => `<button class="gateBtn ${o.cls || ((o.id === 'pass' || o.id === 'cancel' || o.id.endsWith(':cancel') || o.id === 'sup:none') ? 'ghost' : '')}"
       onclick="${o.id === 'ult' ? "closeActionOverlay(true); showUltConfirm()" : `submitAction('${o.id}')`}"><div class="gbT">${iconize(o.label)}</div><div class="gbD">${o.desc || actionDescription(o.id)}</div></button>`).join('')
     + (cfg.browseHand ? `<button class="gateBtn ghost" onclick="browseActionHand()"><div class="gbT">手札を確認する</div><div class="gbD">行動を決める前に手札へ戻ります</div></button>` : '')
@@ -2555,6 +2563,7 @@ function render() {
     const otherSupport = Object.values(state.pending).some(x => x.type === 'support');
     $('msg').textContent = state.phase === 'lobby' ? ''
       : state.phase === 'select' ? '他のプレイヤーの選択待ち…'
+      : state.turnTransition ? 'テレビ演出の完了を待っています…'
       : otherSupport ? '相手のウェポンを待っています…'
       : (t ? t.name + 'の手番です' : '…');
     A.innerHTML = '<div class="waitDots">● ● ●</div>';

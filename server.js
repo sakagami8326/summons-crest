@@ -8,9 +8,10 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.40';
+const VERSION = '1.41';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
+const TURN_TRANSITION_TIMEOUT_MS = 20000;
 const TARGET_PTS = 12;
 const RULES = { startGold: 300, castleBonusPerLap: 100, gateBonus: 200, shrineBonus: 100, tollUnit: 30,
                 levelCost: { 2: 100, 3: 450, 4: 950 }, maxLevel: 4,  // v0.60: Lv3/Lv4強化を大型投資に
@@ -331,6 +332,7 @@ setInterval(() => {
     if ((r.lastActivity || 0) < cutoff) {
       clearBotTimer(r);
       clearUltTimer(r);
+      clearTurnTransitionTimer(r);
       for (const c of r.clients) { try { c.res.end(); } catch (e) {} }
       rooms.delete(code);
       console.log(`ルーム${code}を掃除(60分無操作)`);
@@ -343,6 +345,7 @@ function makeRoom(mode = 'normal') {
   const room = {
     code: code4(), phase: 'lobby', clients: new Set(), players: [],
     botMode: mode === 'bot', botTimer: null, botActionSeq: 0, presentationSpeed: 1,
+    boardSeen: false, turnTransition: null, turnTransitionTimer: null,
     turnEpoch: 0, promptSeq: 0, stateRev: 0, processedActions: [],
     owners: TILES.map(() => null),        // { player, level, creature }
     deck, market: deck.splice(0, 5), shopVisit: null,
@@ -741,6 +744,8 @@ function checkVictory(r) {
 function declareWin(r, p, why) {
   clearBotTimer(r);
   clearUltTimer(r);
+  clearTurnTransitionTimer(r);
+  r.turnTransition = null;
   r.phase = 'ended'; r.winner = p.id; r.pending = {};
   log(r, `🏆 ${p.name}が${why} 勝利!`);
 }
@@ -1075,6 +1080,52 @@ function bankrupt(r, p) {
   return endTurn(r);
 }
 const HAND_LIMIT = 7;
+function clearTurnTransitionTimer(r) {
+  if (r.turnTransitionTimer) clearTimeout(r.turnTransitionTimer);
+  r.turnTransitionTimer = null;
+}
+function advanceTurnNow(r) {
+  if (r.phase !== 'playing' || r.winner) return;
+  do {
+    r.turn = (r.turn + 1) % r.players.length;
+    if (r.turn === 0) r.round++;
+  } while (r.players[r.turn].bankrupt);
+  beginTurn(r);
+}
+function completeTurnTransition(r, transitionId, reason = 'board') {
+  const tr = r.turnTransition;
+  if (!tr || tr.id !== transitionId) return false;
+  clearTurnTransitionTimer(r);
+  r.turnTransition = null;
+  if (reason === 'timeout') console.warn(`room ${r.code}: presentation completion timeout (${transitionId})`);
+  advanceTurnNow(r);
+  return true;
+}
+function armTurnTransition(r) {
+  clearTurnTransitionTimer(r);
+  const tr = r.turnTransition;
+  if (!tr) return;
+  r.turnTransitionTimer = setTimeout(() => {
+    r.turnTransitionTimer = null;
+    if (!completeTurnTransition(r, tr.id, 'timeout')) return;
+    touch(r);
+    broadcast(r);
+  }, Math.max(0, tr.deadline - Date.now()));
+}
+function beginTurnTransition(r, p) {
+  if (r.turnTransition) return;
+  // Static engine tests and rooms that have never had a TV connected retain the
+  // synchronous path. Once a board has connected, a disconnect uses the watchdog.
+  if (!r.boardSeen) return advanceTurnNow(r);
+  const startedAt = Date.now();
+  r.turnTransition = {
+    id: crypto.randomBytes(8).toString('hex'),
+    fromPlayer: p ? p.id : null,
+    startedAt,
+    deadline: startedAt + TURN_TRANSITION_TIMEOUT_MS,
+  };
+  armTurnTransition(r);
+}
 function endTurn(r) {
   // 手札上限: 8枚以上なら7枚になるまで捨てさせてから手番を渡す
   const p = cur(r);
@@ -1095,11 +1146,7 @@ function endTurn(r) {
   r.pending = {};
   updateTitles(r);
   if (checkVictory(r)) return;
-  do {
-    r.turn = (r.turn + 1) % r.players.length;
-    if (r.turn === 0) r.round++;
-  } while (r.players[r.turn].bankrupt);
-  beginTurn(r);
+  beginTurnTransition(r, p);
 }
 
 const GATE_TILE = TILES.findIndex(t => t.t === 'gate');
@@ -2845,7 +2892,7 @@ function clearBotTimer(r) {
 }
 function scheduleBotAction(r) {
   clearBotTimer(r);
-  if (!r.botMode || r.phase !== 'playing' || r.winner) return;
+  if (!r.botMode || r.phase !== 'playing' || r.winner || r.turnTransition) return;
   const entry = Object.entries(r.pending || {}).find(([pid, pend]) => pById(r, pid)?.isBot && pend?.options?.length);
   if (!entry) return;
   const [pid, pend] = entry;
@@ -2906,6 +2953,10 @@ function publicState(r, viewerId) {
     owners: r.owners, market: r.market, shopVisit: r.shopVisit || null, log: r.log,
     titles: r.titles, duel: r.duel, curses: r.curses, lastEvent: r.lastEvent || null,
     barrier: r.barrier || {}, lastUlt: r.lastUlt || null,
+    turnTransition: r.turnTransition ? {
+      id: r.turnTransition.id, fromPlayer: r.turnTransition.fromPlayer,
+      startedAt: r.turnTransition.startedAt, deadline: r.turnTransition.deadline,
+    } : null,
     ultSequence: r.ultSequence ? { id: r.ultSequence.id, player: r.ultSequence.player,
       charId: r.ultSequence.charId, name: r.ultSequence.name, desc: r.ultSequence.desc,
       startedAt: r.ultSequence.startedAt, resolveAt: r.ultSequence.resolveAt,
@@ -2973,14 +3024,14 @@ function broadcast(r) {
 const SAVE_VER = 1;
 // ルームのフィールド分類表。ルームに新しいキーを追加したら必ずどちらかに分類すること
 // (save_testが未分類キーを検出して失敗する)
-const ROOM_RUNTIME_KEYS = new Set(['clients', 'lastActivity', 'upgradePreview', 'botTimer', 'botActionSeq', 'ultTimer', 'processedActions', 'turnReadyAt']);  // 保存しない
+const ROOM_RUNTIME_KEYS = new Set(['clients', 'lastActivity', 'upgradePreview', 'botTimer', 'botActionSeq', 'ultTimer', 'processedActions', 'turnReadyAt', 'turnTransitionTimer', 'boardSeen']);  // 保存しない
 const ROOM_PERSIST_KEYS = new Set([                                            // 保存する
   'code', 'phase', 'players', 'owners', 'deck', 'market', 'turn', 'round', 'log',
   'pending', 'titles', 'duel', 'lastBattle', 'winner', 'barrier', 'elemOv', 'tileFx',
   'curses', 'boardToken', 'atSeq', 'saveRev', 'battle', 'draft',
   'dirPend', 'halfMarket', 'shopVisit', 'effectQueue', 'effectResume', 'battleAfter',
   'lastEvent', 'lastDice', 'lastUlt', 'ultSequence', 'lastHeal', 'lastSeal', 'lastRuin', 'lastDraw', 'lastGain',
-  'lastBarrierHit', 'lastSpellFx', 'botMode', 'presentationSpeed', 'turnEpoch', 'promptSeq', 'stateRev',
+  'lastBarrierHit', 'lastSpellFx', 'botMode', 'presentationSpeed', 'turnEpoch', 'promptSeq', 'stateRev', 'turnTransition',
 ]);
 function serializeRoom(r) {
   const room = {};
@@ -3072,12 +3123,17 @@ function restoreRoom(save) {
   const existing = rooms.get(d.code);
   if (existing && existing.boardToken !== d.boardToken)
     return { error: `ルーム${d.code}は使用中のため復元できません(既存のルームを閉じてから再試行してください)`, status: 409 };
-  const room = Object.assign(d, { clients: new Set(), lastActivity: Date.now(), botTimer: null, botActionSeq: 0, ultTimer: null, processedActions: [] });
+  const room = Object.assign(d, { clients: new Set(), lastActivity: Date.now(), botTimer: null, botActionSeq: 0,
+    ultTimer: null, processedActions: [], turnTransitionTimer: null, boardSeen: true });
   if (room.botMode == null) room.botMode = false;
   if (room.presentationSpeed !== 2) room.presentationSpeed = 1;
   if (!Number.isInteger(room.turnEpoch)) room.turnEpoch = 0;
   if (!Number.isInteger(room.promptSeq)) room.promptSeq = 0;
   if (!Number.isInteger(room.stateRev)) room.stateRev = room.saveRev || 0;
+  if (room.turnTransition) {
+    if (room.turnTransition.deadline <= Date.now()) completeTurnTransition(room, room.turnTransition.id, 'timeout');
+    else armTurnTransition(room);
+  }
   if (!Array.isArray(room.effectQueue)) room.effectQueue = [];
   if (room.effectResume == null) room.effectResume = null;
   if (room.battleAfter == null) room.battleAfter = null;
@@ -3274,6 +3330,7 @@ const server = http.createServer(async (req, res) => {
       if (b.token !== r.boardToken) return json(res, { error: '権限がありません' }, 403);  // v0.62
       clearBotTimer(r);
       clearUltTimer(r);
+      clearTurnTransitionTimer(r);
       for (const c of r.clients) { try { c.res.end(); } catch (e) {} }
       rooms.delete(r.code);
       console.log(`ルーム${r.code}を手動クローズ`);
@@ -3321,6 +3378,13 @@ const server = http.createServer(async (req, res) => {
       r.presentationSpeed = b.speed === 2 ? 2 : 1;
       log(r, `BOT演出速度を${r.presentationSpeed === 2 ? '2倍' : '通常'}に変更`);
     }
+    else if (b.type === 'presentation_complete') {
+      if (b.token !== r.boardToken) return json(res, { error: '権限がありません' }, 403);
+      if (!r.turnTransition) return json(res, { ok: true, alreadyComplete: true });
+      if (b.transitionId !== r.turnTransition.id)
+        return json(res, { error: '演出待機が更新されました' }, 409);
+      completeTurnTransition(r, b.transitionId, 'board');
+    }
     else if (b.type === 'upgrade_preview') {
       // 発注書v0.75 §6.3: 強化選択中の候補プレビュー(揮発・非保存・ルール影響なし)。
       // 本人が強化選択中で、送られたtileが現在の候補に含まれる場合のみ表示する
@@ -3350,6 +3414,7 @@ const server = http.createServer(async (req, res) => {
     const requestedViewer = url.searchParams.get('me') || null;
     const viewer = pById(r, requestedViewer);
     const client = { res, viewerId: viewer && !viewer.isBot ? viewer.id : null };
+    if (!client.viewerId) r.boardSeen = true;
     r.clients.add(client);
     res.write(`data: ${JSON.stringify(publicState(r, client.viewerId))}\n\n`);
     req.on('close', () => {

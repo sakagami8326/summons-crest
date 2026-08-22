@@ -270,11 +270,10 @@
   .landBonusBlock b { display:block; margin-top:.15vh; font-size:2.55vh; line-height:1; white-space:nowrap; }
   .landBonusBlock em { display:block; margin-top:.25vh; color:#d8dde4; font:700 .9vh/1.1 sans-serif; font-style:normal; }
   .landBonusBlock.inactive { filter:grayscale(1); opacity:.68; border-color:#a9adb5; box-shadow:none; }
-  .battleSummoner { position:absolute; z-index:2; bottom:-1vh; width:24vw; height:34vh; pointer-events:none; overflow:hidden; }
+  .battleSummoner { position:absolute; z-index:2; bottom:0; width:24vw; height:clamp(274px,39vh,420px); pointer-events:none; overflow:hidden; }
   .battleSummoner.atk { left:1.5vw; } .battleSummoner.def { right:1.5vw; }
-  .battleSummoner::after { content:""; position:absolute; inset:0; background:linear-gradient(to top,rgba(7,6,18,.96) 0,rgba(7,6,18,.18) 58%,transparent 86%); }
-  .battleSummoner img { position:absolute; left:50%; bottom:-7%; width:100%; height:112%; transform:translateX(-50%); object-fit:contain; object-position:center bottom;
-      filter:drop-shadow(0 0 1.6vh rgba(0,0,0,.78)); opacity:.94; }
+  .battleSummoner img { position:absolute; left:50%; bottom:0; width:100%; height:100%; transform:translateX(-50%); object-fit:contain; object-position:center bottom;
+      filter:drop-shadow(0 .5vh 1.1vh rgba(0,0,0,.52)); opacity:1; }
   .battleSummonerLabel { position:absolute; z-index:3; left:1vw; right:1vw; bottom:2.2vh; display:grid; gap:.25vh; text-align:center;
       color:#fff6d2; text-shadow:0 2px 5px #000; font:700 1.4vh/1.1 var(--font-mincho); letter-spacing:.08em; }
   .battleSummonerLabel small { color:#f2d062; font:700 1vh/1 sans-serif; letter-spacing:.16em; }
@@ -437,18 +436,19 @@
       border-radius:999px; color:#fff4c6; background:#4b2d12; border:1px solid #e7c55b; font:900 clamp(9px,6cqw,15px)/1 sans-serif; }
   .tvShopCard .tsBrush { position:absolute; z-index:3; top:61.8%; left:0; width:100%; height:10.42%;
       background:url('/assets/cards/brush-boundary-b-paper.png') center/100% 100% no-repeat; }
-  .tvShopCard .tsInfo { position:absolute; z-index:4; inset:70.8% 0 0; padding:0 6.3% 4.2%; background:#f6e9c8;
-      display:grid; grid-template-rows:30% minmax(0,1fr); }
-  .tvShopCard .tsStats { height:auto; display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:6%; color:#172536;
-      transform:translateY(-.7vh);
-      font:900 clamp(15px,15cqw,30px)/1 Marudeco,sans-serif; }
-  .tvShopCard .tsStats>span { display:inline-grid; grid-template-columns:1.4em max-content; align-items:center; justify-content:center; gap:.25em; }
-  .tvShopCard .tsStats .statIconDisk { width:1.4em; }
+  .tvShopCard .tsInfo { position:absolute; z-index:4; inset:70% 0 0; padding:1.5% 6.3% 4.2%; background:#f6e9c8;
+      display:grid; grid-template-rows:clamp(28px,15cqw,32px) minmax(0,1fr); gap:1.5%; overflow:hidden; }
+  .tvShopCard .tsStats { height:auto; display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:5%; color:#172536;
+      font:900 clamp(14px,10.5cqw,22px)/1 Marudeco,sans-serif; }
+  .tvShopCard .tsStats>span { display:inline-grid; grid-template-columns:1.12em max-content; align-items:center; justify-content:center; gap:.22em; }
+  .tvShopCard .tsStats .statIconDisk { width:1.12em; height:1.12em; padding:.12em; }
   .tvShopCard .tsFx { color:#172536; font-size:clamp(8px,5.3cqw,13px); font-weight:700; line-height:1.3;
       padding:0 4%; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
-  .tvShopPrice { display:inline-flex; align-items:center; gap:.35vw; margin-top:.5vh; padding:.35vh .8vw; border-radius:999px;
-      background:#11152de8; color:#ffe279; font-size:1.65vh; font-weight:900; }
-  .tvShopPrice img { height:2.2vh; } .tvShopOld { opacity:.6; text-decoration:line-through; }
+  .tvShopPrice { display:inline-flex; align-items:center; justify-content:center; gap:.42vw; min-height:38px; min-width:96px;
+      margin-top:.55vh; padding:.48vh 1vw; border:1px solid rgba(242,208,98,.72); border-radius:999px;
+      background:#11152df2; color:#ffe279; font-size:clamp(17px,2.4vh,24px); line-height:1; font-weight:900; box-sizing:border-box; }
+  .tvShopPriceLabel { color:#fff4c6; font:700 .58em/1 'Yu Mincho',serif; letter-spacing:.08em; }
+  .tvShopPrice img { width:24px; height:24px; object-fit:contain; } .tvShopOld { opacity:.55; font-size:.72em; text-decoration:line-through; }
   .tvShopSold { position:absolute; z-index:5; inset:38% 0 auto; background:#8b1e28; color:#fff; padding:.5vh;
       font-size:1.6vh; font-weight:900; letter-spacing:.2em; transform:rotate(-8deg); }
   .tvRemove { height:100%; display:grid; place-items:center; color:#f2d062; font-size:2.2vh; }
@@ -1411,7 +1411,41 @@ const $ = id => document.getElementById(id);
 const botPresentationActive = actorId => !!(state && state.botMode && state.presentationSpeed === 2 &&
   state.players && state.players.some(p => p.id === (actorId || state.players[state.turn]?.id) && p.isBot));
 const presentationMs = (ms, actorId) => GAME_TIMING.scaled(ms, botPresentationActive(actorId) ? 2 : 1);
-const wait = ms => new Promise(r => setTimeout(r, presentationMs(ms)));
+let exclusivePresentationActorId = null;
+const wait = ms => new Promise(r => setTimeout(r, presentationMs(ms, exclusivePresentationActorId)));
+let majorPresentationQueue = [], majorPresentationRunning = false, majorPresentationPumpT = null;
+function queueMajorPresentation(at, kind, actorId, run) {
+  majorPresentationQueue.push({ at:Number(at) || Date.now(), kind, actorId, run });
+  majorPresentationQueue.sort((a, b) => a.at - b.at);
+  clearTimeout(majorPresentationPumpT);
+  majorPresentationPumpT = setTimeout(pumpMajorPresentations, 0);
+}
+async function waitForPresentationLane() {
+  while (animBusy || cutBusy || bq.length || Date.now() <= bannerUntil || cameraOwner || hopState || gameEntryRunning || duelPlaying) {
+    if (bq.length && state) render();
+    await new Promise(resolve => setTimeout(resolve, 80));
+  }
+}
+async function pumpMajorPresentations() {
+  if (majorPresentationRunning || !majorPresentationQueue.length) return;
+  majorPresentationRunning = true;
+  try {
+    while (majorPresentationQueue.length) {
+      const item = majorPresentationQueue.shift();
+      await waitForPresentationLane();
+      exclusivePresentationActorId = item.actorId || null;
+      try { await item.run(); }
+      catch (e) {
+        resetPresentationCamera('major-presentation-error');
+        console.log(`${item.kind}演出例外(継続): ${e.message}`);
+      } finally { exclusivePresentationActorId = null; }
+    }
+  } finally {
+    majorPresentationRunning = false;
+    scheduleTurnTransitionCompletion();
+    if (state) render();
+  }
+}
 // v1.37: テレビ盤面はPhaser・Standard品質・通常演出へ固定する。
 const renderModeActive = 'phaser';
 function showRenderError(why) {
@@ -1606,8 +1640,9 @@ function showSpot(i, ms = 1600) {
   spotT = setTimeout(() => $('spot').classList.remove('show'), ms);
 }
 // マス変化のクローズアップ: カメラズーム+中央下メッセージ(設計思想: マスに変化があれば必ず見せる)
-let tileMsgT = null, closeupTile = null, closeupCameraToken = null;
+let tileMsgT = null, closeupTile = null, closeupCameraToken = null, closeupResolve = null;
 function tileCloseup(i, html, dur = 2800) {
+  if (closeupResolve) { closeupResolve(false); closeupResolve = null; }
   closeupTile = i;
   const cameraToken = beginPresentationZoom(i, 'tile-closeup');
   closeupCameraToken = cameraToken;
@@ -1615,13 +1650,16 @@ function tileCloseup(i, html, dur = 2800) {
   el.innerHTML = iconize(html);
   el.classList.add('show');
   clearTimeout(tileMsgT);
+  const completion = new Promise(resolve => { closeupResolve = resolve; });
   tileMsgT = setTimeout(() => {
     el.classList.remove('show');
     if (endPresentationZoom(cameraToken)) closeupTile = null;
     if (closeupCameraToken === cameraToken) closeupCameraToken = null;
+    if (closeupResolve) { const done = closeupResolve; closeupResolve = null; done(true); }
     render();
   }, dur);
   bannerUntil = Math.max(bannerUntil, Date.now() + dur + 200);
+  return completion;
 }
 // ひらめき: カード裏だけをHUDプレートへ飛ばす(中身はTVに出さない ─ 発注書§7.3)
 function flyCardBacks(pid2, n) {
@@ -2005,6 +2043,34 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) bgmH
 let es = null, lastMsgAt = 0;
 // ===== v0.62 自動セーブ(saveRev契機・盤面のlocalStorageへ) =====
 let boardToken = null, lastSavedRev = 0, saveInFlight = false, startGameSubmitting = false;
+let transitionAckTimer = null, transitionAckInFlight = null, transitionAckedId = '';
+function boardPresentationIdle() {
+  return !majorPresentationRunning && !majorPresentationQueue.length && !animBusy && !cutBusy &&
+    !bq.length && Date.now() > bannerUntil && !cameraOwner && !hopState &&
+    !gameEntryRunning && !duelPlaying;
+}
+function scheduleTurnTransitionCompletion() {
+  clearTimeout(transitionAckTimer);
+  const tr = state && state.turnTransition;
+  if (!tr || !code || !boardToken || transitionAckedId === tr.id || transitionAckInFlight === tr.id) return;
+  if (!boardPresentationIdle()) {
+    transitionAckTimer = setTimeout(scheduleTurnTransitionCompletion, 120);
+    return;
+  }
+  transitionAckInFlight = tr.id;
+  fetch('/api/action', { method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ room:code, type:'presentation_complete', token:boardToken, transitionId:tr.id }) })
+    .then(async res => {
+      const out = await res.json().catch(() => ({}));
+      if (!res.ok && res.status !== 409) throw new Error(out.error || '演出完了を通知できませんでした');
+      transitionAckedId = tr.id;
+    })
+    .catch(e => {
+      console.log(e.message);
+      transitionAckTimer = setTimeout(scheduleTurnTransitionCompletion, 500);
+    })
+    .finally(() => { if (transitionAckInFlight === tr.id) transitionAckInFlight = null; });
+}
 document.getElementById('selectionStartBtn').onclick = async () => {
   if (!state || !state.selectionReady || !code || !boardToken || startGameSubmitting) return;
   const btn = document.getElementById('selectionStartBtn');
@@ -2183,7 +2249,9 @@ async function boot(mode = 'normal') {
   new Image().src = '/assets/p_' + c + '.png';
   new Image().src = '/assets/summoner-still-' + c + '.webp';
 });
-addEventListener('resize', fitWorld);
+addEventListener('resize', () => { resetPresentationCamera('resize'); fitWorld(); });
+document.addEventListener('fullscreenchange', () => { resetPresentationCamera('fullscreen-change'); fitWorld(); });
+addEventListener('pagehide', () => resetPresentationCamera('pagehide'));
 // 前回のルームが生きていれば「戻る」ボタンを出す
 (async () => {
   let saved = null, savedToken = null;
@@ -2367,11 +2435,11 @@ async function runFxHarness(name) {
     state.phase = 'playing'; state.turn = 0;
     state.pending = { [pid]: { type:'market', options:[] } };
     state.shopVisit = { id:'fixture-shop', player:pid, half:false, selected:null, items:[
-      { slotId:'random-weapon', kind:'support', card:'weapon', basePrice:60, price:60, sold:false },
-      { slotId:'random-shield', kind:'support', card:'shield', basePrice:60, price:60, sold:false },
-      { slotId:'random-gweapon', kind:'support', card:'gweapon', basePrice:120, price:120, sold:false },
-      { slotId:'random-gshield', kind:'support', card:'gshield', basePrice:120, price:120, sold:false },
-      { slotId:'random-jinx', kind:'support', card:'jinx', basePrice:100, price:100, sold:false },
+      { slotId:'random-trooper', kind:'creature', card:'trooper', basePrice:90, price:90, sold:false },
+      { slotId:'random-magado', kind:'creature', card:'magado', basePrice:120, price:120, sold:false },
+      { slotId:'random-barbaro', kind:'creature', card:'barbaro', basePrice:120, price:120, sold:false },
+      { slotId:'random-kamadoma', kind:'creature', card:'kamadoma', basePrice:60, price:60, sold:false },
+      { slotId:'random-strauk', kind:'creature', card:'strauk', basePrice:120, price:120, sold:false },
       { slotId:'weapon', kind:'support', card:'weapon', basePrice:60, price:60, sold:false },
       { slotId:'shield', kind:'support', card:'shield', basePrice:60, price:60, sold:false },
       { slotId:'jinx', kind:'support', card:'jinx', basePrice:100, price:100, sold:false },
@@ -2572,7 +2640,7 @@ function setZoom(ti) {
 }
 function beginPresentationZoom(tile, owner) {
   const token = ++cameraGeneration;
-  cameraOwner = { token, owner };
+  cameraOwner = { token, owner, startedAt:Date.now() };
   setZoom(tile);
   return token;
 }
@@ -2589,9 +2657,16 @@ function resetPresentationCamera(reason) {
   closeupCameraToken = null;
   clearTimeout(tileMsgT);
   $('tileMsg').classList.remove('show');
+  if (closeupResolve) { const done = closeupResolve; closeupResolve = null; done(false); }
   setZoom(null);
   if (reason) console.debug('camera reset:', reason);
+  scheduleTurnTransitionCompletion();
 }
+setInterval(() => {
+  if (zoomTile !== null && !cameraOwner) resetPresentationCamera('periodic-watchdog');
+  else if (cameraOwner && Date.now() - cameraOwner.startedAt > 12000)
+    resetPresentationCamera('camera-owner-timeout');
+}, 500);
 function elemMark(elem, label) {
   return elem && ELEM[elem]
     ? `<svg viewBox="-34 -36 68 72" aria-label="${label || elem}">${ELEM[elem]}</svg>`
@@ -3137,12 +3212,13 @@ function playGameEntryTransition() {
   gameEntryTimers.push(setTimeout(() => {
     gameEntrySelectionGone = true;
     sel.classList.remove('on', 'departing');
-    zoomTile = null; applyZoom();
+    resetPresentationCamera('game-entry-reveal');
     void wipe.offsetWidth;
     wipe.classList.add('reveal');
   }, 560));
   // 円形ワイプ後は盤面全景を見せてから開始地点の城へ寄る。
-  gameEntryTimers.push(setTimeout(() => { zoomTile = 0; applyZoom(); }, 2250));
+  let gameEntryCameraToken = null;
+  gameEntryTimers.push(setTimeout(() => { gameEntryCameraToken = beginPresentationZoom(0, 'game-entry'); }, 2250));
   gameEntryTimers.push(setTimeout(() => {
     wipe.classList.remove('on', 'reveal');
     gameEntryRunning = false;
@@ -3150,7 +3226,10 @@ function playGameEntryTransition() {
     const first = state && state.players[state.turn];
     if (first) showTelop('turn', first.name + 'の手番');
   }, 3250));
-  gameEntryTimers.push(setTimeout(() => { zoomTile = null; applyZoom(); }, 4150));
+  gameEntryTimers.push(setTimeout(() => {
+    if (gameEntryCameraToken) endPresentationZoom(gameEntryCameraToken);
+    gameEntryCameraToken = null;
+  }, 4150));
 }
 function playTurnCutin(pl) {
   if (!pl || !pl.charId) return;
@@ -3801,10 +3880,11 @@ async function playBattle(b) {
     const msg = b.win
       ? `<b style="color:#F2D062">侵略成功</b> ─ ${atk.name}が${def.name}の土地を奪取!`
       : `<b style="color:#8FE08A">防衛成功</b> ─ ${def.name}の${cname(b.defCreature, dLv)}が耐え抜いた(残HP${b.remainHp})`;
-    tileCloseup(b.tile, msg);
+    const closeupDone = tileCloseup(b.tile, msg);
     PW.play({ type: b.win ? 'invade-fx' : 'defend-fx', tile: b.tile,
               element: C.CREATURES[b.win ? b.atkCreature : b.defCreature].elem,
               color: (b.win ? atk : def).color });
+    await closeupDone;
   } else {
     showBanner(b.win ? '侵略成功!' : sic('up') + ' 防衛成功!',
       b.win ? atk.name + 'が' + def.name + 'の土地を奪取!'
@@ -3829,7 +3909,7 @@ function render() {
   if (!state) return;
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.40';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.41';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -4008,7 +4088,7 @@ function render() {
       }
       const old = visit.half ? `<span class="tvShopOld">${item.basePrice}G</span>` : '';
       return `<div class="tvShopProduct ${item.sold ? 'sold' : ''} ${visit.selected === item.slotId ? 'selected' : ''}">
-        <div class="tvShopCard">${body}</div><div class="tvShopPrice"><img src="/assets/ic_gold.png">${old}${item.price}G</div>
+        <div class="tvShopCard">${body}</div><div class="tvShopPrice"><span class="tvShopPriceLabel">購入</span><img src="/assets/ic_gold.png">${old}<b>${item.price}G</b></div>
         ${item.sold ? '<div class="tvShopSold">売り切れ</div>' : ''}</div>`;
     }).join('') : '';
   } else { $('shopOv').classList.remove('on'); if (!$('battle').classList.contains('on') && !$('summonCut').classList.contains('on') && !$('spellCut').classList.contains('on')) hideLogo(false); }
@@ -4152,7 +4232,8 @@ function render() {
   // 固有スキルのカットイン
   if (state.lastUlt && state.lastUlt.at !== prev.ultAt) {
     prev.ultAt = state.lastUlt.at;
-    playUlt(state.lastUlt);
+    const ult = Object.assign({}, state.lastUlt);
+    queueMajorPresentation(ult.at, 'ultimate', ult.player, () => playUlt(ult));
   }
   // 祠イベントの中央表示
   if (state.lastEvent && state.lastEvent.at !== prev.eventAt) {
@@ -4379,7 +4460,8 @@ function render() {
   // 戦闘結果
   if (state.lastBattle && state.lastBattle.at !== prev.battleAt) {
     prev.battleAt = state.lastBattle.at;
-    playBattle(state.lastBattle);
+    const battle = Object.assign({}, state.lastBattle);
+    queueMajorPresentation(battle.at, 'battle', battle.attacker, () => playBattle(battle));
   }
   // 勝利演出(発注書v0.75 §9 ─ M7): 全景→勝者領地の盤面順発光→光の収束→城ズーム→光柱→カットイン
   if (state.phase === 'ended' && state.winner) {
@@ -4412,8 +4494,9 @@ function render() {
       }
     }
   } else { $('winOv').classList.remove('on'); prev.winPlayed = null; }
+  scheduleTurnTransitionCompletion();
 }
-fitWorld(); addEventListener('resize', fitWorld);
+fitWorld();
 ['redani','linnei','grease','mio','lia','adel','villa','nerasio'].forEach(c => {
   new Image().src = '/assets/full_' + c + '.png';
   new Image().src = '/assets/p_' + c + '.png';

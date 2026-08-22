@@ -10,7 +10,7 @@ src = src.replace(/server\.listen\([\s\S]*?\}\);\s*$/, '');
 const G = new Function('require', '__dirname', 'process', 'console', 'setInterval',
   src + '\n;return { makeRoom, startSelect, handleChoose, publicState, startGame, rooms, CHARS,' +
   ' serializeRoom, restoreRoom, validateSave, resolveUltSequence,' +
-  ' ROOM_PERSIST_KEYS, ROOM_RUNTIME_KEYS, SAVE_VER };')(
+  ' completeTurnTransition, ROOM_PERSIST_KEYS, ROOM_RUNTIME_KEYS, SAVE_VER };')(
   require, __dirname, process, console, () => {});
 
 let pass = 0;
@@ -56,6 +56,8 @@ function setupGame() {
   const totals = {};
   let steps = 0, restores = 0;
   while (!r.winner && steps < 60000) {
+    // v1.41: 実機ではテレビが全演出終了後に通知する。ヘッドレス完走検査では即時通知を再現する。
+    if (r.turnTransition) G.completeTurnTransition(r, r.turnTransition.id, 'test');
     // 分類表: ルームに現れた全キーがどちらかに分類されていること
     for (const k of Object.keys(r))
       if (!G.ROOM_PERSIST_KEYS.has(k) && !G.ROOM_RUNTIME_KEYS.has(k))

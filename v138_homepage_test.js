@@ -13,7 +13,8 @@ const js = read('public/site/homepage.js');
 const server = read('server.js');
 const pkg = require('./package.json');
 
-ok(/const VERSION = '1\.40'/.test(server) && pkg.version === '1.40.0', 'current version is unified at v1.40');
+ok(/const VERSION = '1\.(?:40|41)'/.test(server) && Number(pkg.version.replace(/\.0$/, '')) >= 1.40,
+  'v1.38 homepage remains covered by the current release');
 ok(/if \(p === '\/'\) return serveFile\(res, 'site\/index\.html'\)/.test(server), 'root serves official homepage');
 ok(/if \(p === '\/play'\) return serveFile\(res, 'board\.html'\)/.test(server), 'play route serves TV game');
 ok(/p === '\/board'[\s\S]*Location: '\/play'/.test(server), 'board compatibility route redirects to play');

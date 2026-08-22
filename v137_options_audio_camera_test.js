@@ -8,7 +8,7 @@ const board = fs.readFileSync(path.join(__dirname, 'public/board.html'), 'utf8')
 const world = fs.readFileSync(path.join(__dirname, 'public/board_world.js'), 'utf8');
 const server = fs.readFileSync(path.join(__dirname, 'server.js'), 'utf8');
 
-ok(/const VERSION = '1\.40'/.test(server), 'v1.37修正を含むサーバーバージョンは1.40');
+ok(/const VERSION = '1\.(?:40|41)'/.test(server), 'v1.37修正を含むサーバーバージョンは1.40以降');
 ok(!/id="opt(?:Render|Quality|Reduce)"/.test(board), '不要な3設定ボタンを撤去');
 ok(!/sc_render|sc_render_fail|sc_quality|sc_reduce_fx/.test(board + world), '設定URL・localStorage経路を撤去');
 ok(!/prefers-reduced-motion/.test(board), 'OSの演出軽減設定を使用しない');

@@ -124,7 +124,7 @@ const scripts = timingSrc + '\n' +
     throw new Error('テレビ召喚士選択検査: 選択確定時のイメージアートまたはコマがない');
   if (!/bgm_select\.mp3/.test(boardHtml) || !/summonerOrbit/.test(boardHtml) ||
       !/function playGameEntryTransition\(\)/.test(boardHtml) ||
-      !/class="entryRing"/.test(boardHtml) || !/zoomTile = 0; applyZoom\(\)/.test(boardHtml))
+      !/class="entryRing"/.test(boardHtml) || !/beginPresentationZoom\(0, 'game-entry'\)/.test(boardHtml))
     throw new Error('ゲーム開始演出検査: 選択BGM・回転リング・円形ワイプ・城ズームが不足');
   if (/id="audioGate"/.test(boardHtml) || /function unlockTitleAudio\(\)/.test(boardHtml) ||
       !/function startTitleBgm\(\)/.test(boardHtml) ||
