@@ -159,10 +159,10 @@
   #lpHint { position:absolute; right:calc(14px + env(safe-area-inset-right)); bottom:calc(2px + env(safe-area-inset-bottom));
         padding:3px 8px; border-radius:999px; background:rgba(9,8,24,.66); border:1px solid rgba(242,208,98,.3);
         font-size:11px; color:rgba(255,244,204,.84); letter-spacing:1px; pointer-events:none; z-index:5; }
-  #hand .card { animation:dealIn .45s cubic-bezier(.2,.85,.3,1) backwards; }
+  #hand .card { animation:dealIn .45s cubic-bezier(.2,.85,.3,1) backwards; touch-action:none; }
   @keyframes dealIn { from { transform:translateX(16dvh) translateY(2dvh) rotate(6deg); opacity:0; } }
   #hand { display:flex; gap:12px; height:100%; overflow-x:auto; padding:10px 6px 4px;
-        align-items:flex-end; -webkit-overflow-scrolling:touch; touch-action:pan-y; }
+        align-items:flex-end; -webkit-overflow-scrolling:touch; touch-action:none; }
   .card { flex:none; height:100%; aspect-ratio:300/470; width:auto; position:relative;
         perspective:700px; cursor:pointer; transition:transform .15s; }
   #hand .card { filter:drop-shadow(0 1.15dvh 1.25dvh rgba(20,25,39,.48)); }
@@ -171,8 +171,8 @@
   #hand.reordering { cursor:grabbing; }
   #hand .card.handHolding::after { content:""; position:absolute; z-index:12; inset:-4px; border:3px solid transparent;
         border-top-color:#F2D062; border-right-color:#F2D062; border-radius:12px; pointer-events:none;
-        animation:handHoldProgress .3s linear both; }
-  @keyframes handHoldProgress { from{transform:rotate(-90deg);opacity:.25} to{transform:rotate(270deg);opacity:1} }
+        opacity:0; animation:handHoldProgress .2s .1s linear forwards; }
+  @keyframes handHoldProgress { from{transform:rotate(-90deg);opacity:.18} to{transform:rotate(270deg);opacity:1} }
   .card.handDragging { position:fixed!important; z-index:90!important; margin:0!important; pointer-events:none;
         opacity:.94; transform:translateY(-1.3dvh) scale(1.045); filter:drop-shadow(0 2dvh 2.5dvh rgba(0,0,0,.72))!important;
         transition:none!important; animation:none!important; }
@@ -996,6 +996,7 @@ let revealQueue = [], revealCurrent = null, revealT = null;
 let phoneUltAt = 0, phoneUltT = null;
 function playPhoneUlt(u) {
   if (!u || !state || u.at === phoneUltAt) return;
+  cancelHandGesture();
   phoneUltAt = u.at;
   clearTimeout(phoneUltT);
   $('phoneUltArt').src = '/assets/ult_' + u.charId + '.webp';
@@ -1092,6 +1093,9 @@ function connect() {
     $('connBar').style.display = 'none';
     const next = JSON.parse(e.data);
     if (state && next.stateRev != null && next.stateRev <= (state.stateRev || 0)) return;
+    if (handGesture && handInteractionContextKey(state) !== handInteractionContextKey(next)) {
+      cancelHandGesture({ rerender:false });
+    }
     state = next;
     serverClockOffset = (state.serverNow || Date.now()) - Date.now();
     syncHasArt();
@@ -1106,6 +1110,7 @@ function enterGame() {
   connect();
 }
 document.addEventListener('visibilitychange', () => {
+  if (document.hidden) cancelHandGesture({ rerender:false });
   if (!document.hidden && room && Date.now() - lastMsgAt > 8000) connect();
 });
 $('joinBtn').onclick = async () => {
@@ -1185,6 +1190,7 @@ async function resumeSavedSession(sess) {
   if (!await resumeSavedSession(sess)) clearSavedSession();
 })();
 async function toggleFullscreen() {
+  cancelHandGesture();
   if (!document.fullscreenElement) {
     await document.documentElement.requestFullscreen({ navigationUI:'hide' }).catch(() => {});
     try { await screen.orientation.lock('landscape'); } catch (e) {}
@@ -1192,6 +1198,9 @@ async function toggleFullscreen() {
 }
 $('fsBtn').onclick = toggleFullscreen;
 $('joinFsBtn').onclick = toggleFullscreen;
+window.addEventListener('blur', () => cancelHandGesture());
+window.addEventListener('pagehide', () => cancelHandGesture({ rerender:false }));
+document.addEventListener('fullscreenchange', () => cancelHandGesture());
 // ===== デッキビューア(カード表示) =====
 function dkCard(c, n, pickId, zone) {
   return `<div class="dkCard ${pickId ? 'pick' : ''}" onclick="${pickId ? `choose('${pickId}')` : `openCardZoom('${c}')`}">
@@ -1246,7 +1255,7 @@ function buildDeckOv() {
     dkSection('捨て札', m.discardList || []) +
     dkSection('廃棄', m.exileList || []);
 }
-$('deckBtn').onclick = () => { if (!state) return; delete $('deckOv').dataset.pick; buildDeckOv(); $('deckOv').classList.add('on'); };
+$('deckBtn').onclick = () => { if (!state) return; delete $('deckOv').dataset.pick; buildDeckOv(); openBlockingOverlay('deckOv'); };
 $('deckClose').onclick = () => {
   const ov = $('deckOv');
   if (ov.dataset.pick) { choose(ov.dataset.pick); delete ov.dataset.pick; }
@@ -1269,7 +1278,7 @@ function buildPickOv(title, sections, cancelId) {
   afterUiPaint(() => fitCreatureNames($('deckScroll')));
   $('deckClose').textContent = cancelId ? 'やめる' : '';
   $('deckClose').style.display = cancelId ? '' : 'none';
-  ov.classList.add('on');
+  openBlockingOverlay(ov);
 }
 function pickOvChoose(id) {
   const ov = $('deckOv');
@@ -1376,7 +1385,7 @@ function showNextReveal() {
   }
   $('drawTitle').textContent = revealCurrent.title;
   $('drawCard').innerHTML = `<div class="dcOne">${bigCardHTML(revealCurrent.card)}</div>`;
-  $('drawModal').classList.add('on');
+  openBlockingOverlay('drawModal');
   afterUiPaint(() => fitCreatureNames($('drawCard')));
   revealT = setTimeout(advanceReveal, 1800);
 }
@@ -1422,7 +1431,7 @@ function renderMiniMap(p) {
     ${selOpt ? `<button class="abtn" onclick="mmSel=null; hideMapOv(); choose('${selOpt}')">ここに決定</button>` : ''}
     ${cancel ? `<button class="abtn ghost" onclick="mmSel=null; hideMapOv(); choose('${cancel.id}')">${cancel.label}</button>` : ''}`;
   syncMmModeSw();
-  $('mapOv').classList.add('on');
+  openBlockingOverlay('mapOv');
 }
 let upPvT = 0;
 function mmTap(i) {
@@ -1510,7 +1519,7 @@ function renderMapView() {
   $('mapOvSide').innerHTML = `<div id="mapOvSel">${tileDetailHTML(viewSel)}</div>
     <button class="abtn ghost" onclick="mapView=false; hideMapOv()">閉じる</button>`;
   syncMmModeSw();
-  $('mapOv').classList.add('on');
+  openBlockingOverlay('mapOv');
 }
 function viewTap(i) { viewSel = i; renderMapView(); }
 $('mapBtn').onclick = () => { if (!state || state.phase !== 'playing') return; mapView = true; viewSel = null; renderMapView(); };
@@ -1525,7 +1534,7 @@ function renderResult() {
       <div>${q.name}${q.isBot ? '<span class="resWin">BOT</span>' : ''}${q.id === state.winner ? '<span class="resWin">WINNER</span>' : ''}</div>
       <div class="resPts">${q.points}<span style="font-size:1.9dvh">点</span><span class="resGold">${q.gold}G</span></div>
     </div>`).join('');
-  $('resultOv').classList.add('on');
+  openBlockingOverlay('resultOv');
 }
 $('resultBtn').onclick = () => { localStorage.removeItem('sc_session'); location.reload(); };
 const choose = async optionId => {
@@ -1539,7 +1548,13 @@ const choose = async optionId => {
   });
   if (res.status === 409) {
     const out = await res.json();
-    if (out.state && (!state || out.state.stateRev >= (state.stateRev || 0))) { state = out.state; render(); }
+    if (out.state && (!state || out.state.stateRev >= (state.stateRev || 0))) {
+      if (handGesture && handInteractionContextKey(state) !== handInteractionContextKey(out.state)) {
+        cancelHandGesture({ rerender:false });
+      }
+      state = out.state;
+      render();
+    }
   }
   return res;
 };
@@ -1557,7 +1572,7 @@ function openShopDetail(slotId) {
     try { await choose('buy:' + slotId); $('shopDetail').classList.remove('on'); }
     finally { shopBuying = false; }
   };
-  $('shopDetail').classList.add('on');
+  openBlockingOverlay('shopDetail');
   try { fetch('/api/action', { method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ room, type:'shop_preview', playerId:pid, slotId }) }); } catch (e) {}
   afterUiPaint(() => fitCreatureNames($('shopDetailStage')));
@@ -1745,7 +1760,7 @@ function openGalleryDetail(cid) {
   galleryDetailIndex = Math.max(0, galleryIds.indexOf(cid));
   const cr = state.catalog.CREATURES[cid];
   galleryDetailEvo = galleryEvo && !!(cr && cr.evo);
-  renderGalleryDetail(); $('galZoom').classList.add('on');
+  renderGalleryDetail(); openBlockingOverlay('galZoom');
 }
 function moveGalleryDetail(step) {
   if (!galleryIds.length) return;
@@ -1759,7 +1774,7 @@ function openStarterDeckDetail(charId, cid) {
   galleryDetailIndex = Math.max(0, galleryIds.indexOf(cid));
   galleryDetailEvo = false;
   renderGalleryDetail();
-  $('galZoom').classList.add('on');
+  openBlockingOverlay('galZoom');
 }
 function applyGalleryFlip(animate) {
   document.querySelectorAll('#gGrid .flip').forEach((f, i) => {
@@ -1767,7 +1782,7 @@ function applyGalleryFlip(animate) {
     f.classList.toggle('flipped', galleryEvo && f.dataset.evo === '1');
   });
 }
-$('galleryBtn').onclick = () => { if (!state) return; buildGallery(); $('galleryOv').classList.add('on'); };
+$('galleryBtn').onclick = () => { if (!state) return; buildGallery(); openBlockingOverlay('galleryOv'); };
 $('galleryClose').onclick = () => $('galleryOv').classList.remove('on');
 $('galleryEvoChk').onchange = e => { galleryEvo = e.target.checked; applyGalleryFlip(true); };
 document.querySelectorAll('[data-gallery-type]').forEach(el => el.onchange = () => {
@@ -1804,11 +1819,11 @@ function refreshCardZoomAction() {
   $('cardZoomReason').textContent = cardActionSubmitting ? '送信中…' : optionId ? 'ボタンをタップするとすぐに使用します' : '現在の手順では使用できません';
 }
 function openCardZoom(c) {
-  cancelHandGesture(true);
+  cancelHandGesture();
   zoomCardId = c;
   $('cardZoomCard').innerHTML = bigCardHTML(c);
   refreshCardZoomAction();
-  $('cardZoom').classList.add('on');
+  openBlockingOverlay('cardZoom');
   afterUiPaint(() => fitCreatureNames($('cardZoomCard')));
 }
 $('cardZoom').onclick = e => { if (e.target === $('cardZoom')) $('cardZoom').classList.remove('on'); };
@@ -1961,13 +1976,13 @@ function openCharDetail(id, readonly = false) {
         : `<div class="cdSec"><h2>初期デッキ</h2><div class="cdDeck">${charDeckCards(id)}</div></div>`}
     </div><div class="cdActions"><button class="abtn ghost" onclick="closeCharDetail()">戻る</button>
       ${previewOnly ? '' : `<button class="abtn" id="charChoose" onclick="confirmCharacter('${id}')">選ぶ</button>`}</div></div>`;
-  $('charDetail').classList.add('on');
+  openBlockingOverlay('charDetail');
   afterUiPaint(() => fitCreatureNames($('charDetail')));
 }
 
 function renderCharSelection(m, C, p) {
   const opts = p && p.type === 'select_char' ? p.options.map(o => o.id) : [];
-  $('charSel').classList.add('on');
+  openBlockingOverlay('charSel');
   $('csMsg').textContent = p ? '使用する召喚士を選んでください'
     : (m.charId ? C.CHARS[m.charId].name + ' で決定 ─ 他のプレイヤーを待っています' : '…');
   const entries = Object.entries(C.CHARS);
@@ -2069,6 +2084,21 @@ function cardHTML(c, i) {
 
 let handListKey = '', handServerKey = '', handOrderScope = '', handDisplay = [];
 let handGesture = null;
+let handClickSuppressUntil = 0;
+function handInteractionContextKey(s) {
+  if (!s) return '';
+  const player = Array.isArray(s.players) ? s.players.find(q => q.id === pid) : null;
+  const pending = s.pending && s.pending[pid];
+  const turnPlayer = Array.isArray(s.players) && s.players[s.turn] ? s.players[s.turn].id : s.turn;
+  return [s.phase || '', turnPlayer || '', s.turnEpoch || (pending && pending.turnEpoch) || '',
+    pending && pending.promptId || '', pending && pending.type || '', ((player && player.hand) || []).join(',')].join('|');
+}
+function openBlockingOverlay(target) {
+  cancelHandGesture();
+  const el = typeof target === 'string' ? $(target) : target;
+  if (el) el.classList.add('on');
+  return el;
+}
 function handStorageKey() { return room && pid ? `sc_hand_order:${room}:${pid}` : ''; }
 function readHandOrder() {
   const key = handStorageKey();
@@ -2109,17 +2139,31 @@ function finishHandDrop() {
   saveHandOrder();
   [...hand.querySelectorAll('.card[data-c]')].forEach((el, i) => el.dataset.i = i);
 }
-function cancelHandGesture(force = false) {
-  if (!handGesture) return;
-  clearTimeout(handGesture.holdTimer);
-  if (handGesture.dragging) finishHandDrop();
-  const el = handGesture && handGesture.el;
-  if (el) el.classList.remove('handHolding');
-  if (el && handGesture.pointerId != null && el.hasPointerCapture && el.hasPointerCapture(handGesture.pointerId)) {
-    try { el.releasePointerCapture(handGesture.pointerId); } catch (e) {}
+function cancelHandGesture(options = {}) {
+  const rerender = options.rerender !== false;
+  const g = handGesture, hand = $('hand');
+  const hasArtifacts = !!(g || hand.classList.contains('reordering') ||
+    hand.querySelector('.handDragging,.handHolding,.handPlaceholder'));
+  if (!hasArtifacts) return;
+  if (g) clearTimeout(g.holdTimer);
+  const el = g && g.el;
+  if (el && g.pointerId != null && el.hasPointerCapture && el.hasPointerCapture(g.pointerId)) {
+    try { el.releasePointerCapture(g.pointerId); } catch (e) {}
   }
   handGesture = null;
-  if (force) $('hand').classList.remove('reordering');
+  hand.querySelectorAll('.handPlaceholder').forEach(node => node.remove());
+  hand.querySelectorAll('.card').forEach(card => {
+    card.classList.remove('handDragging', 'handHolding');
+    ['position','left','top','width','height','zIndex','margin','pointerEvents'].forEach(k => card.style[k] = '');
+  });
+  hand.classList.remove('reordering');
+  if (g && Array.isArray(g.originalOrder)) {
+    handDisplay = g.originalOrder.slice();
+    handListKey = '';
+  }
+  if (g && Number.isFinite(g.originalScroll)) hand.scrollLeft = g.originalScroll;
+  handClickSuppressUntil = Date.now() + 400;
+  if (rerender && state && state.players && state.players.some(q => q.id === pid)) renderHand();
 }
 function startHandDrag(e) {
   const g = handGesture, hand = $('hand');
@@ -2132,7 +2176,6 @@ function startHandDrag(e) {
   g.placeholder.className = 'handPlaceholder';
   g.placeholder.style.width = r.width + 'px'; g.placeholder.style.height = r.height + 'px';
   hand.insertBefore(g.placeholder, g.el);
-  document.body.appendChild(g.el);
   g.el.classList.add('handDragging');
   Object.assign(g.el.style, { left:r.left+'px', top:r.top+'px', width:r.width+'px', height:r.height+'px' });
   hand.classList.add('reordering');
@@ -2146,15 +2189,16 @@ function moveHandDrag(e) {
   const hr = hand.getBoundingClientRect();
   if (e.clientX < hr.left + 48) hand.scrollLeft -= 14;
   else if (e.clientX > hr.right - 48) hand.scrollLeft += 14;
-  const cards = [...hand.querySelectorAll('.card[data-c]')];
+  const cards = [...hand.querySelectorAll('.card[data-c]')].filter(card => card !== g.el);
   const before = cards.find(card => e.clientX < card.getBoundingClientRect().left + card.getBoundingClientRect().width / 2);
   if (before) hand.insertBefore(g.placeholder, before); else hand.appendChild(g.placeholder);
 }
 function beginHandPointer(e, el) {
   if (e.button != null && e.button !== 0) return;
-  cancelHandGesture();
+  if (handGesture) return;
   const hand = $('hand');
   handGesture = { el, pointerId:e.pointerId, x:e.clientX, y:e.clientY, scroll:hand.scrollLeft,
+    originalScroll:hand.scrollLeft, originalOrder:handDisplay.slice(),
     armed:false, dragging:false, scrolling:false, moved:false, holdTimer:null };
   try { el.setPointerCapture(e.pointerId); } catch (err) {}
   el.classList.add('handHolding');
@@ -2169,26 +2213,31 @@ function beginHandPointer(e, el) {
     const dx = ev.clientX - g.x, dy = ev.clientY - g.y;
     if (g.dragging) return moveHandDrag(ev);
     if (g.armed && Math.hypot(dx,dy) > 5) { startHandDrag(ev); return moveHandDrag(ev); }
-    if (!g.armed && Math.abs(dx) > 7 && Math.abs(dx) > Math.abs(dy)) {
+    if (!g.armed && Math.abs(dx) > 14 && Math.abs(dx) > Math.abs(dy)) {
       clearTimeout(g.holdTimer); g.el.classList.remove('handHolding'); g.scrolling = true; g.moved = true;
       hand.scrollLeft = g.scroll - dx; ev.preventDefault();
-    } else if (Math.abs(dy) > 10) { clearTimeout(g.holdTimer); g.el.classList.remove('handHolding'); g.moved = true; }
+    } else if (Math.abs(dy) > 14) { clearTimeout(g.holdTimer); g.el.classList.remove('handHolding'); g.moved = true; }
   };
   const finish = ev => {
     const g = handGesture; if (!g || g.el !== el) return;
     clearTimeout(g.holdTimer);
     g.el.classList.remove('handHolding');
-    if (g.dragging) { finishHandDrop(); handGesture = null; return; }
-    const open = !g.moved && !g.scrolling;
+    if (g.dragging) {
+      finishHandDrop();
+      if (g.pointerId != null && g.el.hasPointerCapture && g.el.hasPointerCapture(g.pointerId)) {
+        try { g.el.releasePointerCapture(g.pointerId); } catch (err) {}
+      }
+      handClickSuppressUntil = Date.now() + 400; handGesture = null; return;
+    }
+    if (g.moved || g.scrolling) handClickSuppressUntil = Date.now() + 400;
     handGesture = null;
-    if (open) openCardZoom(el.dataset.c);
   };
   el.onpointerup = finish;
-  el.onpointercancel = () => cancelHandGesture(true);
+  el.onpointercancel = () => cancelHandGesture();
 }
 function renderHand() {
   const serverHand = me().hand.slice(), serverKey = serverHand.join(',');
-  if (serverKey !== handServerKey && handGesture) cancelHandGesture(true);
+  if (serverKey !== handServerKey && handGesture) cancelHandGesture({ rerender:false });
   handServerKey = serverKey;
   const display = reconcileHandOrder(serverHand), list = display.join(',');
   $('hand').dataset.n = display.length;
@@ -2216,7 +2265,10 @@ function renderHand() {
 }
 function bindHand() {
   document.querySelectorAll('#hand .card').forEach(el => {
-    el.onclick = null;
+    el.onclick = e => {
+      if (Date.now() < handClickSuppressUntil) { e.preventDefault(); return; }
+      openCardZoom(el.dataset.c);
+    };
     el.onpointerdown = e => beginHandPointer(e, el);
     el.oncontextmenu = e => e.preventDefault();
   });
@@ -2238,7 +2290,7 @@ function showUltConfirm() {
   $('ucDesc').textContent = u.desc;
   $('ucReason').textContent = us.canActivate ? '現在発動できます' : us.reason;
   $('ultActivate').disabled = !us.canActivate;
-  $('ultConfirm').classList.add('on');
+  openBlockingOverlay('ultConfirm');
 }
 $('ultBtn').onclick = showUltConfirm;
 $('ultActivate').onclick = () => {
@@ -2320,7 +2372,7 @@ function showActionOverlay(title, options, config) {
     + (cfg.browseHand ? `<button class="gateBtn ghost" onclick="browseActionHand()"><div class="gbT">手札を確認する</div><div class="gbD">行動を決める前に手札へ戻ります</div></button>` : '')
     + (cfg.closeable && !cfg.browseHand ? `<button class="gateBtn ghost" onclick="closeActionOverlay(true)"><div class="gbT">閉じる</div><div class="gbD">手札の選択へ戻ります</div></button>` : '');
   $('actionOvHint').textContent = cfg.hint || '';
-  $('actionOv').classList.add('on');
+  openBlockingOverlay('actionOv');
 }
 function setContextActions(title, options) {
   const btn = $('contextBtn');
@@ -2527,7 +2579,7 @@ function render() {
       });
     }
     $('pickHint').textContent = `選ばなかった${p.options.length - 1}枚は捨て札へ(制限時間はありません)`;
-    pov.classList.add('on');
+    openBlockingOverlay(pov);
     renderHand();
     return;
   } else if (p.type === 'roll') {
@@ -2635,7 +2687,7 @@ function render() {
         <div class="gbT">${mt.ic ? sic(mt.ic, '3dvh') + ' ' : ''}${mt.t}${cost ? ` <span class="gbC">${cost}</span>` : ''}</div>
         <div class="gbD">${mt.d}</div></button>`;
     }).join('');
-    $('gateOv').classList.add('on');
+    openBlockingOverlay('gateOv');
   } else if (p.type === 'select_char') {
     $('msg').textContent = '';
     A.innerHTML = '';
@@ -2643,7 +2695,7 @@ function render() {
     $('msg').textContent = '';
     A.innerHTML = '';
     $('shopScene').classList.remove('on');
-    $('draftOv').classList.add('on');
+    openBlockingOverlay('draftOv');
     const dk = p.options.map(o => o.id).join(',');
     if ($('draftRow').dataset.k === dk) { renderHand(); return; }
     $('draftRow').dataset.k = dk;
@@ -2663,7 +2715,7 @@ function render() {
   } else if (p.type === 'market' && !inShopHand) {
     $('msg').textContent = '';
     A.innerHTML = '';
-    $('shopScene').classList.add('on');
+    openBlockingOverlay('shopScene');
     $('shopGold').innerHTML = '<img src="/assets/ic_gold.png" style="height:2.4dvh;vertical-align:-0.4dvh"> ' + m.gold + ' G';
     const visit = state.shopVisit;
     $('shopShelf').innerHTML = visit ? visit.items.map(item => {

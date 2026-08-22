@@ -273,10 +273,8 @@
   .battleSummoner { position:absolute; z-index:2; bottom:-1vh; width:24vw; height:34vh; pointer-events:none; overflow:hidden; }
   .battleSummoner.atk { left:1.5vw; } .battleSummoner.def { right:1.5vw; }
   .battleSummoner::after { content:""; position:absolute; inset:0; background:linear-gradient(to top,rgba(7,6,18,.96) 0,rgba(7,6,18,.18) 58%,transparent 86%); }
-  .battleSummoner.def img { transform:scaleX(-1); }
   .battleSummoner img { position:absolute; left:50%; bottom:-7%; width:100%; height:112%; transform:translateX(-50%); object-fit:contain; object-position:center bottom;
       filter:drop-shadow(0 0 1.6vh rgba(0,0,0,.78)); opacity:.94; }
-  .battleSummoner.def img { transform:translateX(-50%) scaleX(-1); }
   .battleSummonerLabel { position:absolute; z-index:3; left:1vw; right:1vw; bottom:2.2vh; display:grid; gap:.25vh; text-align:center;
       color:#fff6d2; text-shadow:0 2px 5px #000; font:700 1.4vh/1.1 var(--font-mincho); letter-spacing:.08em; }
   .battleSummonerLabel small { color:#f2d062; font:700 1vh/1 sans-serif; letter-spacing:.16em; }
@@ -858,7 +856,7 @@
   @keyframes scText { from { transform:translateY(28px); opacity:0; } }
   /* TV HUD: 胸上の召喚士を前面に出した横長プレート */
   #hud { top:24px !important; left:18px !important; width:400px !important;
-      transform:scale(1); transform-origin:top left; }
+      transform:scale(1.1); transform-origin:top left; }
   .plate { width:400px !important; height:96px !important; padding:11px 15px 9px 17px !important;
       isolation:isolate; overflow:hidden; }
   .plate::before { content:""; position:absolute; z-index:-1; inset:0; pointer-events:none;
@@ -893,7 +891,7 @@
   .plate .pts { color:#fff7df !important; text-shadow:0 2px 6px rgba(0,0,0,.9) !important; }
   .plate .pts small,.plate .row2 { color:rgba(255,247,223,.9) !important; text-shadow:0 1px 4px rgba(0,0,0,.9); }
   @media (max-width:1400px), (max-height:800px) {
-    #hud { top:18px !important; left:14px !important; transform:scale(.9); }
+    #hud { top:18px !important; left:14px !important; transform:scale(1); }
     #leftUtility { left:14px; bottom:10px; width:296px; }
     #ticker { max-height:min(25vh,158px); min-height:40px; padding:7px 10px 6px; }
     #utilityFooter { min-height:32px; padding:5px 7px; gap:5px; }
@@ -2293,7 +2291,7 @@ function fitWorld() {
   }
   const utilityRect = showHud ? $('leftUtility').getBoundingClientRect() : null;
   const railRight = showHud ? Math.max(hudRect.right, utilityRect.right) : 0;
-  const safeLeft = showHud ? Math.min(Math.ceil(railRight + 12), Math.floor(innerWidth * .32)) : 0;
+  const safeLeft = showHud ? Math.min(Math.ceil(railRight + 12), Math.floor(innerWidth * .36)) : 0;
   const safeTop = showHud ? 8 : 0;
   const safeRight = showHud ? 8 : 0;
   const safeBottom = showHud ? 8 : 0;
