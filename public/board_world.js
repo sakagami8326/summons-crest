@@ -949,7 +949,7 @@ const PW = (() => {
   function syncBoard(st) {
     if (failed) return;
     if (!ready) { pendingState = st; return; }
-    const key = JSON.stringify(st.owners) + JSON.stringify(st.curses || {}) + JSON.stringify(st.barrier || {}) +
+    const key = JSON.stringify(st.owners) + JSON.stringify(st.tolls || []) + JSON.stringify(st.curses || {}) + JSON.stringify(st.barrier || {}) +
       st.players.map(p => p.id + p.color).join('') + st.tiles.map(t => t.e || t.t).join('');
     if (key === boardKey) return;
     boardKey = key;
@@ -1169,7 +1169,7 @@ const PW = (() => {
     P.sh.setDisplaySize(40 * (1 - 0.35 * air), 13 * (1 - 0.35 * air));
     P.sh.setAlpha(1 - 0.5 * air);
     if (P.aura) P.aura.setPosition(x, y - 6).setDepth(it.active ? it.z - 1 : it.z - 3);
-    if (P.marker) P.marker.setPosition(x, y - Math.max(70, it.w * 1.28) - air * 10).setDepth(it.z + 3);
+    if (P.marker) P.marker.setPosition(x, y - Math.max(90, it.w * 1.55) - air * 10).setDepth(it.z + 3);
   }
 
   // ===== 強化候補ハイライト(発注書v0.75 §6) =====

@@ -157,7 +157,8 @@
   #handWrap { flex:1; min-height:0; height:auto; position:relative; padding:0 calc(10px + env(safe-area-inset-right))
         calc(6px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left)); }
   #lpHint { position:absolute; right:calc(14px + env(safe-area-inset-right)); bottom:calc(2px + env(safe-area-inset-bottom));
-        font-size:11px; color:rgba(241,232,208,.45); letter-spacing:1px; pointer-events:none; z-index:5; }
+        padding:3px 8px; border-radius:999px; background:rgba(9,8,24,.66); border:1px solid rgba(242,208,98,.3);
+        font-size:11px; color:rgba(255,244,204,.84); letter-spacing:1px; pointer-events:none; z-index:5; }
   #hand .card { animation:dealIn .45s cubic-bezier(.2,.85,.3,1) backwards; }
   @keyframes dealIn { from { transform:translateX(16dvh) translateY(2dvh) rotate(6deg); opacity:0; } }
   #hand { display:flex; gap:12px; height:100%; overflow-x:auto; padding:10px 6px 4px;
@@ -168,6 +169,10 @@
   #hand .card.dim { filter:drop-shadow(0 .65dvh .75dvh rgba(20,25,39,.32)) brightness(.48) saturate(.35);
         opacity:.78; }
   #hand.reordering { cursor:grabbing; }
+  #hand .card.handHolding::after { content:""; position:absolute; z-index:12; inset:-4px; border:3px solid transparent;
+        border-top-color:#F2D062; border-right-color:#F2D062; border-radius:12px; pointer-events:none;
+        animation:handHoldProgress .3s linear both; }
+  @keyframes handHoldProgress { from{transform:rotate(-90deg);opacity:.25} to{transform:rotate(270deg);opacity:1} }
   .card.handDragging { position:fixed!important; z-index:90!important; margin:0!important; pointer-events:none;
         opacity:.94; transform:translateY(-1.3dvh) scale(1.045); filter:drop-shadow(0 2dvh 2.5dvh rgba(0,0,0,.72))!important;
         transition:none!important; animation:none!important; }
@@ -612,6 +617,11 @@
   #cardZoomActions { position:absolute; right:calc(2vw + env(safe-area-inset-right)); bottom:3dvh;
       display:flex; flex-direction:column; align-items:stretch; gap:1dvh; width:min(27vw,42dvh); }
   #cardZoomReason { min-height:1.3em; color:rgba(241,232,208,.68); font-size:max(1.55dvh,11px); text-align:center; }
+  #cardZoomAction { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:stretch; padding:0; overflow:hidden; }
+  #cardZoomAction .cardActionText { display:grid; place-items:center; padding:1.15dvh 1.3vw; }
+  #cardZoomAction .cardActionCost { display:grid; place-items:center; min-width:6.2dvh; padding:.7dvh 1vw;
+      border-left:1px solid rgba(255,244,204,.58); background:rgba(7,10,28,.34); color:#fff4c6;
+      font:900 max(1.7dvh,12px)/1 Marudeco,sans-serif; white-space:nowrap; }
   #galZoom { position:fixed; inset:0; display:none; z-index:62; align-items:center;
       justify-content:center; overflow:hidden; background:rgba(5,8,20,.9); backdrop-filter:blur(5px); }
   #galZoom.on { display:flex; }
@@ -1775,6 +1785,7 @@ $('galZoomClose').onclick = () => $('galZoom').classList.remove('on');
 // ===== カード長押し拡大(効果全文の確認用) =====
 let lpFired = false;
 let zoomCardId = null;
+let cardActionSubmitting = false;
 function cardActionLabel(c) {
   const C = state.catalog;
   if (C.CREATURES[c]) return pend() && pend().type === 'pick_creature' ? '侵略に使う' : '召喚する';
@@ -1785,10 +1796,12 @@ function cardActionLabel(c) {
 function refreshCardZoomAction() {
   if (!zoomCardId || !state) return;
   const optionId = cardOption(zoomCardId), btn = $('cardZoomAction');
-  btn.textContent = cardActionLabel(zoomCardId);
-  btn.disabled = !optionId;
+  const p = pend(), opt = optionId && p && p.options.find(o => o.id === optionId);
+  const cost = opt && Number(opt.cost) > 0 ? Number(opt.cost) : 0;
+  btn.innerHTML = `<span class="cardActionText">${cardActionLabel(zoomCardId)}</span>${cost ? `<span class="cardActionCost">−${cost}G</span>` : ''}`;
+  btn.disabled = !optionId || cardActionSubmitting;
   btn.dataset.option = optionId || '';
-  $('cardZoomReason').textContent = optionId ? 'このカードで行動できます' : '現在の手順では使用できません';
+  $('cardZoomReason').textContent = cardActionSubmitting ? '送信中…' : optionId ? 'ボタンをタップするとすぐに使用します' : '現在の手順では使用できません';
 }
 function openCardZoom(c) {
   cancelHandGesture(true);
@@ -1800,13 +1813,22 @@ function openCardZoom(c) {
 }
 $('cardZoom').onclick = e => { if (e.target === $('cardZoom')) $('cardZoom').classList.remove('on'); };
 $('cardZoomClose').onclick = () => $('cardZoom').classList.remove('on');
-$('cardZoomAction').onclick = e => {
+$('cardZoomAction').onclick = async e => {
   e.stopPropagation();
   const optionId = e.currentTarget.dataset.option;
-  if (!optionId || !zoomCardId) return;
-  const card = zoomCardId;
-  $('cardZoom').classList.remove('on');
-  showCardActionConfirm(card, optionId);
+  if (!optionId || !zoomCardId || cardActionSubmitting) return;
+  cardActionSubmitting = true;
+  refreshCardZoomAction();
+  try {
+    const res = await choose(optionId);
+    if (!res || (!res.ok && res.status !== 409)) throw new Error('カードを使用できませんでした');
+    $('cardZoom').classList.remove('on');
+  } catch (err) {
+    $('cardZoomReason').textContent = err.message || '通信できませんでした。もう一度お試しください';
+  } finally {
+    cardActionSubmitting = false;
+    if ($('cardZoom').classList.contains('on')) refreshCardZoomAction();
+  }
 };
 function armLongPress(el, fn) {
   let t = null;
@@ -2079,7 +2101,7 @@ function finishHandDrop() {
   if (!handGesture || !handGesture.dragging) return;
   const g = handGesture, hand = $('hand');
   if (g.placeholder && g.placeholder.parentNode) g.placeholder.replaceWith(g.el);
-  g.el.classList.remove('handDragging');
+  g.el.classList.remove('handDragging', 'handHolding');
   ['position','left','top','width','height','zIndex','margin','pointerEvents'].forEach(k => g.el.style[k] = '');
   hand.classList.remove('reordering');
   handDisplay = [...hand.querySelectorAll('.card[data-c]')].map(el => el.dataset.c);
@@ -2092,6 +2114,7 @@ function cancelHandGesture(force = false) {
   clearTimeout(handGesture.holdTimer);
   if (handGesture.dragging) finishHandDrop();
   const el = handGesture && handGesture.el;
+  if (el) el.classList.remove('handHolding');
   if (el && handGesture.pointerId != null && el.hasPointerCapture && el.hasPointerCapture(handGesture.pointerId)) {
     try { el.releasePointerCapture(handGesture.pointerId); } catch (e) {}
   }
@@ -2102,6 +2125,7 @@ function startHandDrag(e) {
   const g = handGesture, hand = $('hand');
   if (!g || g.dragging) return;
   g.dragging = true;
+  g.el.classList.remove('handHolding');
   const r = g.el.getBoundingClientRect();
   g.offsetX = e.clientX - r.left; g.offsetY = e.clientY - r.top;
   g.placeholder = document.createElement('div');
@@ -2133,20 +2157,27 @@ function beginHandPointer(e, el) {
   handGesture = { el, pointerId:e.pointerId, x:e.clientX, y:e.clientY, scroll:hand.scrollLeft,
     armed:false, dragging:false, scrolling:false, moved:false, holdTimer:null };
   try { el.setPointerCapture(e.pointerId); } catch (err) {}
-  handGesture.holdTimer = setTimeout(() => { if (handGesture && handGesture.el === el && !handGesture.scrolling) handGesture.armed = true; }, 200);
+  el.classList.add('handHolding');
+  handGesture.holdTimer = setTimeout(() => {
+    const g = handGesture;
+    if (!g || g.el !== el || g.scrolling || g.moved) return;
+    g.armed = true;
+    startHandDrag({ clientX:g.x, clientY:g.y });
+  }, 300);
   el.onpointermove = ev => {
     const g = handGesture; if (!g || g.el !== el) return;
     const dx = ev.clientX - g.x, dy = ev.clientY - g.y;
     if (g.dragging) return moveHandDrag(ev);
     if (g.armed && Math.hypot(dx,dy) > 5) { startHandDrag(ev); return moveHandDrag(ev); }
     if (!g.armed && Math.abs(dx) > 7 && Math.abs(dx) > Math.abs(dy)) {
-      clearTimeout(g.holdTimer); g.scrolling = true; g.moved = true;
+      clearTimeout(g.holdTimer); g.el.classList.remove('handHolding'); g.scrolling = true; g.moved = true;
       hand.scrollLeft = g.scroll - dx; ev.preventDefault();
-    } else if (Math.abs(dy) > 10) { clearTimeout(g.holdTimer); g.moved = true; }
+    } else if (Math.abs(dy) > 10) { clearTimeout(g.holdTimer); g.el.classList.remove('handHolding'); g.moved = true; }
   };
   const finish = ev => {
     const g = handGesture; if (!g || g.el !== el) return;
     clearTimeout(g.holdTimer);
+    g.el.classList.remove('handHolding');
     if (g.dragging) { finishHandDrop(); handGesture = null; return; }
     const open = !g.moved && !g.scrolling;
     handGesture = null;
@@ -2290,16 +2321,6 @@ function showActionOverlay(title, options, config) {
     + (cfg.closeable && !cfg.browseHand ? `<button class="gateBtn ghost" onclick="closeActionOverlay(true)"><div class="gbT">閉じる</div><div class="gbD">手札の選択へ戻ります</div></button>` : '');
   $('actionOvHint').textContent = cfg.hint || '';
   $('actionOv').classList.add('on');
-}
-function showCardActionConfirm(c, optionId) {
-  const C = state.catalog;
-  const item = C.CREATURES[c] || (C.SPELLS && C.SPELLS[c]) || (C.SUPPORTS && C.SUPPORTS[c]);
-  const p = pend();
-  const opt = p && p.options.find(o => o.id === optionId);
-  if (!item || !opt) return;
-  showActionOverlay(`${item.name}を選択`, [
-    { id:optionId, label:iconize(opt.label), desc:'このカードで行動を確定します' }
-  ], { key:`card|${p.type}|${optionId}`, closeable:true, hint:'手札のカードはタップで詳細を確認できます' });
 }
 function setContextActions(title, options) {
   const btn = $('contextBtn');

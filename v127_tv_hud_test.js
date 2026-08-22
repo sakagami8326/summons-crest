@@ -26,7 +26,7 @@ ok(!/--bust-scale/.test(board), 'HUD does not enlarge full-body art with CSS');
 ok(/src="\/assets\/hud_\$\{p\.charId\}\.png\?v=1275"/.test(board), 'HUD selects the versioned summoner bust dynamically');
 ok(/this\.src='\/assets\/f_\$\{p\.charId\}\.png'/.test(board), 'HUD retains a face-art fallback');
 ok(/margin-left:107px !important/.test(board) && /margin-left:114px !important/.test(board), 'HUD text clears the compact portrait area');
-ok(/@media \(max-width:1400px\), \(max-height:800px\)/.test(board) && /transform:scale\(\.74\)/.test(board), 'HUD has a compact-TV fallback');
+ok(/@media \(max-width:1400px\), \(max-height:800px\)/.test(board) && /transform:scale\(\.9\)/.test(board), 'HUD has a compact-TV fallback');
 ok(/src="\/assets\/hud_\$\{id\}\.png\?v=1276"/.test(phone), 'phone summoner shelf uses the same dedicated HUD art');
 ok(/\.csCard \.csVisual \{[^}]*inset:0 0 30%[^}]*overflow:hidden/s.test(phone), 'phone summoner art is clipped to a dedicated visual area');
 ok(/\.csCard \.csInfo \{[^}]*height:30%[^}]*background:/s.test(phone), 'phone summoner name and strategy use a separate opaque information area');

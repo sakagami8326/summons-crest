@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.39';
+const VERSION = '1.40';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TARGET_PTS = 12;
@@ -181,7 +181,7 @@ const SPELLS = {
   sp_bedrock_uplift:    { name: 'リストア', rarity: 'R', cost: 50,
     desc: '自分の負傷した領地1つを20回復し、次の戦闘でDF+10' },
   sp_wind_shift:        { name: '風向転換', rarity: 'R', cost: 30,
-    desc: 'このターンだけ、通常とは逆方向へ移動する' },
+    desc: '現在の進行方向を反転し、以降もその方向へ進む' },
   sp_ward:   { name: 'バリア', rarity: 'R', cost: 80, exileAfterUse: true,
                desc: 'あなたの次の手番まで、自分の領地は侵略されない' },
   sp_move:   { name: 'スイッチ', rarity: 'R', cost: 40,
@@ -892,7 +892,7 @@ function askRoll(r, p) {
     if (sid === 'sp_move' &&
         r.owners.filter(o => o && o.player === p.id).length < 2) continue;
     if (sid === 'sp_step' && !stepSources(r, p).length) continue;
-    if (sid === 'sp_wind_shift' && p.windShift) continue;
+    if (sid === 'sp_wind_shift' && !p.dir) continue;
     if ((sid === 'sp_volcanic_core' || sid === 'sp_abyssal_pearl' ||
          sid === 'sp_earth_mother_stone' || sid === 'sp_sky_crystal') &&
         !r.owners.some((o, i) => o && o.player === p.id && tileElem(r, i) !== ELEM_OF_SPELL[sid])) continue;
@@ -902,7 +902,7 @@ function askRoll(r, p) {
     if (sid === 'sp_swap' &&
         (!r.owners.some(o => o && o.player === p.id) ||
          !p.hand.some(c => CREATURES[c] && CREATURES[c].cost + effectiveSpellCost(r, p, 'sp_swap') <= p.gold))) continue;
-    opts.push({ id: 'sp:' + sid,
+    opts.push({ id: 'sp:' + sid, card: sid, cost: spellCost,
       label: `呪文「${SPELLS[sid].name}」を唱える${spellCost ? `(−${spellCost}G)` : ''}` });
   }
   ask(r, p.id, 'roll', 'あなたの手番です', opts);
@@ -1066,7 +1066,7 @@ function settleAll(r) {
 function bankrupt(r, p) {
   p.bankrupt = true;
   p.gold = 0;
-  p.blade = false; p.windShift = false;
+  p.blade = false;
   r.lastEvent = { type: 'bankrupt', player: p.id, at: stamp(r) };
   log(r, `💥 ${p.name}は破産した! ゲームから脱落…`);
   delete r.pending[p.id];
@@ -1083,7 +1083,6 @@ function endTurn(r) {
     p.bonusRollPending = false;
     return askRoll(r, p);
   }
-  if (p) p.windShift = false;  // 風向転換はターン終了で解除
   if (p && !p.bankrupt && p.hand && p.hand.length > HAND_LIMIT) {  // 破産者に捨て札選択はさせない
     const opts = [...new Set(p.hand)].map(c => ({
       id: 'ov:' + c,
@@ -1117,7 +1116,7 @@ function performMove(r, p, steps, meta, moveLabel) {
     ]);
   }
   r.lastDice = Object.assign({ player: p.id, at: stamp(r) }, meta);
-  const dir = (p.dir || 1) * (p.windShift ? -1 : 1);  // 風向転換: このターンのみ逆方向
+  const dir = p.dir || 1;
   let bonus = 0, gotSeal = false, noSeal = false, castleStep = 0, usedSeal = false;
   let completedLaps = Math.max(0, (p.lap || 1) - 1);
   for (let s2 = 0; s2 < steps; s2++) {
@@ -1217,7 +1216,8 @@ function resolveTile(r, p) {
   const o = r.owners[i];
   if (!o) {
     const opts = p.hand.filter(c => CREATURES[c] && CREATURES[c].cost <= p.gold)
-      .map(c => ({ id: 'summon:' + c, label: `${CREATURES[c].name}を召喚(−${CREATURES[c].cost}G)` }));
+      .map(c => ({ id: 'summon:' + c, card: c, cost: CREATURES[c].cost,
+        label: `${CREATURES[c].name}を召喚(−${CREATURES[c].cost}G)` }));
     opts.push({ id: 'pass', label: '配置しない' });
     return ask(r, p.id, 'tile', `空き地(${tileElem(r, p.pos)})に到着`, opts);
   }
@@ -1367,7 +1367,8 @@ function askMarket(r, p) {
 // ===== 侵略戦闘 =====
 function startBattle(r, attacker, tileIdx) {
   const opts = attacker.hand.filter(c => CREATURES[c])
-    .map(c => ({ id: 'atk:' + c, label: `${CREATURES[c].name}(AT${CREATURES[c].st})で攻める` }));
+    .map(c => ({ id: 'atk:' + c, card: c, cost: 0,
+      label: `${CREATURES[c].name}(AT${CREATURES[c].st})で攻める` }));
   r.battle = { tile: tileIdx, attacker: attacker.id, defender: r.owners[tileIdx].player,
                atkCreature: null, supports: {}, startedAt: stamp(r) };
   ask(r, attacker.id, 'pick_creature', '侵略! 手札からクリーチャーを選べ', opts);
@@ -1380,7 +1381,7 @@ function askSupports(r) {
   for (const pid of [b.attacker, b.defender]) {
     const p = pById(r, pid);
     const opts = p.hand.filter(c => SUPPORTS[c])
-      .map(c => ({ id: 'sup:s:' + c, label: `${SUPPORTS[c].name}を出す` }));
+      .map(c => ({ id: 'sup:s:' + c, card: c, cost: 0, label: `${SUPPORTS[c].name}を出す` }));
     const battleCreature = pid === b.attacker ? b.atkCreature : r.owners[b.tile].creature;
     if (creatureSupportEnabled(battleCreature)) {
       let skippedReserved = false;
@@ -1392,7 +1393,7 @@ function askSupports(r) {
         }
         const cc = CREATURES[c];
         if (cc.cost <= p.gold)
-          opts.push({ id: 'sup:c:' + c, card: c,
+          opts.push({ id: 'sup:c:' + c, card: c, cost: cc.cost,
             label: `【クリーチャーウェポン】${cc.name}(−${cc.cost}G / AT+${cc.st}・DF+${cc.hp})` });
       });
     }
@@ -2032,8 +2033,8 @@ function handleChoose(r, playerId, optionId) {
     }
     if (sid === 'sp_wind_shift') {
       castLog();
-      p.windShift = true;
-      log(r, `${p.name}は風向転換で逆方向へ進む!(このターンのみ)`);
+      p.dir = -(p.dir || 1);
+      log(r, `${p.name}は風向転換で進行方向を${p.dir === 1 ? '左回り' : '右回り'}へ反転した!`);
       spellFx(r, 'sp_wind_shift', [], p.id);
       return askRoll(r, p);
     }
@@ -2271,6 +2272,10 @@ function handleChoose(r, playerId, optionId) {
   }
   if (pend.type === 'direction') {
     p.dir = optionId === 'dir:-1' ? -1 : 1;
+    if (p.windShiftLegacyPending) {
+      p.dir *= -1;
+      delete p.windShiftLegacyPending;
+    }
     log(r, `${p.name}は${p.dir === 1 ? '左回り' : '右回り'}に進むことにした(以後変更不可)`);
     const dp = r.dirPend;
     r.dirPend = null;
@@ -2990,6 +2995,13 @@ function serializeRoom(r) {
 const RETIRED_CARD_IDS = new Set(['sp_cornucopia']);
 const VALID_CARD = c => !!(CREATURES[c] || SPELLS[c] || SUPPORTS[c]);
 const VALID_SAVE_CARD = c => VALID_CARD(c) || RETIRED_CARD_IDS.has(c);
+function migrateLegacyWindShiftPlayer(p) {
+  if (!p || !p.windShift) return false;
+  if (p.dir) p.dir *= -1;
+  else p.windShiftLegacyPending = true;
+  delete p.windShift;
+  return true;
+}
 // セーブデータの検証。問題なければnull、あればエラーメッセージを返す
 function validateSave(save) {
   if (!save || typeof save !== 'object') return 'セーブデータが不正です';
@@ -3073,6 +3085,7 @@ function restoreRoom(save) {
   for (const p of room.players) {
     delete p.gems; delete p.treasures; delete p.gemThisStop; delete p.forgetThisStop;
     if (!Array.isArray(p.resolving)) p.resolving = [];
+    migrateLegacyWindShiftPlayer(p);
     for (const zone of ['deck', 'hand', 'discard', 'exile', 'resolving', 'pickCards'])
       if (Array.isArray(p[zone])) p[zone] = p[zone].filter(c => !RETIRED_CARD_IDS.has(c));
   }

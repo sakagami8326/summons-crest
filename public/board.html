@@ -19,7 +19,7 @@
             background:radial-gradient(ellipse, rgba(0,0,0,.45), transparent 70%); border-radius:50%; }
   .pawnEl { transition:left .5s ease, top .5s ease; }
   .pawnEl.activeTurn img { transform:scale(1.12); filter:drop-shadow(0 0 8px #F2D062); }
-  .pawnTurnTag { position:absolute; left:50%; bottom:calc(100% + 12px); transform:translateX(-50%);
+  .pawnTurnTag { position:absolute; left:50%; bottom:calc(100% + 32px); transform:translateX(-50%);
       padding:3px 9px; border:1px solid #F2D062; border-radius:5px; background:#101028;
       color:#FFF4C1; font:700 11px Georgia,serif; letter-spacing:1px; box-shadow:0 0 10px rgba(242,208,98,.7); }
   .pawnTurnTag::after { content:""; position:absolute; left:50%; top:100%; transform:translateX(-50%);
@@ -164,6 +164,7 @@
   .battleCreatureCard .scInfo { position:absolute; z-index:4; inset:70.8% 0 0; padding:0 6.3% 4.2%;
       background:#f6e9c8; color:#172536; }
   .battleCreatureCard .scCost { position:absolute; z-index:8; top:65.2%; left:3.2%; width:27%; aspect-ratio:320/112; }
+  #battle .battleCreatureCard .scCost { display:none; }
   .battleCreatureCard .scCost .frame { position:absolute; inset:0; width:100%; height:100%; }
   .battleCreatureCard .scCost .coin { position:absolute; left:7.5%; top:17.8%; width:22.5%; height:64.3%; }
   .battleCreatureCard .scCost b { position:absolute; inset:0 4% 0 31%; display:grid; place-items:center;
@@ -242,7 +243,7 @@
   .battleDfLabels { display:grid; grid-template-columns:minmax(8rem,1fr) 2.4ch 5.6vh 2.4ch minmax(8rem,1fr);
       margin-top:-.25vh; color:#65c7ff; font:700 1.45vh/1.2 Marudeco,sans-serif; text-shadow:0 1px 4px #001225; }
   #bCmpAtkDf { grid-column:1; justify-self:center; } #bCmpDefDf { grid-column:5; justify-self:center; }
-  .battleTerrain { display:grid; grid-template-columns:5.1vh 1fr auto; align-items:center; gap:.75vh; width:36vh; min-height:7.2vh;
+  .battleTerrain { display:grid; grid-template-columns:5.1vh 1fr minmax(11.5vh,auto); align-items:center; gap:.75vh; width:43vh; min-height:7.8vh;
       margin:.25vh auto 0; padding:.65vh 1.1vh; box-sizing:border-box; border-radius:1.2vh;
       border:1px solid color-mix(in srgb,var(--terrain-color,#777) 75%,#fff); color:#fff8e5;
       background:linear-gradient(90deg,color-mix(in srgb,var(--terrain-color,#777) 35%,#080818),color-mix(in srgb,var(--terrain-color,#777) 72%,#101020),color-mix(in srgb,var(--terrain-color,#777) 35%,#080818));
@@ -261,11 +262,24 @@
   .landPips i.on { background:#F2D062; border-color:#fff0ad; box-shadow:0 0 .6vh #F2D062; }
   #bLandFormula { color:#dce7ed; font:700 1.05vh/1.2 sans-serif; white-space:nowrap; }
   #bLandFormula.inactive { color:#9aa0aa; text-decoration:line-through; }
-  .landShield { position:relative; min-width:7.2vh; min-height:5.5vh; display:grid; place-items:center; text-align:center;
-      padding:.5vh .65vh 1vh; color:#fff6c9; background:linear-gradient(160deg,#93701b,#2d2548 68%);
-      clip-path:polygon(50% 0,93% 17%,84% 75%,50% 100%,16% 75%,7% 17%); text-shadow:0 1px 4px #000; }
-  .landShield small { display:block; font-size:.85vh; color:#e7dcae; } .landShield b { display:block; font-size:1.75vh; }
-  .landShield.inactive { filter:grayscale(1); opacity:.58; }
+  .landBonusBlock { min-width:11.5vh; min-height:5.8vh; display:grid; align-content:center; justify-items:center; text-align:center;
+      padding:.55vh 1vh; box-sizing:border-box; border:1px solid #f2d062; border-radius:.9vh; color:#fff6c9;
+      background:linear-gradient(135deg,rgba(147,112,27,.94),rgba(45,37,72,.96));
+      box-shadow:inset 0 0 1.1vh rgba(255,227,126,.16),0 0 1vh rgba(242,208,98,.2); text-shadow:0 1px 4px #000; }
+  .landBonusBlock small { display:block; font-size:1.05vh; color:#fff0b3; letter-spacing:.08em; }
+  .landBonusBlock b { display:block; margin-top:.15vh; font-size:2.55vh; line-height:1; white-space:nowrap; }
+  .landBonusBlock em { display:block; margin-top:.25vh; color:#d8dde4; font:700 .9vh/1.1 sans-serif; font-style:normal; }
+  .landBonusBlock.inactive { filter:grayscale(1); opacity:.68; border-color:#a9adb5; box-shadow:none; }
+  .battleSummoner { position:absolute; z-index:2; bottom:-1vh; width:24vw; height:34vh; pointer-events:none; overflow:hidden; }
+  .battleSummoner.atk { left:1.5vw; } .battleSummoner.def { right:1.5vw; }
+  .battleSummoner::after { content:""; position:absolute; inset:0; background:linear-gradient(to top,rgba(7,6,18,.96) 0,rgba(7,6,18,.18) 58%,transparent 86%); }
+  .battleSummoner.def img { transform:scaleX(-1); }
+  .battleSummoner img { position:absolute; left:50%; bottom:-7%; width:100%; height:112%; transform:translateX(-50%); object-fit:contain; object-position:center bottom;
+      filter:drop-shadow(0 0 1.6vh rgba(0,0,0,.78)); opacity:.94; }
+  .battleSummoner.def img { transform:translateX(-50%) scaleX(-1); }
+  .battleSummonerLabel { position:absolute; z-index:3; left:1vw; right:1vw; bottom:2.2vh; display:grid; gap:.25vh; text-align:center;
+      color:#fff6d2; text-shadow:0 2px 5px #000; font:700 1.4vh/1.1 var(--font-mincho); letter-spacing:.08em; }
+  .battleSummonerLabel small { color:#f2d062; font:700 1vh/1 sans-serif; letter-spacing:.16em; }
   .supportRevealStage { position:fixed; inset:0; z-index:79; display:grid; place-items:center; pointer-events:none;
       background:radial-gradient(circle,rgba(245,217,117,.2),rgba(8,5,20,.72) 55%,transparent 75%); animation:supportStageIn .25s ease both; }
   .supportRevealStage .scardB { width:28vh; height:40.4vh; filter:drop-shadow(0 2vh 3vh rgba(0,0,0,.85)); }
@@ -425,13 +439,15 @@
       border-radius:999px; color:#fff4c6; background:#4b2d12; border:1px solid #e7c55b; font:900 clamp(9px,6cqw,15px)/1 sans-serif; }
   .tvShopCard .tsBrush { position:absolute; z-index:3; top:61.8%; left:0; width:100%; height:10.42%;
       background:url('/assets/cards/brush-boundary-b-paper.png') center/100% 100% no-repeat; }
-  .tvShopCard .tsInfo { position:absolute; z-index:4; inset:70.8% 0 0; padding:0 6.3% 4.2%; background:#f6e9c8; }
-  .tvShopCard .tsStats { height:36%; display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:6%; color:#172536;
+  .tvShopCard .tsInfo { position:absolute; z-index:4; inset:70.8% 0 0; padding:0 6.3% 4.2%; background:#f6e9c8;
+      display:grid; grid-template-rows:30% minmax(0,1fr); }
+  .tvShopCard .tsStats { height:auto; display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:6%; color:#172536;
+      transform:translateY(-.7vh);
       font:900 clamp(15px,15cqw,30px)/1 Marudeco,sans-serif; }
   .tvShopCard .tsStats>span { display:inline-grid; grid-template-columns:1.4em max-content; align-items:center; justify-content:center; gap:.25em; }
   .tvShopCard .tsStats .statIconDisk { width:1.4em; }
   .tvShopCard .tsFx { color:#172536; font-size:clamp(8px,5.3cqw,13px); font-weight:700; line-height:1.3;
-      padding:3% 4% 0; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+      padding:0 4%; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
   .tvShopPrice { display:inline-flex; align-items:center; gap:.35vw; margin-top:.5vh; padding:.35vh .8vw; border-radius:999px;
       background:#11152de8; color:#ffe279; font-size:1.65vh; font-weight:900; }
   .tvShopPrice img { height:2.2vh; } .tvShopOld { opacity:.6; text-decoration:line-through; }
@@ -681,11 +697,13 @@
       box-shadow:0 8px 24px rgba(0,0,0,.35); overflow:visible; }
   #ticker { max-height:min(25vh,190px); min-height:46px; overflow:hidden; padding:9px 12px 7px;
       font-size:clamp(10px,.8vw,12px); letter-spacing:.7px; line-height:1.55; overflow-wrap:anywhere; }
+  #leftUtility.logExpanded #ticker { overflow-y:auto; scrollbar-width:thin; scrollbar-color:rgba(242,208,98,.7) rgba(0,0,0,.18); }
   #utilityFooter { min-height:35px; display:flex; align-items:center; gap:7px; padding:6px 8px;
       border-top:1px solid rgba(201,162,39,.28); background:rgba(4,5,16,.28); border-radius:0 0 9px 9px; }
-  #optBtn,#bgmBtn { flex:none; min-height:24px; padding:3px 9px; border-radius:6px; cursor:pointer;
+  #optBtn,#bgmBtn,#logExpandBtn { flex:none; min-height:24px; padding:3px 9px; border-radius:6px; cursor:pointer;
       background:rgba(16,13,36,.72); border:1px solid rgba(201,162,39,.55); color:var(--gold-soft);
       font-size:11px; letter-spacing:.7px; }
+  #logExpandBtn { display:none; align-items:center; gap:4px; }
   #verTag { margin-left:auto; font-size:9.5px; color:rgba(241,232,208,.46); letter-spacing:.6px; white-space:nowrap; }
   #optMenu { display:none; position:absolute; left:calc(100% + 10px); bottom:0; z-index:75;
       background:rgba(16,13,36,.98); border:1px solid var(--gold); border-radius:12px;
@@ -840,7 +858,7 @@
   @keyframes scText { from { transform:translateY(28px); opacity:0; } }
   /* TV HUD: 胸上の召喚士を前面に出した横長プレート */
   #hud { top:24px !important; left:18px !important; width:400px !important;
-      transform:scale(.82); transform-origin:top left; }
+      transform:scale(1); transform-origin:top left; }
   .plate { width:400px !important; height:96px !important; padding:11px 15px 9px 17px !important;
       isolation:isolate; overflow:hidden; }
   .plate::before { content:""; position:absolute; z-index:-1; inset:0; pointer-events:none;
@@ -875,11 +893,11 @@
   .plate .pts { color:#fff7df !important; text-shadow:0 2px 6px rgba(0,0,0,.9) !important; }
   .plate .pts small,.plate .row2 { color:rgba(255,247,223,.9) !important; text-shadow:0 1px 4px rgba(0,0,0,.9); }
   @media (max-width:1400px), (max-height:800px) {
-    #hud { top:18px !important; left:14px !important; transform:scale(.74); }
+    #hud { top:18px !important; left:14px !important; transform:scale(.9); }
     #leftUtility { left:14px; bottom:10px; width:296px; }
     #ticker { max-height:min(25vh,158px); min-height:40px; padding:7px 10px 6px; }
     #utilityFooter { min-height:32px; padding:5px 7px; gap:5px; }
-    #optBtn,#bgmBtn { min-height:22px; padding:2px 7px; font-size:10px; }
+    #optBtn,#bgmBtn,#logExpandBtn { min-height:22px; padding:2px 7px; font-size:10px; }
     #verTag { font-size:8.5px; }
   }
   .titleChip { display:inline-block; background:linear-gradient(180deg,#E8C55A,#B8901F); color:#241C05;
@@ -1188,6 +1206,7 @@
   <div id="leftUtility">
     <div id="ticker" aria-live="polite"></div>
     <div id="utilityFooter">
+      <button id="logExpandBtn" aria-expanded="false" aria-controls="ticker">履歴を広げる</button>
       <button id="optBtn" style="display:none;">設定</button>
       <button id="bgmBtn" style="display:none;">♪ ON</button>
       <div id="verTag"></div>
@@ -1251,6 +1270,8 @@
   <div id="battle">
     <div id="bwHost"></div>
     <div id="battleFx"></div>
+    <div class="battleSummoner atk" id="bAtkSummoner"></div>
+    <div class="battleSummoner def" id="bDefSummoner"></div>
     <div id="bresult"></div>
     <div id="battleTitle">侵略戦闘</div>
     <div id="battleField">
@@ -1272,7 +1293,7 @@
           <span id="bCmpTerrain" aria-label="防衛領地属性"></span>
           <div class="territoryMeta"><div class="territoryTitle"><span>領地</span><span id="bLandLink">↔</span><span id="bLandCreature"></span><b id="bLandAffinity"></b></div>
             <div class="landPips" id="bLandLevelPips"></div><div id="bLandFormula"></div></div>
-          <div class="landShield" id="bLandBonus"><span><small>領地BONUS</small><b>+0 DF</b></span></div>
+          <div class="landBonusBlock" id="bLandBonus"><span><small>領地BONUS</small><b>+0 DF</b></span></div>
         </div>
       </div>
     </div>
@@ -1439,7 +1460,8 @@ let code = null, state = null, prev = { phase: null, turn: -1, battleAt: 0, dice
 const revealedSummoners = new Set();
 const pawnAnim = {}, prevPos = {};
 const prevGold = {};
-let queuedTurn = null, firedTurn = -1, lastMoveEnd = 0, shopWaitT = null, lastUpKey = '';
+let queuedTurn = null, firedTurn = -1, visualTurnId = null, lastMoveEnd = 0, shopWaitT = null, lastUpKey = '';
+let logExpanded = false;
 let hopState = null;
 function finishHop() {
   if (!hopState) return;
@@ -2070,6 +2092,7 @@ function enterRoom(c, phoneUrl, token) {
     if (boardToken) localStorage.setItem('sc_btoken', boardToken);
   } catch (e) {}
   $('optBtn').style.display = 'block';
+  $('logExpandBtn').style.display = 'inline-flex';
   connectBoard();
   fitWorld();
 }
@@ -2077,6 +2100,7 @@ function enterRoom(c, phoneUrl, token) {
 $('optBtn').onclick = () => {
   const m = $('optMenu');
   const opening = m.style.display !== 'flex';
+  if (opening && logExpanded) setLogExpanded(false);
   m.style.display = opening ? 'flex' : 'none';
   $('optMsg').textContent = '';
   if (opening) {
@@ -2088,6 +2112,27 @@ $('optBtn').onclick = () => {
     $('optBotSpeed').textContent = 'BOT演出速度: ' + (state && state.presentationSpeed === 2 ? '2倍' : '通常');
   }
 };
+$('logExpandBtn').onclick = () => setLogExpanded(!logExpanded);
+function setLogExpanded(expanded) {
+  logExpanded = !!expanded;
+  $('leftUtility').classList.toggle('logExpanded', logExpanded);
+  $('logExpandBtn').setAttribute('aria-expanded', String(logExpanded));
+  $('logExpandBtn').textContent = logExpanded ? '履歴を閉じる' : '履歴を広げる';
+  renderTicker();
+  fitWorld();
+}
+function renderTicker() {
+  const ticker = $('ticker');
+  if (!ticker || !state) return;
+  const logs = Array.isArray(state.log) ? state.log : [];
+  const visible = logExpanded ? logs : logs.slice(-4);
+  ticker.innerHTML = visible.map((line, i, a) => {
+    const opacity = logExpanded ? 1 : 0.45 + 0.55 * (i + 1) / Math.max(1, a.length);
+    return `<div style="opacity:${opacity}">${iconize(line)}</div>`;
+  }).join('');
+  $('logExpandBtn').style.display = state.phase === 'playing' || state.phase === 'ended' ? 'inline-flex' : 'none';
+  if (logExpanded) requestAnimationFrame(() => { ticker.scrollTop = ticker.scrollHeight; });
+}
 let botSpeedSaving = false;
 $('optBotSpeed').onclick = async () => {
   if (!state || !state.botMode || botSpeedSaving) return;
@@ -2230,6 +2275,22 @@ function fitWorld() {
   const hud = $('hud');
   const showHud = state && (state.phase === 'playing' || state.phase === 'ended') && hud && hud.children.length;
   const hudRect = showHud ? hud.getBoundingClientRect() : null;
+  const hudBottom = showHud
+    ? Array.from(hud.children).reduce((bottom, child) => {
+        const rect = child.getBoundingClientRect();
+        return Math.max(bottom, rect.bottom);
+      }, hudRect.bottom)
+    : 0;
+  const tickerEl = $('ticker');
+  if (logExpanded && showHud) {
+    const footerH = $('utilityFooter').getBoundingClientRect().height || 40;
+    const available = Math.max(84, Math.floor(innerHeight - 14 - hudBottom - 12 - footerH));
+    tickerEl.style.maxHeight = available + 'px';
+    tickerEl.style.height = available + 'px';
+  } else {
+    tickerEl.style.maxHeight = '';
+    tickerEl.style.height = '';
+  }
   const utilityRect = showHud ? $('leftUtility').getBoundingClientRect() : null;
   const railRight = showHud ? Math.max(hudRect.right, utilityRect.right) : 0;
   const safeLeft = showHud ? Math.min(Math.ceil(railRight + 12), Math.floor(innerWidth * .32)) : 0;
@@ -2573,7 +2634,7 @@ function tileInfoHTML(i) {
   const combatUi = state.landCombat && state.landCombat[i];
   const effect = combatUi && combatUi.effect;
   const dmg = o.dmg || 0;
-  const toll = o.level * chain(o.player, t.e) * 30 * (o.creature.replace(/_f$/, '') === 'orphe' ? 1.2 : 1);
+  const toll = Number(state.tolls && state.tolls[i]) || 0;
   return `<div class="tiHead">${eBadge}<span style="color:${pl.color}">${pl.name}</span>の領地 Lv${o.level}</div>
     <div class="tiBody">
       <img class="tiChar" src="/assets/full_${pl.charId}.png">
@@ -2589,7 +2650,7 @@ function tileInfoHTML(i) {
         ${(evolved ? (cr.evoFx || cr.fx) : cr.fx) ? `<div class="tiFx ${effectStateClass(effect)}">${evolved ? (cr.evoFx || cr.fx) : cr.fx}
           ${effect ? `<small>${effectStateLabel(effect)}${effect.reason ? ` ─ ${effect.reason}` : ''}</small>` : ''}</div>` : ''}
         ${soulCount !== null ? `<div class="tiSoul">廃棄札 ${soulCount}枚<br>【魂喰らい】DF +${soulCount * 5}</div>` : ''}
-        <div class="tiToll">通行料 ${Math.round(toll)}G</div>
+        <div class="tiToll">通行料 ${toll}G</div>
       </div>
     </div>`;
 }
@@ -2607,7 +2668,7 @@ function updateTileInfo() {
     if (pd && pd.type === 'tile') target = tp.pos;
   }
   if (target === null) { el.classList.remove('on'); el.dataset.k = ''; return; }
-  const k = target + ':' + JSON.stringify(state.owners[target]) + ':' + JSON.stringify(state.curses[target] || 0);
+  const k = target + ':' + JSON.stringify(state.owners[target]) + ':' + JSON.stringify(state.curses[target] || 0) + ':' + Number(state.tolls && state.tolls[target] || 0);
   if (el.dataset.k !== k) { el.dataset.k = k; el.innerHTML = tileInfoHTML(target); }
   el.classList.add('on');
 }
@@ -2723,7 +2784,7 @@ function renderBoard() {
   renderBoardDom();
 }
 function renderBoardDom() {
-  const key = JSON.stringify(state.owners) + JSON.stringify(state.curses || {}) + JSON.stringify(state.barrier || {}) + state.players.map(p => p.id + p.color).join('') + state.tiles.map(t => t.e || t.t).join('');
+  const key = JSON.stringify(state.owners) + JSON.stringify(state.tolls || []) + JSON.stringify(state.curses || {}) + JSON.stringify(state.barrier || {}) + state.players.map(p => p.id + p.color).join('') + state.tiles.map(t => t.e || t.t).join('');
   if (key === ownersCache) return;
   ownersCache = key;
   const st = $('stage');
@@ -2847,7 +2908,7 @@ function pawnLayout() {
     const o = state.owners[pp];
     const lift = o ? (o.level - 1) * 7 : 0;
     const { x, y } = proj(GEO[pp][0], GEO[pp][1]);
-    const active = state.phase === 'playing' && state.players[state.turn] && state.players[state.turn].id === p.id;
+    const active = state.phase === 'playing' && visualTurnId === p.id;
     return { id: p.id, charId: p.charId, color: p.color, active, x: x + dx, y: y - lift + dy, w,
              z: GEO[pp][0] + GEO[pp][1] + 102 + (dy > 8 ? 1 : 0) + (active ? 20 : 0),
              zs: GEO[pp][0] + GEO[pp][1] + 100 };
@@ -3055,7 +3116,7 @@ function renderHUD() {
         return `<span class="ebadge ${n ? '' : 'zero'}" style="--ec:${RUNE[e]}">
           <svg width="17" height="17" viewBox="-34 -36 68 72">${ELEM[e]}</svg>${n}</span>`;
       }).join('')}</div>`;
-    el.classList.toggle('turn', state.phase === 'playing' && state.players[state.turn] === p);
+    el.classList.toggle('turn', state.phase === 'playing' && visualTurnId === p.id);
   });
   fitWorld();
 }
@@ -3280,7 +3341,7 @@ function battleDetailHTML(pid, cid, level, mods = [], exileCount = null, effectS
   const m = fx.match(/^【([^】]+)】\s*(.*)$/s), title = m ? m[1] : '固有能力', body = m ? m[2] : (fx || '効果なし');
   const elem = {fire:'火',water:'水',earth:'土',wind:'風',neutral:'無'}[c.elem || 'neutral'];
   const soulCount = bid === 'alter' ? Number(exileCount ?? (pl && pl.exileCount) ?? 0) : null;
-  return `<div class="bdTop">${pl ? pl.name : ''} ／ ${elem}属性 ／ ${c.cost || 0}G</div>
+  return `<div class="bdTop">${pl ? pl.name : ''} ／ ${elem}属性</div>
     <div class="bdName">${name}</div><div class="bdBase">基礎 AT ${at}　HP ${hp}</div>
     ${soulCount !== null ? `<div class="bdSoul">廃棄札 ${soulCount}枚　【魂喰らい】DF +${soulCount * 5}</div>` : ''}
     <div class="bdAbility ${effectStateClass(effectState)}"><b>【${title}】${effectState ? `<span class="effectStateTag">${effectStateLabel(effectState)}</span>` : ''}</b><p>${body}</p>
@@ -3308,12 +3369,24 @@ function previewStatsHTML(pid, cid, level, damage, side) {
   return `<div class="bsOwner">${pl.name}</div><div class="bsCreature">${name}</div>
     ${attackMeterHTML(at, at)}
     <div class="bsValues"><span>${statLabel('at')}<b data-stat="at">${at}</b></span><span>${statLabel('hp')}<b data-stat="hp">${Math.max(1,hp0-(damage||0))}</b></span><span>${statLabel('df')}<b data-stat="df">―</b></span></div>
-    ${durabilityHTML(curHp, 0)}
-    <div class="bsMods"><span class="mod">ウェポン・地形・能力補正は公開後に反映</span></div>`;
+    ${durabilityHTML(curHp, 0)}`;
+}
+
+function renderBattleSummoners(attackerId, defenderId) {
+  const put = (id, pid, role) => {
+    const host = $(id), pl = player(pid);
+    if (!host || !pl || !pl.charId) { if (host) host.innerHTML = ''; return; }
+    host.innerHTML = `<img src="/assets/hud_${pl.charId}.png?v=140" alt="${pl.name}"
+      onerror="this.onerror=null;this.src='/assets/f_${pl.charId}.png'">
+      <div class="battleSummonerLabel"><small>${role}</small><span>${pl.name}</span></div>`;
+  };
+  put('bAtkSummoner', attackerId, 'ATTACKER');
+  put('bDefSummoner', defenderId, 'DEFENDER');
 }
 
 function renderBattlePreview(bp) {
   if (!bp || battlePlayingKey) return;
+  renderBattleSummoners(bp.attacker, bp.defender);
   const isNew = activeBattleKey !== bp.key;
   if (isNew) {
     activeBattleKey = bp.key;
@@ -3333,13 +3406,13 @@ function renderBattlePreview(bp) {
   if (isNew || atkReveal) {
     $('bAtk').innerHTML = battleCreatureHTML(bp.atkCreature, 1, atkReveal);
     $('bAtkStats').innerHTML = previewStatsHTML(bp.attacker, bp.atkCreature, 1, 0, 'atk');
-    $('bAtkDetail').innerHTML = battleDetailHTML(bp.attacker, bp.atkCreature, 1, ['ウェポン・能力補正は公開後に反映'], null, bp.effectStates && bp.effectStates.attacker);
+    $('bAtkDetail').innerHTML = battleDetailHTML(bp.attacker, bp.atkCreature, 1, [], null, bp.effectStates && bp.effectStates.attacker);
     activeBattleAttacker = bp.atkCreature;
   }
   if (isNew) {
     $('bDef').innerHTML = battleCreatureHTML(bp.defCreature, bp.defLevel || 1, false);
     $('bDefStats').innerHTML = previewStatsHTML(bp.defender, bp.defCreature, bp.defLevel || 1, bp.defDamage || 0, 'def');
-    $('bDefDetail').innerHTML = battleDetailHTML(bp.defender, bp.defCreature, bp.defLevel || 1, ['地形・ウェポン・能力補正は公開後に反映'], null, bp.effectStates && bp.effectStates.defender);
+    $('bDefDetail').innerHTML = battleDetailHTML(bp.defender, bp.defCreature, bp.defLevel || 1, [], null, bp.effectStates && bp.effectStates.defender);
   }
   updateBattleCompare();
   $('bAtkSupport').innerHTML = supportBackHTML(bp.supportReady.attacker ? '選択済み' : '選択中…');
@@ -3431,7 +3504,8 @@ function updateBattleCompare() {
     const formula = tb.abilityBonus ? `Lv×10 ${tb.baseBonus} + 固有 ${tb.abilityBonus}` : `Lv×10 = ${tb.baseBonus}`;
     $('bLandFormula').textContent = tb.nullifiedBy ? formula + '（風刃で無効）' : formula;
     $('bLandFormula').classList.toggle('inactive', !!tb.nullifiedBy || tb.affinity === 'mismatch');
-    $('bLandBonus').innerHTML = `<span><small>領地BONUS</small><b>+${tb.appliedBonus} DF</b></span>`;
+    const inactiveReason = tb.nullifiedBy ? '補正無効' : tb.affinity === 'mismatch' ? '属性不一致' : '';
+    $('bLandBonus').innerHTML = `<span><small>領地BONUS</small><b>+${tb.appliedBonus} DF</b>${inactiveReason ? `<em>${inactiveReason}</em>` : ''}</span>`;
     $('bLandBonus').classList.toggle('inactive', !tb.appliedBonus);
   } else {
     $('bLandCreature').innerHTML = '';
@@ -3530,6 +3604,7 @@ async function playBattle(b) {
   activeBattleData = b;
   const C = state.catalog;
   const atk = player(b.attacker), def = player(b.defender);
+  renderBattleSummoners(b.attacker, b.defender);
   const atkElem = C.CREATURES[b.atkCreature.replace(/_f$/, '')].elem || 'neutral';
   const defElem = C.CREATURES[b.defCreature.replace(/_f$/, '')].elem || 'neutral';
   const dLv = b.defLevel || (state.owners[b.tile] ? state.owners[b.tile].level : 1);
@@ -3756,7 +3831,7 @@ function render() {
   if (!state) return;
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.39';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.40';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -3824,6 +3899,8 @@ function render() {
     }
   } else $('duelOv').classList.remove('on');
   if (state.phase === 'playing' || state.phase === 'ended') {
+    const logicalTurn = state.players[state.turn] && state.players[state.turn].id;
+    if (!visualTurnId || !state.players.some(p => p.id === visualTurnId)) visualTurnId = logicalTurn || null;
     // 移動アニメーション(城でドラフト待ちの中断・再開に対応)
     state.players.forEach(p => { if (!(p.id in prevPos)) prevPos[p.id] = p.pos; });
     if (!hopState) {
@@ -3871,11 +3948,7 @@ function render() {
       flyCoins(payer.id, recv.id);
     }
   }
-  if (state.log && state.log.length) {
-    $('ticker').innerHTML = state.log.slice(-4).map((l, k, a) =>
-      `<div style="opacity:${0.45 + 0.55 * (k + 1) / a.length}">${iconize(l)}</div>`).join('');
-    fitWorld();
-  }
+  renderTicker();
   // ===== ショップ演出 =====
   const shopping = Object.entries(state.pending).find(([, x]) =>
     x.type === 'market' || (x.type === 'draft' && x.resume === 'market') ||
@@ -4269,8 +4342,13 @@ function render() {
       const fresh = state.turn === queuedTurn && tpd && (tpd.type === 'roll' || tpd.type === 'pick_draw');
       if (fresh && queuedTurn !== firedTurn) {
         firedTurn = queuedTurn;
+        visualTurnId = tp0.id;
+        renderPawns(); renderHUD();
         showTelop('turn', tp0.name + 'の手番');
         playTurnCutin(tp0);
+      } else if (state.turn === queuedTurn && tp0) {
+        visualTurnId = tp0.id;
+        renderPawns(); renderHUD();
       }
       queuedTurn = null;
     }

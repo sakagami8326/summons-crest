@@ -20,8 +20,8 @@ const G = new Function('require', '__dirname', 'process', 'console', 'setInterva
     terrainBreakdown, creatureEffectUi, castleLapBonus, ultimateStatus };`)(
   require, __dirname, process, console, () => {});
 
-ok(G.VERSION === '1.39' && pkg.version === '1.39.0', 'version is unified at v1.39');
-ok(/\/ board 1\.39/.test(board), 'TV build label is unified at v1.39');
+ok(G.VERSION === '1.40' && pkg.version === '1.40.0', 'v1.39 features remain in v1.40');
+ok(/\/ board 1\.40/.test(board), 'TV build label is unified at v1.40');
 eq(G.RULES.castleBonusPerLap, 100, 'castle bonus unit is 100G per completed lap');
 eq(G.castleLapBonus(1), 100, 'first completed lap gives 100G');
 eq(G.castleLapBonus(2), 200, 'second completed lap gives 200G');
@@ -90,21 +90,21 @@ ok(/makeTurnAura/.test(world) && /'TURN'/.test(world) && /it\.active/.test(world
 ok(/--board-safe-left/.test(board) && /--board-safe-top/.test(board) && /--board-safe-right/.test(board) &&
   /hudRect\.right/.test(board) && /utilityRect\.right/.test(board) && /const safeRight = showHud \? 8 : 0/.test(board) && /PW\.resize/.test(board),
   'board safe area follows only the left information rail and refreshes Phaser');
-ok(/rank \* 103/.test(board) && /transform:scale\(\.82\)/.test(board) && /transform:scale\(\.74\)/.test(board) &&
-  /state\.log\.slice\(-4\)/.test(board) && /id="leftUtility"/.test(board),
+ok(/rank \* 103/.test(board) && /transform:scale\(1\)/.test(board) && /transform:scale\(\.9\)/.test(board) &&
+  /logs\.slice\(-4\)/.test(board) && /id="leftUtility"/.test(board),
   'compact TV layout puts the latest four log entries and controls in the bottom-left rail');
 ok(/#optMenu \{[^}]*left:calc\(100% \+ 10px\); bottom:0/s.test(board),
   'options menu grows upward beside the left rail instead of covering the HUD');
 ok(!/id="turnPortrait"/.test(board) && !/id="tpBubble"/.test(board) && /id="turnCutin"/.test(board),
   'static turn portrait and bubble are removed while transient turn cut-ins remain');
-ok(/id="bLandLevelPips"/.test(board) && /class="landShield"/.test(board) && /effectStateLabel/.test(board),
-  'battle screen has the land core, level gauge, shield value, and effect states');
+ok(/id="bLandLevelPips"/.test(board) && /class="landBonusBlock"/.test(board) && /effectStateLabel/.test(board),
+  'battle screen has the land core, level gauge, bonus value, and effect states');
 ok(/state\.landCombat/.test(board) && /領地BONUS/.test(board),
   'enemy-land panel presents affinity and the actual territory bonus');
 
 ok(/sc_hand_order:\$\{room\}:\$\{pid\}/.test(phone), 'hand order is local to room and player');
-ok(/200\)\s*;/.test(phone) && /onpointerdown/.test(phone) && /handPlaceholder/.test(phone),
-  '200ms long press starts full-card drag with an insertion placeholder');
+ok(/300\)\s*;/.test(phone) && /onpointerdown/.test(phone) && /handPlaceholder/.test(phone),
+  '300ms long press starts full-card drag with an insertion placeholder');
 ok(/hr\.left \+ 48[\s\S]*scrollLeft -= 14/.test(phone) && /hr\.right - 48[\s\S]*scrollLeft \+= 14/.test(phone),
   'hand drag supports edge auto-scroll');
 ok(/openCardZoom/.test(phone) && /cardZoomAction/.test(phone),
