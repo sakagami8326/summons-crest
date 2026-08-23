@@ -97,5 +97,8 @@ ok(/property="og:image" content="https:\/\/summonscode\.jp\/assets\/site\/og-sum
 ok(/name="twitter:image" content="https:\/\/summonscode\.jp\/assets\/site\/og-summons-code-v1\.png"/.test(html), 'Twitter image metadata uses the official domain');
 ok(/rel="canonical" href="https:\/\/summonscode\.jp\/"/.test(html) && /name="description"/.test(html), 'canonical uses the official domain and description metadata is present');
 ok(/class="skip-link"/.test(html) && /aria-live="polite"/.test(html), 'skip navigation and live carousel information are present');
+ok(/SUMMONS CODEは個人開発ゲームです。/.test(html), 'footer identifies SUMMONS CODE as an independently developed game');
+ok(/href="https:\/\/x\.com\/gamitestman"/.test(html) && /site-footer__social/.test(html) && /<svg/.test(html),
+  'footer links to the developer X account with an icon');
 
 console.log(`V1.38 HOMEPAGE ALL ${pass} CHECKS PASSED`);
