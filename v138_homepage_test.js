@@ -13,7 +13,8 @@ const js = read('public/site/homepage.js');
 const server = read('server.js');
 const pkg = require('./package.json');
 
-ok(/const VERSION = '1\.(?:40|41|42)'/.test(server) && Number(pkg.version.replace(/\.0$/, '')) >= 1.40,
+const serverVersion = server.match(/const VERSION = '([0-9.]+)'/);
+ok(serverVersion && Number(serverVersion[1]) >= 1.40 && Number(pkg.version.replace(/\.0$/, '')) >= 1.40,
   'v1.38 homepage remains covered by the current release');
 ok(/if \(p === '\/'\) return serveFile\(res, 'site\/index\.html'\)/.test(server), 'root serves official homepage');
 ok(/if \(p === '\/play'\) return serveFile\(res, 'board\.html'\)/.test(server), 'play route serves TV game');
@@ -91,10 +92,10 @@ ok(/border: 1px dashed/.test(css + conceptCss) && /homepage-spin/.test(css), 'si
 ok(/prefers-reduced-motion/.test(css) && /animation: none !important/.test(css), 'decorative motion respects reduced motion');
 
 ok(/\.hero h1\s*\{[^}]*white-space:\s*nowrap/.test(css), 'hero headline stays on one line');
-ok(/property="og:url" content="https:\/\/52-68-169-20\.sslip\.io\/"/.test(html), 'Open Graph URL is absolute');
-ok(/property="og:image" content="https:\/\/52-68-169-20\.sslip\.io\/assets\/site\/og-summons-code-v1\.png"/.test(html), 'Open Graph image URL is absolute');
-ok(/name="twitter:image" content="https:\/\/52-68-169-20\.sslip\.io\/assets\/site\/og-summons-code-v1\.png"/.test(html), 'Twitter image metadata uses the public image URL');
-ok(/rel="canonical" href="https:\/\/52-68-169-20\.sslip\.io\/"/.test(html) && /name="description"/.test(html), 'canonical and description metadata are present');
+ok(/property="og:url" content="https:\/\/summonscode\.jp\/"/.test(html), 'Open Graph URL uses the official domain');
+ok(/property="og:image" content="https:\/\/summonscode\.jp\/assets\/site\/og-summons-code-v1\.png"/.test(html), 'Open Graph image URL uses the official domain');
+ok(/name="twitter:image" content="https:\/\/summonscode\.jp\/assets\/site\/og-summons-code-v1\.png"/.test(html), 'Twitter image metadata uses the official domain');
+ok(/rel="canonical" href="https:\/\/summonscode\.jp\/"/.test(html) && /name="description"/.test(html), 'canonical uses the official domain and description metadata is present');
 ok(/class="skip-link"/.test(html) && /aria-live="polite"/.test(html), 'skip navigation and live carousel information are present');
 
 console.log(`V1.38 HOMEPAGE ALL ${pass} CHECKS PASSED`);

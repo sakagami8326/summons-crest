@@ -22,7 +22,8 @@ const G = new Function('require', '__dirname', 'process', 'console', 'setInterva
 
 ok(Number(G.VERSION) >= 1.40 && Number(pkg.version.replace(/\.0$/, '')) >= 1.40,
   'v1.39 features remain covered by the current release');
-ok(/\/ board 1\.(?:40|41|42)/.test(board), 'TV build label is v1.40 or newer');
+const boardVersion = board.match(/\/ board ([0-9.]+)/);
+ok(boardVersion && Number(boardVersion[1]) >= 1.40, 'TV build label is v1.40 or newer');
 eq(G.RULES.castleBonusPerLap, 100, 'castle bonus unit is 100G per completed lap');
 eq(G.castleLapBonus(1), 100, 'first completed lap gives 100G');
 eq(G.castleLapBonus(2), 200, 'second completed lap gives 200G');

@@ -21,7 +21,8 @@ const G = new Function('require', '__dirname', 'process', 'console', 'setInterva
 
 ok(Number(G.VERSION) >= 1.40 && Number(pkg.version.replace(/\.0$/, '')) >= 1.40,
   'v1.40 behavior remains covered by the current release');
-ok(/\/ board 1\.(?:40|41|42)/.test(board), 'TV build label keeps v1.40-or-newer UI');
+const boardVersion = board.match(/\/ board ([0-9.]+)/);
+ok(boardVersion && Number(boardVersion[1]) >= 1.40, 'TV build label keeps v1.40-or-newer UI');
 
 ok(/#hud \{[^}]*transform:scale\(1\.1\)/s.test(board) &&
   /@media \(max-width:1400px\), \(max-height:800px\)[\s\S]*?#hud \{[^}]*transform:scale\(1\)/.test(board),
