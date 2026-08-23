@@ -67,6 +67,10 @@ ok(/id = 'titleBonusPanel'/.test(board) && /覇者ボーナス/.test(board) && /
 ok(/#titleBonusPanel \{[^}]*grid-template-columns:repeat\(2/s.test(board) &&
    /innerHeight - 14 - hudBottom/.test(board),
   'title panel uses two columns and log space is measured below the HUD');
+ok(/\.titleBonusHead \{[^}]*grid-template-columns:25px minmax\(0,1fr\)/s.test(board) &&
+   /\.titleBonusValue \{[^}]*grid-column:2/s.test(board) &&
+   /<span>獲得<\/span><b>総資産 \+500G<\/b>/.test(board),
+  'title name and asset reward use separate non-overlapping rows');
 
 // TURN STARTはepoch単位で1回だけ登録し、開始ワイプから直接再生しない。
 const entryBody = (board.match(/function playGameEntryTransition\(\) \{([\s\S]*?)\n\}/) || [,''])[1];
