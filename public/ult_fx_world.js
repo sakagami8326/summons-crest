@@ -1,12 +1,12 @@
 // v1.09: shared white-gold Phaser sparkle overlay for ultimate cut-ins.
 window.UltFxWorld = (() => {
-  let game = null, scene = null, ready = false, pending = false, live = [];
+  let game = null, scene = null, ready = false, pending = false, live = [], speed = 1;
   const W = 1280, H = 720;
   function init() {
     if (game || typeof Phaser === 'undefined') return;
     game = new Phaser.Game({ type: Phaser.AUTO, parent: 'ultFxHost', width: W, height: H,
       transparent: true, banner: false, scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-      scene: { create: function () { scene = this; ready = true; if (pending) play(); } } });
+      scene: { create: function () { scene = this; ready = true; scene.tweens.timeScale = speed; if (pending) play(); } } });
   }
   function clear() {
     for (const p of live) if (p && p.scene) p.destroy();
@@ -31,6 +31,10 @@ window.UltFxWorld = (() => {
     for (let i = 0; i < count; i++) spark(Math.random() * W, H * (.2 + Math.random() * .75), false, Math.random() * 550);
     if (!reduced) for (let i = 0; i < 20; i++) spark(W * (.25 + Math.random() * .35), H * (.35 + Math.random() * .35), true, 80 + Math.random() * 180);
   }
+  function setSpeed(value) {
+    speed = value === 2 ? 2 : 1;
+    if (scene && scene.tweens) scene.tweens.timeScale = speed;
+  }
   function stop() { pending = false; clear(); }
-  return { init, play, stop, isReady: () => ready };
+  return { init, play, stop, setSpeed, isReady: () => ready };
 })();

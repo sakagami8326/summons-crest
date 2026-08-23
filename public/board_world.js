@@ -15,6 +15,7 @@ const PW = (() => {
   const pawns = {};                                 // id → { spr, sh, tex, x, y, tw }
   const texPromises = {};
   let camTarget = 'none';                           // カメラの現在目標(同一目標への再tween防止)
+  let presentationSpeed = 1;
 
   const sum = i => GEO[i][0] + GEO[i][1];
   // '#RRGGBB' → 数値。Phaserの色変換APIに依存しない(v3/v4差異の影響を受けない)
@@ -619,7 +620,7 @@ const PW = (() => {
   // ---- 2C共通ヘルパー ----
   const ELEM_COL = { fire: 0xFF7A45, water: 0x56A8E8, earth: 0xD9B64F, wind: 0x5BE0D0 };
   const elemCol = e => ELEM_COL[e] || 0xD8D2E8;
-  const wait = ms => new Promise(res => setTimeout(res, ms));
+  const wait = ms => new Promise(res => setTimeout(res, GAME_TIMING.scaled(ms, presentationSpeed)));
   // 属性色の粒子を放射(pool再利用。上方向up=trueで立ち上る)
   // elem指定時、支給素材(particle_01〜04)が読込済みなら画像粒子を使う(M2 ─ 未着はGraphics円)
   function elemBurst(x, y, col, base, up, depth, elem) {
@@ -835,7 +836,8 @@ const PW = (() => {
     let p;
     try { p = Promise.resolve(impl(ev)); }
     catch (e) { fxPlaying = null; return Promise.resolve(); }
-    return Promise.race([p, new Promise(res => setTimeout(res, ev.timeoutMs || 4000))])
+    return Promise.race([p, new Promise(res => setTimeout(res,
+      GAME_TIMING.scaled(ev.timeoutMs || 4000, ev.speed || presentationSpeed)))])
       .catch(() => {})
       .then(() => { fxPlaying = null; });
   }
@@ -1109,9 +1111,10 @@ const PW = (() => {
         if (P.active) P.auraTween.resume();
         else { P.auraTween.pause(); P.auraTween.restart(); P.auraTween.pause(); }
       }
-      if (it.charId && P.tex !== 'pw_' + it.charId && P.tex !== 'loading_' + it.charId) {
-        P.tex = 'loading_' + it.charId;
-        pngTexture('pw_' + it.charId, '/assets/p_' + it.charId + '.png').then(k => {
+      const pawnTex = 'pw_' + it.charId + (it.asset && it.asset.includes('outline') ? '_outline' : '');
+      if (it.charId && P.tex !== pawnTex && P.tex !== 'loading_' + pawnTex) {
+        P.tex = 'loading_' + pawnTex;
+        pngTexture(pawnTex, it.asset || '/assets/p_' + it.charId + '.png').then(k => {
           if (!k || pawns[it.id] !== P) return;
           if (P.spr) P.spr.destroy();
           P.spr = scene.add.image(P.x, P.y, k).setOrigin(0.5, 1);
@@ -1133,7 +1136,7 @@ const PW = (() => {
         const sx = P.x, sy = P.y, dist = Math.hypot(it.x - sx, it.y - sy);
         const juice = quality !== 'lite';
         P.tw = scene.tweens.addCounter({
-          from: 0, to: 1, duration: Math.min(GAME_TIMING.stepMs - 30, 220), ease: 'Sine.easeInOut',
+          from: 0, to: 1, duration: GAME_TIMING.scaled(Math.min(GAME_TIMING.stepMs - 30, 220), it.speed || 1), ease: 'Sine.easeInOut',
           onUpdate: tw => {
             const v = tw.getValue();
             const air = Math.sin(Math.PI * v);
@@ -1231,20 +1234,50 @@ const PW = (() => {
     fitZoom = Math.min(1, 1280 / (maxX - minX), 905 / (maxY - minY));
     fitCx = (minX + maxX) / 2; fitCy = (minY + maxY) / 2;
   }
-  function setCamera(ti) {
+  function setPresentationSpeed(speed) {
+    presentationSpeed = speed === 2 ? 2 : 1;
+    if (ready && scene && scene.tweens) scene.tweens.timeScale = presentationSpeed;
+  }
+  function resetCameraEffects(cam) {
+    try { if (cam.panEffect && cam.panEffect.reset) cam.panEffect.reset(); } catch (e) {}
+    try { if (cam.zoomEffect && cam.zoomEffect.reset) cam.zoomEffect.reset(); } catch (e) {}
+  }
+  function setCamera(ti, opts) {
     if (!ready) return;
+    const o = opts || {}, speed = o.speed === 2 ? 2 : presentationSpeed;
     const target = ti === null || ti === undefined ? 'fit' : 'z' + ti;
-    if (target === camTarget) return;
+    if (target === camTarget && !o.force) return;
     camTarget = target;
     const cam = scene.cameras.main;
+    resetCameraEffects(cam);
+    const duration = GAME_TIMING.scaled(o.duration == null ? 850 : o.duration, speed);
     if (target === 'fit') {
-      cam.pan(fitCx, fitCy, 850, 'Cubic.easeOut');
-      cam.zoomTo(fitZoom, 850, 'Cubic.easeOut');
+      cam.pan(fitCx, fitCy, duration, 'Cubic.easeOut');
+      cam.zoomTo(fitZoom, duration, 'Cubic.easeOut');
     } else {
       const { x, y } = proj(GEO[ti][0], GEO[ti][1]);
-      cam.pan(x, y + 24, 850, 'Cubic.easeOut');   // マスを画面中央やや上(DOM版の46%相当)に
-      cam.zoomTo(fitZoom * 1.5, 850, 'Cubic.easeOut');
+      cam.pan(x, y + 24, duration, 'Cubic.easeOut');   // マスを画面中央やや上(DOM版の46%相当)に
+      cam.zoomTo(fitZoom * 1.5, duration, 'Cubic.easeOut');
     }
+    return duration;
+  }
+  function resetCamera() {
+    if (!ready || !scene) return;
+    const cam = scene.cameras.main;
+    resetCameraEffects(cam);
+    camTarget = 'fit';
+    cam.centerOn(fitCx, fitCy);
+    cam.setZoom(fitZoom);
+  }
+  function cameraState() {
+    if (!ready || !scene) return { ready:false, isFit:true, target:'fit' };
+    const cam = scene.cameras.main;
+    const center = cam.midPoint || { x:fitCx, y:fitCy };
+    const panRunning = !!(cam.panEffect && cam.panEffect.isRunning);
+    const zoomRunning = !!(cam.zoomEffect && cam.zoomEffect.isRunning);
+    const isFit = camTarget === 'fit' && !panRunning && !zoomRunning &&
+      Math.abs(cam.zoom - fitZoom) < .002 && Math.abs(center.x - fitCx) < 2 && Math.abs(center.y - fitCy) < 2;
+    return { ready:true, isFit, target:camTarget, zoom:cam.zoom, fitZoom, panRunning, zoomRunning };
   }
 
   // ===== 座標変換(DOMオーバーレイ用の画面px) =====
@@ -1327,7 +1360,8 @@ const PW = (() => {
     pumpT = Math.max(pumpT, performance.now());
     for (let k = 0; k < frames; k++) { pumpT += 16.7; game.loop.step(pumpT); }
   }
-  return { init, syncBoard, syncPawns, setCamera, worldToViewport, pawnViewport, fx, resize,
+  return { init, syncBoard, syncPawns, setCamera, resetCamera, cameraState, setPresentationSpeed,
+           worldToViewport, pawnViewport, fx, resize,
            snapshot, debugCounts, pump, isReady: () => ready, hasFailed: () => failed,
            setHighlights,   // 強化候補ハイライト(発注書v0.75 §6)
            // Phase 2A: 演出基盤

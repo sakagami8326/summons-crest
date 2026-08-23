@@ -11,6 +11,9 @@ const read = rel => fs.readFileSync(path.join(__dirname, rel), 'utf8');
 const serverText = read('server.js');
 const board = read('public/board.html');
 const phone = read('public/phone.html');
+const boardWorld = read('public/board_world.js');
+const battleWorld = read('public/battle_world.js');
+const ultWorld = read('public/ult_fx_world.js');
 const pkg = require('./package.json');
 
 let src = serverText.replace(/server\.listen\([\s\S]*?\}\);\s*$/, '');
@@ -65,28 +68,63 @@ ok(/if \(!r\.botMode \|\| r\.phase !== 'playing' \|\| r\.winner \|\| r\.turnTran
 ok(/if \(!r\.boardSeen\) return advanceTurnNow\(r\)/.test(serverText),
   'headless rooms retain synchronous progression until a TV has connected');
 
-// テレビは大演出を直列化し、カメラを閉じてから完了通知する。
-ok(/function queueMajorPresentation\([\s\S]*majorPresentationQueue\.sort\(\(a, b\) => a\.at - b\.at\)/.test(board),
-  'major presentations use an ordered common queue');
-ok(/function waitForPresentationLane\([\s\S]*animBusy[\s\S]*bq\.length[\s\S]*cameraOwner[\s\S]*await new Promise/.test(board) &&
-  /const item = majorPresentationQueue\.shift\(\);\s*await waitForPresentationLane\(\)/.test(board),
-  'major presentations wait for movement, banners and close-ups already in the presentation lane');
+// テレビは全演出を1本のawait可能キューへ統合し、カメラを閉じてから完了通知する。
+ok(/const presentationQueue = \[\]/.test(board) &&
+  /function queuePresentation\([\s\S]*presentationQueue\.sort\(\(a, b\) => a\.pri - b\.pri \|\| a\.at - b\.at \|\| a\.seq - b\.seq\)/.test(board),
+  'all presentations use one priority and timestamp ordered queue');
+ok(/async function pumpPresentations\([\s\S]*const item = presentationQueue\.shift\(\)[\s\S]*await waitForPresentationLane\(\)[\s\S]*await item\.run\(item\)/.test(board),
+  'the unified queue awaits every presentation before dequeuing the next');
+ok(/function waitForPresentationLane\([\s\S]*animBusy[\s\S]*cameraOwner[\s\S]*PW\.cameraState\(\)\.isFit[\s\S]*await new Promise/.test(board),
+  'presentations wait for movement and the real Phaser camera to return');
 ok(/queueMajorPresentation\(ult\.at, 'ultimate'/.test(board) &&
   /queueMajorPresentation\(battle\.at, 'battle'/.test(board),
   'ultimate and battle presentations both enter the common queue');
-ok(/function boardPresentationIdle\([\s\S]*majorPresentationRunning[\s\S]*animBusy[\s\S]*cameraOwner[\s\S]*duelPlaying/.test(board),
+ok(/function boardPresentationIdle\([\s\S]*presentationRunning[\s\S]*presentationQueue\.length[\s\S]*cameraFit[\s\S]*duelPlaying/.test(board),
   'completion waits for queues, banners, camera and full-screen presentations');
 ok(/type:'presentation_complete'[\s\S]*transitionId:tr\.id/.test(board),
   'TV sends the matching presentation transition id');
-ok(/function tileCloseup\([\s\S]*return new Promise/.test(board) &&
-  /const closeupDone = tileCloseup\([\s\S]*await closeupDone/.test(board),
+ok(/function tileCloseup\([\s\S]*const completion = new Promise/.test(board) &&
+  /const closeupDone = tileCloseup\([\s\S]*await Promise\.all\(\[closeupDone, resultFxDone\]\)/.test(board),
   'battle close-up is awaitable before presentation completion');
-ok(/cameraOwner = \{ token, owner, startedAt:Date\.now\(\) \}/.test(board) &&
+ok(/cameraOwner = \{ token, owner, startedAt:Date\.now\(\),[\s\S]*presentationId/.test(board) &&
   /cameraOwner && Date\.now\(\) - cameraOwner\.startedAt > 12000/.test(board),
   'camera generation ownership has an orphan watchdog');
+ok(/function resetCamera\(\)[\s\S]*resetCameraEffects\(cam\)[\s\S]*cam\.centerOn\(fitCx, fitCy\)[\s\S]*cam\.setZoom\(fitZoom\)/.test(boardWorld) &&
+  /function cameraState\(\)[\s\S]*isFit/.test(boardWorld),
+  'Phaser exposes an unconditional fit reset and actual camera state');
+ok(/zoomTile = null;[\s\S]*PW\.resetCamera\(\)/.test(board),
+  'logical null zoom still forces the real camera back to fit');
 ok(/resize[\s\S]*resetPresentationCamera\('resize'\)/.test(board) &&
   /fullscreenchange[\s\S]*resetPresentationCamera\('fullscreen-change'\)/.test(board),
   'resize and fullscreen changes reset presentation camera state');
+
+// BOT速度は登録時に固定し、主要DOM/Phaser演出へ共通適用する。
+ok(/speed:capturedPresentationSpeed\(actorId\)/.test(board) &&
+  /function applyPresentationContext\(item\)[\s\S]*PW\.setPresentationSpeed\(item\.speed\)[\s\S]*BW\.setSpeed\(item\.speed\)/.test(board),
+  'presentation speed is captured at enqueue time and applied to each renderer');
+ok(/--telop-duration/.test(board) && /--summon-card-duration/.test(board) &&
+  /--turn-slide-in/.test(board) && /--ult-hero-duration/.test(board),
+  'turn, summon and ultimate CSS animations have explicit half-speed timings');
+ok(/function setPresentationSpeed\(speed\)/.test(boardWorld) &&
+  /GAME_TIMING\.scaled\(ev\.timeoutMs \|\| 4000, ev\.speed \|\| presentationSpeed\)/.test(boardWorld) &&
+  /function setSpeed\(value\)/.test(battleWorld) && /function setSpeed\(value\)/.test(ultWorld),
+  'Phaser board, battle and ultimate renderers receive the captured speed');
+ok(/speed:capturedPresentationSpeed\(p\.id\)/.test(board) &&
+  /GAME_TIMING\.scaled\(Math\.min\(GAME_TIMING\.stepMs - 30, 220\), it\.speed \|\| 1\)/.test(boardWorld),
+  'pawn hop tween and movement cadence use the same captured BOT speed');
+
+// 戦闘は一度だけ再生され、連鎖は戦闘の後ろでawaitされる。
+ok(/const presentationRegistry = new Map\(\)/.test(board) &&
+  /presentationRegistry\.set\(id, 'queued'\)/.test(board) &&
+  /presentationRegistry\.set\(item\.id, 'running'\)/.test(board) &&
+  /presentationRegistry\.set\(item\.id, 'completed'\)/.test(board),
+  'presentation ids move through queued, running and completed exactly once');
+ok(/battleResultState !== 'running' && battleResultState !== 'completed'/.test(board) &&
+  /battleResultState !== 'queued' && battleResultState !== 'running'/.test(board),
+  'SSE renders cannot overwrite or cancel a queued/running battle result');
+ok(/await PW\.play\(\{ type:'chain-glow'/.test(board) && /kind:'chain'/.test(board) &&
+  /queueMajorPresentation\(battle\.at, 'battle'/.test(board),
+  'chain glow is awaited in the same priority queue behind battle');
 
 // 戦闘召喚士とショップのレスポンシブ配置。
 ok(!/\.battleSummoner::after/.test(board), 'battle summoner dark pseudo background is removed');
@@ -114,7 +152,14 @@ ok(/if \(serverKey !== handServerKey && handGesture\) cancelHandGesture\(\{ rere
   'unchanged local hand preserves the dragged DOM and pointer capture');
 ok(/\.gateBtns\.single \{[^}]*grid-template-columns:minmax\(280px,min\(56vw,560px\)\)[^}]*justify-content:center/s.test(phone) &&
   /classList\.toggle\('single', actionButtonCount === 1\)/.test(phone),
-  'single character-reselect action is centered');
+  'generic single actions retain their existing width');
+ok(/\.gateBtns\.reselectOnly \{[^}]*width:clamp\(240px,72vw,320px\)/s.test(phone) &&
+  /currentPending\.type === 'select_wait'[\s\S]*options\[0\]\.id === 'unpick'[\s\S]*toggle\('reselectOnly'/.test(phone),
+  'only the summoner reselect action receives the narrower width');
+ok(fs.existsSync(path.join(__dirname, 'public/assets/p_lia-outline-v1.png')) &&
+  /p\.charId === 'lia' \? '\/assets\/p_lia-outline-v1\.png'/.test(board) &&
+  /pngTexture\(pawnTex, it\.asset/.test(boardWorld),
+  'Lia uses the cache-busted outlined pawn in DOM and Phaser');
 
 function checkInlineScripts(html, label) {
   let count = 0;

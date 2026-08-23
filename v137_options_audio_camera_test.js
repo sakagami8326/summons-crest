@@ -32,7 +32,8 @@ ok(/function endPresentationZoom/.test(board) && /cameraOwner\.token !== token/.
 ok(/resetPresentationCamera\('sse-reconnect'\)/.test(board), 'SSE再接続時に全景へ戻す');
 ok(/resetPresentationCamera\('phase-or-turn-change'\)/.test(board), 'フェーズ・手番変更時に全景へ戻す');
 ok(/resetPresentationCamera\('presentation-error'\)/.test(board), '演出例外時に全景へ戻す');
-ok(/zoomTile !== null && !cameraOwner/.test(board), '所有者なしズームの安全監視');
+ok(/!cameraOwner && \(zoomTile !== null \|\| !cameraState\.isFit\)/.test(board) &&
+  /function resetCamera\(\)/.test(world), '所有者なしズームと実カメラずれの安全監視');
 ok(!/setZoom\(target\)/.test(board), '停止マス詳細では再ズームしない');
 
 console.log(`V1.37 OPTIONS/AUDIO/CAMERA ALL ${pass} CHECKS PASSED`);

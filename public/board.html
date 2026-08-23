@@ -71,10 +71,10 @@
   #telop { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center;
            justify-content:center; pointer-events:none; z-index:60; }
   #telopImg { width:min(52vw,700px); opacity:0; }
-  #telopImg.play { animation:telop 2.2s ease forwards; }
+  #telopImg.play { animation:telop var(--telop-duration,2.2s) ease forwards; }
   #telopSub { font-size:24px; letter-spacing:6px; color:var(--gold-soft); opacity:0;
               text-shadow:0 2px 8px rgba(0,0,0,.8);  font-family:'Reggae One','Yu Mincho',serif; }
-  #telopSub.play { animation:telop 2.2s ease forwards; }
+  #telopSub.play { animation:telop var(--telop-duration,2.2s) ease forwards; }
   @keyframes telop { 0%{opacity:0;transform:scale(1.55);filter:blur(6px)}
     18%{opacity:1;transform:scale(1);filter:blur(0)} 78%{opacity:1} 100%{opacity:0;transform:scale(.94)} }
   #diceFloat { position:fixed; right:26px; bottom:24px; width:92px; height:92px; border-radius:16px;
@@ -346,6 +346,13 @@
   #battleCutin { position:fixed; inset:0; z-index:71; display:none; place-items:center; pointer-events:none;
       background:linear-gradient(110deg,rgba(8,6,20,0) 0 12%,rgba(15,9,30,.97) 30% 70%,rgba(8,6,20,0) 88%); }
   #battleCutin.on { display:grid; animation:battleCutIn 1s ease both; }
+  html.presentationFast #battle.on { animation-duration:.225s; }
+  html.presentationFast #battle.shake #battleField { animation-duration:.2s; }
+  html.presentationFast .bside.dead { animation-duration:.35s; }
+  html.presentationFast .battleCreatureCard.reveal { animation-duration:.375s; }
+  html.presentationFast #battleCutin.on { animation-duration:.5s; }
+  html.presentationFast #bresult.show { animation-duration:.275s; }
+  html.presentationFast .dmgPop { animation-duration:.55s; }
   #battleCutin span { font:700 10vh/1 'Reggae One','Yu Mincho',serif; letter-spacing:.18em; color:#f2d062;
       text-shadow:0 3px 12px #000,0 0 3vh rgba(242,208,98,.55); }
   @keyframes battleCutIn { 0%{opacity:0;transform:translateX(-12vw)} 22%,70%{opacity:1;transform:none} 100%{opacity:0;transform:translateX(12vw)} }
@@ -460,7 +467,7 @@
   #scCard { position:relative; height:min(76vh,760px); aspect-ratio:2/3; overflow:hidden; isolation:isolate;
       border-radius:2.8vh; background:#1b6f9c; box-shadow:0 3vh 7vh rgba(0,0,0,.55);
       transform-style:preserve-3d; }
-  #summonCut.on #scCard { animation:scCardIn 1s cubic-bezier(.16,.86,.2,1) both; }
+  #summonCut.on #scCard { animation:scCardIn var(--summon-card-duration,1s) cubic-bezier(.16,.86,.2,1) both; }
   @keyframes scCardIn { 0%{transform:rotateY(-540deg) scale(.18);opacity:0;filter:blur(10px)}
       68%{transform:rotateY(12deg) scale(1.06);opacity:1;filter:blur(0)} 100%{transform:rotateY(0) scale(1)} }
   #scCard .scBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-3; }
@@ -640,10 +647,10 @@
   #tcMsg .tcGold { font-size:2.2vh; color:rgba(241,232,208,.85); font-variant-numeric:tabular-nums; }
   #turnCutin img { position:absolute; right:1vw; bottom:-5vh; height:98vh;
       filter:drop-shadow(0 0 26px rgba(0,0,0,.7)) drop-shadow(0 0 40px var(--tcc, #C9A227)); }
-  #turnCutin.on .tcShade, #turnCutin.on .tcRim { animation:tcFadeIn .4s ease both; }
-  #turnCutin.on img { animation:tcSlideIn .5s cubic-bezier(.18,.9,.28,1) both; }
-  #turnCutin.out .tcShade, #turnCutin.out .tcRim { animation:tcFadeOut .45s ease both !important; }
-  #turnCutin.out img { animation:tcSlideOut .45s ease both !important; }
+  #turnCutin.on .tcShade, #turnCutin.on .tcRim { animation:tcFadeIn var(--turn-fade-in,.4s) ease both; }
+  #turnCutin.on img { animation:tcSlideIn var(--turn-slide-in,.5s) cubic-bezier(.18,.9,.28,1) both; }
+  #turnCutin.out .tcShade, #turnCutin.out .tcRim { animation:tcFadeOut var(--turn-slide-out,.45s) ease both !important; }
+  #turnCutin.out img { animation:tcSlideOut var(--turn-slide-out,.45s) ease both !important; }
   @keyframes tcSlideIn { from { transform:translateX(48vw); opacity:0; } to { transform:none; opacity:1; } }
   @keyframes tcSlideOut { to { transform:translateX(16vw); opacity:0; } }
   @keyframes tcFadeIn { from { opacity:0; } }
@@ -832,7 +839,7 @@
   #ultCut.on { display:block; }
   #ultBg { position:absolute; inset:0; background:#03050c; }
   #ultArt { position:absolute; z-index:1; inset:0; width:100%; height:100%; object-fit:contain; opacity:0; }
-  #ultCut.on #ultArt { animation:ultHero 4.9s cubic-bezier(.18,.82,.22,1) both; }
+  #ultCut.on #ultArt { animation:ultHero var(--ult-hero-duration,4.9s) cubic-bezier(.18,.82,.22,1) both; }
   @keyframes ultHero { 0%{opacity:0;transform:translateX(-110%) scale(1.08);filter:blur(12px)}
     11%{opacity:1;transform:translateX(2.5%) scale(1.055);filter:blur(0)}
     13%{transform:translateX(0) scale(1.05)} 36%{transform:scale(1)}
@@ -841,18 +848,18 @@
   #ultFxHost { position:absolute; z-index:2; inset:0; pointer-events:none; }
   #ultSlash { position:absolute; z-index:3; inset:-30%; opacity:0; transform:translateX(-90%) rotate(-9deg);
       background:linear-gradient(100deg,transparent 43%,#fff 49%,#ffe7a0 50%,transparent 56%); }
-  #ultCut.on #ultSlash { animation:ultSlash 4.9s ease both; }
+  #ultCut.on #ultSlash { animation:ultSlash var(--ult-hero-duration,4.9s) ease both; }
   @keyframes ultSlash { 0%{opacity:0} 3%{opacity:1} 16%{opacity:.8;transform:translateX(70%) rotate(-9deg)}
     18%,88%{opacity:0} 91%{opacity:1;transform:translateX(-60%) rotate(-9deg)} 100%{opacity:0;transform:translateX(70%) rotate(-9deg)} }
   #ultInfo { position:absolute; z-index:4; left:50%; bottom:5.5vh; transform:translate(-50%,24px); width:min(78vw,1050px);
       padding:1.5vh 3vw 1.8vh; text-align:center; opacity:0; color:#fff8df; background:linear-gradient(90deg,transparent,#050816e8 16% 84%,transparent);
       border-top:1px solid #ffe6a4aa; border-bottom:1px solid #ffe6a4aa; text-shadow:0 2px 7px #000; }
-  #ultCut.on #ultInfo { animation:ultInfo 2.9s 1.45s ease both; }
+  #ultCut.on #ultInfo { animation:ultInfo var(--ult-info-duration,2.9s) var(--ult-info-delay,1.45s) ease both; }
   @keyframes ultInfo { 0%{opacity:0;transform:translate(-50%,24px)} 12%,88%{opacity:1;transform:translate(-50%,0)} 100%{opacity:0} }
   #ultSub { font-size:2.1vh; letter-spacing:.25em; color:#f2d062; } #ultDesc { margin-top:.7vh; font-size:2.8vh; letter-spacing:.08em; }
   .dRow { display:flex; gap:2.5vh; }
 
-  #summonCut.on #scText { animation:scText .45s ease .32s backwards; }
+  #summonCut.on #scText { animation:scText var(--summon-text-duration,.45s) ease var(--summon-text-delay,.32s) backwards; }
   @keyframes scText { from { transform:translateY(28px); opacity:0; } }
   /* TV HUD: 胸上の召喚士を前面に出した横長プレート */
   #hud { top:24px !important; left:18px !important; width:400px !important;
@@ -1410,37 +1417,103 @@ const QR = (() => {
 const $ = id => document.getElementById(id);
 const botPresentationActive = actorId => !!(state && state.botMode && state.presentationSpeed === 2 &&
   state.players && state.players.some(p => p.id === (actorId || state.players[state.turn]?.id) && p.isBot));
-const presentationMs = (ms, actorId) => GAME_TIMING.scaled(ms, botPresentationActive(actorId) ? 2 : 1);
-let exclusivePresentationActorId = null;
-const wait = ms => new Promise(r => setTimeout(r, presentationMs(ms, exclusivePresentationActorId)));
-let majorPresentationQueue = [], majorPresentationRunning = false, majorPresentationPumpT = null;
+let presentationContext = null;
+const capturedPresentationSpeed = actorId => botPresentationActive(actorId) ? 2 : 1;
+const presentationMs = (ms, actorId) => GAME_TIMING.scaled(ms,
+  actorId === undefined && presentationContext ? presentationContext.speed : capturedPresentationSpeed(actorId));
+const wait = ms => new Promise(r => setTimeout(r, GAME_TIMING.scaled(ms, presentationContext ? presentationContext.speed : 1)));
+const presentationQueue = [];
+const bq = presentationQueue; // 既存ハーネス・待機判定との後方互換名
+const presentationRegistry = new Map();
+let presentationSeq = 0, presentationRunning = false, presentationPumpT = null;
+const majorPresentationQueue = presentationQueue;
+let majorPresentationRunning = false;
+
+function presentationId(kind, at, suffix) {
+  return `${kind}:${Number(at) || 0}:${suffix || ''}`;
+}
+function queuePresentation(config) {
+  const cfg = config || {}, id = cfg.id || null;
+  if (id && presentationRegistry.has(id)) return false;
+  const actorId = cfg.actorId || null;
+  const item = {
+    id, kind:cfg.kind || 'effect', pri:Number(cfg.pri) || 3,
+    at:Number(cfg.at) || Date.now(), seq:presentationSeq++, actorId,
+    speed:capturedPresentationSpeed(actorId), stale:cfg.stale,
+    run:typeof cfg.run === 'function' ? cfg.run : async () => {},
+  };
+  if (id) presentationRegistry.set(id, 'queued');
+  presentationQueue.push(item);
+  presentationQueue.sort((a, b) => a.pri - b.pri || a.at - b.at || a.seq - b.seq);
+  clearTimeout(presentationPumpT);
+  presentationPumpT = setTimeout(pumpPresentations, 0);
+  return true;
+}
 function queueMajorPresentation(at, kind, actorId, run) {
-  majorPresentationQueue.push({ at:Number(at) || Date.now(), kind, actorId, run });
-  majorPresentationQueue.sort((a, b) => a.at - b.at);
-  clearTimeout(majorPresentationPumpT);
-  majorPresentationPumpT = setTimeout(pumpMajorPresentations, 0);
+  return queuePresentation({ id:presentationId(kind, at), at, kind, actorId, pri:1, run });
 }
 async function waitForPresentationLane() {
-  while (animBusy || cutBusy || bq.length || Date.now() <= bannerUntil || cameraOwner || hopState || gameEntryRunning || duelPlaying) {
-    if (bq.length && state) render();
-    await new Promise(resolve => setTimeout(resolve, 80));
+  while (animBusy || cutBusy || Date.now() <= bannerUntil || cameraOwner ||
+         ((typeof PW !== 'undefined') && PW.cameraState && !PW.cameraState().isFit) || hopState || gameEntryRunning || duelPlaying) {
+    await new Promise(resolve => setTimeout(resolve, 50));
   }
 }
-async function pumpMajorPresentations() {
-  if (majorPresentationRunning || !majorPresentationQueue.length) return;
+function applyPresentationContext(item) {
+  presentationContext = item;
+  const root = document.documentElement, half = item.speed === 2;
+  root.classList.toggle('presentationFast', half);
+  root.style.setProperty('--telop-duration', half ? '1.1s' : '2.2s');
+  root.style.setProperty('--summon-card-duration', half ? '.5s' : '1s');
+  root.style.setProperty('--summon-text-duration', half ? '.225s' : '.45s');
+  root.style.setProperty('--summon-text-delay', half ? '.16s' : '.32s');
+  root.style.setProperty('--turn-fade-in', half ? '.2s' : '.4s');
+  root.style.setProperty('--turn-slide-in', half ? '.25s' : '.5s');
+  root.style.setProperty('--turn-slide-out', half ? '.225s' : '.45s');
+  root.style.setProperty('--ult-hero-duration', half ? '2.45s' : '4.9s');
+  root.style.setProperty('--ult-info-duration', half ? '1.45s' : '2.9s');
+  root.style.setProperty('--ult-info-delay', half ? '.725s' : '1.45s');
+  if ((typeof PW !== 'undefined') && PW.setPresentationSpeed) PW.setPresentationSpeed(item.speed);
+  if ((typeof BW !== 'undefined') && BW.setSpeed) BW.setSpeed(item.speed);
+  if (window.UltFxWorld && UltFxWorld.setSpeed) UltFxWorld.setSpeed(item.speed);
+}
+function clearPresentationContext() {
+  presentationContext = null;
+  const root = document.documentElement;
+  root.classList.remove('presentationFast');
+  ['--telop-duration','--summon-card-duration','--summon-text-duration','--summon-text-delay',
+   '--turn-fade-in','--turn-slide-in','--turn-slide-out','--ult-hero-duration',
+   '--ult-info-duration','--ult-info-delay'].forEach(name => root.style.removeProperty(name));
+  if ((typeof PW !== 'undefined') && PW.setPresentationSpeed) PW.setPresentationSpeed(1);
+  if ((typeof BW !== 'undefined') && BW.setSpeed) BW.setSpeed(1);
+  if (window.UltFxWorld && UltFxWorld.setSpeed) UltFxWorld.setSpeed(1);
+}
+async function pumpPresentations() {
+  if (presentationRunning || !presentationQueue.length) return;
+  presentationRunning = true;
   majorPresentationRunning = true;
   try {
-    while (majorPresentationQueue.length) {
-      const item = majorPresentationQueue.shift();
+    while (presentationQueue.length) {
+      presentationQueue.sort((a, b) => a.pri - b.pri || a.at - b.at || a.seq - b.seq);
+      const item = presentationQueue.shift();
+      if (item.stale && item.stale()) {
+        if (item.id) presentationRegistry.set(item.id, 'completed');
+        continue;
+      }
       await waitForPresentationLane();
-      exclusivePresentationActorId = item.actorId || null;
-      try { await item.run(); }
+      applyPresentationContext(item);
+      if (item.id) presentationRegistry.set(item.id, 'running');
+      try { await item.run(item); }
       catch (e) {
-        resetPresentationCamera('major-presentation-error');
+        resetPresentationCamera('presentation-error');
         console.log(`${item.kind}演出例外(継続): ${e.message}`);
-      } finally { exclusivePresentationActorId = null; }
+      } finally {
+        if (cameraOwner && cameraOwner.presentationId === item.id) resetPresentationCamera('presentation-finally');
+        if (item.id) presentationRegistry.set(item.id, 'completed');
+        clearPresentationContext();
+      }
     }
   } finally {
+    presentationRunning = false;
     majorPresentationRunning = false;
     scheduleTurnTransitionCompletion();
     if (state) render();
@@ -1512,7 +1585,7 @@ function hopStep() {
   renderPawns();
   if (idx === 0 && hopState.castleEv) {
     const ev = hopState.castleEv;
-    const castleCameraToken = beginPresentationZoom(0, 'castle');
+    const castleCameraToken = beginPresentationZoom(0, 'castle', hopState.id);
     cutBusy++;
     hopState.holdUntil = Date.now() + presentationMs(GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown, hopState.id);
     setTimeout(() => {
@@ -1553,7 +1626,7 @@ function showCastleBreakdown(ev) {
       <div class="castleHeal"><b>帰還の癒し（負傷-10）</b><br>${heals || '回復対象なし'}</div>`;
   }
   el.classList.add('on');
-  bannerUntil = Math.max(bannerUntil, Date.now() + GAME_TIMING.castleBreakdown);
+  bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(GAME_TIMING.castleBreakdown, hopState && hopState.id));
 }
 function hideCastleBreakdown(cameraToken) {
   $('castleBreakdown').classList.remove('on');
@@ -1600,11 +1673,11 @@ async function playUlt(u) {
   $('ultDesc').textContent = (state.catalog.ULTS[u.charId] || {}).desc || '';
   const art = $('ultArt');
   art.style.animation = 'none'; void art.offsetWidth; art.style.animation = '';
-  bannerUntil = Math.max(bannerUntil, Date.now() + 3600);
+  bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(4950));
   $('ultCut').classList.add('on');
   if (window.UltFxWorld) UltFxWorld.play(false);
   playSe(seUltCutin);
-  setTimeout(() => $('bflash').classList.remove('go'), 500);
+  setTimeout(() => $('bflash').classList.remove('go'), presentationMs(500));
   await wait(4950);
   $('ultCut').classList.remove('on');
   if (window.UltFxWorld) UltFxWorld.stop();
@@ -1642,7 +1715,7 @@ function showSpot(i, ms = 1600) {
 // マス変化のクローズアップ: カメラズーム+中央下メッセージ(設計思想: マスに変化があれば必ず見せる)
 let tileMsgT = null, closeupTile = null, closeupCameraToken = null, closeupResolve = null;
 function tileCloseup(i, html, dur = 2800) {
-  if (closeupResolve) { closeupResolve(false); closeupResolve = null; }
+  if (closeupResolve || cameraOwner) resetPresentationCamera('tile-closeup-replaced');
   closeupTile = i;
   const cameraToken = beginPresentationZoom(i, 'tile-closeup');
   closeupCameraToken = cameraToken;
@@ -1651,14 +1724,21 @@ function tileCloseup(i, html, dur = 2800) {
   el.classList.add('show');
   clearTimeout(tileMsgT);
   const completion = new Promise(resolve => { closeupResolve = resolve; });
-  tileMsgT = setTimeout(() => {
+  const speed = presentationContext ? presentationContext.speed : 1;
+  const visibleMs = GAME_TIMING.scaled(dur, speed);
+  const returnMs = GAME_TIMING.scaled(850, speed);
+  tileMsgT = setTimeout(async () => {
     el.classList.remove('show');
-    if (endPresentationZoom(cameraToken)) closeupTile = null;
+    const returned = endPresentationZoom(cameraToken);
+    if (returned) {
+      closeupTile = null;
+      await new Promise(resolve => setTimeout(resolve, returnMs));
+    }
     if (closeupCameraToken === cameraToken) closeupCameraToken = null;
     if (closeupResolve) { const done = closeupResolve; closeupResolve = null; done(true); }
     render();
-  }, dur);
-  bannerUntil = Math.max(bannerUntil, Date.now() + dur + 200);
+  }, visibleMs);
+  bannerUntil = Math.max(bannerUntil, Date.now() + visibleMs + returnMs);
   return completion;
 }
 // ひらめき: カード裏だけをHUDプレートへ飛ばす(中身はTVに出さない ─ 発注書§7.3)
@@ -1792,19 +1872,28 @@ let cutBusy = 0;  // 進行中のカットイン/戦闘演出の数。>0の間�
 // ===== PresentationQueue(v0.68 / plan_phaser4_phase2plus §2.3) =====
 // 優先度: 1=戦闘・破産・勝利 / 2=召喚・進化・退場など盤面変化 / 3=通行料・連鎖など経済 / 4=補助ジュース
 // 同一優先度は投入順。優先度4はstale判定で安全に省略できる。TURN STARTはキューが空になるまで待つ(既存ロジック)
-const bq = [];
-let bqSeq = 0;
 function queueFx(pri, item, opts) {
-  bq.push({ pri, seq: bqSeq++, item, stale: opts && opts.stale });
+  const cfg = opts || {};
+  return queuePresentation({
+    id:cfg.id || null, pri, at:cfg.at, kind:cfg.kind || 'effect', actorId:cfg.actorId,
+    stale:cfg.stale,
+    run:typeof item === 'function' ? item : () => showBannerAsync(item[0], item[1], item[2]),
+  });
 }
-function queueBanner(main, sub, dur, pri) { queueFx(pri || 3, [main, sub, dur]); }
+function queueBanner(main, sub, dur, pri, opts) { queueFx(pri || 3, [main, sub, dur], opts); }
 function showBanner(main, sub, dur) {
   const el = $('centerBanner');
   el.innerHTML = iconize(main) + (sub ? `<small>${iconize(sub)}</small>` : '');
   el.classList.add('show');
   clearTimeout(bannerT);
-  bannerUntil = Date.now() + (dur || 1900);
-  bannerT = setTimeout(() => el.classList.remove('show'), dur || 1900);
+  const actual = GAME_TIMING.scaled(dur || 1900, presentationContext ? presentationContext.speed : 1);
+  bannerUntil = Date.now() + actual;
+  bannerT = setTimeout(() => el.classList.remove('show'), actual);
+  return actual;
+}
+async function showBannerAsync(main, sub, dur) {
+  const actual = showBanner(main, sub, dur);
+  await new Promise(resolve => setTimeout(resolve, actual + 30));
 }
 function showDiceMulti(arr) {
   const ov = $('diceOv');
@@ -2045,9 +2134,9 @@ let es = null, lastMsgAt = 0;
 let boardToken = null, lastSavedRev = 0, saveInFlight = false, startGameSubmitting = false;
 let transitionAckTimer = null, transitionAckInFlight = null, transitionAckedId = '';
 function boardPresentationIdle() {
-  return !majorPresentationRunning && !majorPresentationQueue.length && !animBusy && !cutBusy &&
-    !bq.length && Date.now() > bannerUntil && !cameraOwner && !hopState &&
-    !gameEntryRunning && !duelPlaying;
+  const cameraFit = (typeof PW === 'undefined') || !PW.cameraState || PW.cameraState().isFit;
+  return !presentationRunning && !presentationQueue.length && !animBusy && !cutBusy &&
+    Date.now() > bannerUntil && !cameraOwner && cameraFit && !hopState && !gameEntryRunning && !duelPlaying;
 }
 function scheduleTurnTransitionCompletion() {
   clearTimeout(transitionAckTimer);
@@ -2372,7 +2461,7 @@ function fitWorld() {
     document.documentElement.style.setProperty('--board-safe-bottom', safeBottom + 'px');
     $('world').style.left = (safeLeft + (innerWidth - safeLeft - safeRight) / 2) + 'px';
     $('world').style.top = safeTop + 'px';
-    if (window.PW && PW.resize) requestAnimationFrame(() => PW.resize());
+    if ((typeof PW !== 'undefined') && PW.resize) requestAnimationFrame(() => PW.resize());
   }
   const s = Math.min((innerWidth - safeLeft - safeRight) / 1310,
     (innerHeight - safeTop - safeBottom) / 960, 1);
@@ -2401,12 +2490,14 @@ async function runFxHarness(name) {
     for (let k = 0; k < 20; k++) items.push({ pri: [1, 2, 3, 4][k % 4], k });
     items.forEach(({ pri, k }) => queueFx(pri, () => order.push(k)));
     const expected = items.slice().sort((a, b) => a.pri - b.pri || a.k - b.k).map(i => i.k);
-    for (let t = 0; t < 40 && bq.length; t++) { render(); await new Promise(r => setTimeout(r, 40)); }
+    for (let t = 0; t < 40 && (presentationQueue.length || presentationRunning); t++)
+      await new Promise(r => setTimeout(r, 40));
     const orderOk = JSON.stringify(order) === JSON.stringify(expected);
     let afterError = false;
     queueFx(1, () => { throw new Error('boom'); });
     queueFx(1, () => { afterError = true; });
-    for (let t = 0; t < 10 && bq.length; t++) { render(); await new Promise(r => setTimeout(r, 40)); }
+    for (let t = 0; t < 10 && (presentationQueue.length || presentationRunning); t++)
+      await new Promise(r => setTimeout(r, 40));
     const t0 = Date.now();
     await PW.play({ type: 'unknown-type' });
     const unknownFast = Date.now() - t0 < 100;
@@ -2630,24 +2721,28 @@ async function runFxHarness(name) {
 
 // ===== 停止マスへのズームと詳細ウィンドウ =====
 let worldFit = 1, zoomTile = null, cameraGeneration = 0, cameraOwner = null;
-function applyZoom() {
-  return PW.setCamera(zoomTile);
+function applyZoom(force, speed) {
+  return PW.setCamera(zoomTile, { speed:speed || (presentationContext ? presentationContext.speed : 1), force:!!force });
 }
-function setZoom(ti) {
-  if (zoomTile === ti) return;
+function setZoom(ti, force, speed) {
+  if (zoomTile === ti && !force) return;
   zoomTile = ti;
-  applyZoom();
+  return applyZoom(force, speed);
 }
-function beginPresentationZoom(tile, owner) {
+function beginPresentationZoom(tile, owner, actorId) {
+  if (cameraOwner || closeupResolve) resetPresentationCamera('camera-owner-replaced');
   const token = ++cameraGeneration;
-  cameraOwner = { token, owner, startedAt:Date.now() };
-  setZoom(tile);
+  const speed = presentationContext ? presentationContext.speed : (actorId ? capturedPresentationSpeed(actorId) : 1);
+  cameraOwner = { token, owner, startedAt:Date.now(),
+    presentationId:presentationContext && presentationContext.id || null, speed };
+  setZoom(tile, true, speed);
   return token;
 }
 function endPresentationZoom(token) {
   if (!cameraOwner || cameraOwner.token !== token) return false;
+  const speed = cameraOwner.speed;
   cameraOwner = null;
-  setZoom(null);
+  setZoom(null, true, speed);
   return true;
 }
 function resetPresentationCamera(reason) {
@@ -2658,12 +2753,15 @@ function resetPresentationCamera(reason) {
   clearTimeout(tileMsgT);
   $('tileMsg').classList.remove('show');
   if (closeupResolve) { const done = closeupResolve; closeupResolve = null; done(false); }
-  setZoom(null);
+  zoomTile = null;
+  if ((typeof PW !== 'undefined') && PW.resetCamera) PW.resetCamera();
+  else applyZoom(true);
   if (reason) console.debug('camera reset:', reason);
   scheduleTurnTransitionCompletion();
 }
 setInterval(() => {
-  if (zoomTile !== null && !cameraOwner) resetPresentationCamera('periodic-watchdog');
+  const cameraState = (typeof PW !== 'undefined') && PW.cameraState ? PW.cameraState() : { isFit:zoomTile === null };
+  if (!cameraOwner && (zoomTile !== null || !cameraState.isFit)) resetPresentationCamera('periodic-watchdog');
   else if (cameraOwner && Date.now() - cameraOwner.startedAt > 12000)
     resetPresentationCamera('camera-owner-timeout');
 }, 500);
@@ -2729,7 +2827,8 @@ function tileInfoHTML(i) {
 }
 function updateTileInfo() {
   const el = $('tileInfo');
-  if (zoomTile !== null && !cameraOwner) resetPresentationCamera('watchdog');
+  const cameraState = (typeof PW !== 'undefined') && PW.cameraState ? PW.cameraState() : { isFit:zoomTile === null };
+  if (!cameraOwner && (zoomTile !== null || !cameraState.isFit)) resetPresentationCamera('watchdog');
   if (closeupTile !== null) {
     el.classList.remove('on'); el.dataset.k = '';
     return;
@@ -2982,7 +3081,9 @@ function pawnLayout() {
     const lift = o ? (o.level - 1) * 7 : 0;
     const { x, y } = proj(GEO[pp][0], GEO[pp][1]);
     const active = state.phase === 'playing' && visualTurnId === p.id;
-    return { id: p.id, charId: p.charId, color: p.color, active, x: x + dx, y: y - lift + dy, w,
+    const asset = p.charId === 'lia' ? '/assets/p_lia-outline-v1.png' : `/assets/p_${p.charId}.png`;
+    return { id: p.id, charId: p.charId, asset, color: p.color, active,
+             speed:capturedPresentationSpeed(p.id), x: x + dx, y: y - lift + dy, w,
              z: GEO[pp][0] + GEO[pp][1] + 102 + (dy > 8 ? 1 : 0) + (active ? 20 : 0),
              zs: GEO[pp][0] + GEO[pp][1] + 100 };
   });
@@ -3002,7 +3103,7 @@ function renderPawnsDom(layout) {
       el = document.createElement('div'); el.className = 'sprite pawnEl'; el.id = 'pw-' + it.id;
       layer.appendChild(el);
     }
-    el.innerHTML = it.charId ? `<img src="/assets/p_${it.charId}.png" width="${it.w}" style="display:block">${it.active ? '<span class="pawnTurnTag">TURN</span>' : ''}` : '';
+    el.innerHTML = it.charId ? `<img src="${it.asset}" width="${it.w}" style="display:block">${it.active ? '<span class="pawnTurnTag">TURN</span>' : ''}` : '';
     el.classList.toggle('activeTurn', !!it.active);
     el.style.left = it.x + 'px'; el.style.top = it.y + 'px';
     el.style.zIndex = it.z;
@@ -3032,7 +3133,7 @@ function summonCardHTML(cid, forceEvolved = false) {
 async function playSummonPresentation(tile, owner) {
   const pl = player(owner.player), cr = state.catalog.CREATURES[owner.creature];
   cutBusy++;
-  bannerUntil = Math.max(bannerUntil, Date.now() + 5200);
+  bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(5200));
   try {
     hideLogo(true);
     $('scCard').innerHTML = summonCardHTML(owner.creature);
@@ -3042,11 +3143,12 @@ async function playSummonPresentation(tile, owner) {
     $('summonCut').classList.remove('on');
     await wait(180);
     playSe(seSummon);
-    tileCloseup(tile, `${pl.name}が<b style="color:#F2D062">${cr.name}</b>を召喚!`, 2700);
-    if (renderModeActive === 'phaser')
-      await PW.play({ type:'summon', tile, element:state.tiles[tile].e, timeoutMs:2200 });
-    else fxAt(tile, 'fxRing', RUNE[state.tiles[tile].e]);
-    await wait(1550);
+    const closeupDone = tileCloseup(tile, `${pl.name}が<b style="color:#F2D062">${cr.name}</b>を召喚!`, 2700);
+    const fxDone = renderModeActive === 'phaser'
+      ? PW.play({ type:'summon', tile, element:state.tiles[tile].e, timeoutMs:2200,
+          speed:presentationContext ? presentationContext.speed : 1 })
+      : Promise.resolve(fxAt(tile, 'fxRing', RUNE[state.tiles[tile].e]));
+    await Promise.all([closeupDone, fxDone]);
   } finally {
     $('summonCut').classList.remove('on');
     hideLogo(false);
@@ -3057,7 +3159,7 @@ async function playSummonPresentation(tile, owner) {
 async function playEvolvePresentation(tile, owner) {
   const base = state.catalog.CREATURES[owner.creature.replace(/_f$/, '')];
   cutBusy++;
-  bannerUntil = Math.max(bannerUntil, Date.now() + 5600);
+  bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(5600));
   try {
     hideLogo(true);
     $('scCard').innerHTML = summonCardHTML(owner.creature, true);
@@ -3067,11 +3169,12 @@ async function playEvolvePresentation(tile, owner) {
     $('summonCut').classList.remove('on');
     await wait(180);
     playSe(seEvolve);
-    tileCloseup(tile, `${base.name}が<b style="color:#F2D062">${base.evo}</b>に進化!`, 2900);
-    if (renderModeActive === 'phaser')
-      await PW.play({ type:'evolve-fx', tile, bid:owner.creature.replace(/_f$/, ''), element:state.tiles[tile].e, level:owner.level, timeoutMs:2500 });
-    else fxAt(tile, 'fxPillar', player(owner.player).color, 20);
-    await wait(1550);
+    const closeupDone = tileCloseup(tile, `${base.name}が<b style="color:#F2D062">${base.evo}</b>に進化!`, 2900);
+    const fxDone = renderModeActive === 'phaser'
+      ? PW.play({ type:'evolve-fx', tile, bid:owner.creature.replace(/_f$/, ''), element:state.tiles[tile].e,
+          level:owner.level, timeoutMs:2500, speed:presentationContext ? presentationContext.speed : 1 })
+      : Promise.resolve(fxAt(tile, 'fxPillar', player(owner.player).color, 20));
+    await Promise.all([closeupDone, fxDone]);
   } finally {
     $('summonCut').classList.remove('on');
     hideLogo(false);
@@ -3119,7 +3222,7 @@ async function playSpellPresentation(sf, desc) {
   const sp = state.catalog.SPELLS[sf.spell] || { name:sf.spell, desc:desc || '' };
   const caster = player(sf.caster);
   cutBusy++;
-  bannerUntil = Math.max(bannerUntil, Date.now() + 5600);
+  bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(5600));
   try {
     hideLogo(true);
     $('spellCard').innerHTML = spellCardHTML(sf.spell);
@@ -3130,7 +3233,8 @@ async function playSpellPresentation(sf, desc) {
     await wait(2400);
     $('spellCut').classList.remove('on');
     await wait(180);
-    if (sf.tiles && sf.tiles.length === 1) tileCloseup(sf.tiles[0], iconize(desc || sp.desc || ''), 2800);
+    const closeupDone = sf.tiles && sf.tiles.length === 1
+      ? tileCloseup(sf.tiles[0], iconize(desc || sp.desc || ''), 2800) : Promise.resolve(true);
     if (renderModeActive === 'phaser') {
       if (sf.sequence && Array.isArray(sf.results)) {
         for (const result of sf.results) {
@@ -3232,17 +3336,20 @@ function playGameEntryTransition() {
   }, 4150));
 }
 function playTurnCutin(pl) {
-  if (!pl || !pl.charId) return;
+  if (!pl || !pl.charId) return Promise.resolve();
   const el = $('turnCutin');
   $('tcImg').src = '/assets/full_' + pl.charId + '.png';
   el.style.setProperty('--tcc', pl.color);
   $('tcMsg').classList.remove('on');
   el.classList.remove('on', 'out'); void el.offsetWidth;
   el.classList.add('on');
-  bannerUntil = Math.max(bannerUntil, Date.now() + 2400); // カットイン中はバナーを待たせる
+  const outAt = presentationMs(1800), doneAt = presentationMs(2300);
+  bannerUntil = Math.max(bannerUntil, Date.now() + doneAt); // カットイン中はバナーを待たせる
   clearTimeout(tcT1); clearTimeout(tcT2);
-  tcT1 = setTimeout(() => el.classList.add('out'), 1800);   // しばらく表示してから
-  tcT2 = setTimeout(() => el.classList.remove('on', 'out'), 2300); // すっと消える
+  tcT1 = setTimeout(() => el.classList.add('out'), outAt);   // しばらく表示してから
+  return new Promise(resolve => {
+    tcT2 = setTimeout(() => { el.classList.remove('on', 'out'); resolve(); }, doneAt); // すっと消える
+  });
 }
 let dirCutOn = false;
 function updateDirCut() {
@@ -3273,7 +3380,7 @@ function updateDirCut() {
 }
 function sideCut(pl, msgHtml, dur) {
   cutBusy++;
-  setTimeout(() => { cutBusy = Math.max(0, cutBusy - 1); }, dur + 100);
+  const actual = presentationMs(dur), outAt = Math.max(1, actual - presentationMs(450));
   const el = $('turnCutin');
   $('tcImg').src = '/assets/full_' + pl.charId + '.png';
   el.style.setProperty('--tcc', pl.color);
@@ -3282,21 +3389,25 @@ function sideCut(pl, msgHtml, dur) {
   el.classList.add('on');
   $('tcMsg').classList.add('on');
   clearTimeout(tcT1); clearTimeout(tcT2);
-  tcT1 = setTimeout(() => el.classList.add('out'), dur - 450);
-  tcT2 = setTimeout(() => { el.classList.remove('on', 'out'); $('tcMsg').classList.remove('on'); }, dur);
+  tcT1 = setTimeout(() => el.classList.add('out'), outAt);
+  return new Promise(resolve => {
+    tcT2 = setTimeout(() => {
+      el.classList.remove('on', 'out'); $('tcMsg').classList.remove('on');
+      cutBusy = Math.max(0, cutBusy - 1); resolve();
+    }, actual);
+  });
 }
-function playTollCutin(ev) {
+async function playTollCutin(ev) {
   const fromP = player(ev.from), toP = player(ev.to);
   if (!fromP || !toP) return;
-  bannerUntil = Math.max(bannerUntil, Date.now() + 4300);
-  sideCut(fromP, `<div class="tcWho">${fromP.name} ─ 通行料の支払い</div>
+  bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(4100));
+  await sideCut(fromP, `<div class="tcWho">${fromP.name} ─ 通行料の支払い</div>
     <div class="tcAmt minus">−${ev.amount}G</div>
     <div class="tcGold">所持金 ${ev.fromGold + ev.amount}G → ${ev.fromGold}G</div>`, 2000);
-  setTimeout(() => {
-    sideCut(toP, `<div class="tcWho">${toP.name} ─ 通行料を受け取った</div>
-      <div class="tcAmt plus">+${ev.amount}G</div>
-      <div class="tcGold">所持金 ${ev.toGold - ev.amount}G → ${ev.toGold}G</div>`, 2000);
-  }, 2100);
+  await wait(100);
+  await sideCut(toP, `<div class="tcWho">${toP.name} ─ 通行料を受け取った</div>
+    <div class="tcAmt plus">+${ev.amount}G</div>
+    <div class="tcGold">所持金 ${ev.toGold - ev.amount}G → ${ev.toGold}G</div>`, 2000);
 }
 function showTelop(kind, sub) {
   if (kind === 'game' || kind === 'turn') playSe(seTelop);
@@ -3306,6 +3417,7 @@ function showTelop(kind, sub) {
   s.textContent = sub || '';
   void img.offsetWidth;
   img.classList.add('play'); s.classList.add('play');
+  return new Promise(resolve => setTimeout(resolve, presentationMs(2200)));
 }
 
 // ハイブリッド戦闘FX: 盤面と同じFX_ASSETSをDOM戦闘画面でも再利用する。
@@ -3402,7 +3514,8 @@ async function playInternalAbilityFx(sf) {
       cid:sf.cid, elem:sf.elem, battle:sf.battle, n:sf.n, timeoutMs:3000 });
   } else if (sf.tiles) {
     sf.tiles.forEach(ti => fxAt(ti, 'fxRing', '#C8BAE8'));
-    await wait(900);
+    await closeupDone;
+    await wait(250);
   }
 }
 
@@ -3714,7 +3827,7 @@ async function playBattle(b) {
   $('bresult').classList.remove('show'); $('bresult').innerHTML = '';
   $('battleFx').innerHTML = '';
   hideLogo(true);
-  bannerUntil = Math.max(bannerUntil, Date.now() + 8500); // 演出中はTURN START/バナーを待たせる
+  bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(8500)); // 演出中はTURN START/バナーを待たせる
   $('battle').classList.add('on');
   const bwOn = false; // v0.93: 通常侵略はカード主体。旧BattleWorldは削除せずフィクスチャ用に保持
   await wait(450);
@@ -3881,12 +3994,12 @@ async function playBattle(b) {
       ? `<b style="color:#F2D062">侵略成功</b> ─ ${atk.name}が${def.name}の土地を奪取!`
       : `<b style="color:#8FE08A">防衛成功</b> ─ ${def.name}の${cname(b.defCreature, dLv)}が耐え抜いた(残HP${b.remainHp})`;
     const closeupDone = tileCloseup(b.tile, msg);
-    PW.play({ type: b.win ? 'invade-fx' : 'defend-fx', tile: b.tile,
-              element: C.CREATURES[b.win ? b.atkCreature : b.defCreature].elem,
-              color: (b.win ? atk : def).color });
-    await closeupDone;
+    const resultFxDone = PW.play({ type:b.win ? 'invade-fx' : 'defend-fx', tile:b.tile,
+      element:C.CREATURES[b.win ? b.atkCreature : b.defCreature].elem,
+      color:(b.win ? atk : def).color, speed:presentationContext ? presentationContext.speed : 1 });
+    await Promise.all([closeupDone, resultFxDone]);
   } else {
-    showBanner(b.win ? '侵略成功!' : sic('up') + ' 防衛成功!',
+    await showBannerAsync(b.win ? '侵略成功!' : sic('up') + ' 防衛成功!',
       b.win ? atk.name + 'が' + def.name + 'の土地を奪取!'
             : def.name + 'が耐え抜いた(残HP' + b.remainHp + ')');
   }
@@ -4105,10 +4218,13 @@ function render() {
         if (isEvo) {
           // 進化カード提示→マスズーム→画面振動を伴う進化配置。
           const ei = i;
-          queueFx(2, () => playEvolvePresentation(ei, now));
+          queueFx(2, () => playEvolvePresentation(ei, now), {
+            actorId:now.player, id:presentationId('evolve', state.stateRev, ei), kind:'evolve' });
         } else if (renderModeActive === 'phaser') {
           // 強化(2C plan§7.2): リング+短い発光+上昇粒子。カメラは動かさない
-          PW.play({ type: 'upgrade-sparks', tile: i, color: col });
+          queueFx(2, () => PW.play({ type:'upgrade-sparks', tile:i, color:col,
+            speed:presentationContext ? presentationContext.speed : 1 }), {
+            actorId:now.player, id:presentationId('upgrade', state.stateRev, i), kind:'upgrade' });
         } else {
           fxAt(i, 'fxRing', col);
         }
@@ -4119,7 +4235,9 @@ function render() {
                  renderModeActive === 'phaser') {
         // スペル以外で既存領地に別クリーチャーが現れた → 配置演出を流用(発注書v0.75 §4.1)
         const si = i;
-        queueFx(2, () => PW.play({ type: 'summon', tile: si, element: state.tiles[si].e }));
+        queueFx(2, () => PW.play({ type:'summon', tile:si, element:state.tiles[si].e,
+          speed:presentationContext ? presentationContext.speed : 1 }), {
+          actorId:now.player, id:presentationId('replace-summon', state.stateRev, si), kind:'summon' });
       }
     }
     if ((!state.lastBattle || state.lastBattle.at === prev.battleAt)) {
@@ -4128,7 +4246,8 @@ function render() {
           const o = state.owners[i];
           const si = i, so = { ...o };
           // 目玉演出: カードを提示してから、対象マスへズームし、属性FXとともに配置する。
-          queueFx(2, () => playSummonPresentation(si, so));
+          queueFx(2, () => playSummonPresentation(si, so), {
+            actorId:so.player, id:presentationId('summon', state.stateRev, si), kind:'summon' });
           break;
         }
       }
@@ -4167,7 +4286,8 @@ function render() {
     if (dKey !== prev.draftKey) {
       prev.draftKey = dKey;
       if (de && (de[1].aura === 'L'))
-        showBanner('伝説級の気配…!', player(de[0]).name + 'のドラフトに何かが眠っている', 3800);
+        queueBanner('伝説級の気配…!', player(de[0]).name + 'のドラフトに何かが眠っている', 3800, 3,
+          { actorId:de[0], id:presentationId('draft-aura', state.stateRev, de[0]) });
     }
   }
   // マス吹き出し(停止イベントの現地表示)
@@ -4240,15 +4360,22 @@ function render() {
     prev.eventAt = state.lastEvent.at;
     if (state.lastEvent.type === 'shrine')
       queueBanner(`祠の加護 +${state.lastEvent.gold}G`,
-        player(state.lastEvent.player).name + ' ─ 通算' + state.lastEvent.visits + '回参拝', 2800);
-    else if (state.lastEvent.type === 'toll')
-      playTollCutin(state.lastEvent);
+        player(state.lastEvent.player).name + ' ─ 通算' + state.lastEvent.visits + '回参拝', 2800, 3,
+        { actorId:state.lastEvent.player, id:presentationId('shrine', state.lastEvent.at) });
+    else if (state.lastEvent.type === 'toll') {
+      const tollEvent = { ...state.lastEvent };
+      queueFx(3, () => playTollCutin(tollEvent), {
+        actorId:tollEvent.from, id:presentationId('toll', tollEvent.at), kind:'toll' });
+    }
     else if (state.lastEvent.type === 'bankrupt') {
       const bp = player(state.lastEvent.player);
-      $('bkSub').textContent = bp ? bp.name + ' ─ 脱落' : '';
-      $('bankruptCut').classList.add('on');
-      bannerUntil = Math.max(bannerUntil, Date.now() + 4200);
-      setTimeout(() => $('bankruptCut').classList.remove('on'), 4000);
+      queueFx(1, async () => {
+        $('bkSub').textContent = bp ? bp.name + ' ─ 脱落' : '';
+        $('bankruptCut').classList.add('on');
+        bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(4200));
+        await wait(4000);
+        $('bankruptCut').classList.remove('on');
+      }, { actorId:state.lastEvent.player, id:presentationId('bankrupt', state.lastEvent.at), kind:'bankrupt' });
     }
     else if (state.lastEvent.type === 'spell') {
       // カード提示と効果説明はlastSpellFx側で盤面FXと一続きに再生する。
@@ -4257,19 +4384,20 @@ function render() {
       const gl = { g_up: sic('up') + ' 領地を強化', g_draft: sic('draft') + ' カードを引く',
                    g_forge: sic('forge') + ' 鍛錬 ─ クリーチャー進化', pass: '─ 何もしない' }[state.lastEvent.choice];
       if (gl) queueBanner('変化の門 ─ ' + gl,
-        player(state.lastEvent.player).name + 'の選択', 2400);
+        player(state.lastEvent.player).name + 'の選択', 2400, 3,
+        { actorId:state.lastEvent.player, id:presentationId('gate', state.lastEvent.at) });
     }
   }
   // 門通過 ─ 刻印取得のキャラカットイン
   if (state.lastSeal && state.lastSeal.at !== prev.sealAt) {
     prev.sealAt = state.lastSeal.at;
     const sp = player(state.lastSeal.player), sg = state.lastSeal.gold || 0;
-    if (sp) queueFx(3, () => {   // 経済変化
-      bannerUntil = Math.max(bannerUntil, Date.now() + 2600);
-      sideCut(sp, `<div class="tcWho">${sp.name} ─ 変化の門を通過</div>
+    if (sp) queueFx(3, async () => {   // 経済変化
+      bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(2600));
+      await sideCut(sp, `<div class="tcWho">${sp.name} ─ 変化の門を通過</div>
         <div class="tcAmt plus">❖ 刻印を取得!${sg ? ` +${sg}G` : ''}</div>
         <div class="tcGold">城まで持ち帰ると一周ボーナス</div>`, 2400);
-    });
+    }, { actorId:sp.id, id:presentationId('seal', state.lastSeal.at), kind:'seal' });
   }
   // スペルカード提示→効果説明→対象ズーム→盤面FXをpri2で直列再生。
   if (state.lastSpellFx && state.lastSpellFx.at !== prev.spellFxAt) {
@@ -4278,32 +4406,37 @@ function render() {
     const sfMsg = state.lastEvent && state.lastEvent.type === 'spell' ? (state.lastEvent.desc || '') : '';
     queueFx(2, () => sf.spell && sf.spell.startsWith('ult_')
       ? playInternalAbilityFx(sf)
-      : playSpellPresentation(sf, sfMsg));
+      : playSpellPresentation(sf, sfMsg),
+      { actorId:sf.caster, id:presentationId('spell', sf.at), kind:'spell' });
   }
   // 結界が侵略を阻んだ瞬間 ─ クローズアップ+衝撃時発光(v0.73 plan§8.4)
   if (state.lastBarrierHit && state.lastBarrierHit.at !== prev.barrierHitAt) {
     prev.barrierHitAt = state.lastBarrierHit.at;
     const bh = state.lastBarrierHit;
     const op = player(bh.owner), ap = player(bh.by);
-    queueFx(2, () => {   // 盤面上の出来事
-      tileCloseup(bh.tile,
+    queueFx(2, async () => {   // 盤面上の出来事
+      const closeupDone = tileCloseup(bh.tile,
         `${op ? op.name + 'の' : ''}<b style="color:#9BD8FF">結界</b>が${ap ? ap.name + 'の' : ''}侵略を阻んだ!`, 2400);
-      if (renderModeActive === 'phaser') PW.play({ type: 'barrier-flash', tile: bh.tile });
-      else fxAt(bh.tile, 'fxRing', '#9BD8FF');
-    });
+      const fxDone = renderModeActive === 'phaser'
+        ? PW.play({ type:'barrier-flash', tile:bh.tile, speed:presentationContext ? presentationContext.speed : 1 })
+        : Promise.resolve(fxAt(bh.tile, 'fxRing', '#9BD8FF'));
+      await Promise.all([closeupDone, fxDone]);
+    }, { actorId:bh.by, id:presentationId('barrier', bh.at), kind:'barrier' });
   }
   // クリーチャー退場(スペル等でHP0) ─ マスにクローズアップ
   if (state.lastRuin && state.lastRuin.at !== prev.ruinAt) {
     prev.ruinAt = state.lastRuin.at;
     const ru = state.lastRuin;
     const rp = player(ru.player);
-    queueFx(2, () => {   // 盤面変化
-      tileCloseup(ru.tile,
+    queueFx(2, async () => {   // 盤面変化
+      const closeupDone = tileCloseup(ru.tile,
         `${rp ? rp.name + 'の' : ''}${state.catalog.CREATURES[ru.creature].name}は${ru.src}に蝕まれ力尽きた…<br>土地は空き地になった`);
       // 退場(2C plan§7.4): 旧姿を一時表示して単色化→沈下→粒子分解
-      if (renderModeActive === 'phaser')
-        PW.play({ type: 'ruin-fx', tile: ru.tile, cid: ru.creature, element: state.tiles[ru.tile].e });
-    });
+      const fxDone = renderModeActive === 'phaser'
+        ? PW.play({ type:'ruin-fx', tile:ru.tile, cid:ru.creature, element:state.tiles[ru.tile].e,
+            speed:presentationContext ? presentationContext.speed : 1 }) : Promise.resolve();
+      await Promise.all([closeupDone, fxDone]);
+    }, { actorId:ru.player, id:presentationId('ruin', ru.at), kind:'ruin' });
   }
   // 称号の移動・リーチ到達を中央バナーで告知
   if (state.phase === 'playing') {
@@ -4338,14 +4471,17 @@ function render() {
             const tiles2 = [];
             state.owners.forEach((o2, i2) => { if (o2 && o2.player === pid2 && state.tiles[i2].e === e) tiles2.push(i2); });
             const dim = n < b0;
-            queueFx(3, () => {
-              bannerUntil = Math.max(bannerUntil, Date.now() + tiles2.length * 140 + 500);
-              PW.play({ type: 'chain-glow', tiles: tiles2, element: e, dim });
-            });
+            const chainKey = `${pid2}:${e}:${b0}:${n}`;
+            queueFx(3, async () => {
+              bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(tiles2.length * 140 + 500));
+              await PW.play({ type:'chain-glow', tiles:tiles2, element:e, dim,
+                speed:presentationContext ? presentationContext.speed : 1 });
+            }, { actorId:pid2, id:presentationId('chain-fx', state.stateRev, chainKey), kind:'chain' });
           }
           queueBanner(
             n > b0 ? `${EJA2[e]}の連鎖 ×${n}!` : `${EJA2[e]}の連鎖が ×${n} に減少…`,
-            `${pl2.name}の${EJA2[e]}属性領地${n}つ ─ 地価倍率${mul}倍`, 2600);
+            `${pl2.name}の${EJA2[e]}属性領地${n}つ ─ 地価倍率${mul}倍`, 2600, 3,
+            { actorId:pid2, id:presentationId('chain-banner', state.stateRev, `${pid2}:${e}:${b0}:${n}`), kind:'chain' });
         }
       }
       prev.chainsKey = JSON.stringify(ck2);
@@ -4357,27 +4493,11 @@ function render() {
       prev['pts_' + p.id] = p.points;
     });
   }
-  // キューされたバナーを順に表示(移動中・別バナー表示中は待つ)
-  if (bq.length && !animBusy && !cutBusy && Date.now() > bannerUntil) {
-    bq.sort((a, b) => a.pri - b.pri || a.seq - b.seq);
-    while (bq.length && bq[0].stale && bq[0].stale()) bq.shift();  // 古くなった低優先演出は省略
-    const x = bq.shift();
-    if (x) {
-      const it = x.item;
-      if (typeof it === 'function') {
-        try {
-          Promise.resolve(it()).catch(e => {
-            resetPresentationCamera('presentation-error');
-            console.log('演出例外(継続): ' + e.message);
-          });
-        } catch (e) {
-          resetPresentationCamera('presentation-error');
-          console.log('演出例外(継続): ' + e.message);
-        }
-      } else showBanner(it[0], it[1], it[2]);
-    }
+  // 全演出はPromise完了まで待つ統合キューで直列再生する。
+  if (presentationQueue.length && !presentationRunning) {
+    clearTimeout(presentationPumpT);
+    presentationPumpT = setTimeout(pumpPresentations, 0);
   }
-  if (bq.length) { clearTimeout(prev.bqT); prev.bqT = setTimeout(render, 450); }
   updateTileInfo();
   updateDirCut();
   // 強化候補ハイライト(発注書v0.75 §6): 強化選択中のみ表示・終了で即除去
@@ -4409,7 +4529,7 @@ function render() {
     // 同じstate更新に「手番交代+戦闘」が同時に載ると、戦闘検出(この後の処理)より先に
     // ここへ到達してしまう。未処理のlastBattleがある間はTURN STARTを出さない(v0.74)
     const battleUnplayed = state.lastBattle && state.lastBattle.at !== prev.battleAt;
-    if (waitMs > 0 || bq.length || cutBusy || battleUnplayed) {  // 前の演出が完全に終わるまでTURN STARTを出さない(基本設計思想)
+    if (waitMs > 0 || presentationRunning || presentationQueue.length || cutBusy || battleUnplayed) {  // 前の演出が完全に終わるまでTURN STARTを出さない(基本設計思想)
       clearTimeout(prev.turnT);
       prev.turnT = setTimeout(render, Math.max(waitMs, 450) + 30);
     } else {
@@ -4421,10 +4541,13 @@ function render() {
       const fresh = state.turn === queuedTurn && tpd && (tpd.type === 'roll' || tpd.type === 'pick_draw');
       if (fresh && queuedTurn !== firedTurn) {
         firedTurn = queuedTurn;
-        visualTurnId = tp0.id;
-        renderPawns(); renderHUD();
-        showTelop('turn', tp0.name + 'の手番');
-        playTurnCutin(tp0);
+        const turnPresentationId = presentationId('turn-start', state.turnEpoch || Date.now(), tp0.id);
+        queuePresentation({ id:turnPresentationId, kind:'turn-start', pri:4, actorId:tp0.id,
+          at:state.turnEpoch || Date.now(), run:async () => {
+            visualTurnId = tp0.id;
+            renderPawns(); renderHUD();
+            await Promise.all([showTelop('turn', tp0.name + 'の手番'), playTurnCutin(tp0)]);
+          } });
       } else if (state.turn === queuedTurn && tp0) {
         visualTurnId = tp0.id;
         renderPawns(); renderHUD();
@@ -4441,11 +4564,14 @@ function render() {
       else showDice3D(state.lastDice.value);
     }
   }
-  // 侵略確定直後から戦闘待機画面を同期。支援内容はbattlePreviewに含まれない。
-  if (state.battlePreview) {
+  // 侵略確定直後から戦闘待機画面を同期。結果演出の実行中はSSE更新でDOMを上書きしない。
+  const battleResultId = state.lastBattle ? presentationId('battle', state.lastBattle.at) : null;
+  const battleResultState = battleResultId ? presentationRegistry.get(battleResultId) : null;
+  if (state.battlePreview && battleResultState !== 'running' && battleResultState !== 'completed') {
     renderBattlePreview(state.battlePreview);
   } else if (activeBattleKey && !battlePlayingKey &&
-             (!state.lastBattle || state.lastBattle.at === prev.battleAt)) {
+             (!state.lastBattle || state.lastBattle.at === prev.battleAt) &&
+             battleResultState !== 'queued' && battleResultState !== 'running') {
     // 侵略キャンセル時は結果演出を待たず盤面へ戻る。
     $('battle').classList.remove('on');
     resetPresentationCamera('battle-cancel');
@@ -4480,15 +4606,16 @@ function render() {
         $('winOv').classList.add('on');
       };
       if (renderModeActive === 'phaser') {
-        queueFx(1, () => {   // 勝利は最優先(§2.2)。城到着演出の完了はキュー側(animBusy/cutBusy)が保証
-          bannerUntil = Math.max(bannerUntil, Date.now() + 5200);
-          (async () => {
-            await PW.play({ type: 'victory-glow', tiles: lands, castle, color: w.color, timeoutMs: 7000 });
-            tileCloseup(castle, `${w.name}の勝利!`, 3200);    // §9.2-6 城へクローズアップ
-            await PW.play({ type: 'victory-castle', castle, timeoutMs: 6000 });
-            showWin();                                        // §9.2-8〜10 カットイン+最終結果(自動では消さない)
-          })();
-        });
+        queueFx(1, async () => {   // 勝利は最優先(§2.2)。城到着演出の完了はキュー側(animBusy/cutBusy)が保証
+          bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(9000));
+          await PW.play({ type:'victory-glow', tiles:lands, castle, color:w.color, timeoutMs:7000,
+            speed:presentationContext ? presentationContext.speed : 1 });
+          const closeupDone = tileCloseup(castle, `${w.name}の勝利!`, 3200);    // §9.2-6 城へクローズアップ
+          const castleFxDone = PW.play({ type:'victory-castle', castle, timeoutMs:6000,
+            speed:presentationContext ? presentationContext.speed : 1 });
+          await Promise.all([closeupDone, castleFxDone]);
+          showWin();                                        // §9.2-8〜10 カットイン+最終結果(自動では消さない)
+        }, { actorId:w.id, id:presentationId('victory', state.stateRev, w.id), kind:'victory' });
       } else {
         queueFx(1, () => showWin());   // DOM描画時は既存勝利画面へフォールバック(§9.5)
       }
@@ -4502,6 +4629,7 @@ fitWorld();
   new Image().src = '/assets/p_' + c + '.png';
   new Image().src = '/assets/summoner-still-' + c + '.webp';
 });
+new Image().src = '/assets/p_lia-outline-v1.png';
 </script>
 </body>
 </html>

@@ -838,6 +838,8 @@
   .gateBtns { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:2dvh;
       width:min(92vw, 130dvh); align-content:center; }
   .gateBtns.single { grid-template-columns:minmax(280px,min(56vw,560px)); justify-content:center; }
+  .gateBtns.reselectOnly { width:clamp(240px,72vw,320px); grid-template-columns:minmax(0,1fr);
+      justify-content:center; justify-self:center; }
   #gateOv .gateBtn { padding:2.8dvh 2.8dvh; }
   #gateOv .gbT { font-size:max(3dvh, 17px); }
   #gateOv .gbD { font-size:max(2dvh, 12px); margin-top:.8dvh; }
@@ -2375,6 +2377,10 @@ function showActionOverlay(title, options, config) {
   $('actionOvTitle').textContent = iconize(title || '行動を選んでください');
   const actionButtonCount = options.length + (cfg.browseHand ? 1 : 0) + (cfg.closeable && !cfg.browseHand ? 1 : 0);
   $('actionOvBtns').classList.toggle('single', actionButtonCount === 1);
+  const currentPending = pend();
+  const reselectOnly = currentPending && currentPending.type === 'select_wait' &&
+    actionButtonCount === 1 && options.length === 1 && options[0].id === 'unpick';
+  $('actionOvBtns').classList.toggle('reselectOnly', !!reselectOnly);
   $('actionOvBtns').innerHTML = options.map(o => `<button class="gateBtn ${o.cls || ((o.id === 'pass' || o.id === 'cancel' || o.id.endsWith(':cancel') || o.id === 'sup:none') ? 'ghost' : '')}"
       onclick="${o.id === 'ult' ? "closeActionOverlay(true); showUltConfirm()" : `submitAction('${o.id}')`}"><div class="gbT">${iconize(o.label)}</div><div class="gbD">${o.desc || actionDescription(o.id)}</div></button>`).join('')
     + (cfg.browseHand ? `<button class="gateBtn ghost" onclick="browseActionHand()"><div class="gbT">手札を確認する</div><div class="gbD">行動を決める前に手札へ戻ります</div></button>` : '')

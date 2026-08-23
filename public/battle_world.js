@@ -10,6 +10,7 @@ const BW = (() => {
   let initP = null;
   let sprs = { atk: null, def: null };
   let bgSprs = {};
+  let presentationSpeed = 1;
   const texP = {};
   const ELEM_COL = { fire: 0xFF7A45, water: 0x56A8E8, earth: 0xD9B64F, wind: 0x5BE0D0 };
   const qLite = () => { try { return localStorage.getItem('sc_quality') === 'lite'; } catch (e) { return false; } };
@@ -29,7 +30,8 @@ const BW = (() => {
           transparent: true, banner: false,
           render: { roundPixels: false },
           scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-          scene: { create: function () { scene = this; ready = true; clearTimeout(wd); res(true); } },
+          scene: { create: function () { scene = this; ready = true;
+            scene.tweens.timeScale = presentationSpeed; clearTimeout(wd); res(true); } },
         });
         // リサイズ・フルスクリーン切替でもFITを追従させる(v0.84)
         window.addEventListener('resize', () => { try { if (game && game.scale) game.scale.refresh(); } catch (e) {} });
@@ -57,7 +59,12 @@ const BW = (() => {
     if (!scene || !t || !t.scene) return res();
     scene.tweens.add(Object.assign({}, props, { targets: t, duration, ease: ease || 'Sine.easeInOut', onComplete: res }));
   });
-  const waitMs = ms => new Promise(res => setTimeout(res, ms));
+  const waitMs = ms => new Promise(res => setTimeout(res,
+    Math.max(1, Math.round(ms / (presentationSpeed === 2 ? 2 : 1)))));
+  function setSpeed(value) {
+    presentationSpeed = value === 2 ? 2 : 1;
+    if (scene && scene.tweens) scene.tweens.timeScale = presentationSpeed;
+  }
 
   // v0.93 カード戦闘用の背景レイヤー。UIはDOMのまま、背景だけをPhaserで穏やかに動かす。
   async function backgroundStart() {
@@ -366,7 +373,7 @@ const BW = (() => {
         onComplete: () => g.destroy() });
     }
     // ヒットストップ(§8.4-5/§8.9: 演出Tweenだけを止める。JS・SSEは止めない)
-    if (scene.tweens) { scene.tweens.timeScale = 0.05; await waitMs(prof === 'charge' ? 90 : 75); scene.tweens.timeScale = 1; }
+    if (scene.tweens) { scene.tweens.timeScale = 0.05; await waitMs(prof === 'charge' ? 90 : 75); scene.tweens.timeScale = presentationSpeed; }
     tw(T, { x: T.bwHome.x + (prof === 'charge' ? 44 : 30) * dir, angle: 4 * dir }, 90, 'Cubic.easeOut')  // 反動
       .then(() => tw(T, { x: T.bwHome.x, angle: 0 }, 240, 'Sine.easeOut'));
     // --- 戻る(floatingは漂って降りる §8.5) ---
@@ -390,7 +397,7 @@ const BW = (() => {
   function stop() {
     if (!scene) return;
     if (scene.tweens && scene.tweens.getTweens) scene.tweens.getTweens().forEach(t2 => t2.remove());
-    if (scene.tweens) scene.tweens.timeScale = 1;
+    if (scene.tweens) scene.tweens.timeScale = presentationSpeed;
     for (const c of [...scene.children.list]) c.destroy();
     sprs = { atk: null, def: null };
     bgSprs = {};
@@ -407,7 +414,7 @@ const BW = (() => {
       children: scene ? scene.children.length : 0,
       tweens: scene && scene.tweens && scene.tweens.getTweens ? scene.tweens.getTweens().length : 0 };
   }
-  return { start, attack, defeat, returnHome, stop, pump, debug,
+  return { start, attack, defeat, returnHome, stop, pump, debug, setSpeed,
            backgroundStart, backgroundPulse,
            supportGlow, jinxedFlash,
            isReady: () => ready, hasFailed: () => failed };

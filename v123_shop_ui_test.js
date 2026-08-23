@@ -15,8 +15,8 @@ if (serverVer < 1.27 || Number(pkg.version.replace(/\.0$/, '')) < 1.27 || boardV
 const pawn = fs.readFileSync('public/assets/p_adel.png');
 if (pawn.toString('ascii', 1, 4) !== 'PNG' || pawn.readUInt32BE(16) !== 190 || pawn.readUInt32BE(20) !== 227)
   throw new Error('アーデル検査: p_adel.pngが幅190pxのPNGではない');
-if (!/`<img src="\/assets\/p_\$\{it\.charId\}\.png"/.test(board) ||
-    !/pngTexture\('pw_' \+ it\.charId, '\/assets\/p_' \+ it\.charId \+ '\.png'\)/.test(boardWorld))
+if (!/`<img src="\$\{it\.asset\}"/.test(board) ||
+    !/pngTexture\(pawnTex, it\.asset \|\| '\/assets\/p_' \+ it\.charId \+ '\.png'\)/.test(boardWorld))
   throw new Error('アーデル検査: DOM描画とPhaser描画が共通の盤面コマを参照していない');
 
 if (/id="pKeeper"|id="pBubble"|#shopScene \.keeper|#shopScene \.bubble/.test(phone))

@@ -59,7 +59,8 @@ const boardWorld=fs.readFileSync(path.join(__dirname,'public','board_world.js'),
 ok(board.includes("'/assets/ult_' + u.charId + '.webp'") && board.includes('se_ult_cutin.mp3'),'TV uses new art and sound');
 ok(board.includes('UltFxWorld.play') && phone.includes('UltFxWorld.play'),'TV and phone use Phaser sparkles');
 ok(board.includes("level >= (state.evoLevel || 3) && !!base.evo"),'battle card only requests evolved art when evolution exists');
-ok(board.includes('animation:ultInfo 2.9s 1.45s'),'effect message remains readable longer');
+ok(board.includes('animation:ultInfo var(--ult-info-duration,2.9s) var(--ult-info-delay,1.45s)'),
+  'effect message remains readable longer while allowing captured presentation speed');
 ok(board.includes('.tvShopArt img') && board.includes('object-fit:contain'),'TV shop keeps product art inside its frame');
 ok(board.includes("artKind = item.kind === 'support'"),'TV shop distinguishes support, spell, and creature art');
 ok(board.includes('tvShopCardBg') && board.includes('tsCost') && board.includes('tsInfo'),'TV shop renders complete card faces');
