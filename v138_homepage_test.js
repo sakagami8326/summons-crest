@@ -47,6 +47,8 @@ ok(/<strong>100<\/strong><span>種類以上<small>※リリース時点<\/small>
 ok(!/data-card-tab=|data-card-panel=|panel-spell/.test(html), 'card showcase has no spell or weapon category tabs');
 ok(/class="card-fan"/.test(html) && (html.match(/c_[a-z_]+\.webp/g) || []).length >= 9, 'creature showcase displays a layered card fan');
 ok((html.match(/class="card-element card-element--/g) || []).length === 4, 'cards section displays all four element marks');
+for (const label of ['火属性','水属性','土属性','風属性'])
+  ok(html.includes(`<small>${label}</small>`), `cards section shows the localized element label: ${label}`);
 for (const element of ['fire','water','earth','wind'])
   ok(new RegExp(`card-element--${element}`).test(html), `cards section labels ${element} element`);
 for (const file of ['element-fire.svg','element-water-v2.svg','element-earth.svg','element-wind.svg'])

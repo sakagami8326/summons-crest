@@ -185,15 +185,19 @@ img { max-width: 100%; }
 .card-fan figcaption { position: absolute; left: 50%; bottom: -5.2rem; width: 18rem; text-align: center; transform: translateX(-50%); }
 .card-fan figcaption span { color: var(--sc-gold-300); font: 600 .58rem/1 var(--sc-font-display); letter-spacing: .18em; }
 .card-fan figcaption strong { display: block; margin-top: .8rem; color: var(--sc-ivory-50); font: 600 1.45rem/1.2 var(--sc-font-display); letter-spacing: .12em; }
-.card-showcase__lead { position: relative; z-index: 30; display: flex; justify-content: space-between; align-items: end; gap: 2rem; margin-top: 1rem; padding-top: 1.6rem; border-top: 1px solid rgb(239 217 143 / 18%); }
-.card-showcase__elements { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem 1.15rem; }
-.card-element { --element-color: var(--sc-gold-300); display: inline-grid; grid-template-columns: 1.6rem auto; align-items: center; gap: .5rem; color: var(--element-color); }
-.card-element__mark { width: 1.55rem; height: 1.7rem; background: currentColor; filter: drop-shadow(0 0 .32rem color-mix(in srgb, currentColor 34%, transparent)); -webkit-mask: var(--element-logo) center / contain no-repeat; mask: var(--element-logo) center / contain no-repeat; }
-.card-element b { font: 600 .62rem/1 var(--sc-font-display); letter-spacing: .16em; }
-.card-element--fire { --element-color: #ff7a45; --element-logo: url('/assets/element-fire.svg'); }
-.card-element--water { --element-color: #56a8e8; --element-logo: url('/assets/element-water-v2.svg'); }
-.card-element--earth { --element-color: #d9b64f; --element-logo: url('/assets/element-earth.svg'); }
-.card-element--wind { --element-color: #5be0d0; --element-logo: url('/assets/element-wind.svg'); }
+.card-showcase__lead { position: relative; z-index: 30; display: flex; justify-content: space-between; align-items: center; gap: 2rem; margin-top: 1rem; padding-top: 2.1rem; border-top: 1px solid rgb(239 217 143 / 18%); }
+.card-showcase__elements { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+.card-element { --element-color: var(--sc-gold-300); --element-tilt: 0deg; --element-lift: 0; position: relative; display: grid; grid-template-rows: 3.8rem auto auto; place-items: center; width: 6.5rem; min-height: 7.2rem; padding: .65rem .55rem .7rem; overflow: hidden; border: 1px solid color-mix(in srgb, var(--element-color) 46%, transparent); color: var(--element-color); background: radial-gradient(circle at 50% 33%, color-mix(in srgb, var(--element-color) 25%, transparent), transparent 47%), linear-gradient(145deg, rgb(255 255 255 / 5%), rgb(4 5 12 / 35%)); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 3%), 0 .8rem 1.5rem rgb(0 0 0 / 18%); transform: translateY(var(--element-lift)) rotate(var(--element-tilt)); transition: transform .35s var(--sc-ease), border-color .35s, box-shadow .35s; }
+.card-element::before { content: ""; position: absolute; left: 50%; top: 2.55rem; width: 4.35rem; aspect-ratio: 1; border: 1px dashed color-mix(in srgb, var(--element-color) 46%, transparent); border-radius: 50%; transform: translate(-50%, -50%); }
+.card-element::after { content: ""; position: absolute; top: .45rem; right: .45rem; width: .82rem; aspect-ratio: 1 / 1.8; background: currentColor; opacity: .72; -webkit-mask: url('/assets/site/spark-star.svg') center / contain no-repeat; mask: url('/assets/site/spark-star.svg') center / contain no-repeat; }
+.card-element:hover { z-index: 2; border-color: color-mix(in srgb, var(--element-color) 84%, white 16%); box-shadow: 0 0 1.25rem color-mix(in srgb, var(--element-color) 25%, transparent), 0 1rem 2rem rgb(0 0 0 / 24%); transform: translateY(calc(var(--element-lift) - .4rem)) rotate(0deg); }
+.card-element__mark { position: relative; z-index: 1; width: 3.05rem; height: 3.45rem; background: currentColor; filter: drop-shadow(0 0 .5rem color-mix(in srgb, currentColor 55%, transparent)); -webkit-mask: var(--element-logo) center / contain no-repeat; mask: var(--element-logo) center / contain no-repeat; }
+.card-element b { position: relative; z-index: 1; font: 600 .7rem/1 var(--sc-font-display); letter-spacing: .15em; }
+.card-element small { position: relative; z-index: 1; margin-top: .35rem; color: color-mix(in srgb, var(--element-color) 72%, white 28%); font: 600 .5rem/1 var(--sc-font-display); letter-spacing: .14em; }
+.card-element--fire { --element-color: #ff7043; --element-logo: url('/assets/element-fire.svg'); --element-tilt: -3deg; --element-lift: .2rem; }
+.card-element--water { --element-color: #56b8f3; --element-logo: url('/assets/element-water-v2.svg'); --element-tilt: 2deg; --element-lift: -.2rem; }
+.card-element--earth { --element-color: #e0b94f; --element-logo: url('/assets/element-earth.svg'); --element-tilt: -1.5deg; --element-lift: .25rem; }
+.card-element--wind { --element-color: #55e6cf; --element-logo: url('/assets/element-wind.svg'); --element-tilt: 3deg; --element-lift: -.1rem; }
 .card-showcase__lead p { margin: 0; color: rgb(241 232 208 / 68%); font: 600 clamp(.9rem, 1.7vw, 1.2rem)/1.9 var(--sc-font-display); text-align: right; letter-spacing: .05em; }
 
 .summoners { min-height: 60rem; background: radial-gradient(circle at 50% 45%, #302648 0, #141227 32%, #0b0d18 78%); }
@@ -326,10 +330,11 @@ img { max-width: 100%; }
   .card-showcase { min-height: 31rem; }
   .card-fan { width: 48rem; height: 26rem; margin-left: 50%; transform: translateX(-50%) scale(.62); }
   .card-showcase__lead { display: grid; justify-items: center; margin-top: -6rem; text-align: center; }
-  .card-showcase__elements { justify-content: center; gap: .65rem .9rem; }
-  .card-element { grid-template-columns: 1.35rem auto; gap: .38rem; }
-  .card-element__mark { width: 1.3rem; height: 1.45rem; }
-  .card-element b { font-size: .56rem; }
+  .card-showcase__elements { display: grid; grid-template-columns: repeat(2, 5.8rem); justify-content: center; gap: .8rem 1rem; }
+  .card-element { grid-template-rows: 3.2rem auto auto; width: 5.8rem; min-height: 6.4rem; }
+  .card-element::before { top: 2.25rem; width: 3.75rem; }
+  .card-element__mark { width: 2.65rem; height: 2.95rem; }
+  .card-element b { font-size: .62rem; }
   .card-showcase__lead p { text-align: center; }
   .summoner-stage { height: 25rem; }
   .summoner-slide { width: 15rem; height: 24rem; }
