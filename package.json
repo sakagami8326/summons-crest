@@ -1,10 +1,10 @@
 {
   "name": "summons-crest",
-  "version": "1.43.0",
+  "version": "1.44.0",
   "private": true,
   "scripts": {
     "start": "node server.js",
-    "pretest": "node v137_options_audio_camera_test.js && node v138_homepage_test.js && node v139_ui_rules_test.js && node v140_ui_flow_test.js && node v141_presentation_ui_test.js && node v142_battle_title_prompt_test.js && node element_logo_test.js",
+    "pretest": "node v137_options_audio_camera_test.js && node v138_homepage_test.js && node v139_ui_rules_test.js && node v140_ui_flow_test.js && node v141_presentation_ui_test.js && node v142_battle_title_prompt_test.js && node v144_analytics_test.js && node element_logo_test.js",
     "test": "node phaser_test.js && node timing_test.js && node v136_sync_speed_test.js && node v100_test.js && node v101_new_creatures_test.js && node v102_wind_creatures_test.js && node v106_castle_test.js && node v107_balance_test.js && node v108_shop_test.js && node v109_ult_cutin_test.js && node v113_balance_test.js && node v119_gallery_test.js && node v120_villa_test.js && node v121_brand_test.js && node v122_phone_ui_test.js && node v123_shop_ui_test.js && node v124_villa_exile_test.js && node v125_ui_test.js && node v126_phone_ui_test.js && node v127_tv_hud_test.js && node v128_exile_chain_test.js && node v129_earth_chain_test.js && node v130_nerasio_test.js && node v131_qr_join_test.js && node v132_ui_test.js && node v133_support_refresh_test.js && node v134_weapon_mastery_test.js && node v135_weapon_gallery_test.js && node bot_test.js && node bot_mode_test.js && node ui_test.js && node save_test.js",
     "test:v137": "node v137_options_audio_camera_test.js",
     "test:v138": "node v138_homepage_test.js",
@@ -12,6 +12,7 @@
     "test:v140": "node v140_ui_flow_test.js",
     "test:v141": "node v141_presentation_ui_test.js",
     "test:v142": "node v142_battle_title_prompt_test.js",
+    "test:v144": "node v144_analytics_test.js",
     "test:v136": "node v136_sync_speed_test.js",
     "test:v100": "node v100_test.js",
     "test:v101": "node v101_new_creatures_test.js",

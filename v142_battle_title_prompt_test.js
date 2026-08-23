@@ -18,8 +18,8 @@ const G = new Function('require', '__dirname', 'process', 'console', 'setInterva
   src + `\n;return { VERSION, makeFixtureRoom, publicState, publicBattle, startBattle, updateTitles };`)(
   require, __dirname, process, console, () => {});
 
-eq(G.VERSION, '1.43', 'server release is v1.43');
-eq(pkg.version, '1.43.0', 'package release is v1.43.0');
+eq(G.VERSION, '1.44', 'server release is v1.44');
+eq(pkg.version, '1.44.0', 'package release is v1.44.0');
 
 // 前回結果が残っていても新しい戦闘は独立したキーで公開される。
 const battleRoom = G.makeFixtureRoom();

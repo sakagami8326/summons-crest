@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>SUMMONS CODE — 盤面</title>
+<script src="/analytics.js"></script>
 <style>
   :root { --ink:#141227; --ink2:#1E1B3C; --gold:#C9A227; --gold-soft:#EFD98F; --parchment:#F1E8D0;
       --font-mincho:"Yu Mincho","Hiragino Mincho ProN","Hiragino Mincho Pro","Noto Serif JP",serif; }
@@ -4129,7 +4130,7 @@ function render() {
   if (!state) return;
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.43';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.44';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
