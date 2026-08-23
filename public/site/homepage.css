@@ -239,6 +239,7 @@ img { max-width: 100%; }
 .early-access__facts div { min-height: 7rem; padding: 1.5rem; border-right: 1px solid rgb(239 217 143 / 12%); border-bottom: 1px solid rgb(239 217 143 / 12%); }
 .early-access__facts dt { color: var(--sc-gold-300); font: 600 .58rem/1 var(--sc-font-display); letter-spacing: .16em; }
 .early-access__facts dd { margin: 1rem 0 0; color: var(--sc-ivory-50); font-size: .88rem; line-height: 1.7; }
+.early-access__facts dd small { display: block; margin-top: .3rem; color: rgb(241 232 208 / 62%); font-size: .68rem; line-height: 1.5; }
 .news { padding-bottom: 0; background: #0b0d18; }
 .news__empty { display: grid; place-content: center; min-height: 12rem; margin: 0; border-top: 1px solid rgb(239 217 143 / 18%); border-bottom: 1px solid rgb(239 217 143 / 18%); color: rgb(241 232 208 / 58%); text-align: center; }
 .news__empty span { display: block; margin-bottom: .9rem; color: var(--sc-gold-500); font: 600 .58rem/1 var(--sc-font-display); letter-spacing: .2em; }
@@ -335,13 +336,13 @@ img { max-width: 100%; }
   .card-tabs button { flex: 1 0 auto; padding: 0 1rem; }
   .card-showcase { min-height: 31rem; }
   .card-fan { width: 48rem; height: 26rem; margin-left: 50%; transform: translateX(-50%) scale(.62); }
-  .card-showcase__lead { display: grid; justify-items: center; margin-top: -6rem; text-align: center; }
+  .card-showcase__lead { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; width: 100%; margin-top: -6rem; text-align: center; }
   .card-showcase__elements { display: grid; grid-template-columns: repeat(2, 7.1rem); justify-content: center; gap: 1rem 1.25rem; }
   .card-element { grid-template-rows: 4.1rem auto auto; width: 7.1rem; min-height: 7.9rem; padding: .7rem .55rem .75rem; }
   .card-element::before { top: 2.75rem; width: 4.75rem; }
   .card-element__mark { width: 3.45rem; height: 3.85rem; }
   .card-element b { font-size: .7rem; }
-  .card-showcase__lead p { text-align: center; }
+  .card-showcase__lead p { width: 100%; justify-self: center; text-align: center; }
   .summoner-stage { height: 25rem; }
   .summoner-slide { width: 15rem; height: 24rem; }
   .summoner-slide.is-prev { transform: translateX(-125%) scale(.76); }

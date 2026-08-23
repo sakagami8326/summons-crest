@@ -24,6 +24,7 @@ ok(/webp: 'image\/webp'/.test(server) && /webm: 'video\/webm'/.test(server) && /
 
 ok(/ボードゲーム\s*<em>×<\/em>\s*カードゲーム/.test(html), 'hero states board game x card game');
 ok(/スマホをコントローラーにして遊ぶ/.test(html), 'hero explains smartphone controller');
+ok(/BOT戦なら1人でもプレイ/.test(html) && /<dt>PLAYERS<\/dt><dd>1〜4人<small>1人プレイはBOT戦<\/small>/.test(html), 'homepage clearly supports solo BOT play alongside multiplayer');
 ok(/BOARD GAME × DECK-BUILDING ROGUELIKE/.test(html), 'concept states deck-building roguelike');
 ok(/相手の領地を侵略し、自分の領地を守り/.test(html), 'concept explains invasion and defense');
 ok(/class="concept__tv-image"[^>]*gameplay-video-poster-v1\.png[^>]*プレイ中の盤面/.test(html), 'concept TV displays an in-game board screenshot');
@@ -48,6 +49,8 @@ ok(/<strong>100<\/strong><span>種類以上<small>※リリース時点<\/small>
 ok(!/data-card-tab=|data-card-panel=|panel-spell/.test(html), 'card showcase has no spell or weapon category tabs');
 ok(/class="card-fan"/.test(html) && (html.match(/c_[a-z_]+\.webp/g) || []).length >= 9, 'creature showcase displays a layered card fan');
 ok((html.match(/class="card-element card-element--/g) || []).length === 4, 'cards section displays all four element marks');
+ok(/@media\s*\(max-width:\s*36rem\)[\s\S]*\.card-showcase__elements\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*7\.1rem\)/.test(css), 'mobile cards section keeps the four attributes in a two-column grid');
+ok(/@media\s*\(max-width:\s*36rem\)[\s\S]*\.card-showcase__lead\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)[^}]*width:\s*100%/.test(css) && /\.card-showcase__lead p\s*\{[^}]*width:\s*100%[^}]*text-align:\s*center/.test(css), 'mobile attribute explanation is horizontally centered');
 for (const label of ['火属性','水属性','土属性','風属性'])
   ok(html.includes(`<small>${label}</small>`), `cards section shows the localized element label: ${label}`);
 for (const element of ['fire','water','earth','wind'])
@@ -98,6 +101,7 @@ ok(/name="twitter:image" content="https:\/\/summonscode\.jp\/assets\/site\/og-su
 ok(/rel="canonical" href="https:\/\/summonscode\.jp\/"/.test(html) && /name="description"/.test(html), 'canonical uses the official domain and description metadata is present');
 ok(/class="skip-link"/.test(html) && /aria-live="polite"/.test(html), 'skip navigation and live carousel information are present');
 ok(/SUMMONS CODEは個人開発ゲームです。/.test(html), 'footer identifies SUMMONS CODE as an independently developed game');
+ok(/<dt>SAVE DATA<\/dt><dd>テレビ側のブラウザに保存<small>PCへ書き出して保管可能<\/small>/.test(html), 'save data description includes PC export');
 ok(/href="https:\/\/x\.com\/gamitestman"/.test(html) && /site-footer__social/.test(html) && /<svg/.test(html),
   'footer links to the developer X account with an icon');
 
