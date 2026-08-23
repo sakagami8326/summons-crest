@@ -186,7 +186,14 @@ img { max-width: 100%; }
 .card-fan figcaption span { color: var(--sc-gold-300); font: 600 .58rem/1 var(--sc-font-display); letter-spacing: .18em; }
 .card-fan figcaption strong { display: block; margin-top: .8rem; color: var(--sc-ivory-50); font: 600 1.45rem/1.2 var(--sc-font-display); letter-spacing: .12em; }
 .card-showcase__lead { position: relative; z-index: 30; display: flex; justify-content: space-between; align-items: end; gap: 2rem; margin-top: 1rem; padding-top: 1.6rem; border-top: 1px solid rgb(239 217 143 / 18%); }
-.card-showcase__lead span { color: var(--sc-gold-300); font: 600 .6rem/1 var(--sc-font-display); letter-spacing: .2em; }
+.card-showcase__elements { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem 1.15rem; }
+.card-element { --element-color: var(--sc-gold-300); display: inline-grid; grid-template-columns: 1.6rem auto; align-items: center; gap: .5rem; color: var(--element-color); }
+.card-element__mark { width: 1.55rem; height: 1.7rem; background: currentColor; filter: drop-shadow(0 0 .32rem color-mix(in srgb, currentColor 34%, transparent)); -webkit-mask: var(--element-logo) center / contain no-repeat; mask: var(--element-logo) center / contain no-repeat; }
+.card-element b { font: 600 .62rem/1 var(--sc-font-display); letter-spacing: .16em; }
+.card-element--fire { --element-color: #ff7a45; --element-logo: url('/assets/element-fire.svg'); }
+.card-element--water { --element-color: #56a8e8; --element-logo: url('/assets/element-water-v2.svg'); }
+.card-element--earth { --element-color: #d9b64f; --element-logo: url('/assets/element-earth.svg'); }
+.card-element--wind { --element-color: #5be0d0; --element-logo: url('/assets/element-wind.svg'); }
 .card-showcase__lead p { margin: 0; color: rgb(241 232 208 / 68%); font: 600 clamp(.9rem, 1.7vw, 1.2rem)/1.9 var(--sc-font-display); text-align: right; letter-spacing: .05em; }
 
 .summoners { min-height: 60rem; background: radial-gradient(circle at 50% 45%, #302648 0, #141227 32%, #0b0d18 78%); }
@@ -319,6 +326,10 @@ img { max-width: 100%; }
   .card-showcase { min-height: 31rem; }
   .card-fan { width: 48rem; height: 26rem; margin-left: 50%; transform: translateX(-50%) scale(.62); }
   .card-showcase__lead { display: grid; justify-items: center; margin-top: -6rem; text-align: center; }
+  .card-showcase__elements { justify-content: center; gap: .65rem .9rem; }
+  .card-element { grid-template-columns: 1.35rem auto; gap: .38rem; }
+  .card-element__mark { width: 1.3rem; height: 1.45rem; }
+  .card-element b { font-size: .56rem; }
   .card-showcase__lead p { text-align: center; }
   .summoner-stage { height: 25rem; }
   .summoner-slide { width: 15rem; height: 24rem; }

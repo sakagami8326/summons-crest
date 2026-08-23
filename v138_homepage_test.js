@@ -46,6 +46,11 @@ ok(/class="site-game-card\b/.test(html) && /bg-fire\.webp/.test(html) && /bg-wat
 ok(/<strong>100<\/strong><span>種類以上<small>※リリース時点<\/small>/.test(html), 'cards section announces more than 100 cards at release');
 ok(!/data-card-tab=|data-card-panel=|panel-spell/.test(html), 'card showcase has no spell or weapon category tabs');
 ok(/class="card-fan"/.test(html) && (html.match(/c_[a-z_]+\.webp/g) || []).length >= 9, 'creature showcase displays a layered card fan');
+ok((html.match(/class="card-element card-element--/g) || []).length === 4, 'cards section displays all four element marks');
+for (const element of ['fire','water','earth','wind'])
+  ok(new RegExp(`card-element--${element}`).test(html), `cards section labels ${element} element`);
+for (const file of ['element-fire.svg','element-water-v2.svg','element-earth.svg','element-wind.svg'])
+  ok(exists('public/assets/' + file) && css.includes(`/assets/${file}`), `cards section uses element logo asset: ${file}`);
 for (const name of ['サラマンダー','ダイテッカン','キング','ノーク・ゴーア','ディノガルド','コマオー','マッドミスト','ガレス・ゲイル','クレステッド'])
   ok(html.includes(`data-card-name="${name}"`), `requested showcase creature exists: ${name}`);
 const showcaseOrder = [...html.matchAll(/<figure data-card-name="[^"]+"[^>]*>[\s\S]*?<img class="site-card-bg" src="\/assets\/cards\/bg-([a-z]+)\.webp"/g)].map(([, element]) => element);
