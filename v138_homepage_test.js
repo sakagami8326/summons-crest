@@ -13,7 +13,7 @@ const js = read('public/site/homepage.js');
 const server = read('server.js');
 const pkg = require('./package.json');
 
-ok(/const VERSION = '1\.(?:40|41)'/.test(server) && Number(pkg.version.replace(/\.0$/, '')) >= 1.40,
+ok(/const VERSION = '1\.(?:40|41|42)'/.test(server) && Number(pkg.version.replace(/\.0$/, '')) >= 1.40,
   'v1.38 homepage remains covered by the current release');
 ok(/if \(p === '\/'\) return serveFile\(res, 'site\/index\.html'\)/.test(server), 'root serves official homepage');
 ok(/if \(p === '\/play'\) return serveFile\(res, 'board\.html'\)/.test(server), 'play route serves TV game');

@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.41';
+const VERSION = '1.42';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TURN_TRANSITION_TIMEOUT_MS = 20000;
@@ -728,13 +728,19 @@ function points(r, p) {
   return p.gold + lands + titles;
 }
 function updateTitles(r) {
-  for (const [key, field, min] of [['conqueror', 'battleWins', 3], ['pilgrim', 'shrineVisits', 4]]) {
+  for (const [key, field, min, name] of [
+    ['conqueror', 'battleWins', 3, '覇者'],
+    ['pilgrim', 'shrineVisits', 4, '大巡礼者'],
+  ]) {
     const holder = pById(r, r.titles[key]);
-    for (const p of r.players) {
-      if (p[field] >= min && (!holder ? true : p[field] > holder[field]) && r.titles[key] !== p.id) {
-        r.titles[key] = p.id;
-        log(r, `👑 ${p.name}が称号「${key === 'conqueror' ? '覇者' : '大巡礼者'}」を獲得!(+2点)`);
-      }
+    const max = Math.max(0, ...r.players.map(p => Number(p[field]) || 0));
+    if (max < min) continue;
+    // 同数では現保持者から移動しない。保持者がいない場合だけ手番順の先頭を採用する。
+    if (holder && (Number(holder[field]) || 0) >= max) continue;
+    const next = r.players.find(p => (Number(p[field]) || 0) === max);
+    if (next && r.titles[key] !== next.id) {
+      r.titles[key] = next.id;
+      log(r, `👑 ${next.name}が称号「${name}」を獲得!(総資産+500G)`);
     }
   }
 }
@@ -1063,7 +1069,7 @@ function settleAll(r) {
   if (!lands.length) return bankrupt(r, debtor);
   const opts = lands.map(i => ({
     id: 'sl:' + i,
-    label: `${TILES[i].e} Lv${r.owners[i].level} ${CREATURES[r.owners[i].creature].name}の土地を売却(+${Math.round(landValue(r, i) * 0.7)}G)`,
+    label: `${ELEM_JA[tileElem(r, i)] || ''} Lv${r.owners[i].level} ${CREATURES[r.owners[i].creature].name}の土地を売却(+${Math.round(landValue(r, i) * 0.7)}G)`,
   }));
   ask(r, debtor.id, 'sell',
     `所持金${debtor.gold}G ─ 0以上になるまで領地を売却する(売却額=地価の70%)`, opts);
@@ -1266,7 +1272,7 @@ function resolveTile(r, p) {
       .map(c => ({ id: 'summon:' + c, card: c, cost: CREATURES[c].cost,
         label: `${CREATURES[c].name}を召喚(−${CREATURES[c].cost}G)` }));
     opts.push({ id: 'pass', label: '配置しない' });
-    return ask(r, p.id, 'tile', `空き地(${tileElem(r, p.pos)})に到着`, opts);
+    return ask(r, p.id, 'tile', `空き地(${ELEM_JA[tileElem(r, p.pos)] || ''}属性)に到着`, opts);
   }
   if (o.player === p.id) return askUpgrade(r, p, '自領地');
   // 敵領地
@@ -1278,7 +1284,7 @@ function resolveTile(r, p) {
     // v0.73: 結界が侵略を阻んだ瞬間(TVの衝撃時発光 ─ plan_phaser4 §8.4)
     r.lastBarrierHit = { tile: i, owner: o.player, by: p.id, at: stamp(r) };
   } else if (p.hand.some(c => CREATURES[c])) opts.push({ id: 'invade', label: '⚔ 侵略する' });
-  ask(r, p.id, 'tile', `${enemy.name}の領地(${tileElem(r, p.pos)} Lv${o.level} / 通行料${toll}G)`, opts);
+  ask(r, p.id, 'tile', `${enemy.name}の領地(${ELEM_JA[tileElem(r, p.pos)] || ''}属性 Lv${o.level} / 通行料${toll}G)`, opts);
 }
 
 function upCost(r, p, i) {
@@ -1347,7 +1353,7 @@ function askUpgrade(r, p, where) {
     if (o && o.player === p.id && o.level < RULES.maxLevel && p.gold >= upCostRange(r, p, i, o.level + 1)) {
       const aff = tileElem(r, i) === CHARS[p.charId].elem;
       opts.push({ id: 'up:' + i, label:
-        `${TILES[i].e} Lv${o.level}: ${CREATURES[o.creature].name}の土地${aff ? '(親和-20%)' : ''}`, tile: i });
+        `${ELEM_JA[tileElem(r, i)] || ''} Lv${o.level}: ${CREATURES[o.creature].name}の土地${aff ? '(親和-20%)' : ''}`, tile: i });
     }
   });
   if (where === '自領地' && marlowSources(r, p).length && marlowDests(r).length)
@@ -1625,7 +1631,7 @@ function resolveBattle(r) {
   }
 
   const battleResultUi = { win, atkSurvived, atkSupport: aSup, defSupport: dSup, attacker: atk.id };
-  r.lastBattle = { tile: b.tile, attacker: atk.id, defender: def.id,
+  r.lastBattle = { battleKey: b.startedAt || null, tile: b.tile, attacker: atk.id, defender: def.id,
     terrainElem: tileElem(r, b.tile),
     atkCreature: b.atkCreature, defCreature: o.creature,
     defLevel: o.level,
@@ -2052,21 +2058,21 @@ function handleChoose(r, playerId, optionId) {
     }
     if (sid === 'sp_weaken') {
       const opts = r.owners.map((o, i) => o && o.player !== p.id
-        ? { id: 'ct:' + i, label: `${pById(r, o.player).name}の${CREATURES[o.creature].name}(${TILES[i].e} Lv${o.level}${o.dmg ? ' 負傷' + o.dmg : ''})` }
+        ? { id: 'ct:' + i, label: `${pById(r, o.player).name}の${CREATURES[o.creature].name}(${ELEM_JA[tileElem(r, i)] || ''} Lv${o.level}${o.dmg ? ' 負傷' + o.dmg : ''})` }
         : null).filter(Boolean);
       opts.push({ id: 'ct:cancel', label: 'やめる' });
       return ask(r, p.id, 'curse_target', '☠ どの土地に衰弱を放つ?(20ダメージ)', opts);
     }
     if (sid === 'sp_move') {
       const opts = r.owners.map((o, i) => o && o.player === p.id
-        ? { id: 'mv:' + i, label: `${CREATURES[o.creature].name}(${TILES[i].e} Lv${o.level}${o.dmg ? ' 負傷' + o.dmg : ''})` }
+        ? { id: 'mv:' + i, label: `${CREATURES[o.creature].name}(${ELEM_JA[tileElem(r, i)] || ''} Lv${o.level}${o.dmg ? ' 負傷' + o.dmg : ''})` }
         : null).filter(Boolean);
       opts.push({ id: 'mv:cancel', label: 'やめる' });
       return ask(r, p.id, 'move_a', '転移 ─ 1体目のクリーチャーを選ぶ', opts);
     }
     if (sid === 'sp_swap') {
       const opts = r.owners.map((o, i) => o && o.player === p.id
-        ? { id: 'sw:' + i, label: `${CREATURES[o.creature].name}(${TILES[i].e} Lv${o.level}${o.dmg ? ' 負傷' + o.dmg : ''})` }
+        ? { id: 'sw:' + i, label: `${CREATURES[o.creature].name}(${ELEM_JA[tileElem(r, i)] || ''} Lv${o.level}${o.dmg ? ' 負傷' + o.dmg : ''})` }
         : null).filter(Boolean);
       opts.push({ id: 'sw:cancel', label: 'やめる' });
       return ask(r, p.id, 'swap_land', '交代 ─ どの領地のクリーチャーを入れ替える?', opts);
@@ -2093,7 +2099,7 @@ function handleChoose(r, playerId, optionId) {
       else if (sid === 'sp_bedrock_uplift') cond = o => o.player === p.id && (o.dmg || 0) > 0;
       else cond = o => o.player === p.id;
       const opts = r.owners.map((o, i) => o && cond(o, i)
-        ? { id: 'tg:' + i, label: `${o.player !== p.id ? pById(r, o.player).name + 'の' : ''}${CREATURES[o.creature].name}(${tileElem(r, i)} Lv${o.level}${o.dmg ? ' 負傷' + o.dmg : ''})` }
+        ? { id: 'tg:' + i, label: `${o.player !== p.id ? pById(r, o.player).name + 'の' : ''}${CREATURES[o.creature].name}(${ELEM_JA[tileElem(r, i)] || ''} Lv${o.level}${o.dmg ? ' 負傷' + o.dmg : ''})` }
         : null).filter(Boolean);
       opts.push({ id: 'tg:cancel', label: 'やめる' });
       return ask(r, p.id, 'spell_target', `「${SPELLS[sid].name}」─ 対象のマスを選ぶ`, opts);
@@ -2101,14 +2107,14 @@ function handleChoose(r, playerId, optionId) {
     if (sid === 'sp_step') {
       const opts = stepSources(r, p).map(i => ({
         id: 'st:' + i,
-        label: `${CREATURES[r.owners[i].creature].name}(${TILES[i].e} Lv${r.owners[i].level}${r.owners[i].dmg ? ' 負傷' + r.owners[i].dmg : ''})`,
+        label: `${CREATURES[r.owners[i].creature].name}(${ELEM_JA[tileElem(r, i)] || ''} Lv${r.owners[i].level}${r.owners[i].dmg ? ' 負傷' + r.owners[i].dmg : ''})`,
       }));
       opts.push({ id: 'st:cancel', label: 'やめる' });
       return ask(r, p.id, 'step_a', '移動 ─ どのクリーチャーを動かす?', opts);
     }
     if (sid === 'sp_quake') {
       const opts = r.owners.map((o, i) => o && o.player !== p.id && o.level >= 2
-        ? { id: 'qt:' + i, label: `${pById(r, o.player).name}の${CREATURES[o.creature].name}(${TILES[i].e} Lv${o.level}→${o.level - 1})` }
+        ? { id: 'qt:' + i, label: `${pById(r, o.player).name}の${CREATURES[o.creature].name}(${ELEM_JA[tileElem(r, i)] || ''} Lv${o.level}→${o.level - 1})` }
         : null).filter(Boolean);
       opts.push({ id: 'qt:cancel', label: 'やめる' });
       return ask(r, p.id, 'quake_target', '⛰ どの領地に地割れを起こす?', opts);
@@ -2206,8 +2212,8 @@ function handleChoose(r, playerId, optionId) {
     const opts = stepDests(r, p, i).map(j => {
       const o = r.owners[j];
       return { id: 'sd:' + j, label: o
-        ? `${pById(r, o.player).name}の${CREATURES[o.creature].name}(${TILES[j].e} Lv${o.level})へ侵略!`
-        : `空き地(${TILES[j].e})へ移動して取得` };
+        ? `${pById(r, o.player).name}の${CREATURES[o.creature].name}(${ELEM_JA[tileElem(r, j)] || ''} Lv${o.level})へ侵略!`
+        : `空き地(${ELEM_JA[tileElem(r, j)] || ''}属性)へ移動して取得` };
     });
     opts.push({ id: 'sd:cancel', label: 'やめる' });
     return ask(r, p.id, 'step_b', '移動 ─ どちらのマスへ?', opts);
@@ -2233,7 +2239,7 @@ function handleChoose(r, playerId, optionId) {
         // 空き地へ移動: Lv1で取得・負傷維持・元は空き地に
         r.owners[j] = { player: p.id, level: 1, creature: src.creature, dmg: src.dmg || 0 };
         r.owners[i] = null;
-        log(r, `📜 ${p.name}の${SPELLS.sp_step.name}! ${CREATURES[r.owners[j].creature].name}が隣の空き地(${TILES[j].e})へ進出し、Lv1の領地とした`);
+        log(r, `📜 ${p.name}の${SPELLS.sp_step.name}! ${CREATURES[r.owners[j].creature].name}が隣の空き地(${ELEM_JA[tileElem(r, j)] || ''}属性)へ進出し、Lv1の領地とした`);
         spellFx(r, 'sp_step', [i, j], p.id);
         return askRoll(r, p);
       }
@@ -2251,7 +2257,7 @@ function handleChoose(r, playerId, optionId) {
     if (optionId === 'mv:cancel') return askRoll(r, p);
     p.moveA = +optionId.slice(3);
     const opts = r.owners.map((o, i) => o && o.player === p.id && i !== p.moveA
-      ? { id: 'mb:' + i, label: `${CREATURES[o.creature].name}(${TILES[i].e} Lv${o.level}${o.dmg ? ' 負傷' + o.dmg : ''})` }
+      ? { id: 'mb:' + i, label: `${CREATURES[o.creature].name}(${ELEM_JA[tileElem(r, i)] || ''} Lv${o.level}${o.dmg ? ' 負傷' + o.dmg : ''})` }
       : null).filter(Boolean);
     opts.push({ id: 'mb:cancel', label: 'やめる' });
     return ask(r, p.id, 'move_b', '転移 ─ 入れ替える相手のクリーチャーを選ぶ', opts);
@@ -2346,7 +2352,7 @@ function handleChoose(r, playerId, optionId) {
         p.discard.push(o.creature);
         r.owners[i] = null;
         r.curses[i] && delete r.curses[i];
-        log(r, `${p.name}は${TILES[i].e}の土地を${got}Gで売却した(所持金${p.gold}G)`);
+        log(r, `${p.name}は${ELEM_JA[tileElem(r, i)] || ''}属性の土地を${got}Gで売却した(所持金${p.gold}G)`);
       }
     }
     return settleAll(r);
@@ -2475,7 +2481,7 @@ function handleChoose(r, playerId, optionId) {
         if (c <= p.gold) opts.push({ id: 'ul:' + i + ':' + t, label: `Lv${o.level}→Lv${t} に強化(−${c}G)` });
       }
       opts.push({ id: 'ul:cancel', label: 'やめる' });
-      return ask(r, p.id, 'upgrade_lv', `${TILES[i].e}の土地(${CREATURES[o.creature].name}) ─ どのレベルまで上げる?`, opts);
+      return ask(r, p.id, 'upgrade_lv', `${ELEM_JA[tileElem(r, i)] || ''}属性の土地(${CREATURES[o.creature].name}) ─ どのレベルまで上げる?`, opts);
     }
     return endTurn(r);
   }

@@ -1404,7 +1404,7 @@ function renderMiniMap(p) {
   const selected = multi && Array.isArray(p.selected) ? p.selected : [];
   const multiMax = p.type === 'ult_nerasio_land' ? 2 : 3;
   const confirm = multi ? p.options.find(o => o.id === (p.type === 'ult_nerasio_land' ? 'nu:confirm' : 'lu:confirm')) : null;
-  $('msg').innerHTML = iconize(p.prompt);
+  $('msg').textContent = taskPrompt(p);
   $('action').innerHTML = '';
   const cells = [];
   MM_GEO.forEach(([gx, gy], i) => {
@@ -2367,6 +2367,43 @@ function actionDescription(id) {
   if (id.startsWith('up:')) return '選択したレベルまで土地を強化します';
   return '';
 }
+function taskPrompt(p) {
+  if (!p) return '';
+  const ids = (p.options || []).map(o => o.id);
+  const fixed = {
+    select_char:'召喚士を選べ', select_wait:'全員の決定を待て', pick_draw:'獲得するカードを選べ',
+    roll:'サイコロを振れ', direction:'進行方向を選べ', pick_creature:'侵略するクリーチャーを選べ',
+    support:'ウェポンを選べ', upgrade:'強化する領地を選べ', upgrade_lv:'強化レベルを選べ',
+    draft:'獲得するカードを選べ', market:'商品を選べ', gate:'門の恩恵を選べ', forge:'進化させるクリーチャーを選べ',
+    forget:'廃棄するカードを選べ', overflow:'捨てるカードを選べ', sell:'売却する領地を選べ',
+    swap_pick:'配置するクリーチャーを選べ',
+    curse_target:'呪いをかける領地を選べ', quake_target:'地割れを起こす領地を選べ',
+    spell_target:'対象の領地を選べ', move_a:'移動するクリーチャーを選べ', move_b:'入れ替える相手を選べ',
+    swap_land:'交代する領地を選べ', step_a:'移動するクリーチャーを選べ', step_b:'移動先を選べ',
+    marlow_src:'移動するマーローを選べ', marlow_dest:'移動先を選べ',
+    gaust_exile:'廃棄するカードを選べ', fatal_exile:'廃棄するカードを選べ',
+    ult_villa_recover:'回収するカードを選べ', daitekkan_recover:'回収するウェポンを選べ',
+    toxy_target:'対象のプレイヤーを選べ', ult_nerasio_elem:'変更後の属性を選べ',
+    ult_mio:'対象の領地を選べ', ult_lia:'炎の渦を起こす領地を選べ', ult_nerasio_land:'再構成する領地を選べ',
+    ult_resolve:'必殺技の演出完了を待て', forge_pick:'進化させるカードを選べ',
+  };
+  if (p.type === 'tile') {
+    if (ids.some(id => id.startsWith('summon:'))) return 'クリーチャーを配置せよ';
+    if (ids.includes('invade')) return '侵略するか通行料を払え';
+    if (ids.includes('toll')) return '通行料を払え';
+    return '行動を選べ';
+  }
+  return fixed[p.type] || '行動を選べ';
+}
+function waitingTaskPrompt() {
+  if (!state) return '';
+  if (state.phase === 'lobby') return '';
+  if (state.phase === 'select') return '他のプレイヤーの選択を待て';
+  if (state.turnTransition) return 'テレビ演出の完了を待て';
+  if (Object.values(state.pending || {}).some(x => x.type === 'support')) return '相手のウェポン選択を待て';
+  const current = state.players && state.players[state.turn];
+  return current ? `${current.name}の行動を待て` : '次の行動を待て';
+}
 function showActionOverlay(title, options, config) {
   const cfg = config || {}, key = cfg.key || `${pend() ? pend().type : ''}|${options.map(o => o.id).join(',')}`;
   if ($('actionOv').classList.contains('on') && $('actionOv').dataset.key === key) return;
@@ -2404,6 +2441,7 @@ function render() {
   if (!state) return;
   if (state.lastUlt && state.lastUlt.at !== phoneUltAt) playPhoneUlt(state.lastUlt);
   const m = me(), C = state.catalog, p = pend();
+  $('msg').textContent = p ? taskPrompt(p) : waitingTaskPrompt();
   const lobbyWaiting = state.phase === 'lobby';
   $('lobbyWait').classList.toggle('on', lobbyWaiting);
   if (document.body && document.body.classList) document.body.classList.toggle('lobby-wait', lobbyWaiting);
@@ -2509,6 +2547,7 @@ function render() {
     }
     const promptServerNow = Date.now() + serverClockOffset;
     if (p && p.availableAt && promptServerNow < p.availableAt) {
+      $('msg').textContent = 'テレビ演出の完了を待て';
       $('diceDock').innerHTML = '<div style="text-align:center"><div class="waitDots">● ● ●</div><div style="font-size:max(1.8dvh,12px);color:var(--gold-soft)">テレビ演出中</div></div>';
       clearTimeout(moveT);
       moveT = setTimeout(render, p.availableAt - promptServerNow + 40);
@@ -2538,6 +2577,7 @@ function render() {
       doneAt = Math.min(doneAt, pendSince + GT.moveWaitMax);
       const serverNow = Date.now() + serverClockOffset;
       if (serverNow < doneAt) {
+        $('msg').textContent = '移動の完了を待て';
         $('diceDock').innerHTML = '<div style="text-align:center"><div class="waitDots">● ● ●</div><div style="font-size:max(1.8dvh,12px);color:var(--gold-soft)">移動中</div></div>';
         $('shopScene').classList.remove('on');
         clearTimeout(moveT);
@@ -2550,7 +2590,7 @@ function render() {
   const A = $('action');
   const sel = selected !== null ? m.hand[selected] : null;
   $('diceDock').innerHTML = '';
-  $('msg').textContent = p ? p.prompt : '';
+  $('msg').textContent = p ? taskPrompt(p) : waitingTaskPrompt();
 
   const pnow = pend();
   if (!pnow || !['forget', 'overflow', 'forge', 'swap_pick'].includes(pnow.type)) closePickOv();
@@ -2565,18 +2605,12 @@ function render() {
     A.innerHTML = '';
     renderResult();
   } else if (!p) {
-    const t = state.players[state.turn];
-    const otherSupport = Object.values(state.pending).some(x => x.type === 'support');
-    $('msg').textContent = state.phase === 'lobby' ? ''
-      : state.phase === 'select' ? '他のプレイヤーの選択待ち…'
-      : state.turnTransition ? 'テレビ演出の完了を待っています…'
-      : otherSupport ? '相手のウェポンを待っています…'
-      : (t ? t.name + 'の手番です' : '…');
+    $('msg').textContent = waitingTaskPrompt();
     A.innerHTML = '<div class="waitDots">● ● ●</div>';
     selected = null;
   } else if (p.type === 'pick_draw') {
     // v0.61 選択ドロー: 2枚を横並びで大きく表示、カードタップで即決定
-    $('msg').textContent = '';
+    $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';
     const pkey = p.options.map(o => o.id + ':' + o.card).join(',');
     const pov = $('pickOv');
@@ -2606,7 +2640,7 @@ function render() {
     setContextActions(p.prompt, extraOpts);
     $('diceBtn').onclick = startRoll;
   } else if (p.type === 'forget') {
-    $('msg').innerHTML = iconize(p.prompt);
+    $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';
     buildPickOv('忘却 ─ 廃棄するカードをタップ(手札・捨て札のみ選択可)', [
       { name: '手札', entries: p.options.filter(o => o.zone === 'h').map(o => ({ card: o.card, pickId: o.id, zone: '手札' })) },
@@ -2615,7 +2649,7 @@ function render() {
       { name: '廃棄(選択不可)', entries: (m.exileList || []).map(c => ({ card: c })) },
     ], 'fg:cancel');
   } else if (p.type === 'overflow') {
-    $('msg').innerHTML = iconize(p.prompt);
+    $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';
     // 同名カードはまとめて表示し、×N で枚数を示す(全カードを漏れなく見せる)
     const ovCnt = {};
@@ -2624,13 +2658,13 @@ function render() {
       { name: '手札', entries: p.options.map(o => ({ card: o.card, pickId: o.id, n: ovCnt[o.card] || 1 })) },
     ], null);
   } else if (p.type === 'gaust_exile' || p.type === 'fatal_exile') {
-    $('msg').innerHTML = iconize(p.prompt);
+    $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';
     buildPickOv(p.type === 'gaust_exile' ? '魂の選別 ─ 廃棄する手札を1枚選ぶ' : 'フェイタルリワード ─ 廃棄する手札を1枚選ぶ', [
       { name:'手札', entries:p.options.map(o => ({ card:o.card, pickId:o.id, zone:'廃棄する' })) },
     ], null);
   } else if (p.type === 'ult_villa_recover') {
-    $('msg').innerHTML = iconize(p.prompt);
+    $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';
     const picked = new Set(p.selected || []);
     const cardOpts = p.options.filter(o => o.id.startsWith('vr:') && o.id !== 'vr:confirm');
@@ -2640,19 +2674,19 @@ function render() {
     ], null);
     $('deckScroll').innerHTML += '<button class="abtn" style="display:block;margin:2dvh auto 4dvh" onclick="pickOvChoose(\'vr:confirm\')">決定</button>';
   } else if (p.type === 'daitekkan_recover') {
-    $('msg').innerHTML = iconize(p.prompt);
+    $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';
     buildPickOv('再鍛造 ─ 廃棄から戻すウェポンを1枚選ぶ', [
       { name:'廃棄', entries:p.options.map(o => ({ card:o.card, pickId:o.id, zone:'手札に戻す' })) },
     ], null);
   } else if (p.type === 'toxy_target') {
-    $('msg').innerHTML = iconize(p.prompt);
+    $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';
     showActionOverlay('瘴気連鎖 ─ 手札を捨てさせる敵を選ぶ',
       p.options.map(o => ({ id:o.id, label:iconize(o.label), desc:'対象の手札からランダムに1枚捨てさせます' })),
       { key:`toxy|${p.options.map(o => o.id).join(',')}` });
   } else if (p.type === 'ult_nerasio_elem') {
-    $('msg').innerHTML = iconize(p.prompt);
+    $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';
     showActionOverlay('天地転成 ─ 変更後の属性を選択', p.options.map(o => ({
       id:o.id, label:iconize(o.label),
@@ -2670,7 +2704,7 @@ function render() {
     showActionOverlay(p.prompt, p.options.map(o => ({ id:o.id, label:iconize(o.label), desc:'進む方向を決定します' })), { key:`direction|${p.prompt}` });
   } else if (p.type === 'swap_pick') {
     // 交代: 配置するクリーチャーをカードタップで選ぶ(直接タップの設計思想)
-    $('msg').innerHTML = iconize(p.prompt);
+    $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';
     buildPickOv('交代 ─ 配置するクリーチャーをタップ(召喚コスト別途)', [
       { name: '手札のクリーチャー', entries: p.options.filter(o => o.id.startsWith('sp2:') && o.id !== 'sp2:cancel')
@@ -2678,7 +2712,7 @@ function render() {
     ], 'sp2:cancel');
   } else if (p.type === 'forge') {
     // 鍛錬: 進化させるクリーチャーをカードタップで選ぶ
-    $('msg').innerHTML = iconize(p.prompt);
+    $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';
     buildPickOv(iconize(p.prompt).replace(/選べ/, 'タップ'), [
       { name: '進化できるクリーチャー', entries: p.options.filter(o => o.id.startsWith('fg:'))
@@ -2687,7 +2721,7 @@ function render() {
     ], 'back');
   } else if (p.type === 'gate') {
     // 門: 全画面オーバーレイで選ぶ(押し込み配置だとボタンが見切れるため)
-    $('msg').innerHTML = iconize(p.prompt);
+    $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';
     const GATE_META = {
       g_up:    { t: '領地強化', d: '自分の領地1つのレベルを上げる(費用は通常どおり)', ic: 'up' },
@@ -2704,10 +2738,10 @@ function render() {
     }).join('');
     openBlockingOverlay('gateOv');
   } else if (p.type === 'select_char') {
-    $('msg').textContent = '';
+    $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';
   } else if (p.type === 'draft') {
-    $('msg').textContent = '';
+    $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';
     $('shopScene').classList.remove('on');
     openBlockingOverlay('draftOv');
@@ -2728,7 +2762,7 @@ function render() {
     renderHand();
     return;
   } else if (p.type === 'market' && !inShopHand) {
-    $('msg').textContent = '';
+    $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';
     openBlockingOverlay('shopScene');
     $('shopGold').innerHTML = '<img src="/assets/ic_gold.png" style="height:2.4dvh;vertical-align:-0.4dvh"> ' + m.gold + ' G';
@@ -2743,7 +2777,7 @@ function render() {
     $('shopExit').onclick = () => choose('done');
     afterUiPaint(() => fitCreatureNames($('shopShelf')));
   } else if (p.type === 'market' && inShopHand) {
-    $('msg').textContent = '手札を確認中';
+    $('msg').textContent = '手札を確認せよ';
     A.innerHTML = '<button class="abtn ghost" onclick="inShopHand=false; render()">店にもどる</button>';
   } else {
     // tile / pick_creature / support: カード選択+ボタン

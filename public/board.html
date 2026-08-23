@@ -897,6 +897,29 @@
   .plate .pts,.plate .row2,.plate .row3,.plate .rankBadge { font-family:var(--font-mincho)!important; }
   .plate .pts { color:#fff7df !important; text-shadow:0 2px 6px rgba(0,0,0,.9) !important; }
   .plate .pts small,.plate .row2 { color:rgba(255,247,223,.9) !important; text-shadow:0 1px 4px rgba(0,0,0,.9); }
+  #titleBonusPanel { position:absolute; left:0; top:calc(var(--hud-player-count,4) * 103px + 8px);
+      width:400px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px;
+      color:#f7edcf; font-family:var(--font-mincho); }
+  .titleBonusCard { position:relative; min-width:0; padding:8px 8px 7px; overflow:hidden;
+      border:1px solid rgba(218,180,68,.55); border-radius:9px;
+      background:linear-gradient(145deg,rgba(30,24,57,.96),rgba(7,9,24,.95));
+      box-shadow:0 7px 18px rgba(0,0,0,.36),inset 0 0 18px rgba(218,180,68,.05); }
+  .titleBonusHead { display:grid; grid-template-columns:25px 1fr auto; align-items:center; gap:5px;
+      padding-bottom:5px; border-bottom:1px solid rgba(218,180,68,.25); }
+  .titleBonusHead img { width:23px; height:23px; object-fit:contain; filter:drop-shadow(0 0 5px rgba(242,208,98,.35)); }
+  .titleBonusName { min-width:0; font-weight:700; font-size:12.5px; line-height:1.1; white-space:nowrap; }
+  .titleBonusName small { display:block; margin-top:2px; color:rgba(247,237,207,.58); font-size:8.5px; letter-spacing:.08em; }
+  .titleBonusValue { color:#f2d062; font-size:11px; font-weight:700; white-space:nowrap; }
+  .titleBonusHolder { margin:5px 0 3px; color:rgba(247,237,207,.68); font-size:9.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .titleBonusHolder b { color:#f2d062; font-size:10.5px; }
+  .titleBonusRows { display:grid; gap:1px; }
+  .titleBonusRow { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:5px; align-items:center;
+      padding:1px 4px; border-radius:4px; color:rgba(247,237,207,.46); font-size:9.5px; line-height:1.35; }
+  .titleBonusRow.ready { color:rgba(247,237,207,.9); }
+  .titleBonusRow.holder { color:#fff4c3; background:rgba(218,180,68,.14); }
+  .titleBonusRow span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .titleBonusRow b { font-size:10px; white-space:nowrap; }
+  .titleBonusRule { margin-top:4px; color:rgba(247,237,207,.42); font-size:8px; text-align:center; letter-spacing:.03em; }
   @media (max-width:1400px), (max-height:800px) {
     #hud { top:18px !important; left:14px !important; transform:scale(1); }
     #leftUtility { left:14px; bottom:10px; width:296px; }
@@ -904,6 +927,14 @@
     #utilityFooter { min-height:32px; padding:5px 7px; gap:5px; }
     #optBtn,#bgmBtn,#logExpandBtn { min-height:22px; padding:2px 7px; font-size:10px; }
     #verTag { font-size:8.5px; }
+    #titleBonusPanel { gap:5px; }
+    .titleBonusCard { padding:6px 6px 5px; }
+    .titleBonusHead { grid-template-columns:21px 1fr auto; gap:4px; }
+    .titleBonusHead img { width:20px; height:20px; }
+    .titleBonusName { font-size:11px; }
+    .titleBonusName small,.titleBonusRule { font-size:7.5px; }
+    .titleBonusValue,.titleBonusHolder b { font-size:9.5px; }
+    .titleBonusHolder,.titleBonusRow { font-size:8.5px; }
   }
   .titleChip { display:inline-block; background:linear-gradient(180deg,#E8C55A,#B8901F); color:#241C05;
       border-radius:4px; font-size:11px; padding:1px 6px; margin-left:4px; vertical-align:1px; font-family:sans-serif; }
@@ -1561,12 +1592,29 @@ function syncHasArt() {
     HAS_ART = new Set(state.catalog.artIds);
 }
 
-let code = null, state = null, prev = { phase: null, turn: -1, battleAt: 0, diceAt: 0 };
+let code = null, state = null, prev = { phase: null, turn: -1, turnEpoch: -1, battleAt: 0, diceAt: 0 };
 const revealedSummoners = new Set();
 const pawnAnim = {}, prevPos = {};
 const prevGold = {};
-let queuedTurn = null, firedTurn = -1, visualTurnId = null, lastMoveEnd = 0, shopWaitT = null, lastUpKey = '';
+let queuedTurn = null, firedTurnKey = '', visualTurnId = null, lastMoveEnd = 0, shopWaitT = null, lastUpKey = '';
 let logExpanded = false;
+function turnPresentationCandidate() {
+  if (!state || state.phase !== 'playing') return null;
+  const pl = state.players[state.turn];
+  return pl ? { index:state.turn, playerId:pl.id, epoch:Number(state.turnEpoch) || 0,
+    key:`${Number(state.turnEpoch) || 0}:${pl.id}` } : null;
+}
+function turnSeenStorageKey() { return code ? `summons-code-turn-seen:${code}` : ''; }
+function turnWasSeen(key) {
+  try { return !!key && sessionStorage.getItem(turnSeenStorageKey()) === key; } catch (e) { return false; }
+}
+function rememberTurnSeen(key) {
+  try { if (key && turnSeenStorageKey()) sessionStorage.setItem(turnSeenStorageKey(), key); } catch (e) {}
+}
+function armTurnStart() {
+  const candidate = turnPresentationCandidate();
+  if (candidate) queuedTurn = candidate;
+}
 let hopState = null;
 function finishHop() {
   if (!hopState) return;
@@ -2442,6 +2490,11 @@ function fitWorld() {
     const available = Math.max(84, Math.floor(innerHeight - 14 - hudBottom - 12 - footerH));
     tickerEl.style.maxHeight = available + 'px';
     tickerEl.style.height = available + 'px';
+  } else if (showHud) {
+    const footerH = $('utilityFooter').getBoundingClientRect().height || 40;
+    const available = Math.max(46, Math.floor(innerHeight - 14 - hudBottom - 12 - footerH));
+    tickerEl.style.maxHeight = Math.min(innerHeight <= 800 ? 158 : 190, available) + 'px';
+    tickerEl.style.height = '';
   } else {
     tickerEl.style.maxHeight = '';
     tickerEl.style.height = '';
@@ -3257,9 +3310,27 @@ async function playSpellPresentation(sf, desc) {
 }
 
 // ===== HUD =====
+function titleBonusCardHTML(rule) {
+  const holderId = state.titles && state.titles[rule.key];
+  const holder = state.players.find(p => p.id === holderId);
+  const ordered = state.players.map((p, order) => ({ p, order }))
+    .sort((a, b) => (Number(b.p[rule.field]) || 0) - (Number(a.p[rule.field]) || 0) || a.order - b.order);
+  return `<section class="titleBonusCard ${holder ? 'claimed' : ''}" aria-label="${rule.name}">
+    <div class="titleBonusHead"><img src="/assets/${rule.icon}" alt="">
+      <div class="titleBonusName">${rule.name}<small>${rule.caption}・${rule.min}${rule.unit}で獲得</small></div>
+      <div class="titleBonusValue">総資産 +500G</div></div>
+    <div class="titleBonusHolder">保持者：<b>${holder ? holder.name : 'まだいない'}</b></div>
+    <div class="titleBonusRows">${ordered.map(({ p }) => {
+      const count = Number(p[rule.field]) || 0;
+      return `<div class="titleBonusRow ${count >= rule.min ? 'ready' : ''} ${p.id === holderId ? 'holder' : ''}">
+        <span>${p.id === holderId ? '♛ ' : ''}${p.name}</span><b>${count}${rule.unit}</b></div>`;
+    }).join('')}</div>
+    <div class="titleBonusRule">最多記録を更新すると称号を奪取</div></section>`;
+}
 function renderHUD() {
   const hud = $('hud');
   const ranked = state.players.slice().sort((a, b) => b.points - a.points || b.gold - a.gold);
+  hud.style.setProperty('--hud-player-count', state.players.length);
   state.players.forEach(p => {
     let el = $('plate-' + p.id);
     if (!el) {
@@ -3295,6 +3366,16 @@ function renderHUD() {
       }).join('')}</div>`;
     el.classList.toggle('turn', state.phase === 'playing' && visualTurnId === p.id);
   });
+  let titlePanel = $('titleBonusPanel');
+  if (!titlePanel) {
+    titlePanel = document.createElement('div');
+    titlePanel.id = 'titleBonusPanel';
+    hud.appendChild(titlePanel);
+  }
+  titlePanel.innerHTML = [
+    { key:'conqueror', field:'battleWins', min:3, unit:'勝', name:'覇者ボーナス', caption:'戦闘勝利', icon:'ic_conqueror.png' },
+    { key:'pilgrim', field:'shrineVisits', min:4, unit:'回', name:'大巡礼者ボーナス', caption:'祠参拝', icon:'ic_pilgrim.png' },
+  ].map(titleBonusCardHTML).join('');
   fitWorld();
 }
 
@@ -3327,8 +3408,7 @@ function playGameEntryTransition() {
     wipe.classList.remove('on', 'reveal');
     gameEntryRunning = false;
     bgmHeal();
-    const first = state && state.players[state.turn];
-    if (first) showTelop('turn', first.name + 'の手番');
+    armTurnStart();
   }, 3250));
   gameEntryTimers.push(setTimeout(() => {
     if (gameEntryCameraToken) endPresentationZoom(gameEntryCameraToken);
@@ -3409,15 +3489,31 @@ async function playTollCutin(ev) {
     <div class="tcAmt plus">+${ev.amount}G</div>
     <div class="tcGold">所持金 ${ev.toGold - ev.amount}G → ${ev.toGold}G</div>`, 2000);
 }
+let telopGeneration = 0, finishActiveTelop = null;
 function showTelop(kind, sub) {
   if (kind === 'game' || kind === 'turn') playSe(seTelop);
   const img = $('telopImg'), s = $('telopSub');
+  if (finishActiveTelop) finishActiveTelop();
+  const generation = ++telopGeneration;
   img.classList.remove('play'); s.classList.remove('play');
   img.src = '/assets/telop_' + kind + '.png';
   s.textContent = sub || '';
   void img.offsetWidth;
   img.classList.add('play'); s.classList.add('play');
-  return new Promise(resolve => setTimeout(resolve, presentationMs(2200)));
+  return new Promise(resolve => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      img.removeEventListener('animationend', onEnd);
+      if (finishActiveTelop === finish) finishActiveTelop = null;
+      resolve();
+    };
+    const onEnd = ev => { if (ev.target === img && generation === telopGeneration) finish(); };
+    finishActiveTelop = finish;
+    img.addEventListener('animationend', onEnd);
+    setTimeout(finish, presentationMs(2200) + 100);
+  });
 }
 
 // ハイブリッド戦闘FX: 盤面と同じFX_ASSETSをDOM戦闘画面でも再利用する。
@@ -3608,8 +3704,8 @@ function renderBattlePreview(bp) {
   $('bAtkSupport').innerHTML = supportBackHTML(bp.supportReady.attacker ? '選択済み' : '選択中…');
   $('bDefSupport').innerHTML = supportBackHTML(bp.supportReady.defender ? '選択済み' : '選択中…');
   $('bcap').textContent = bp.phase === 'pick_attacker'
-    ? '攻撃側がクリーチャーを選択しています'
-    : '両者、ウェポンを秘密裏に選択中';
+    ? '侵略するクリーチャーを選択中'
+    : 'ウェポン選択中';
 }
 
 function durabilityHTML(hp, df) {
@@ -4022,7 +4118,7 @@ function render() {
   if (!state) return;
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.41';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.42';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -4266,9 +4362,12 @@ function render() {
     prev.cursesKey = ck;
   }
   // テロップ(移動アニメ中は保留し、完了後に1回だけ表示)
-  if (state.phase === 'playing' && prev.phase !== 'playing' && !enteringFromSelect) showTelop('game');
-  else if (state.phase === 'playing' && state.turn !== prev.turn) queuedTurn = state.turn;
-  prev.phase = state.phase; prev.turn = state.turn;
+  if (state.phase === 'playing' && prev.phase !== 'playing') {
+    if (!enteringFromSelect) showTelop('game');
+    armTurnStart();
+  } else if (state.phase === 'playing' &&
+             (state.turn !== prev.turn || Number(state.turnEpoch || 0) !== Number(prev.turnEpoch || 0))) armTurnStart();
+  prev.phase = state.phase; prev.turn = state.turn; prev.turnEpoch = Number(state.turnEpoch || 0);
   // (TURN STARTテロップはバナーキュー処理の後で判定する ─ 祠バナー等を先に消化)
   // BGM(リーチ者がいれば疾走曲へ)
   if (gameEntryRunning) {
@@ -4536,19 +4635,26 @@ function render() {
       // 鮮度チェック: 手番プレイヤーが既に行動を始めていたらテロップは出さず破棄。
       // 手番開始時のpendingは選択ドロー(pick_draw)→roll の順なので両方を「未行動」扱いにする
       // (rollのみ判定だと、前の演出待ちが無い場合にpick_draw中で破棄されTURN STARTが出ない)
-      const tp0 = state.players[queuedTurn];
+      const tp0 = state.players[queuedTurn.index];
       const tpd = tp0 && state.pending[tp0.id];
-      const fresh = state.turn === queuedTurn && tpd && (tpd.type === 'roll' || tpd.type === 'pick_draw');
-      if (fresh && queuedTurn !== firedTurn) {
-        firedTurn = queuedTurn;
-        const turnPresentationId = presentationId('turn-start', state.turnEpoch || Date.now(), tp0.id);
+      const fresh = state.turn === queuedTurn.index && tp0 && tp0.id === queuedTurn.playerId &&
+        Number(state.turnEpoch || 0) === queuedTurn.epoch && tpd && (tpd.type === 'roll' || tpd.type === 'pick_draw');
+      const seen = turnWasSeen(queuedTurn.key);
+      if (fresh && queuedTurn.key !== firedTurnKey && !seen) {
+        const queued = { ...queuedTurn };
+        firedTurnKey = queued.key;
+        const turnPresentationId = presentationId('turn-start', queued.epoch, tp0.id);
         queuePresentation({ id:turnPresentationId, kind:'turn-start', pri:4, actorId:tp0.id,
-          at:state.turnEpoch || Date.now(), run:async () => {
+          at:queued.epoch || Date.now(), stale:() => {
+            const now = turnPresentationCandidate();
+            return !now || now.key !== queued.key;
+          }, run:async () => {
+            rememberTurnSeen(queued.key);
             visualTurnId = tp0.id;
             renderPawns(); renderHUD();
             await Promise.all([showTelop('turn', tp0.name + 'の手番'), playTurnCutin(tp0)]);
           } });
-      } else if (state.turn === queuedTurn && tp0) {
+      } else if (state.turn === queuedTurn.index && tp0) {
         visualTurnId = tp0.id;
         renderPawns(); renderHUD();
       }
@@ -4567,10 +4673,15 @@ function render() {
   // 侵略確定直後から戦闘待機画面を同期。結果演出の実行中はSSE更新でDOMを上書きしない。
   const battleResultId = state.lastBattle ? presentationId('battle', state.lastBattle.at) : null;
   const battleResultState = battleResultId ? presentationRegistry.get(battleResultId) : null;
-  if (state.battlePreview && battleResultState !== 'running' && battleResultState !== 'completed') {
+  const previewResultMatches = !!(state.battlePreview && state.lastBattle && state.lastBattle.battleKey != null &&
+    String(state.lastBattle.battleKey) === String(state.battlePreview.key));
+  if (state.battlePreview && (!previewResultMatches ||
+      (battleResultState !== 'running' && battleResultState !== 'completed'))) {
     renderBattlePreview(state.battlePreview);
   } else if (activeBattleKey && !battlePlayingKey &&
-             (!state.lastBattle || state.lastBattle.at === prev.battleAt) &&
+             !state.battlePreview &&
+             (!state.lastBattle || state.lastBattle.battleKey == null ||
+              String(state.lastBattle.battleKey) !== String(activeBattleKey)) &&
              battleResultState !== 'queued' && battleResultState !== 'running') {
     // 侵略キャンセル時は結果演出を待たず盤面へ戻る。
     $('battle').classList.remove('on');

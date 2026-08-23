@@ -32,8 +32,8 @@ ok(/state\.phase === 'lobby'[\s\S]*lobbyWait[\s\S]*classList\.toggle\('on', lobb
    /body\.lobby-wait #hdr/.test(phone), 'lobby state hides the regular HUD and hand');
 ok(/width:clamp\(40px,9\.5dvh,66px\)/.test(phone) && /height:clamp\(40px,9\.5dvh,66px\)/.test(phone),
   'join fullscreen button uses the reduced size');
-ok(/\$\('diceDock'\)\.innerHTML = '';[\s\S]*\$\('msg'\)\.textContent = p \? p\.prompt/.test(phone) &&
-   /otherSupport \? '相手のウェポンを待っています…'/.test(phone),
+ok(/\$\('diceDock'\)\.innerHTML = '';[\s\S]*\$\('msg'\)\.textContent = p \? taskPrompt\(p\) : waitingTaskPrompt\(\)/.test(phone) &&
+   /相手のウェポン選択を待て/.test(phone),
   'idle guidance is routed to msg instead of diceDock');
 
 // Shop visibility and support-art safe areas.

@@ -21,8 +21,8 @@ const G = new Function('require', '__dirname', 'process', 'console', 'setInterva
   src + `\n;return { VERSION, makeFixtureRoom, endTurn, completeTurnTransition, publicState, serializeRoom };`)(
   require, __dirname, process, console, () => {});
 
-eq(G.VERSION, '1.41', 'server release is v1.41');
-eq(pkg.version, '1.41.0', 'package release is v1.41.0');
+ok(Number(G.VERSION) >= 1.41, 'server release includes v1.41 presentation work');
+ok(Number(pkg.version.replace(/\.0$/, '')) >= 1.41, 'package release includes v1.41 presentation work');
 
 // サーバーがテレビの完了通知まで手番を固定し、通知を冪等に処理する。
 const room = G.makeFixtureRoom();
