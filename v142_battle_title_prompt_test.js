@@ -78,6 +78,12 @@ ok(/key:`\$\{Number\(state\.turnEpoch\) \|\| 0\}:\$\{pl\.id\}`/.test(board) &&
 ok(/let telopGeneration = 0, finishActiveTelop = null/.test(board) &&
    /addEventListener\('animationend', onEnd\)/.test(board),
   'telop completion is generation-owned and animation driven');
+const directionCutBody = (board.match(/function updateDirCut\(\) \{([\s\S]*?)\r?\n\}\r?\nfunction sideCut/) || [,''])[1];
+ok(directionCutBody && /!presentationRunning/.test(directionCutBody) &&
+   /!presentationQueue\.length/.test(directionCutBody) && /!cutBusy/.test(directionCutBody),
+  'direction guidance cannot interrupt an active queued cut-in');
+ok(directionCutBody && !/clearTimeout\(tcT[12]\)/.test(directionCutBody),
+  'direction guidance never cancels the completion timer owned by TURN START');
 
 // スマホ右上はpending種別から短い命令形を生成する。
 const taskMatch = phone.match(/function taskPrompt\(p\) \{([\s\S]*?)\n\}\nfunction waitingTaskPrompt/);

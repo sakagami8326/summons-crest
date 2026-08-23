@@ -3435,10 +3435,14 @@ let dirCutOn = false;
 function updateDirCut() {
   const tp = state.players[state.turn];
   const dp = tp && state.pending[tp.id];
-  const active = dp && dp.type === 'direction';
+  // 方向選択は通常の描画更新から直接呼ばれるため、統合演出キューのカットインへ
+  // 割り込ませない。以前はここで共有タイマーを消し、TURN STARTのPromiseが
+  // 永久に解決されず、以後の全演出が停止していた。
+  const wantsDirection = !!(dp && dp.type === 'direction');
+  const active = wantsDirection && !presentationRunning && !presentationQueue.length &&
+    !cutBusy && !gameEntryRunning;
   if (active && !dirCutOn) {
     dirCutOn = true;
-    clearTimeout(tcT1); clearTimeout(tcT2);
     const el = $('turnCutin');
     $('tcImg').src = '/assets/full_' + tp.charId + '.png';
     el.style.setProperty('--tcc', tp.color);
