@@ -24,6 +24,22 @@
   window.addEventListener('resize', () => { if (window.innerWidth > 832) closeNav(); });
   window.addEventListener('scroll', () => header?.classList.toggle('is-scrolled', window.scrollY > 32), { passive: true });
 
+  document.querySelectorAll('[data-youtube-player]').forEach(player => {
+    const trigger = player.querySelector('[data-youtube-play]');
+    trigger?.addEventListener('click', () => {
+      const videoId = player.dataset.videoId || '';
+      if (player.classList.contains('is-playing') || !/^[\w-]{11}$/.test(videoId)) return;
+      const frame = document.createElement('iframe');
+      frame.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1`;
+      frame.title = '1分でわかる SUMMONS CODE';
+      frame.allow = 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share';
+      frame.referrerPolicy = 'strict-origin-when-cross-origin';
+      frame.allowFullscreen = true;
+      player.classList.add('is-playing');
+      player.replaceChildren(frame);
+    }, { once: true });
+  });
+
   const cardShowcase = document.querySelector('[data-card-showcase]');
   if (cardShowcase) {
     const cards = [...cardShowcase.querySelectorAll('figure')];

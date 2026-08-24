@@ -82,10 +82,11 @@ for (const id of ['gecko','kamadoma','kbaby','goagoa','bonerex','komao','toxy','
   ok(exists(`public/assets/site/cards/e_${id}.webp`), `site-only evolved art exists: ${id}`);
 }
 ok((html.match(/\/assets\/site\/cards\/[ce]_[a-z]+\.webp/g) || []).length === 18, 'showcase uses all site-only decontaminated images');
-ok(/<video controls playsinline preload="metadata"[^>]+poster="\/assets\/site\/gameplay-video-poster-v1\.png"/.test(html), 'gameplay video uses user-initiated playback with a prepared poster');
-ok(/gameplay-video-v1\.webm" type='video\/webm; codecs="vp9, opus"'/.test(html), 'gameplay video serves VP9 and Opus WebM');
-ok(exists('public/assets/site/gameplay-video-v1.webm'), 'encoded gameplay WebM exists');
-ok(exists('public/assets/site/gameplay-video-poster-v1.png'), 'gameplay video poster exists');
+ok(/data-youtube-player data-video-id="0PIknCtXU44"[\s\S]*gameplay-youtube-poster-v1\.webp/.test(html), 'gameplay section uses the requested YouTube video with a local poster');
+ok(!/<iframe|<video|gameplay-video-v1\.webm/.test(html), 'homepage does not load YouTube or the old WebM before user interaction');
+ok(/youtube-nocookie\.com\/embed\/\$\{videoId\}\?autoplay=1/.test(js) && /replaceChildren\(frame\)/.test(js), 'privacy-enhanced YouTube iframe is created only after playback is requested');
+ok(exists('public/assets/site/gameplay-youtube-poster-v1.webp') && fs.statSync(path.join(__dirname, 'public/assets/site/gameplay-youtube-poster-v1.webp')).size < 150000, 'local YouTube poster is present and lightweight');
+ok(!exists('public/assets/site/gameplay-video-v1.webm'), 'obsolete 9.8MB gameplay WebM is removed');
 ok((html.match(/class="summoner-slide"/g) || []).length === 8, 'all eight summoners are present');
 ok(/setInterval\(\(\) => show\(active \+ 1\), 5000\)/.test(js), 'summoner carousel advances every five seconds');
 ok(/document\.hidden/.test(js) && /prefers-reduced-motion/.test(js), 'carousel pauses for hidden tab and reduced motion');

@@ -6,7 +6,7 @@
 テストプレイ→即日修正のサイクルで開発している。
 
 - 公開URL: https://summonscode.jp (AWS Lightsail。mainへのpush後、systemd timerが1〜2分以内に自動反映)
-- 現在バージョン: **v1.49**(server.jsの`VERSION`とboard.html左下の`board X.XX`表記)
+- 現在バージョン: **v1.50**(server.jsの`VERSION`とboard.html左下の`board X.XX`表記)
 
 ## 構成
 

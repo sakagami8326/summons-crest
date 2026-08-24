@@ -167,10 +167,16 @@
           <h2 id="system-title">周回するたび、デッキと盤面が変わっていく。</h2>
         </header>
         <div class="gameplay-feature reveal">
-          <div class="gameplay-video">
-            <video controls playsinline preload="metadata" poster="/assets/site/gameplay-video-poster-v1.png" aria-label="SUMMONS CODEのプレイ動画">
-              <source src="/assets/site/gameplay-video-v1.webm" type='video/webm; codecs="vp9, opus"'>
-            </video>
+          <div class="gameplay-video" data-youtube-player data-video-id="0PIknCtXU44">
+            <button class="gameplay-video__trigger" type="button" data-youtube-play aria-label="YouTubeで『1分でわかる SUMMONS CODE』を再生">
+              <img src="/assets/site/gameplay-youtube-poster-v1.webp" alt="" width="1280" height="720" loading="lazy" decoding="async">
+              <span class="gameplay-video__shade" aria-hidden="true"></span>
+              <span class="gameplay-video__play" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="4.2"/><path d="m10 8.7 5.4 3.3-5.4 3.3V8.7Z"/></svg>
+              </span>
+              <span class="gameplay-video__label" aria-hidden="true"><small>WATCH ON YOUTUBE</small><b>1分でわかる SUMMONS CODE</b></span>
+            </button>
+            <noscript><a href="https://youtu.be/0PIknCtXU44" target="_blank" rel="noopener noreferrer">YouTubeで動画を見る</a></noscript>
           </div>
           <ol class="gameplay-steps">
             <li><b>01</b><span>サイコロで進む</span></li>
