@@ -104,5 +104,13 @@ ok(/SUMMONS CODEは個人開発ゲームです。/.test(html), 'footer identifie
 ok(/<dt>SAVE DATA<\/dt><dd>テレビ側のブラウザに保存<small>PCへ書き出して保管可能<\/small>/.test(html), 'save data description includes PC export');
 ok(/href="https:\/\/x\.com\/gamitestman"/.test(html) && /site-footer__social/.test(html) && /<svg/.test(html),
   'footer links to the developer X account with an icon');
+ok(/最新情報はこちら/.test(html) && /href="https:\/\/www\.youtube\.com\/@SUMMONSCODE"/.test(html),
+  'footer links to the official YouTube channel below the latest-news heading');
+ok(/site-footer__follow[\s\S]*site-footer__socials[\s\S]*<\/div>[\s\S]*<nav aria-label="フッターメニュー"/.test(html),
+  'centered social links appear above the footer navigation');
+ok(/\.site-footer\s*\{[^}]*justify-items:\s*center[^}]*text-align:\s*center/.test(css) && /\.site-footer__socials\s*\{[^}]*justify-content:\s*center/.test(css),
+  'footer and social icons are horizontally centered');
+ok(/\.sc-game-launcher\.is-raised\s*\{[^}]*opacity:\s*0[^}]*pointer-events:\s*none/.test(css),
+  'fixed game launcher retreats without covering the footer navigation');
 
 console.log(`V1.38 HOMEPAGE ALL ${pass} CHECKS PASSED`);
