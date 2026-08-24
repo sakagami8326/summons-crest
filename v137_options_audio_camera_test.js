@@ -12,7 +12,9 @@ const serverVersion = server.match(/const VERSION = '([0-9.]+)'/);
 ok(serverVersion && Number(serverVersion[1]) >= 1.40, 'v1.37修正を含むサーバーバージョンは1.40以降');
 ok(!/id="opt(?:Render|Quality|Reduce)"/.test(board), '不要な3設定ボタンを撤去');
 ok(!/sc_render|sc_render_fail|sc_quality|sc_reduce_fx/.test(board + world), '設定URL・localStorage経路を撤去');
-ok(!/prefers-reduced-motion/.test(board), 'OSの演出軽減設定を使用しない');
+ok(!/id="optReduce"|sc_reduce_fx/.test(board) &&
+   /prefers-reduced-motion: reduce/.test(board),
+  'ゲーム演出の軽減設定は撤去し、v1.51リザルトだけOS設定へ配慮');
 ok(/const renderModeActive = 'phaser'/.test(board), 'テレビ描画はPhaser固定');
 ok(/const quality = 'standard'/.test(world) && /const reduceFx = false/.test(world), 'Standard・通常演出固定');
 ok(/id="renderError"/.test(board) && /onFail: showRenderError/.test(board), 'Phaser失敗時に再読み込み案内');

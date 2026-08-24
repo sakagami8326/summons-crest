@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.50';
+const VERSION = '1.51';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TURN_TRANSITION_TIMEOUT_MS = 20000;
@@ -353,6 +353,7 @@ function makeRoom(mode = 'normal') {
     pending: {},                          // playerId → { type, prompt, options }
     titles: { conqueror: null, pilgrim: null },
     duel: null, lastBattle: null, winner: null, barrier: {}, ultSequence: null, ultTimer: null,
+    matchAnalytics: null, matchResult: null, resultReview: null, matchCause: null,
     effectQueue: [], effectResume: null, battleAfter: null,
     elemOv: {},                           // 属性変更スペル: マスi → 'fire'等
     tileFx: {},                           // 土地継続効果: マスi → {vortex,tide:{by},uplift,roots}
@@ -406,7 +407,8 @@ function roadbumpCount(r, playerId) {
   return r.owners.reduce((n, o) => n + (o && o.player === playerId &&
     baseId(o.creature) === 'bunnyhop' && isEvolved(o) ? 1 : 0), 0);
 }
-function onSpellCast(r, p) {
+function onSpellCast(r, p, sid) {
+  markMatchCause(r, 'spell', { actor: p.id, spell: sid || null });
   const count = roadbumpCount(r, p.id);
   if (!count) return;
   const gain = count * 100;
@@ -727,6 +729,188 @@ function points(r, p) {
   const titles = (r.titles.conqueror === p.id ? 500 : 0) + (r.titles.pilgrim === p.id ? 500 : 0);
   return p.gold + lands + titles;
 }
+
+// ===== v1.51 試合振り返り =====
+const MATCH_TIMELINE_MAX = 240;
+const MATCH_CANDIDATE_MAX = 64;
+const RESULT_REVIEW_FALLBACK_MS = 45000;
+const MATCH_ELEMS = ['fire', 'water', 'earth', 'wind'];
+function matchAssetBreakdown(r, p) {
+  const land = r.owners.reduce((n, o, i) => n + (o && o.player === p.id ? landValue(r, i) : 0), 0);
+  const title = (r.titles.conqueror === p.id ? 500 : 0) + (r.titles.pilgrim === p.id ? 500 : 0);
+  return { gold: p.gold || 0, land, title, total: (p.gold || 0) + land + title };
+}
+function matchSnapshot(r) {
+  const assets = {}, chains = {};
+  for (const p of r.players) {
+    assets[p.id] = matchAssetBreakdown(r, p);
+    chains[p.id] = Object.fromEntries(MATCH_ELEMS.map(e => [e, chainCount(r, p.id, e)]));
+  }
+  return {
+    assets, chains, titles: Object.assign({}, r.titles),
+    owners: r.owners.map((o, i) => o ? {
+      player: o.player, level: o.level || 1, creature: o.creature, elem: tileElem(r, i),
+    } : null),
+  };
+}
+function matchLeader(r, assets) {
+  return r.players.slice().sort((a, b) =>
+    (assets[b.id]?.total || 0) - (assets[a.id]?.total || 0) || r.players.indexOf(a) - r.players.indexOf(b))[0]?.id || null;
+}
+function markMatchCause(r, kind, meta = {}) {
+  if (!r.matchAnalytics || r.phase !== 'playing') return;
+  if (!r.matchCause) r.matchCause = { kind };
+  Object.assign(r.matchCause, meta);
+  if (!r.matchCause.kind || r.matchCause.kind === 'economy') r.matchCause.kind = kind;
+}
+function changedMatchStructure(a, b) {
+  return JSON.stringify(a?.owners || []) !== JSON.stringify(b?.owners || []) ||
+    JSON.stringify(a?.chains || {}) !== JSON.stringify(b?.chains || {}) ||
+    JSON.stringify(a?.titles || {}) !== JSON.stringify(b?.titles || {});
+}
+function matchAssetDelta(before, after) {
+  const out = {};
+  for (const id of new Set([...Object.keys(before || {}), ...Object.keys(after || {})]))
+    out[id] = (after[id]?.total || 0) - (before[id]?.total || 0);
+  return out;
+}
+function matchChainChanges(before, after) {
+  const out = [];
+  for (const id of Object.keys(after || {})) for (const elem of MATCH_ELEMS) {
+    const from = before?.[id]?.[elem] || 0, to = after?.[id]?.[elem] || 0;
+    if (from !== to) out.push({ player: id, elem, from, to });
+  }
+  return out;
+}
+function matchLandChanges(before, after) {
+  const out = [];
+  const n = Math.max(before?.length || 0, after?.length || 0);
+  for (let tile = 0; tile < n; tile++) {
+    const from = before?.[tile] || null, to = after?.[tile] || null;
+    if (JSON.stringify(from) !== JSON.stringify(to)) out.push({ tile, from, to });
+  }
+  return out;
+}
+function compactMatchTimeline(frames, candidates = []) {
+  let out = frames;
+  const protectedSeq = new Set((candidates || []).map(c => c.seq));
+  while (out.length > MATCH_TIMELINE_MAX) {
+    const last = out.length - 1;
+    const next = out.filter((f, i) => i === 0 || i === last || protectedSeq.has(f.seq) || i % 2 === 0);
+    if (next.length === out.length) {
+      const removable = out.findIndex((f, i) => i > 0 && i < last && !protectedSeq.has(f.seq));
+      if (removable < 0) break;
+      out = out.filter((_, i) => i !== removable);
+    } else out = next;
+  }
+  return out;
+}
+function inferMatchEventKind(cause, lands, chains, titleChanged) {
+  if (cause?.kind) return cause.kind;
+  if (lands.some(x => x.from?.player && x.to?.player && x.from.player !== x.to.player)) return 'invasion';
+  if (lands.some(x => x.from?.player && !x.to)) return 'land_loss';
+  if (lands.some(x => !x.from && x.to?.player)) return 'placement';
+  if (lands.some(x => x.from?.player === x.to?.player && (x.to?.level || 0) > (x.from?.level || 0))) return 'upgrade';
+  if (titleChanged) return 'title';
+  if (chains.length) return 'chain';
+  return 'economy';
+}
+function captureMatchFrame(r, force = false) {
+  const a = r.matchAnalytics;
+  if (!a || !['playing', 'ended'].includes(r.phase)) { r.matchCause = null; return; }
+  const snap = matchSnapshot(r), before = a.lastSnapshot;
+  const assetChanged = !before || JSON.stringify(before.assets) !== JSON.stringify(snap.assets);
+  const structureChanged = !!before && changedMatchStructure(before, snap);
+  const cause = r.matchCause;
+  r.matchCause = null;
+  if (!force && !assetChanged && !structureChanged) return;
+  const seq = ++a.seq;
+  if (force || assetChanged) {
+    a.assetTimeline.push({ seq, at: Date.now(), round: r.round || 1, turnEpoch: r.turnEpoch || 0,
+      assets: snap.assets });
+  }
+  if (before) {
+    const deltas = matchAssetDelta(before.assets, snap.assets);
+    const lands = matchLandChanges(before.owners, snap.owners);
+    const chains = matchChainChanges(before.chains, snap.chains);
+    const titleChanged = JSON.stringify(before.titles) !== JSON.stringify(snap.titles);
+    const leaderBefore = matchLeader(r, before.assets), leaderAfter = matchLeader(r, snap.assets);
+    const leaderChanged = leaderBefore !== leaderAfter;
+    const actor = cause?.actor || Object.keys(deltas).sort((x, y) => deltas[y] - deltas[x])[0] || null;
+    const target = cause?.target || Object.keys(deltas).sort((x, y) => deltas[x] - deltas[y])[0] || null;
+    const kind = inferMatchEventKind(cause, lands, chains, titleChanged);
+    const baseImpact = Object.values(deltas).reduce((n, v) => n + Math.abs(v), 0);
+    const landTransfer = lands.some(x => x.from?.player && x.to?.player && x.from.player !== x.to.player);
+    let score = baseImpact;
+    if (leaderChanged) score *= 1.5;
+    if (landTransfer) score *= 1.25;
+    if (chains.length) score *= 1.15;
+    if (cause?.goal) score *= 1.2;
+    if (baseImpact > 0 || structureChanged) {
+      a.candidates.push({ seq, at: Date.now(), round: r.round || 1, turnEpoch: r.turnEpoch || 0,
+        kind, actor, target, tile: cause?.tile ?? lands[0]?.tile ?? null,
+        amount: cause?.amount || 0, deltas, lands, chains, leaderBefore, leaderAfter,
+        leaderChanged, titleChanged, baseImpact, score });
+      if (a.candidates.length > MATCH_CANDIDATE_MAX)
+        a.candidates = a.candidates.sort((x, y) => y.score - x.score).slice(0, MATCH_CANDIDATE_MAX)
+          .sort((x, y) => x.seq - y.seq);
+    }
+  }
+  a.assetTimeline = compactMatchTimeline(a.assetTimeline, a.candidates);
+  a.lastSnapshot = snap;
+}
+function initMatchAnalytics(r) {
+  r.matchAnalytics = { startedAt: Date.now(), seq: 0, assetTimeline: [], candidates: [], lastSnapshot: null };
+  r.matchResult = null;
+  r.resultReview = null;
+  captureMatchFrame(r, true);
+}
+function turningPointCopy(r, c) {
+  const actor = pById(r, c.actor);
+  const actorDelta = c.deltas[c.actor] || 0;
+  const land = c.lands.find(x => x.tile === c.tile) || c.lands[0];
+  const chain = c.chains.find(x => x.player === c.actor && x.to > x.from) || c.chains.find(x => x.to > x.from);
+  const titles = {
+    invasion: `Lv${land?.from?.level || land?.to?.level || 1}領地を侵略！`,
+    upgrade: `領地をLv${land?.to?.level || 1}へ強化！`,
+    placement: 'クリーチャーを配置！', chain: '連鎖を拡大！', toll: `通行料${c.amount || Math.abs(actorDelta)}Gを獲得！`,
+    castle: '城へ帰還！', title: '称号を獲得！', bankruptcy: '破産が発生！', land_loss: '領地を失った！',
+    ultimate: '固有スキルが盤面を動かした！', spell: 'スペルが盤面を動かした！', economy: '資産が大きく変動！',
+  };
+  const parts = [];
+  if (chain) parts.push(`${ELEM_JA[chain.elem]}連鎖 ${chain.from}→${chain.to}`);
+  if (actor && actorDelta) parts.push(`${actor.name} 資産 ${actorDelta > 0 ? '+' : ''}${actorDelta}G`);
+  return { title: titles[c.kind] || titles.economy, detail: parts.join('／') || '総資産が大きく変化',
+    badge: c.leaderChanged ? '首位交代' : '' };
+}
+function buildMatchResult(r) {
+  captureMatchFrame(r, true);
+  const a = r.matchAnalytics;
+  if (!a) return null;
+  const rankings = r.players.map(p => {
+    const assets = matchAssetBreakdown(r, p);
+    return { id: p.id, name: p.name, charId: p.charId, color: p.color, isBot: !!p.isBot, assets,
+      landCount: r.owners.filter(o => o && o.player === p.id).length,
+      battleWins: p.battleWins || 0, shrineVisits: p.shrineVisits || 0, bankrupt: !!p.bankrupt };
+  }).sort((x, y) => y.assets.total - x.assets.total || y.assets.gold - x.assets.gold)
+    .map((p, i) => Object.assign(p, { rank: i + 1 }));
+  const typeCount = {};
+  const selected = a.candidates.slice().filter(c => c.baseImpact >= 300)
+    .sort((x, y) => y.score - x.score).filter(c => {
+      typeCount[c.kind] = (typeCount[c.kind] || 0) + 1;
+      return typeCount[c.kind] <= 2;
+    }).slice(0, 3).sort((x, y) => x.seq - y.seq).map((c, i) =>
+      Object.assign({ id: `tp-${i + 1}`, number: i + 1 }, c, turningPointCopy(r, c)));
+  const id = crypto.randomBytes(8).toString('hex');
+  const result = { id, startedAt: a.startedAt, endedAt: Date.now(), duration: Date.now() - a.startedAt,
+    rounds: r.round || 1, target: ASSET_GOAL, winner: r.winner, rankings,
+    assetTimeline: a.assetTimeline.slice(), turningPoints: selected };
+  r.matchAnalytics = { startedAt: a.startedAt, seq: a.seq, assetTimeline: a.assetTimeline.slice(),
+    candidates: selected.slice(), lastSnapshot: a.lastSnapshot };
+  r.matchResult = result;
+  r.resultReview = { id, unlockAt: Date.now() + RESULT_REVIEW_FALLBACK_MS, completedAt: null };
+  return result;
+}
 function updateTitles(r) {
   for (const [key, field, min, name] of [
     ['conqueror', 'battleWins', 3, '覇者'],
@@ -739,6 +923,7 @@ function updateTitles(r) {
     if (holder && (Number(holder[field]) || 0) >= max) continue;
     const next = r.players.find(p => (Number(p[field]) || 0) === max);
     if (next && r.titles[key] !== next.id) {
+      markMatchCause(r, 'title', { actor: next.id });
       r.titles[key] = next.id;
       log(r, `👑 ${next.name}が称号「${name}」を獲得!(総資産+500G)`);
     }
@@ -754,6 +939,7 @@ function declareWin(r, p, why) {
   r.turnTransition = null;
   r.phase = 'ended'; r.winner = p.id; r.pending = {};
   log(r, `🏆 ${p.name}が${why} 勝利!`);
+  buildMatchResult(r);
 }
 
 // ===== 手番進行 =====
@@ -799,6 +985,7 @@ function resolveUltSequence(r) {
   seq.resolved = true;
   const p = pById(r, seq.player);
   if (!p || p.bankrupt || r.phase !== 'playing') { r.ultSequence = null; return; }
+  markMatchCause(r, 'ultimate', { actor: p.id });
   delete r.pending[p.id];
   const d = seq.data || {};
   if (seq.charId === 'redani') {
@@ -1075,6 +1262,7 @@ function settleAll(r) {
     `所持金${debtor.gold}G ─ 0以上になるまで領地を売却する(売却額=地価の70%)`, opts);
 }
 function bankrupt(r, p) {
+  markMatchCause(r, 'bankruptcy', { actor: p.id });
   p.bankrupt = true;
   p.gold = 0;
   p.blade = false;
@@ -1194,6 +1382,7 @@ function performMove(r, p, steps, meta, moveLabel) {
     const lands = r.owners.reduce((n, o, i) => n + (o && o.player === p.id ? landValue(r, i) : 0), 0);
     const landRate = CASTLE_LAND_RATE;
     const lb = castleLandBonus(lands);
+    markMatchCause(r, 'castle', { actor: p.id, amount: bonus + lb });
     p.gold += bonus + lb;
     // 帰還の癒し: 自領地のクリーチャーの負傷を10回復(最大値は超えない)
     const healed = [];
@@ -1497,6 +1686,7 @@ function consumeBattleSupport(r, pid, choice) {
 function resolveBattle(r) {
   const b = r.battle;
   const atk = pById(r, b.attacker), def = pById(r, b.defender);
+  markMatchCause(r, 'invasion', { actor: atk.id, target: def.id, tile: b.tile });
   const o = r.owners[b.tile];
   const tile = TILES[b.tile];
   const ac = CREATURES[b.atkCreature], dc = CREATURES[o.creature];
@@ -1995,7 +2185,7 @@ function handleChoose(r, playerId, optionId) {
       else p.discard.push(sid);
       if (spellCost) p.gold -= spellCost;
       p.spellCast = true;
-      onSpellCast(r, p);
+      onSpellCast(r, p, sid);
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS[sid].name, desc: SPELLS[sid].desc, at: stamp(r) };
       log(r, `📜 ${p.name}が呪文「${SPELLS[sid].name}」を唱えた!${spellCost ? `(−${spellCost}G)` : ''}${EXILE_SPELLS.has(sid) ? '(廃棄)' : ''}`);
     };
@@ -2005,7 +2195,7 @@ function handleChoose(r, playerId, optionId) {
       p.spellCast = true;
       if (!Array.isArray(p.resolving)) p.resolving = [];
       p.resolving.push(sid);  // 効果解決後まで解決中領域へ置き、即時の引き直しを防ぐ
-      onSpellCast(r, p);
+      onSpellCast(r, p, sid);
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS[sid].name,
         desc: SPELLS[sid].desc, at: stamp(r) };
       const got = drawCards(r, p, 1);
@@ -2130,7 +2320,7 @@ function handleChoose(r, playerId, optionId) {
         p.discard.push('sp_weaken');
         p.gold -= spellCost;
         p.spellCast = true;
-        onSpellCast(r, p);
+        onSpellCast(r, p, 'sp_weaken');
         r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_weaken.name,
           desc: `${pById(r, o.player).name}の${CREATURES[o.creature].name}に20ダメージ!`, at: stamp(r) };
         log(r, `☠ ${p.name}が${pById(r, o.player).name}の${CREATURES[o.creature].name}に衰弱の呪文!(20ダメージ)`);
@@ -2172,7 +2362,7 @@ function handleChoose(r, playerId, optionId) {
       if (EXILE_SPELLS.has(sid)) exileCard(r, p, sid, 'spell'); else p.discard.push(sid);
       p.gold -= spellCost;
       p.spellCast = true;
-      onSpellCast(r, p);
+      onSpellCast(r, p, sid);
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS[sid].name, desc: SPELLS[sid].desc, at: stamp(r) };
     };
     const fx = () => (r.tileFx[i] = r.tileFx[i] || {});
@@ -2229,7 +2419,7 @@ function handleChoose(r, playerId, optionId) {
       p.discard.push('sp_step');
       p.gold -= spellCost;
       p.spellCast = true;
-      onSpellCast(r, p);
+      onSpellCast(r, p, 'sp_step');
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_step.name,
         desc: r.owners[j] ? `${CREATURES[src.creature].name}が隣の敵領地へ侵略!(通行料なし)`
                           : `${CREATURES[src.creature].name}が隣の空き地へ進出し、Lv1の領地に`, at: stamp(r) };
@@ -2274,7 +2464,7 @@ function handleChoose(r, playerId, optionId) {
         p.discard.push('sp_move');
         p.gold -= spellCost;
         p.spellCast = true;
-        onSpellCast(r, p);
+        onSpellCast(r, p, 'sp_move');
         r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_move.name,
           desc: `${CREATURES[ob.creature].name}と${CREATURES[oa.creature].name}が入れ替わった`, at: stamp(r) };
         log(r, `📜 ${p.name}が${SPELLS.sp_move.name}! ${CREATURES[ob.creature].name}と${CREATURES[oa.creature].name}が入れ替わった(−${spellCost}G)`);
@@ -2311,7 +2501,7 @@ function handleChoose(r, playerId, optionId) {
         p.discard.push('sp_swap');
         p.gold -= spellCost + CREATURES[c].cost;
         p.spellCast = true;
-        onSpellCast(r, p);
+        onSpellCast(r, p, 'sp_swap');
         r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_swap.name,
           desc: `${CREATURES[oldC].name}に代わり${CREATURES[c].name}が領地に立った`, at: stamp(r) };
         log(r, `📜 ${p.name}が${SPELLS.sp_swap.name}! ${CREATURES[oldC].name}に代わり${CREATURES[c].name}が領地に立った(−${spellCost + CREATURES[c].cost}G)`);
@@ -2348,6 +2538,7 @@ function handleChoose(r, playerId, optionId) {
       const o = r.owners[i];
       if (o && o.player === p.id) {
         const got = Math.round(landValue(r, i) * 0.7);
+        markMatchCause(r, 'land_loss', { actor: p.id, tile: i, amount: got });
         p.gold += got;
         p.discard.push(o.creature);
         r.owners[i] = null;
@@ -2377,7 +2568,7 @@ function handleChoose(r, playerId, optionId) {
       exileCard(r, p, 'sp_quake', 'spell');
       p.gold -= spellCost;
       p.spellCast = true;
-      onSpellCast(r, p);
+      onSpellCast(r, p, 'sp_quake');
       o.level = Math.max(1, o.level - 1);
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_quake.name,
         desc: `${pById(r, o.player).name}の領地(${i}番)がLv${o.level}に崩れた!`, at: stamp(r) };
@@ -2492,6 +2683,7 @@ function handleChoose(r, playerId, optionId) {
       const o = r.owners[i];
       const cost = upCostRange(r, p, i, target);
       if (o && o.player === p.id && target > o.level && target <= RULES.maxLevel && cost <= p.gold) {
+        markMatchCause(r, 'upgrade', { actor: p.id, tile: i, amount: cost });
         const wasBelow = o.level < RULES.evoLevel;
         p.gold -= cost;
         o.level = target;
@@ -2510,6 +2702,7 @@ function handleChoose(r, playerId, optionId) {
       const c = optionId.slice(7);
       if (!CREATURES[c] || !p.hand.includes(c) || CREATURES[c].cost > p.gold || r.owners[i])
         return endTurn(r);
+      markMatchCause(r, 'placement', { actor: p.id, tile: i, amount: CREATURES[c].cost });
       p.gold -= CREATURES[c].cost;
       p.hand.splice(p.hand.indexOf(c), 1);
       r.owners[i] = { player: p.id, level: 1, creature: c };
@@ -2521,6 +2714,7 @@ function handleChoose(r, playerId, optionId) {
     if (optionId === 'toll') {
       const enemy = pById(r, o.player);
       const toll = tollOf(r, i);
+      markMatchCause(r, 'toll', { actor: enemy.id, target: p.id, tile: i, amount: toll });
       const paid = payTo(r, p, enemy, toll);
       r.lastEvent = { type: 'toll', from: p.id, to: enemy.id, amount: paid,
                       fromGold: p.gold, toGold: enemy.gold, at: stamp(r) };
@@ -2684,6 +2878,7 @@ function startGame(r) {
   for (const p of r.players) drawCards(r, p, RULES.startHand);  // 全員に初期手札を配る
   log(r, `全員のキャラが確定! ゲーム開始(手番順: ${r.players.map(p => p.name).join(' → ')})`);
   for (const p of r.players) p.dir = 0;  // 方向は初回のダイス後に選ぶ
+  initMatchAnalytics(r);
   beginTurn(r);
 }
 
@@ -2975,6 +3170,8 @@ function publicState(r, viewerId) {
     lastSpellFx: r.lastSpellFx || null,         // スペル盤面演出(発注書§7 ─ v0.77)
     saveRev: r.saveRev || 0,
     winner: r.winner,
+    matchResult: r.phase === 'ended' ? (r.matchResult || null) : null,
+    resultReview: r.phase === 'ended' ? (r.resultReview || null) : null,
     pending: Object.fromEntries(Object.entries(r.pending).map(([k, v]) =>
       v.type === 'draft' && k !== viewerId
         ? [k, { type: v.type, prompt: v.prompt, options: [], aura: r.draft ? r.draft.aura : null,
@@ -3017,6 +3214,7 @@ function publicState(r, viewerId) {
   };
 }
 function broadcast(r) {
+  captureMatchFrame(r);
   r.saveRev = (r.saveRev || 0) + 1;  // v0.62: 状態変化ごとに単調増加(盤面の自動セーブ契機)
   r.stateRev = (r.stateRev || 0) + 1;
   for (const c of r.clients) {
@@ -3030,7 +3228,7 @@ function broadcast(r) {
 const SAVE_VER = 1;
 // ルームのフィールド分類表。ルームに新しいキーを追加したら必ずどちらかに分類すること
 // (save_testが未分類キーを検出して失敗する)
-const ROOM_RUNTIME_KEYS = new Set(['clients', 'lastActivity', 'upgradePreview', 'botTimer', 'botActionSeq', 'ultTimer', 'processedActions', 'turnReadyAt', 'turnTransitionTimer', 'boardSeen']);  // 保存しない
+const ROOM_RUNTIME_KEYS = new Set(['clients', 'lastActivity', 'upgradePreview', 'botTimer', 'botActionSeq', 'ultTimer', 'processedActions', 'turnReadyAt', 'turnTransitionTimer', 'boardSeen', 'matchCause']);  // 保存しない
 const ROOM_PERSIST_KEYS = new Set([                                            // 保存する
   'code', 'phase', 'players', 'owners', 'deck', 'market', 'turn', 'round', 'log',
   'pending', 'titles', 'duel', 'lastBattle', 'winner', 'barrier', 'elemOv', 'tileFx',
@@ -3038,6 +3236,7 @@ const ROOM_PERSIST_KEYS = new Set([                                            /
   'dirPend', 'halfMarket', 'shopVisit', 'effectQueue', 'effectResume', 'battleAfter',
   'lastEvent', 'lastDice', 'lastUlt', 'ultSequence', 'lastHeal', 'lastSeal', 'lastRuin', 'lastDraw', 'lastGain',
   'lastBarrierHit', 'lastSpellFx', 'botMode', 'presentationSpeed', 'turnEpoch', 'promptSeq', 'stateRev', 'turnTransition',
+  'matchAnalytics', 'matchResult', 'resultReview',
 ]);
 function serializeRoom(r) {
   const room = {};
@@ -3117,6 +3316,16 @@ function validateSave(save) {
   if (d.elemOv != null)
     for (const e of Object.values(d.elemOv))
       if (!['fire', 'water', 'earth', 'wind'].includes(e)) return '属性上書きが不正です';
+  if (d.matchAnalytics != null) {
+    if (typeof d.matchAnalytics !== 'object' || !Array.isArray(d.matchAnalytics.assetTimeline) ||
+        d.matchAnalytics.assetTimeline.length > MATCH_TIMELINE_MAX || !Array.isArray(d.matchAnalytics.candidates) ||
+        d.matchAnalytics.candidates.length > MATCH_CANDIDATE_MAX) return '試合履歴が不正です';
+  }
+  if (d.matchResult != null && (typeof d.matchResult !== 'object' ||
+      !Array.isArray(d.matchResult.rankings) || d.matchResult.rankings.length > 4 ||
+      !Array.isArray(d.matchResult.assetTimeline) || d.matchResult.assetTimeline.length > MATCH_TIMELINE_MAX ||
+      !Array.isArray(d.matchResult.turningPoints) || d.matchResult.turningPoints.length > 3))
+    return 'リザルトデータが不正です';
   return null;
 }
 // 復元(原子的): 検証・構築がすべて成功してからroomsへ登録する。失敗時は既存ルームを変更しない
@@ -3136,6 +3345,9 @@ function restoreRoom(save) {
   if (!Number.isInteger(room.turnEpoch)) room.turnEpoch = 0;
   if (!Number.isInteger(room.promptSeq)) room.promptSeq = 0;
   if (!Number.isInteger(room.stateRev)) room.stateRev = room.saveRev || 0;
+  if (room.matchAnalytics == null) room.matchAnalytics = null;
+  if (room.matchResult == null) room.matchResult = null;
+  if (room.resultReview == null) room.resultReview = null;
   if (room.turnTransition) {
     if (room.turnTransition.deadline <= Date.now()) completeTurnTransition(room, room.turnTransition.id, 'timeout');
     else armTurnTransition(room);
@@ -3239,6 +3451,24 @@ function makeFixtureRoom() {
   log(r, 'フィクスチャ表示(開発用)');
   return r;
 }
+function makeResultFixtureRoom() {
+  const r = makeFixtureRoom();
+  initMatchAnalytics(r);
+  const [a, b, c] = r.players;
+  markMatchCause(r, 'toll', { actor:a.id, target:b.id, amount:420 });
+  a.gold += 420; b.gold -= 420; captureMatchFrame(r);
+  const tile = r.owners.findIndex(o => o && o.player === b.id);
+  markMatchCause(r, 'invasion', { actor:a.id, target:b.id, tile });
+  r.owners[tile] = Object.assign({}, r.owners[tile], { player:a.id, level:4 });
+  captureMatchFrame(r);
+  markMatchCause(r, 'castle', { actor:c.id, amount:700 });
+  c.gold += 700; captureMatchFrame(r);
+  r.winner = r.players.slice().sort((x, y) => points(r, y) - points(r, x))[0].id;
+  r.phase = 'ended'; r.pending = {};
+  buildMatchResult(r);
+  r.resultReview.completedAt = Date.now();
+  return r;
+}
 const lanIP = () => {
   for (const l of Object.values(os.networkInterfaces()))
     for (const it of l || []) if (it.family === 'IPv4' && !it.internal) return it.address;
@@ -3265,7 +3495,7 @@ const server = http.createServer(async (req, res) => {
     return serveFile(res, p.slice(1));
   if (p === '/api/fixture') {
     // v0.66: 描画パリティ確認用の固定state(ルームは登録しない・開発用)
-    return json(res, publicState(makeFixtureRoom(), null));
+    return json(res, publicState(url.searchParams.get('result') ? makeResultFixtureRoom() : makeFixtureRoom(), null));
   }
 
   if (p === '/api/create' && req.method === 'POST') {
@@ -3390,6 +3620,14 @@ const server = http.createServer(async (req, res) => {
       if (b.transitionId !== r.turnTransition.id)
         return json(res, { error: '演出待機が更新されました' }, 409);
       completeTurnTransition(r, b.transitionId, 'board');
+    }
+    else if (b.type === 'result_presentation_complete') {
+      if (b.token !== r.boardToken) return json(res, { error: '権限がありません' }, 403);
+      if (r.phase !== 'ended' || !r.resultReview || !r.matchResult)
+        return json(res, { error: 'リザルトがありません' }, 409);
+      if (b.resultId !== r.resultReview.id)
+        return json(res, { error: 'リザルトが更新されました' }, 409);
+      if (!r.resultReview.completedAt) r.resultReview.completedAt = Date.now();
     }
     else if (b.type === 'upgrade_preview') {
       // 発注書v0.75 §6.3: 強化選択中の候補プレビュー(揮発・非保存・ルール影響なし)。

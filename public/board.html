@@ -1184,6 +1184,76 @@
   .plate .ic img { width:16px; height:16px; object-fit:contain; }
   .titleIc { width:20px; height:20px; object-fit:contain; margin-left:4px; vertical-align:-4px;
       filter:drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
+
+  /* v1.51 試合振り返りリザルト */
+  #matchResultOv { position:fixed; inset:0; z-index:96; display:none; overflow:hidden;
+      color:#f5e8c1; background:radial-gradient(circle at 55% 34%,rgba(48,39,82,.82),transparent 46%),
+      linear-gradient(150deg,#070b17 0%,#11142a 52%,#070a14 100%); font-family:'Yu Mincho','Hiragino Mincho ProN',serif; }
+  #matchResultOv.on { display:block; }
+  #matchResultOv::before { content:""; position:absolute; inset:1.5vh 1.2vw; pointer-events:none;
+      border:1px solid rgba(220,185,93,.68); box-shadow:inset 0 0 0 2px rgba(220,185,93,.08); }
+  .mrPage { position:absolute; inset:0; display:none; padding:2.2vh 2.6vw 2vh; }
+  .mrPage.on { display:flex; flex-direction:column; }
+  .mrHead { flex:none; text-align:center; height:8.5vh; }
+  .mrHead small { display:block; color:#cda94f; font-size:1.25vh; letter-spacing:.55em; }
+  .mrHead h2 { margin:.35vh 0 0; color:#f4d987; font-size:clamp(25px,3.3vh,43px); letter-spacing:.28em;
+      text-shadow:0 0 2.2vh rgba(235,190,72,.28); }
+  .mrGraphArea { position:relative; flex:1; min-height:0; margin:0 1.2vw; border:1px solid rgba(214,178,82,.34);
+      background:rgba(4,7,16,.48); overflow:hidden; }
+  #mrGraph { width:100%; height:100%; display:block; }
+  .mrGrid { stroke:rgba(224,199,132,.18); stroke-width:1; }
+  .mrAxis { stroke:rgba(235,207,127,.66); stroke-width:1.4; }
+  .mrAxisText { fill:#cfc1a0; font:600 18px 'Yu Mincho',serif; }
+  .mrGoal { stroke:#d7a936; stroke-width:2; stroke-dasharray:10 8; }
+  .mrGoalText { fill:#efd36f; font:700 20px 'Yu Mincho',serif; }
+  .mrLineGlow { fill:none; stroke-width:9; opacity:.16; filter:blur(4px); }
+  .mrLine { fill:none; stroke-width:4; stroke-linejoin:round; stroke-linecap:round; }
+  .mrPoint { stroke:#fff1bd; stroke-width:2; }
+  .mrMarker { cursor:pointer; filter:drop-shadow(0 0 7px rgba(255,214,91,.9)); }
+  .mrMarker circle { fill:#5b261d; stroke:#f1cb5c; stroke-width:3; }
+  .mrMarker text { fill:#fff1bd; font:700 17px Georgia,serif; text-anchor:middle; dominant-baseline:middle; }
+  #mrCallout { position:absolute; z-index:4; display:none; width:min(28vw,430px); padding:1.2vh 1.35vw;
+      border:2px solid #caa64c; background:linear-gradient(145deg,rgba(13,16,29,.97),rgba(30,25,43,.97));
+      box-shadow:0 1.2vh 3vh rgba(0,0,0,.55),0 0 2vh rgba(209,169,67,.16); transform:translate(-50%,-108%); }
+  #mrCallout.on { display:block; animation:mrCallIn .28s ease-out both; }
+  #mrCallout.on.below { animation:none; transform:translate(-50%,14px); }
+  #mrCallout::after { content:""; position:absolute; left:50%; bottom:-1.05vh; width:1.6vh; height:1.6vh;
+      background:#171727; border-right:2px solid #caa64c; border-bottom:2px solid #caa64c; transform:translateX(-50%) rotate(45deg); }
+  #mrCallout.below::after { top:-1.05vh; bottom:auto; border:0; border-left:2px solid #caa64c; border-top:2px solid #caa64c; }
+  #mrCallout b { display:block; font-size:clamp(15px,1.75vh,23px); color:#fff3cf; letter-spacing:.08em; }
+  #mrCallout span { display:block; margin-top:.55vh; color:#e7c96f; font-size:clamp(12px,1.35vh,18px); }
+  #mrCallout em { display:inline-block; margin-top:.8vh; padding:.28vh 1.2vw; background:#7b251f; color:#fff2c8;
+      font-style:normal; font-size:clamp(11px,1.15vh,16px); letter-spacing:.22em; }
+  @keyframes mrCallIn { from { opacity:0; transform:translate(-50%,-96%) scale(.92); } to { opacity:1; transform:translate(-50%,-108%) scale(1); } }
+  .mrRanks { flex:none; height:23vh; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.8vw; padding:1vh 1.2vw .5vh; }
+  .mrRank { position:relative; display:grid; grid-template-columns:6.8vw 1fr; grid-template-rows:auto 1fr; min-width:0;
+      border:1px solid color-mix(in srgb,var(--pc) 68%,#d6b95d); background:linear-gradient(135deg,rgba(7,10,20,.9),rgba(22,24,40,.88));
+      padding:.8vh .8vw; overflow:hidden; opacity:.34; filter:saturate(.25); transition:opacity .35s,filter .35s,transform .35s; }
+  .mrRank.reveal { opacity:1; filter:none; transform:translateY(-.4vh); }
+  .mrRank.winner.reveal { background:linear-gradient(135deg,rgba(96,35,22,.88),rgba(25,18,29,.94));
+      box-shadow:inset 0 0 2.5vh rgba(241,190,69,.22),0 0 1.8vh rgba(232,169,46,.2); }
+  .mrRank img { grid-row:1/3; width:100%; height:100%; object-fit:contain; object-position:center bottom; }
+  .mrRankMain { min-width:0; align-self:end; }
+  .mrRankPlace { color:#e8cb72; font:700 clamp(22px,3.8vh,48px)/1 Georgia,serif; }
+  .mrRankName { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#fff0c8; font-size:clamp(14px,1.8vh,24px); }
+  .mrRankValue { align-self:start; color:#ead483; font:700 clamp(18px,2.6vh,34px)/1.1 Georgia,serif; }
+  .mrAssetBar { display:flex; height:.8vh; margin-top:.8vh; background:#161928; }
+  .mrAssetBar i { display:block; min-width:2px; }
+  .mrControls { flex:none; height:6.5vh; display:flex; align-items:center; justify-content:center; gap:1vw; }
+  .mrBtn { min-width:9.5vw; padding:.8vh 1.4vw; border:1px solid #b9933c; background:rgba(9,12,24,.84);
+      color:#f5df9a; font:700 clamp(12px,1.4vh,18px) 'Yu Mincho',serif; letter-spacing:.12em; cursor:pointer; }
+  .mrBtn:disabled { opacity:.35; cursor:default; }
+  .mrBtn.primary { background:linear-gradient(180deg,#6c4c12,#312305); color:#fff4ca; }
+  #mrSummary { justify-content:center; align-items:center; gap:2vh; }
+  .mrSummaryGrid { width:min(92vw,1450px); display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1vw; }
+  .mrSummaryCard { border:1px solid rgba(213,179,83,.48); background:rgba(5,8,18,.75); padding:1.6vh 1.2vw; text-align:center; }
+  .mrSummaryCard img { height:13vh; max-width:80%; object-fit:contain; }
+  .mrSummaryCard h3 { margin:.4vh 0; color:#f4dfaa; }
+  .mrSummaryTotal { color:#f1ce67; font:700 3.5vh Georgia,serif; }
+  .mrBreak { margin:1.2vh 0; display:grid; grid-template-columns:1fr auto; gap:.5vh; text-align:left; font-size:1.35vh; }
+  .mrBreak b { color:#ead27e; }
+  .mrStats { border-top:1px solid rgba(215,181,88,.25); padding-top:.8vh; color:#cfc2a4; font-size:1.2vh; }
+  @media (max-height:760px) { .mrHead { height:7.5vh; } .mrRanks { height:21vh; } #mrCallout { padding:.8vh 1vw; } }
 </style>
 </head>
 <body>
@@ -1297,7 +1367,26 @@
     <img id="vicImg" src="/assets/telop_victory.png">
     <img id="winArt" src="">
     <div id="winText" class="hint" style="font-size:20px;"></div>
-    <button class="gbtn" onclick="location.reload()">タイトルへ戻る</button>
+    <button class="gbtn" id="winReviewBtn">試合を振り返る</button>
+  </div>
+
+  <div id="matchResultOv" aria-live="polite">
+    <section class="mrPage" id="mrHistory">
+      <header class="mrHead"><small>MATCH HISTORY</small><h2>試合の軌跡</h2></header>
+      <div class="mrGraphArea"><svg id="mrGraph" role="img" aria-label="プレイヤーごとの総資産推移"></svg>
+        <div id="mrCallout"><b></b><span></span><em></em></div></div>
+      <div class="mrRanks" id="mrRanks"></div>
+      <div class="mrControls">
+        <button class="mrBtn" id="mrPlayBtn">一時停止</button><button class="mrBtn" id="mrSpeedBtn">×2</button>
+        <button class="mrBtn primary" id="mrNextBtn">スキップ</button>
+      </div>
+    </section>
+    <section class="mrPage" id="mrSummary">
+      <header class="mrHead"><small>FINAL RESULT</small><h2>最終結果</h2></header>
+      <div class="mrSummaryGrid" id="mrSummaryGrid"></div>
+      <div class="mrControls"><button class="mrBtn" id="mrReplayBtn">もう一度見る</button>
+        <button class="mrBtn primary" id="mrTitleBtn">タイトルへ戻る</button></div>
+    </section>
   </div>
 
   <div id="shopOv">
@@ -1623,6 +1712,142 @@ function armTurnStart() {
   const candidate = turnPresentationCandidate();
   if (candidate) queuedTurn = candidate;
 }
+
+// ===== v1.51 試合振り返りリザルト =====
+const MR_COLORS = ['#f15a54','#55b6f2','#e4ba45','#63d3a6'];
+let matchResultPlayback = null, matchResultTimer = null, matchResultStartTimer = null;
+let matchResultOpenId = '', matchResultAckId = '';
+const mrEsc = value => String(value == null ? '' : value).replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function mrPlayerColor(result, id) {
+  const p = result.rankings.find(x => x.id === id);
+  return p?.color || MR_COLORS[Math.max(0, result.rankings.findIndex(x => x.id === id)) % MR_COLORS.length];
+}
+function mrFramePoint(result, seq) {
+  const frames = result.assetTimeline || [];
+  if (!frames.length) return 0;
+  let index = frames.findIndex(x => Number(x.seq) >= Number(seq));
+  if (index < 0) index = frames.length - 1;
+  return frames.length <= 1 ? 1 : index / (frames.length - 1);
+}
+function renderMatchResultGraph(result) {
+  const svg = $('mrGraph'), frames = result.assetTimeline || [], players = result.rankings || [];
+  const W = 1600, H = 610, L = 112, R = 48, T = 42, B = 68, GW = W-L-R, GH = H-T-B;
+  const totals = frames.flatMap(f => players.map(p => Number(f.assets?.[p.id]?.total) || 0));
+  const yMax = Math.max(8000, Number(result.target) || 8000, ...totals, 1000);
+  const yTop = Math.ceil(yMax / 1000) * 1000;
+  const x = i => L + (frames.length <= 1 ? GW : GW * i / (frames.length - 1));
+  const y = v => T + GH * (1 - Math.max(0, Number(v) || 0) / yTop);
+  let html = `<rect x="0" y="0" width="${W}" height="${H}" fill="transparent"/>`;
+  for (let i=0;i<=4;i++) {
+    const val = Math.round(yTop * (4-i) / 4), yy = T + GH*i/4;
+    html += `<line class="mrGrid" x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}"/><text class="mrAxisText" x="${L-16}" y="${yy+6}" text-anchor="end">${val.toLocaleString()}G</text>`;
+  }
+  html += `<line class="mrAxis" x1="${L}" y1="${T}" x2="${L}" y2="${H-B}"/><line class="mrAxis" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>`;
+  const goalY = y(result.target || 8000);
+  html += `<line class="mrGoal" x1="${L}" y1="${goalY}" x2="${W-R}" y2="${goalY}"/><text class="mrGoalText" x="${W-R-5}" y="${goalY-10}" text-anchor="end">GOAL ${(result.target||8000).toLocaleString()}G</text>`;
+  const tickCount = Math.min(5, Math.max(2, frames.length));
+  for (let i=0;i<tickCount;i++) {
+    const fi = Math.round((frames.length-1) * i / (tickCount-1)), xx=x(Math.max(0,fi));
+    html += `<text class="mrAxisText" x="${xx}" y="${H-24}" text-anchor="middle">ROUND ${frames[fi]?.round || 1}</text>`;
+  }
+  players.forEach((p, pi) => {
+    const color = mrPlayerColor(result,p.id), pts = frames.map((f,i) => `${x(i).toFixed(1)},${y(f.assets?.[p.id]?.total).toFixed(1)}`);
+    const d = pts.length ? `M${pts.join(' L')}` : '';
+    html += `<path class="mrLineGlow mrAnimPath" data-player="${mrEsc(p.id)}" stroke="${color}" d="${d}"/><path class="mrLine mrAnimPath" data-player="${mrEsc(p.id)}" stroke="${color}" d="${d}"/>`;
+    html += `<g transform="translate(${L+pi*260},20)"><circle r="7" fill="${color}"/><text class="mrAxisText" x="14" y="6">${mrEsc(p.name)}</text></g>`;
+  });
+  (result.turningPoints || []).forEach((tp, i) => {
+    const progress=mrFramePoint(result,tp.seq), fi=Math.round(progress*Math.max(0,frames.length-1));
+    const actor=tp.actor || players[0]?.id, total=frames[fi]?.assets?.[actor]?.total || 0;
+    html += `<g class="mrMarker" data-tp="${i}" opacity="0" transform="translate(${x(fi)},${y(total)})"><circle r="18"/><text y="1">${i+1}</text></g>`;
+  });
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.innerHTML=html;
+  svg.querySelectorAll('.mrMarker').forEach(el => el.onclick = () => showMatchCallout(result, +(el.dataset.tp||0), true));
+  requestAnimationFrame(() => svg.querySelectorAll('.mrAnimPath').forEach(path => {
+    let length=1; try { length=Math.max(1,path.getTotalLength()); } catch(e) {}
+    path.dataset.length=String(length); path.style.strokeDasharray=String(length); path.style.strokeDashoffset=String(length);
+  }));
+}
+function renderMatchRanks(result, reveal=false) {
+  $('mrRanks').innerHTML=(result.rankings || []).slice().sort((a,b)=>b.rank-a.rank).map(p => {
+    const total=Math.max(1,p.assets.total||1), gold=Math.max(0,p.assets.gold||0)/total*100,
+      land=Math.max(0,p.assets.land||0)/total*100, title=Math.max(0,p.assets.title||0)/total*100;
+    return `<article class="mrRank ${p.rank===1?'winner':''} ${reveal?'reveal':''}" data-rank="${p.rank}" style="--pc:${mrPlayerColor(result,p.id)}">
+      <img src="/assets/full_${mrEsc(p.charId)}.png" alt=""><div class="mrRankMain"><div class="mrRankPlace">${reveal?p.rank+'位':'?位'}</div><div class="mrRankName">${mrEsc(p.name)}</div></div>
+      <div class="mrRankValue">${reveal?(p.assets.total||0).toLocaleString()+'G':'--- G'}<div class="mrAssetBar"><i style="width:${gold}%;background:#e4b644"></i><i style="width:${land}%;background:#5eb981"></i><i style="width:${title}%;background:#b981dd"></i></div></div></article>`;
+  }).join('');
+}
+function renderMatchSummary(result) {
+  $('mrSummaryGrid').innerHTML=(result.rankings || []).map(p => `<article class="mrSummaryCard">
+    <img src="/assets/full_${mrEsc(p.charId)}.png" alt="${mrEsc(p.name)}"><h3>${p.rank}位 ${mrEsc(p.name)}</h3><div class="mrSummaryTotal">${(p.assets.total||0).toLocaleString()}G</div>
+    <div class="mrBreak"><span>所持金</span><b>${(p.assets.gold||0).toLocaleString()}G</b><span>領地価値</span><b>${(p.assets.land||0).toLocaleString()}G</b><span>称号価値</span><b>${(p.assets.title||0).toLocaleString()}G</b></div>
+    <div class="mrStats">領地 ${p.landCount||0}　戦闘勝利 ${p.battleWins||0}　祠参拝 ${p.shrineVisits||0}</div></article>`).join('');
+}
+function showMatchCallout(result, index, persistent=false) {
+  const tp=(result.turningPoints||[])[index], el=$('mrCallout'); if(!tp){el.classList.remove('on');return;}
+  const marker=$('mrGraph').querySelector(`.mrMarker[data-tp="${index}"]`), area=$('mrGraph').getBoundingClientRect();
+  el.classList.remove('on','below');
+  el.querySelector('b').textContent=tp.title || '試合の転換点'; el.querySelector('span').textContent=tp.detail || '';
+  el.querySelector('em').textContent=tp.badge || `TURNING POINT ${index+1}`; el.classList.add('on');
+  if(marker && area.width) {
+    const m=marker.getBoundingClientRect(), markerTop=m.top-area.top;
+    el.style.left=`${m.left-area.left+m.width/2}px`; el.style.top=`${markerTop}px`; marker.setAttribute('opacity','1');
+    if(markerTop < el.offsetHeight*1.12+12) { el.classList.add('below'); el.style.top=`${m.bottom-area.top}px`; }
+  }
+  if(!persistent) clearTimeout(el._hideTimer);
+}
+function updateMatchGraphProgress(progress) {
+  $('mrGraph').querySelectorAll('.mrAnimPath').forEach(path => { const l=+(path.dataset.length||1); path.style.strokeDashoffset=String(l*(1-progress)); });
+}
+async function notifyMatchResultComplete(result) {
+  if(!result?.id || !code || !boardToken || matchResultAckId===result.id) return;
+  matchResultAckId=result.id;
+  try { await fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room:code,type:'result_presentation_complete',token:boardToken,resultId:result.id})}); }
+  catch(e) { matchResultAckId=''; }
+}
+function finishMatchResultPlayback(result, notify=true) {
+  if(matchResultPlayback) { matchResultPlayback.finished=true; matchResultPlayback.paused=false; }
+  updateMatchGraphProgress(1); $('mrCallout').classList.remove('on');
+  (result.turningPoints||[]).forEach((_,i)=>{ const m=$('mrGraph').querySelector(`.mrMarker[data-tp="${i}"]`); if(m)m.setAttribute('opacity','1'); });
+  const cards=[...$('mrRanks').querySelectorAll('.mrRank')].sort((a,b)=>+b.dataset.rank-+a.dataset.rank);
+  cards.forEach((card,i)=>setTimeout(()=>{ const p=result.rankings.find(x=>x.rank===+card.dataset.rank); card.classList.add('reveal'); card.querySelector('.mrRankPlace').textContent=p.rank+'位'; card.querySelector('.mrRankValue').childNodes[0].nodeValue=(p.assets.total||0).toLocaleString()+'G'; }, i*400));
+  $('mrPlayBtn').disabled=true; $('mrSpeedBtn').disabled=true; $('mrNextBtn').textContent='次へ';
+  if(notify) setTimeout(()=>notifyMatchResultComplete(result),Math.max(0,cards.length-1)*400+300);
+}
+function matchResultTick(now) {
+  const p=matchResultPlayback; if(!p || p.finished) return;
+  const delta=Math.min(100,now-(p.last||now)); p.last=now;
+  if(!p.paused) {
+    if(p.hold>0) { p.hold-=delta*p.speed; if(p.hold<=0){ $('mrCallout').classList.remove('on'); p.eventIndex++; } }
+    else {
+      const next=(p.result.turningPoints||[])[p.eventIndex], stop=next?mrFramePoint(p.result,next.seq):2;
+      p.progress=Math.min(1,p.progress+delta*p.speed/18000);
+      if(next && p.progress>=stop) { p.progress=stop; showMatchCallout(p.result,p.eventIndex); p.hold=3000; }
+      updateMatchGraphProgress(p.progress);
+      if(p.progress>=1) return finishMatchResultPlayback(p.result,true);
+    }
+  }
+  matchResultTimer=requestAnimationFrame(matchResultTick);
+}
+function showMatchResult(result, complete=false) {
+  if(!result) return;
+  clearTimeout(matchResultStartTimer); cancelAnimationFrame(matchResultTimer); $('winOv').classList.remove('on');
+  matchResultOpenId=result.id; $('matchResultOv').classList.add('on'); $('mrHistory').classList.add('on'); $('mrSummary').classList.remove('on');
+  renderMatchResultGraph(result); renderMatchRanks(result,complete); renderMatchSummary(result);
+  $('mrPlayBtn').disabled=complete; $('mrSpeedBtn').disabled=complete; $('mrNextBtn').textContent=complete?'次へ':'スキップ';
+  matchResultPlayback={result,progress:complete?1:0,eventIndex:0,hold:0,speed:1,paused:false,finished:complete,last:performance.now()};
+  if(complete) { requestAnimationFrame(()=>finishMatchResultPlayback(result,false)); return; }
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) { finishMatchResultPlayback(result,true); return; }
+  matchResultTimer=requestAnimationFrame(matchResultTick);
+}
+function openMatchSummary() { if(!matchResultPlayback)return; $('mrHistory').classList.remove('on'); $('mrSummary').classList.add('on'); }
+$('mrPlayBtn').onclick=()=>{ const p=matchResultPlayback;if(!p||p.finished)return;p.paused=!p.paused;p.last=performance.now();$('mrPlayBtn').textContent=p.paused?'再開':'一時停止'; };
+$('mrSpeedBtn').onclick=()=>{const p=matchResultPlayback;if(!p||p.finished)return;p.speed=p.speed===1?2:1;$('mrSpeedBtn').textContent=p.speed===1?'×2':'通常速度';};
+$('mrNextBtn').onclick=()=>{const p=matchResultPlayback;if(!p)return;p.finished?openMatchSummary():finishMatchResultPlayback(p.result,true);};
+$('mrReplayBtn').onclick=()=>matchResultPlayback&&showMatchResult(matchResultPlayback.result,false);
+$('mrTitleBtn').onclick=()=>location.reload();
+$('winReviewBtn').onclick=()=>state?.matchResult?showMatchResult(state.matchResult,false):location.reload();
 let hopState = null;
 function finishHop() {
   if (!hopState) return;
@@ -2533,7 +2758,8 @@ function fitWorld() {
 (async () => {
   if (!new URLSearchParams(location.search).get('fixture')) return;
   try {
-    state = await (await fetch('/api/fixture')).json();
+    const fixtureResult = new URLSearchParams(location.search).get('result');
+    state = await (await fetch('/api/fixture' + (fixtureResult ? '?result=1' : ''))).json();
     syncHasArt();
     document.getElementById('titleOv').classList.remove('on');
     document.getElementById('lobby').classList.remove('on');
@@ -4130,7 +4356,7 @@ function render() {
   if (!state) return;
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.50';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.51';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -4714,7 +4940,12 @@ function render() {
   }
   // 勝利演出(発注書v0.75 §9 ─ M7): 全景→勝者領地の盤面順発光→光の収束→城ズーム→光柱→カットイン
   if (state.phase === 'ended' && state.winner) {
-    if (prev.winPlayed !== state.winner) {
+    const resultReady = !!state.matchResult;
+    const reviewComplete = !!state.resultReview?.completedAt || (state.resultReview?.unlockAt && Date.now() >= state.resultReview.unlockAt);
+    if (resultReady && reviewComplete && matchResultOpenId !== state.matchResult.id) {
+      prev.winPlayed = state.winner;
+      showMatchResult(state.matchResult, true);
+    } else if (prev.winPlayed !== state.winner) {
       prev.winPlayed = state.winner;
       const w = player(state.winner);
       const castle = state.tiles.findIndex(t2 => t2.t === 'castle');
@@ -4726,7 +4957,13 @@ function render() {
         $('winArt').src = '/assets/full_' + w.charId + '.png';
         $('winText').textContent = `${w.name}(${state.catalog.CHARS[w.charId].name}) ─ 総資産${w.points}G / 領地${lands.length}つ` +
           (titles2.length ? ` / 称号「${titles2.join('」「')}」` : '') + 'で勝利!';
+        $('winReviewBtn').textContent = state.matchResult ? '試合を振り返る' : 'タイトルへ戻る';
         $('winOv').classList.add('on');
+        clearTimeout(matchResultStartTimer);
+        if (state.matchResult) matchResultStartTimer = setTimeout(() => {
+          if (state?.phase === 'ended' && state.matchResult?.id === state.resultReview?.id)
+            showMatchResult(state.matchResult, false);
+        }, 4000);
       };
       if (renderModeActive === 'phaser') {
         queueFx(1, async () => {   // 勝利は最優先(§2.2)。城到着演出の完了はキュー側(animBusy/cutBusy)が保証
@@ -4743,7 +4980,11 @@ function render() {
         queueFx(1, () => showWin());   // DOM描画時は既存勝利画面へフォールバック(§9.5)
       }
     }
-  } else { $('winOv').classList.remove('on'); prev.winPlayed = null; }
+  } else {
+    clearTimeout(matchResultStartTimer);
+    $('winOv').classList.remove('on'); $('matchResultOv').classList.remove('on');
+    prev.winPlayed = null; matchResultOpenId = '';
+  }
   scheduleTurnTransitionCompletion();
 }
 fitWorld();

@@ -420,6 +420,23 @@
   .resWin { color:var(--gold-soft); font-size:2dvh; letter-spacing:.3dvh; margin-left:1dvh; }
   .resPts { margin-left:auto; font-size:3.2dvh; color:var(--gold-soft); font-variant-numeric:tabular-nums; }
   .resGold { font-size:2dvh; color:rgba(241,232,208,.75); font-variant-numeric:tabular-nums; margin-left:1.6dvh; }
+  .resultWaiting { width:min(72vw,76dvh); padding:4dvh 5dvh; text-align:center; border:1px solid rgba(213,181,92,.42);
+      background:radial-gradient(circle at 50% 0,rgba(82,64,121,.4),rgba(4,7,18,.82)); }
+  .resultWaiting b { display:block; color:#f2d476; font-size:max(3dvh,18px); letter-spacing:.2em; }
+  .resultWaiting p { color:rgba(241,232,208,.75); font-size:max(1.9dvh,12px); line-height:1.8; }
+  .resultWaiting .waitDots { margin-top:2dvh; color:#e2c260; }
+  .myResultCard { width:min(88vw,108dvh); display:grid; grid-template-columns:24dvh 1fr; gap:2.6dvh; padding:2.4dvh;
+      border:1px solid #c9a94d; background:linear-gradient(135deg,rgba(38,28,55,.96),rgba(6,9,20,.96)); box-shadow:0 1.5dvh 4dvh #0009; }
+  .myResultHero { position:relative; min-height:32dvh; overflow:hidden; border-right:1px solid rgba(218,183,82,.34); }
+  .myResultHero img { width:100%; height:100%; object-fit:contain; object-position:center bottom; }
+  .myResultRank { position:absolute; left:.8dvh; top:.5dvh; color:#f4d271; font:700 max(5dvh,30px)/1 Georgia,serif; text-shadow:0 3px 12px #000; }
+  .myResultTotal { color:#f3d272; font:700 max(4dvh,25px)/1 Georgia,serif; margin:.5dvh 0 1.5dvh; }
+  .myResultBreak { display:grid; grid-template-columns:1fr auto; gap:.7dvh 3dvh; font-size:max(1.8dvh,12px); }
+  .myResultBreak b { color:#efd588; }
+  .myResultStats { margin-top:1.5dvh; padding-top:1.2dvh; border-top:1px solid rgba(214,180,83,.28); color:#cfc2a4; }
+  .myTurning { margin-top:1.4dvh; display:flex; flex-direction:column; gap:.65dvh; }
+  .myTurning article { padding:.7dvh 1.2dvh; border-left:3px solid #d3aa42; background:#090d1dbf; }
+  .myTurning b { display:block; color:#f0d48b; } .myTurning span { color:#cfc2aa; font-size:max(1.45dvh,10px); }
   #charSel { position:fixed; inset:0; display:none; z-index:35; background:rgba(10,8,25,.96);
       flex-direction:column; align-items:center; justify-content:center; gap:1.2dvh;
       padding:2.5dvh 0 3dvh; }
@@ -987,6 +1004,7 @@
 const $ = id => document.getElementById(id);
 const REMOVE_CARD_HTML = '<div class="face removeCard"><div class="removeTitle">カードを削除</div><img src="/assets/cards/shop-remove-v2.webp" alt="カード削除"></div>';
 let room = null, pid = null, state = null, selected = null, rolling = false;
+let resultUnlockT = null;
 const ROOM_CODE_PATTERN = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{4}$/;
 let presetRoom = null;
 let inShopHand = false, prevHandKey = '', moveT = null;
@@ -1162,6 +1180,19 @@ async function resumeSavedSession(sess) {
 // QRの明示ルームを保存済みの別ルームより優先し、同じルームだけ自動復帰する。
 (async () => {
   const params = new URLSearchParams(location.search);
+  if (params.get('fixture') === 'result') {
+    state = await (await fetch('/api/fixture?result=1')).json();
+    if (params.get('waiting') && state.resultReview) {
+      state.resultReview.completedAt = null;
+      state.resultReview.unlockAt = Date.now() + 45000;
+    }
+    pid = params.get('player') || state.players[0]?.id; room = 'FIXT';
+    serverClockOffset = (state.serverNow || Date.now()) - Date.now();
+    $('join').style.display = 'none';
+    ['hdr','msg','action','handWrap'].forEach(id => $(id).style.display = '');
+    document.body.classList.add('ingame'); syncHasArt(); render();
+    return;
+  }
   const hasRoomParam = params.has('room');
   const candidate = String(params.get('room') || '').trim().toUpperCase();
   const sess = readSavedSession();
@@ -1529,6 +1560,33 @@ function viewTap(i) { viewSel = i; renderMapView(); }
 $('mapBtn').onclick = () => { if (!state || state.phase !== 'playing') return; mapView = true; viewSel = null; renderMapView(); };
 
 function renderResult() {
+  clearTimeout(resultUnlockT);
+  const result = state.matchResult, review = state.resultReview;
+  if (result && review) {
+    const now = Date.now() + (serverClockOffset || 0);
+    const unlocked = !!review.completedAt || now >= Number(review.unlockAt || 0);
+    $('resultBtn').style.display = unlocked ? '' : 'none';
+    if (!unlocked) {
+      $('resultTitle').textContent = 'MATCH REVIEW';
+      $('resList').innerHTML = `<div class="resultWaiting"><b>テレビを見よう</b><p>テレビで試合を振り返っています。<br>試合の軌跡が終わると、あなたの結果を表示します。</p><div class="waitDots">● ● ●</div></div>`;
+      resultUnlockT = setTimeout(render, Math.max(120, Number(review.unlockAt||0)-now+40));
+      openBlockingOverlay('resultOv');
+      return;
+    }
+    const mine = (result.rankings || []).find(q => q.id === pid);
+    if (mine) {
+      const points = (result.turningPoints || []).filter(tp => tp.actor === pid || tp.target === pid || Object.prototype.hasOwnProperty.call(tp.deltas || {}, pid)).slice(0,3);
+      $('resultTitle').textContent = mine.rank === 1 ? 'VICTORY' : 'YOUR RESULT';
+      $('resList').innerHTML = `<div class="myResultCard"><div class="myResultHero"><img src="/assets/full_${mine.charId}.png" alt=""><div class="myResultRank">${mine.rank}位</div></div>
+        <div><h2>${mine.name}</h2><div class="myResultTotal">${(mine.assets.total||0).toLocaleString()}G</div>
+        <div class="myResultBreak"><span>所持金</span><b>${(mine.assets.gold||0).toLocaleString()}G</b><span>領地価値</span><b>${(mine.assets.land||0).toLocaleString()}G</b><span>称号価値</span><b>${(mine.assets.title||0).toLocaleString()}G</b></div>
+        <div class="myResultStats">領地 ${mine.landCount||0}　戦闘勝利 ${mine.battleWins||0}　祠参拝 ${mine.shrineVisits||0}</div>
+        ${points.length ? `<div class="myTurning">${points.map((tp,i)=>`<article><b>転換点 ${i+1}　${tp.title||''}</b><span>${tp.detail||''}${tp.badge?'／'+tp.badge:''}</span></article>`).join('')}</div>` : ''}</div></div>`;
+      openBlockingOverlay('resultOv');
+      return;
+    }
+  }
+  $('resultBtn').style.display = '';
   const ps = [...state.players].sort((a, b) => b.points - a.points || b.gold - a.gold);
   $('resultTitle').textContent = state.winner === pid ? 'VICTORY' : 'ゲーム終了';
   $('resList').innerHTML = ps.map((q, i) => `
