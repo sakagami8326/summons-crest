@@ -108,6 +108,12 @@ ok(/最新情報はこちら/.test(html) && /href="https:\/\/www\.youtube\.com\/
   'footer links to the official YouTube channel below the latest-news heading');
 ok(/site-footer__social--youtube[\s\S]*<rect[^>]+rx="4\.2"[\s\S]*youtube-play/.test(html) && /site-footer__social--youtube\s*\{[^}]*color:\s*#ff0033[^}]*background:\s*#f5f2e9/.test(css),
   'YouTube link uses the official red play mark inside a white circular button');
+ok(/site-header__socials[\s\S]*site-social-link--x[\s\S]*site-social-link--youtube[\s\S]*site-header__play/.test(html),
+  'desktop header shows X and YouTube links before the game status');
+ok(/site-nav__socials[\s\S]*https:\/\/x\.com\/gamitestman[\s\S]*https:\/\/www\.youtube\.com\/@SUMMONSCODE/.test(html),
+  'hamburger navigation contains X and YouTube links');
+ok(/\.site-header__socials\s*\{[^}]*display:\s*flex/.test(css) && /@media\s*\(max-width:\s*52rem\)[\s\S]*\.site-header__socials\s*\{[^}]*display:\s*none[\s\S]*\.site-nav__socials\s*\{[^}]*display:\s*flex/.test(css),
+  'desktop social links switch to the hamburger menu on mobile');
 ok(/site-footer__follow[\s\S]*site-footer__socials[\s\S]*<\/div>[\s\S]*<nav aria-label="フッターメニュー"/.test(html),
   'centered social links appear above the footer navigation');
 ok(/\.site-footer\s*\{[^}]*justify-items:\s*center[^}]*text-align:\s*center/.test(css) && /\.site-footer__socials\s*\{[^}]*justify-content:\s*center/.test(css),
