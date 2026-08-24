@@ -264,7 +264,9 @@ img { max-width: 100%; }
 .site-footer__social { display: grid; place-items: center; width: 3rem; height: 3rem; border: 1px solid transparent; border-radius: 50%; color: #fff; text-decoration: none; box-shadow: 0 .6rem 1.25rem rgb(0 0 0 / 25%); transition: border-color .25s, box-shadow .25s, transform .25s; }
 .site-footer__social svg { width: 1.28rem; height: 1.28rem; fill: currentColor; }
 .site-footer__social--x { color: #080911; background: #f5f2e9; }
-.site-footer__social--youtube { color: #fff; background: #ff0033; }
+.site-footer__social--youtube { color: #ff0033; background: #f5f2e9; }
+.site-footer__social--youtube svg { width: 1.62rem; height: 1.62rem; }
+.site-footer__social--youtube .youtube-play { fill: #fff; }
 .site-footer__social:hover, .site-footer__social:focus-visible { border-color: rgb(239 217 143 / 78%); box-shadow: 0 0 1.15rem rgb(239 217 143 / 26%), 0 .8rem 1.5rem rgb(0 0 0 / 30%); transform: translateY(-3px) scale(1.04); }
 .site-footer__social:focus-visible { outline: 2px solid var(--sc-gold-200); outline-offset: 3px; }
 .site-footer__meta { display: grid; justify-items: center; gap: .45rem; text-align: center; }

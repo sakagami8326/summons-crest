@@ -106,6 +106,8 @@ ok(/href="https:\/\/x\.com\/gamitestman"/.test(html) && /site-footer__social/.te
   'footer links to the developer X account with an icon');
 ok(/最新情報はこちら/.test(html) && /href="https:\/\/www\.youtube\.com\/@SUMMONSCODE"/.test(html),
   'footer links to the official YouTube channel below the latest-news heading');
+ok(/site-footer__social--youtube[\s\S]*<rect[^>]+rx="4\.2"[\s\S]*youtube-play/.test(html) && /site-footer__social--youtube\s*\{[^}]*color:\s*#ff0033[^}]*background:\s*#f5f2e9/.test(css),
+  'YouTube link uses the official red play mark inside a white circular button');
 ok(/site-footer__follow[\s\S]*site-footer__socials[\s\S]*<\/div>[\s\S]*<nav aria-label="フッターメニュー"/.test(html),
   'centered social links appear above the footer navigation');
 ok(/\.site-footer\s*\{[^}]*justify-items:\s*center[^}]*text-align:\s*center/.test(css) && /\.site-footer__socials\s*\{[^}]*justify-content:\s*center/.test(css),
