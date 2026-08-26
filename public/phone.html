@@ -1368,7 +1368,7 @@ function mmCellContent(t, o) {
 function tileTargets(p) {
   const m = {};
   p.options.forEach(o => {
-    const mt = /^(up|ct|qt|mt|mv|mb|sw|sl|st|sd|tg|lu|nu):(\d+)$/.exec(o.id);
+    const mt = /^(up|ct|qt|mt|mv|mb|sw|sl|st|sd|tg|lu|nu|mh):(\d+)$/.exec(o.id);
     if (mt) m[+mt[2]] = o.id;
   });
   return m;
@@ -2442,6 +2442,7 @@ function taskPrompt(p) {
     marlow_src:'移動するマーローを選べ', marlow_dest:'移動先を選べ',
     gaust_exile:'廃棄するカードを選べ', fatal_exile:'廃棄するカードを選べ',
     ult_villa_recover:'回収するカードを選べ', daitekkan_recover:'回収するウェポンを選べ',
+    mermaid_heal:'回復する味方を選べ',
     toxy_target:'対象のプレイヤーを選べ', ult_nerasio_elem:'変更後の属性を選べ',
     ult_mio:'対象の領地を選べ', ult_lia:'炎の渦を起こす領地を選べ', ult_nerasio_land:'再構成する領地を選べ',
     ult_resolve:'必殺技の演出完了を待て', forge_pick:'進化させるカードを選べ',
@@ -2557,7 +2558,7 @@ function render() {
     const pov = $('pickOv');
     if (pov.classList.contains('on')) { pov.classList.remove('on'); pov.dataset.k = ''; }
   }
-  const MAP_TYPES = ['curse_target','quake_target','ult_mio','ult_lia','ult_nerasio_land','move_a','move_b','swap_land','upgrade','marlow_src','marlow_dest',
+  const MAP_TYPES = ['curse_target','quake_target','ult_mio','ult_lia','ult_nerasio_land','move_a','move_b','swap_land','upgrade','marlow_src','marlow_dest','mermaid_heal',
     'sell','step_a','step_b','spell_target'];
   if (!mapView && (!p || !MAP_TYPES.includes(p.type))) hideMapOv();
   const liaSelectedKey = p && (p.type === 'ult_lia' || p.type === 'ult_nerasio_land') ? `${p.type}|${(p.selected || []).join(',')}` : '';
@@ -2754,7 +2755,7 @@ function render() {
   } else if (p.type === 'curse_target' || p.type === 'quake_target' || p.type === 'ult_mio' || p.type === 'ult_lia' || p.type === 'ult_nerasio_land' ||
              p.type === 'move_a' || p.type === 'move_b' || p.type === 'swap_land' || p.type === 'upgrade' ||
              p.type === 'marlow_src' || p.type === 'marlow_dest' ||
-             p.type === 'sell' || p.type === 'step_a' || p.type === 'step_b' ||
+             p.type === 'sell' || p.type === 'step_a' || p.type === 'step_b' || p.type === 'mermaid_heal' ||
              p.type === 'spell_target') {
     renderMiniMap(p);
   } else if (p.type === 'direction') {

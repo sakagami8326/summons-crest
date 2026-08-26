@@ -18,8 +18,8 @@ const G = new Function('require', '__dirname', 'process', 'console', 'setInterva
     markMatchCause, buildMatchResult, publicState, serializeRoom, validateSave, restoreRoom };`)(
   require, __dirname, process, { log:()=>{}, error:console.error }, ()=>{});
 
-eq(G.VERSION, '1.51', 'server release is v1.51');
-eq(pkg.version, '1.51.0', 'package release is v1.51.0');
+eq(G.VERSION, '1.52', 'server release is v1.52');
+eq(pkg.version, '1.52.0', 'package release is v1.52.0');
 
 // 一つの侵略操作で生じる領地移動・Lv4・連鎖変化は一候補へ統合される。
 const r = G.makeFixtureRoom();

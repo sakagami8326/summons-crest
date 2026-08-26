@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.51';
+const VERSION = '1.52';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TURN_TRANSITION_TIMEOUT_MS = 20000;
@@ -128,6 +128,9 @@ const CREATURES = {
              fx: '【支援】戦闘時、手札のクリーチャーをウェポンとして使える', evoFx: '【支援】戦闘時、手札のクリーチャーをウェポンとして使える', rarity: 'N' },
   palecoral:{ name: 'パレコラル', evo: 'コラルグレイヴ', elem: 'water', st: 20, hp: 50, cost: 90, evoSt: 40, evoHp: 70,
              fx: '【珊瑚再生】水領地が2つ以上ならターン開始時にHPを10回復', evoFx: '【珊瑚再生】水領地が2つ以上ならターン開始時にHPを20回復', rarity: 'N' },
+  mermaid: { name: 'マーメイド', evo: 'セレナーデ', elem: 'water', st: 30, hp: 40, cost: 100, evoSt: 45, evoHp: 60,
+             fx: '【癒やしの歌】戦闘勝利時、自分を含む味方1体のHPを10回復',
+             evoFx: '【大海の讃歌】戦闘勝利時、自分を含む味方全体のHPを10回復', rarity: 'R' },
   bunnyhop:{ name: 'バニホップ', evo: 'ロードバンプ', elem: 'fire', st: 10, hp: 10, cost: 60, evoSt: 40, evoHp: 60,
              fx: '【耐魔】スペルによるダメージを受けない', evoFx: '【魔力徴収】自分がスペルを使うたび100Gを得る(重複)', rarity: 'N' },
   strauk:  { name: 'ストラウク', elem: null, st: 10, hp: 70, cost: 120,
@@ -247,7 +250,7 @@ for (const [cid, c] of Object.entries({ ...CREATURES }))
   if (c.evo) CREATURES[cid + '_f'] = { name: c.evo, elem: c.elem, st: c.evoSt, hp: c.evoHp,
     cost: c.cost, fx: c.evoFx || c.fx, rarity: c.rarity, forged: true };
 
-const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral','bunnyhop','strauk','samurai_saga','marlow','shuterio','gaust','alter','toxy','kamadoma','swordgear','komao'];
+const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral','mermaid','bunnyhop','strauk','samurai_saga','marlow','shuterio','gaust','alter','toxy','kamadoma','swordgear','komao'];
 // アートが存在するクリーチャーID(assetsのc_*.pngを起動時に走査 ─ v0.82)。
 // クライアントはcatalog.artIds経由で受け取る。手書きリストの二重管理はしない
 // (新クリーチャーはIDとファイル名を一致させて置くだけで盤面・カード・戦闘に反映される)
@@ -429,7 +432,7 @@ const CREATURE_EFFECT_CONTEXT = Object.freeze({
   mimic:'battle', beruf:'battle', grayble:'battle', trooper:'other', survey:'battle',
   palecoral:'turn', bunnyhop:'spell', strauk:'battle', samurai_saga:'battle', marlow:'land',
   shuterio:'battle', gaust:'placement', alter:'battle', toxy:'exile', kamadoma:'other',
-  swordgear:'battle', komao:'other',
+  swordgear:'battle', komao:'other', mermaid:'battle',
 });
 function terrainBreakdown(r, tile, attackerCreature = null) {
   const o = r.owners[tile];
@@ -549,6 +552,11 @@ function creatureEffectUi(r, creatureId, tile, role, context = 'battle', result 
       if (!result) return conditional('ソード系ウェポン選択時');
       return result.selfSupport && ['weapon','gweapon'].includes(result.selfSupport.cardId)
         ? active('ソード系ウェポンに適用') : inactive('対象ウェポンなし');
+    case 'mermaid': {
+      if (!result) return conditional('戦闘勝利時');
+      const won = role === 'attacker' ? !!result.win : !result.win;
+      return won ? active('戦闘勝利で発動') : inactive('戦闘に敗北');
+    }
     default: return conditional('条件成立時');
   }
 }
@@ -1935,7 +1943,7 @@ function resolveBattle(r) {
   // ドラフト完了後にsettleAll→endTurnへ続く(進行を直列化し、r.draftの競合を防ぐ)
   const bWinner = win ? atk : def;
   r.battleAfter = { winner: bWinner.id, attacker: atk.id, defender: def.id, tile: b.tile,
-    invasionWon: !!win, recoveryDone: false };
+    invasionWon: !!win, mermaidDone: false, recoveryDone: false };
   if (win && onCreatureSummoned(r, atk, b.atkCreature, 'battle', b.tile)) {
     Object.assign(r.pending[atk.id], { battleWinner: bWinner.id });
     return;
@@ -1953,6 +1961,32 @@ function continuePostBattle(r) {
     return settleAll(r);
   }
   if ((r.effectQueue || []).length) return resumeAfterExileEffects(r, { type: 'post_battle' });
+  if (!state.mermaidDone) {
+    state.mermaidDone = true;
+    const placed = r.owners[state.tile];
+    if (placed && placed.player === winner.id && baseId(placed.creature) === 'mermaid') {
+      const wounded = r.owners.map((o, tile) => o && o.player === winner.id && (o.dmg || 0) > 0
+        ? { o, tile } : null).filter(Boolean);
+      if (isEvolved(placed)) {
+        const targets = [];
+        for (const { o, tile } of wounded) {
+          const amount = Math.min(10, o.dmg || 0);
+          if (!amount) continue;
+          o.dmg -= amount;
+          targets.push({ tile, amount, creature: o.creature });
+        }
+        if (targets.length) {
+          r.lastHeal = { player: winner.id, source: 'serenade', targets, at: stamp(r) };
+          log(r, `【大海の讃歌】${winner.name}の味方${targets.length}体が歌声に癒やされた(HP+10)`);
+        }
+      } else if (wounded.length) {
+        const opts = wounded.map(({ o, tile }) => ({ id: 'mh:' + tile, tile, creature: o.creature,
+          label: `${cardName(o.creature)}(負傷${o.dmg})を10回復` }));
+        ask(r, winner.id, 'mermaid_heal', '【癒やしの歌】回復する味方1体を選べ', opts);
+        return;
+      }
+    }
+  }
   if (!state.recoveryDone) {
     state.recoveryDone = true;
     const placed = r.owners[state.tile];
@@ -2004,6 +2038,18 @@ function handleChoose(r, playerId, optionId) {
       p.hand.push(card);
       r.lastGain = { player: p.id, n: 1, cards: [card], reason: 'daitekkan', at: stamp(r) };
       log(r, `【再鍛造】${p.name}のダイテッカンが廃棄から「${cardName(card)}」を手札に戻した`);
+    }
+    return continuePostBattle(r);
+  }
+
+  if (pend.type === 'mermaid_heal') {
+    const tile = +optionId.slice(3);
+    const o = r.owners[tile];
+    if (Number.isInteger(tile) && o && o.player === p.id && (o.dmg || 0) > 0) {
+      const amount = Math.min(10, o.dmg);
+      o.dmg -= amount;
+      r.lastHeal = { player: p.id, source: 'mermaid', targets: [{ tile, amount, creature: o.creature }], at: stamp(r) };
+      log(r, `【癒やしの歌】${cardName(o.creature)}のHPが${amount}回復した`);
     }
     return continuePostBattle(r);
   }
@@ -2952,6 +2998,8 @@ function botChooseOption(r, p, pend) {
     }) || opts[0]).id;
   if (pend.type === 'daitekkan_recover')
     return (botBest(r, opts, o => botCardScore(r, p, o.card)) || opts[0]).id;
+  if (pend.type === 'mermaid_heal')
+    return (botBest(r, opts, o => (r.owners[botTileFromOption(o)]?.dmg || 0)) || opts[0]).id;
   if (pend.type === 'ult_villa_recover') {
     const confirm = byId('vr:confirm');
     if ((pend.selected || []).length >= Math.min(3, (p.exile || []).length)) return confirm.id;
