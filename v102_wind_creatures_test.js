@@ -69,10 +69,17 @@ p.gold = 0;
 G.askUpgrade(room, p, '自領地');
 G.handleChoose(room, p.id, 'marlow:move');
 eq(room.pending[p.id].type, 'marlow_src', 'Marlow source selection pending');
+G.handleChoose(room, p.id, 'ms:cancel');
+eq(room.pending[p.id].type, 'upgrade', 'Marlow source cancel returns to upgrade pending');
+G.handleChoose(room, p.id, 'marlow:move');
 G.handleChoose(room, p.id, 'ms:' + source);
 eq(room.pending[p.id].type, 'marlow_dest', 'Marlow destination selection pending');
 ok(room.pending[p.id].options.some(o => o.id === 'md:' + changedToWind),
   'effective wind destination appears in pending');
+G.handleChoose(room, p.id, 'md:cancel');
+eq(room.pending[p.id].type, 'upgrade', 'Marlow destination cancel returns to upgrade pending');
+G.handleChoose(room, p.id, 'marlow:move');
+G.handleChoose(room, p.id, 'ms:' + source);
 
 const before = room.owners[source];
 ok(G.moveMarlow(room, p, source, changedToWind), 'Marlow move succeeds');
@@ -99,5 +106,28 @@ for (const file of ['c_marlow.webp', 'c_shuterio.webp', 'e_shuterio.webp']) {
 const phone = fs.readFileSync(path.join(__dirname, 'public', 'phone.html'), 'utf8');
 ok(phone.includes("'marlow_src'") && phone.includes("'marlow_dest'"),
   'phone UI routes both Marlow pending types to the map selector');
+const tileTargetsSource = phone.match(/function tileTargets\(p\) \{[\s\S]*?\n\}/)?.[0];
+ok(tileTargetsSource, 'phone tile-target helper is present');
+const phoneTileTargets = new Function(`${tileTargetsSource}; return tileTargets;`)();
+eq(phoneTileTargets({ options: [{ id:'ms:3' }, { id:'md:12' }, { id:'pass' }] }),
+  { 3:'ms:3', 12:'md:12' }, 'phone map recognizes Marlow source and destination ids');
+const marlowMoveActionSource = phone.match(/function marlowMoveAction\(p\) \{[\s\S]*?\n\}/)?.[0];
+ok(marlowMoveActionSource, 'phone Marlow action helper is present');
+const phoneMarlowMoveAction = new Function(`${marlowMoveActionSource}; return marlowMoveAction;`)();
+eq(phoneMarlowMoveAction({ type:'upgrade', options:[{ id:'up:1' }, { id:'marlow:move' }] }).id,
+  'marlow:move', 'Marlow ability CTA appears only when the server offers it');
+eq(phoneMarlowMoveAction({ type:'upgrade', options:[{ id:'up:1' }] }), null,
+  'Marlow ability CTA stays hidden without a server option');
+ok(phone.includes('風渡りを使う') && phone.includes('配置中のマーローを、空いている風属性土地へ移動'),
+  'phone map renders the dedicated Wind Passage CTA and explanation');
+ok(/let mmPendingKey = ''/.test(phone) && /function syncMapPendingSelection\(p\)/.test(phone) &&
+  /mmPendingKey = next;\s*mmSel = null;/s.test(phone),
+  'phone clears stale tile selection whenever the pending map context changes');
+ok(/async function submitMapChoice\(optionId\)/.test(phone) && /通信できませんでした。もう一度お試しください/.test(phone),
+  'phone keeps map choices recoverable after a communication failure');
+ok(/res\.status === 409[\s\S]*?renderMiniMap\(active\)/.test(phone),
+  'phone keeps the server-refreshed map visible after a stale choice');
+ok(/\^\(up\|ct[\s\S]*?ms\|md\)/.test(phone) && /\/cancel\$\|\^pass\$/.test(phone),
+  'phone supports Marlow source and destination cancellation in the shared map flow');
 
 console.log(`V1.02 ALL ${pass} CHECKS PASSED`);

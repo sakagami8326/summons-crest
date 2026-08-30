@@ -388,6 +388,13 @@
   #mapOvSel { font-size:max(2.1dvh, 13px); color:var(--parchment); background:rgba(0,0,0,.4);
       border:1px solid rgba(201,162,39,.4); border-radius:1.2dvh; padding:1.2dvh 1.6dvh;
       line-height:1.5; min-height:9dvh; }
+  .mapAbilityCta { display:flex; flex-direction:column; gap:.75dvh; padding:1.2dvh 1.4dvh;
+      border:1px solid rgba(255,220,112,.72); border-radius:1.2dvh;
+      background:linear-gradient(135deg,rgba(201,162,39,.24),rgba(84,60,16,.34));
+      box-shadow:inset 0 0 18px rgba(255,220,112,.07),0 0 14px rgba(201,162,39,.12); }
+  .mapAbilityCta b { color:#ffe79a; font-size:max(2.05dvh,13px); letter-spacing:.08em; }
+  .mapAbilityCta span { color:rgba(241,232,208,.82); font-size:max(1.65dvh,11px); line-height:1.45; }
+  .mapAbilityCta .abtn { width:100%; margin-top:.25dvh; }
   #miniMap { position:relative; display:grid; grid-template-columns:repeat(8, 1fr); gap:.5dvh;
       width:100%; aspect-ratio:1; margin:0 auto; }
   .mmT { position:relative; border-radius:.8dvh; border:2px solid rgba(255,255,255,.18);
@@ -1337,6 +1344,8 @@ const MM_GEO = [[4,7],[3,7],[2,7],[1,7],[0,7],[0,6],[0,5],[0,4],[0,3],[0,2],[0,1
   [1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],[6,7],[5,7]];
 const MM_COL = { fire:'#B0452A', water:'#2E6EB0', earth:'#B08225', wind:'#3E837C' };
 let mmSel = null;
+let mmPendingKey = '';
+let mapChoiceLock = false;
 // マスの表示モード(owner=誰の領地か(既定) / level=領地レベル / creature=クリーチャー)
 let mmMode = 'owner';
 try { mmMode = localStorage.getItem('sc_mmMode') || 'owner'; } catch (e) {}
@@ -1368,12 +1377,50 @@ function mmCellContent(t, o) {
 function tileTargets(p) {
   const m = {};
   p.options.forEach(o => {
-    const mt = /^(up|ct|qt|mt|mv|mb|sw|sl|st|sd|tg|lu|nu|mh):(\d+)$/.exec(o.id);
+    const mt = /^(up|ct|qt|mt|mv|mb|sw|sl|st|sd|tg|lu|nu|mh|ms|md):(\d+)$/.exec(o.id);
     if (mt) m[+mt[2]] = o.id;
   });
   return m;
 }
+function marlowMoveAction(p) {
+  if (!p || p.type !== 'upgrade') return null;
+  return p.options.find(o => o.id === 'marlow:move') || null;
+}
+function syncMapPendingSelection(p) {
+  const next = p ? `${p.type}|${p.promptId || ''}|${p.options.map(o => o.id).join(',')}` : '';
+  if (next === mmPendingKey) return;
+  mmPendingKey = next;
+  mmSel = null;
+}
 function hideMapOv() { $('mapOv').classList.remove('on'); }
+
+async function submitMapChoice(optionId) {
+  if (mapChoiceLock) return;
+  mapChoiceLock = true;
+  document.querySelectorAll('#mapOvSide button').forEach(b => { b.disabled = true; });
+  try {
+    const res = await choose(optionId);
+    if (!res) throw new Error('map action failed: no response');
+    if (res.status === 409) {
+      mmSel = null;
+      const active = pend();
+      if (active) renderMiniMap(active);
+      else hideMapOv();
+      return;
+    }
+    if (!res.ok) throw new Error(`map action failed: ${res.status}`);
+    mmSel = null;
+    hideMapOv();
+  } catch (err) {
+    console.error(err);
+    const active = pend();
+    if (active) renderMiniMap(active);
+    const panel = $('mapOvSel');
+    if (panel) panel.insertAdjacentHTML('beforeend', '<div class="tdSub" style="color:#ff9b8c;margin-top:.8dvh">通信できませんでした。もう一度お試しください</div>');
+  } finally {
+    mapChoiceLock = false;
+  }
+}
 
 // ===== 選択ドロー(v0.61): タップ即決定+手札へ飛ぶ演出 =====
 function pdChoose(oid) {
@@ -1430,8 +1477,10 @@ function advanceReveal() {
   showNextReveal();
 }
 function renderMiniMap(p) {
+  syncMapPendingSelection(p);
   const targets = tileTargets(p);
   const cancel = p.options.find(o => /cancel$|^pass$/.test(o.id));
+  const marlowMove = marlowMoveAction(p);
   const multi = p.type === 'ult_lia' || p.type === 'ult_nerasio_land';
   const selected = multi && Array.isArray(p.selected) ? p.selected : [];
   const multiMax = p.type === 'ult_nerasio_land' ? 2 : 3;
@@ -1454,6 +1503,9 @@ function renderMiniMap(p) {
   const selLabel = selOpt ? ((p.options.find(o => o.id === selOpt) || {}).label || '') : '';
   $('mapOvTitle').innerHTML = iconize(p.prompt) + ` <span style="opacity:.75">─ ${multi ? `最大${multiMax}か所を選択` : '光っているマスをタップ'}</span>`;
   $('mapOvMap').innerHTML = `<div id="miniMap">${cells.join('')}</div>`;
+  const marlowCta = marlowMove ? `<div class="mapAbilityCta"><b>【風渡り】</b>
+      <span>配置中のマーローを、空いている風属性土地へ移動</span>
+      <button class="abtn" onclick="submitMapChoice('${marlowMove.id}')">風渡りを使う</button></div>` : '';
   $('mapOvSide').innerHTML = multi
     ? `<div id="mapOvSel"><b>選択中 ${selected.length}/${multiMax}</b>${selected.length
         ? selected.map(i => `<div class="tdSub" style="margin-top:.6dvh">${tileDetailHTML(i)}</div>`).join('')
@@ -1463,8 +1515,9 @@ function renderMiniMap(p) {
     : `<div id="mapOvSel">${selOpt
       ? tileDetailHTML(mmSel) + `<div class="tdSub" style="margin-top:.6dvh">${iconize(selLabel)}</div>`
       : '光っているマスを選ぶと詳細が表示されます'}</div>
-    ${selOpt ? `<button class="abtn" onclick="mmSel=null; hideMapOv(); choose('${selOpt}')">ここに決定</button>` : ''}
-    ${cancel ? `<button class="abtn ghost" onclick="mmSel=null; hideMapOv(); choose('${cancel.id}')">${cancel.label}</button>` : ''}`;
+    ${marlowCta}
+    ${selOpt ? `<button class="abtn" onclick="submitMapChoice('${selOpt}')">ここに決定</button>` : ''}
+    ${cancel ? `<button class="abtn ghost" onclick="submitMapChoice('${cancel.id}')">${cancel.label}</button>` : ''}`;
   syncMmModeSw();
   openBlockingOverlay('mapOv');
 }

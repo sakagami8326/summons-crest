@@ -133,7 +133,11 @@ for (const file of ['c_mermaid.png', 'e_mermaid.png']) {
 const phone = fs.readFileSync(path.join(__dirname, 'public', 'phone.html'), 'utf8');
 ok(phone.includes("mermaid_heal:'回復する味方を選べ'"), 'phone shows Mermaid action prompt');
 ok(phone.includes("p.type === 'mermaid_heal'"), 'phone routes Mermaid target selection to the map');
-ok(phone.includes('|mh):(\\d+)$/.exec(o.id)'), 'phone accepts Mermaid tile option IDs');
+const tileTargetsSource = phone.match(/function tileTargets\(p\) \{[\s\S]*?\n\}/)?.[0];
+ok(tileTargetsSource, 'phone tile-target helper is present');
+const phoneTileTargets = new Function(`${tileTargetsSource}; return tileTargets;`)();
+eq(phoneTileTargets({ options: [{ id:'mh:7' }, { id:'pass' }] }),
+  { 7:'mh:7' }, 'phone accepts Mermaid tile option IDs');
 
 const manual = fs.readFileSync(path.join(__dirname, 'docs', 'manual.md'), 'utf8');
 const rules = fs.readFileSync(path.join(__dirname, 'docs', 'spec_rules.md'), 'utf8');
