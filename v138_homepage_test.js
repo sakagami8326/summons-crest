@@ -32,6 +32,13 @@ ok(/concept__tv-stand[\s\S]*concept__caption concept__caption--tv/.test(html) &&
 ok(!/秘密の手札|隠された選択/.test(html), 'ambiguous secret-hand copy is absent');
 ok((html.match(/href="\/play"/g) || []).length >= 5, 'all primary game CTAs link to the TV game');
 ok(!/COMING SOON|is-coming-soon|ゲームは2026年8月31日公開予定/.test(html), 'early access launch removes coming-soon states');
+ok((html.match(/<a class="[^"]*\bplay-cta\b[^"]*" href="\/play"/g) || []).length === 4 && /sc-game-launcher sc-game-launcher--play/.test(html), 'all homepage game CTAs use the dedicated play treatment');
+ok((html.match(/無料でゲームを始める/g) || []).length >= 3 && /無料でプレイ/.test(html), 'primary and compact CTAs use the approved free-play copy');
+ok(/play-cta--hero[^>]*href="\/play"[\s\S]*play-cta__copy[\s\S]*ブラウザですぐにプレイ/.test(html), 'hero CTA includes the browser-play supporting copy');
+ok(/\.play-cta\s*\{[^}]*color:\s*var\(--sc-ink-900\)[^}]*linear-gradient\(135deg, #efd98f 0%, #c9a227 55%, #d9b64f 100%\)/.test(css), 'play CTA uses the approved gold fill and navy text');
+ok(/\.play-cta--hero\s*\{[^}]*17\.5rem[^}]*min-height:\s*4rem/.test(css) && /\.play-cta--header\s*\{[^}]*9\.375rem[^}]*2\.75rem/.test(css), 'hero and header CTA sizes follow the approved hierarchy');
+ok(/@keyframes play-cta-sheen/.test(css) && /\.play-cta:focus-visible\s*\{[^}]*outline:\s*3px solid/.test(css), 'play CTA has sheen and visible keyboard focus');
+ok(/prefers-reduced-motion:[\s\S]*\.play-cta::before[^}]*animation:\s*none !important/.test(css), 'play CTA motion stops for reduced-motion users');
 
 for (const id of ['concept','play-style','how-to-play','game-system','cards','summoners','early-access','news'])
   ok(new RegExp(`id="${id}"`).test(html), `section exists: ${id}`);
@@ -73,6 +80,8 @@ ok(/\.site-card-art[^}]*filter: drop-shadow\(0 0 [^)]+rgb\(255 255 255/.test(css
 ok(!/\.site-card-art[^}]*box-shadow:/.test(css) && !/\.site-game-card[^}]*box-shadow:/.test(css), 'showcase card and artwork have no rectangular box shadow');
 ok(!/\.card-panel img[^}]*(?:border|box-shadow):/.test(css), 'generic card panel styles do not add a border or shadow to showcase art');
 ok(/\.news\s*\{[^}]*padding-bottom:\s*0/.test(css), 'news section removes the unexplained trailing gap');
+ok(/<time datetime="2026-08-31">2026\.08\.31<\/time>/.test(html) && /SUMMONS CODEを公開しました/.test(html), 'news section announces the early access release');
+ok(/class="news-entry__link play-cta play-cta--news" href="\/play"/.test(html) && !/公開準備中/.test(html), 'release news links to the game and removes the preparation placeholder');
 ok(/\.final-cta\s*\{[^}]*min-height:\s*0[^}]*padding:\s*clamp\(3\.5rem, 6vw, 5rem\)/.test(css), 'final call to action no longer creates a large empty block below news');
 ok(/\.final-cta > :not\(\.final-cta__ring\)/.test(css) && /\.final-cta__ring\s*\{[^}]*position:\s*absolute/.test(css), 'decorative final CTA ring stays out of document flow');
 ok(!/\.card-fan \.is-featured[^}]*(?:top|width):/.test(css) && /--focus-boost/.test(css), 'featured card changes scale without snapping top or width');
