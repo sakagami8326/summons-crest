@@ -317,11 +317,11 @@ img { max-width: 100%; }
 .play-cta--news { width: 11.25rem; padding: 0 .9rem 0 1.1rem; }
 .sc-game-launcher { transition: opacity .25s var(--sc-ease), transform .25s var(--sc-ease), filter .18s var(--sc-ease); }
 .sc-game-launcher.is-raised { opacity: 0; pointer-events: none; transform: translateY(1rem) scale(.92); }
-.sc-game-launcher--play { display: flex; flex-direction: column; gap: .4rem; border-color: #fff0b4; color: var(--sc-ink-900); background: radial-gradient(circle at 38% 30%, #efd98f, #c9a227 58%, #9a7415 100%); box-shadow: inset 0 0 0 3px rgb(255 248 231 / 22%), 0 0 0 6px rgb(201 162 39 / 14%), 0 1rem 2.8rem rgb(0 0 0 / 45%), 0 0 2rem rgb(239 217 143 / 25%); text-shadow: 0 1px rgb(255 248 231 / 38%); }
+.sc-game-launcher--play { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .4rem; padding: .6rem; border-color: #fff0b4; color: var(--sc-ink-900); background: radial-gradient(circle at 38% 30%, #efd98f, #c9a227 58%, #9a7415 100%); box-shadow: inset 0 0 0 3px rgb(255 248 231 / 22%), 0 0 0 6px rgb(201 162 39 / 14%), 0 1rem 2.8rem rgb(0 0 0 / 45%), 0 0 2rem rgb(239 217 143 / 25%); text-align: center; text-shadow: 0 1px rgb(255 248 231 / 38%); }
 .sc-game-launcher--play::before { border-color: rgb(239 217 143 / 72%); filter: drop-shadow(0 0 .45rem rgb(239 217 143 / 42%)); }
 .sc-game-launcher--play::after { content: ""; position: absolute; inset: -.4rem; z-index: -1; border: 1px solid rgb(239 217 143 / 32%); border-radius: 50%; animation: launcher-glow 5s ease-in-out infinite; }
-.sc-game-launcher--play strong { font: 700 clamp(.68rem, 1.05vw, .88rem)/1.16 var(--sc-font-display); letter-spacing: .1em; }
-.sc-game-launcher--play small { font: 700 clamp(.48rem, .7vw, .58rem)/1 var(--sc-font-display); letter-spacing: .04em; }
+.sc-game-launcher--play strong { display: block; width: 100%; font: 700 clamp(.68rem, 1.05vw, .88rem)/1.16 var(--sc-font-display); letter-spacing: .1em; text-align: center; }
+.sc-game-launcher--play small { display: block; width: 100%; font: 700 clamp(.48rem, .7vw, .58rem)/1 var(--sc-font-display); letter-spacing: .04em; text-align: center; }
 .is-coming-soon { cursor: default; user-select: none; }
 .sc-button.is-coming-soon, .site-header__play.is-coming-soon { color: rgb(241 232 208 / 72%); border-color: rgb(239 217 143 / 30%); background: rgb(20 18 39 / 68%); box-shadow: none; }
 .sc-game-launcher.is-coming-soon { width: clamp(6.5rem, 10vw, 8.5rem); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .5rem; padding: .6rem; color: var(--sc-ivory-50); text-shadow: 0 1px 8px rgb(0 0 0 / 55%); }
