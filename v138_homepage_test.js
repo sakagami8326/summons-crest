@@ -30,8 +30,8 @@ ok(/相手の領地を侵略し、自分の領地を守り/.test(html), 'concept
 ok(/class="concept__tv-image"[^>]*gameplay-video-poster-v1\.png[^>]*プレイ中の盤面/.test(html), 'concept TV displays an in-game board screenshot');
 ok(/concept__tv-stand[\s\S]*concept__caption concept__caption--tv/.test(html) && /\.concept__caption--tv\s*\{[^}]*top:\s*calc\(100%/.test(conceptCss), 'TV caption is anchored directly below the television');
 ok(!/秘密の手札|隠された選択/.test(html), 'ambiguous secret-hand copy is absent');
-ok(!/href="\/play"/.test(html), 'homepage does not link to the game before early access');
-ok((html.match(/is-coming-soon/g) || []).length >= 5, 'all primary game CTAs show coming soon');
+ok((html.match(/href="\/play"/g) || []).length >= 5, 'all primary game CTAs link to the TV game');
+ok(!/COMING SOON|is-coming-soon|ゲームは2026年8月31日公開予定/.test(html), 'early access launch removes coming-soon states');
 
 for (const id of ['concept','play-style','how-to-play','game-system','cards','summoners','early-access','news'])
   ok(new RegExp(`id="${id}"`).test(html), `section exists: ${id}`);
