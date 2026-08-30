@@ -136,6 +136,11 @@ ok(/\.tvShopCard \.tsInfo \{[^}]*inset:70% 0 0[^}]*grid-template-rows:clamp\(28p
 ok(/\.tvShopCard \.tsStats \{[^}]*clamp\(14px,10\.5cqw,22px\)/s.test(board) &&
   /\.tvShopCard \.tsFx \{[^}]*-webkit-line-clamp:3/s.test(board),
   'shop stats are reduced and effects are confined to three lines');
+ok(/@media \(max-width:1280px\)[\s\S]*?\.tvShopCard \.tsInfo \{[^}]*inset:68% 0 0[^}]*grid-template-rows:22px minmax\(0,1fr\)/s.test(board) &&
+  /@media \(max-width:1280px\)[\s\S]*?\.tvShopCard \.tsFx \{[^}]*line-height:1\.2/s.test(board),
+  'narrow TV shop cards reserve enough height for three effect lines');
+ok(/\.tvShopCard \.tsInfo>\.tsFx:only-child \{[^}]*grid-row:1\/-1/s.test(board),
+  'support-card effects use the full information area when no stats row exists');
 ok(/\.tvShopPrice \{[^}]*min-height:38px[^}]*font-size:clamp\(17px,2\.4vh,24px\)/s.test(board) &&
   /class="tvShopPriceLabel">購入</.test(board),
   'external purchase price is visually larger and explicitly labelled');

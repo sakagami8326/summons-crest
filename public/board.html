@@ -452,6 +452,12 @@
   .tvShopCard .tsStats .statIconDisk { width:1.12em; height:1.12em; padding:.12em; }
   .tvShopCard .tsFx { color:#172536; font-size:clamp(8px,5.3cqw,13px); font-weight:700; line-height:1.3;
       padding:0 4%; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+  .tvShopCard .tsInfo>.tsFx:only-child { grid-row:1/-1; align-self:start; }
+  @media (max-width:1280px) {
+    .tvShopCard .tsInfo { inset:68% 0 0; padding:1% 6.3% 2.2%; grid-template-rows:22px minmax(0,1fr); gap:1%; }
+    .tvShopCard .tsStats { font-size:clamp(13px,10cqw,18px); }
+    .tvShopCard .tsFx { line-height:1.2; }
+  }
   .tvShopPrice { display:inline-flex; align-items:center; justify-content:center; gap:.42vw; min-height:38px; min-width:96px;
       margin-top:.55vh; padding:.48vh 1vw; border:1px solid rgba(242,208,98,.72); border-radius:999px;
       background:#11152df2; color:#ffe279; font-size:clamp(17px,2.4vh,24px); line-height:1; font-weight:900; box-sizing:border-box; }
