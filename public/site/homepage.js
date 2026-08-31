@@ -300,7 +300,7 @@
 
   const launcher = document.querySelector('[data-game-launcher]');
   const footer = document.querySelector('.site-footer');
-  const launcherRetreatZones = document.querySelectorAll('#feedback, .final-cta, .site-footer');
+  const launcherRetreatZones = document.querySelectorAll('#news, #feedback, .final-cta, .site-footer');
   if (launcher && footer && 'IntersectionObserver' in window) {
     const visibleZones = new Set();
     const footerObserver = new IntersectionObserver(entries => {

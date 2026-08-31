@@ -22,6 +22,9 @@ ok(/<section class="page-section feedback" id="feedback"/.test(html), 'feedback 
 ok(html.indexOf('id="news"') < html.indexOf('id="feedback"') && html.indexOf('id="feedback"') < html.indexOf('class="final-cta"'), 'feedback sits between NEWS and final CTA');
 ok(html.indexOf('id="top"') < html.indexOf('id="news"') && html.indexOf('id="news"') < html.indexOf('id="concept"'), 'NEWS sits directly after the hero and before CONCEPT');
 ok(/FEEDBACK OPEN/.test(html) && /フィードバックを送れるようになりました/.test(html) && /href="#feedback"[^>]*><span>意見を送る/.test(html), 'NEWS announces that feedback is available and links to the form');
+ok(/\.news \.section-shell\s*\{[^}]*grid-template-columns:\s*minmax\(16rem, \.68fr\) minmax\(0, 1\.32fr\)/.test(css), 'desktop NEWS uses a heading column and an article column');
+ok(/\.news-list\s*\{[^}]*display:\s*grid[^}]*gap:/.test(css) && /\.news-entry\s*\{[^}]*grid-template-columns:\s*7rem minmax\(0, 1fr\)/.test(css), 'NEWS articles stack vertically with compact internal columns');
+ok(/@media \(max-width: 52rem\)[\s\S]*\.news \.section-shell\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/.test(css), 'NEWS returns to one column on smaller screens');
 ok((html.match(/name="category" value="(?:improvement|bug|impression|other)"/g) || []).length === 4, 'four fixed radio categories are present');
 ok(/name="message"[^>]*maxlength="1200"[^>]*required/.test(html), 'message is required and capped at 1200 characters');
 ok(/name="website"[^>]*tabindex="-1"[^>]*autocomplete="off"/.test(html), 'honeypot stays outside normal interaction');
@@ -35,7 +38,7 @@ ok(/\.feedback__shell\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)[^}]*wid
 ok(/\.feedback__heading h2 span\s*\{[^}]*white-space:\s*normal/.test(css), 'feedback headline may wrap instead of overlapping the form');
 ok(/\.feedback-form textarea\s*\{[^}]*background:\s*#f2ead8/.test(css) && /\.feedback-submit\s*\{/.test(css), 'ivory input and dedicated gold submit treatment exist');
 ok(/fetch\('\/api\/feedback'/.test(client) && /submit\.disabled = true/.test(client), 'client posts to API and locks during submission');
-ok(/launcherRetreatZones[\s\S]*#feedback, \.final-cta, \.site-footer[\s\S]*visibleZones\.size > 0/.test(client), 'fixed game launcher retreats throughout feedback and closing sections');
+ok(/launcherRetreatZones[\s\S]*#news, #feedback, \.final-cta, \.site-footer[\s\S]*visibleZones\.size > 0/.test(client), 'fixed game launcher retreats throughout NEWS, feedback, and closing sections');
 ok(/feedbackForm\.hidden = true[\s\S]*complete\.hidden = false/.test(client), 'success alone swaps to completion panel');
 ok(/入力内容はそのまま/.test(client) && /finally[\s\S]*submit\.disabled = false/.test(client), 'failure preserves input and unlocks retry');
 ok(/FEEDBACK_WEBHOOK_URL/.test(serverSource) && /FEEDBACK_WEBHOOK_TOKEN/.test(serverSource), 'webhook configuration remains server-side');
