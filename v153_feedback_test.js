@@ -20,6 +20,8 @@ const appsScript = read('deploy/google-apps-script/feedback-webhook.gs');
 ok(/const VERSION = '1\.53'/.test(serverSource) && require('./package.json').version === '1.53.0', 'release is v1.53');
 ok(/<section class="page-section feedback" id="feedback"/.test(html), 'feedback section exists');
 ok(html.indexOf('id="news"') < html.indexOf('id="feedback"') && html.indexOf('id="feedback"') < html.indexOf('class="final-cta"'), 'feedback sits between NEWS and final CTA');
+ok(html.indexOf('id="top"') < html.indexOf('id="news"') && html.indexOf('id="news"') < html.indexOf('id="concept"'), 'NEWS sits directly after the hero and before CONCEPT');
+ok(/FEEDBACK OPEN/.test(html) && /フィードバックを送れるようになりました/.test(html) && /href="#feedback"[^>]*><span>意見を送る/.test(html), 'NEWS announces that feedback is available and links to the form');
 ok((html.match(/name="category" value="(?:improvement|bug|impression|other)"/g) || []).length === 4, 'four fixed radio categories are present');
 ok(/name="message"[^>]*maxlength="1200"[^>]*required/.test(html), 'message is required and capped at 1200 characters');
 ok(/name="website"[^>]*tabindex="-1"[^>]*autocomplete="off"/.test(html), 'honeypot stays outside normal interaction');
@@ -29,6 +31,8 @@ ok(/ご意見ありがとうございます/.test(html) && /data-feedback-comple
 ok((html.match(/href="#feedback"/g) || []).length >= 2, 'header and footer link to feedback');
 ok(/\.feedback-form__category-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/.test(css), 'categories use a two-column grid');
 ok(/@media \(max-width: 36rem\)[\s\S]*\.feedback-form__category-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/.test(css), 'mobile preserves the two-by-two category grid');
+ok(/\.feedback__shell\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)[^}]*width:\s*min\(62rem/.test(css), 'feedback heading and form use one centered column');
+ok(/\.feedback__heading h2 span\s*\{[^}]*white-space:\s*normal/.test(css), 'feedback headline may wrap instead of overlapping the form');
 ok(/\.feedback-form textarea\s*\{[^}]*background:\s*#f2ead8/.test(css) && /\.feedback-submit\s*\{/.test(css), 'ivory input and dedicated gold submit treatment exist');
 ok(/fetch\('\/api\/feedback'/.test(client) && /submit\.disabled = true/.test(client), 'client posts to API and locks during submission');
 ok(/launcherRetreatZones[\s\S]*#feedback, \.final-cta, \.site-footer[\s\S]*visibleZones\.size > 0/.test(client), 'fixed game launcher retreats throughout feedback and closing sections');
