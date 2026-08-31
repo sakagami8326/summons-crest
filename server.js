@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.52';
+const VERSION = '1.53';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TURN_TRANSITION_TIMEOUT_MS = 20000;
@@ -3441,16 +3441,56 @@ function restoreRoom(save) {
   return { room, warn };
 }
 const BODY_LIMIT = 2 * 1024 * 1024;  // v0.62: 2MB(復元JSONの上限を兼ねる)
-const readBody = req => new Promise(res => {
+const FEEDBACK_BODY_LIMIT = 16 * 1024;
+const FEEDBACK_WINDOW_MS = 10 * 60 * 1000;
+const FEEDBACK_LIMIT = 3;
+const FEEDBACK_CATEGORIES = new Set(['improvement', 'bug', 'impression', 'other']);
+const feedbackAttempts = new Map();
+const readBody = (req, limit = BODY_LIMIT) => new Promise(res => {
   let raw = '';
+  let tooLarge = false;
   req.on('data', c => {
-    if (raw === null) return;
+    if (tooLarge) return;
     raw += c;
-    if (raw.length > BODY_LIMIT) { raw = null; try { req.destroy(); } catch (e) {} res({ __tooLarge: true }); }
+    if (Buffer.byteLength(raw, 'utf8') > limit) { tooLarge = true; raw = ''; }
   });
-  req.on('end', () => { if (raw === null) return; try { res(JSON.parse(raw || '{}')); } catch (e) { res({}); } });
+  req.on('end', () => {
+    if (tooLarge) return res({ __tooLarge: true });
+    try { res(JSON.parse(raw || '{}')); } catch (e) { res({}); }
+  });
 });
 const json = (res, o, s = 200) => { res.writeHead(s, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(o)); };
+const feedbackIp = req => String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '')
+  .split(',')[0].trim().slice(0, 96);
+function feedbackRateLimited(ip, now = Date.now()) {
+  const recent = (feedbackAttempts.get(ip) || []).filter(at => now - at < FEEDBACK_WINDOW_MS);
+  feedbackAttempts.set(ip, recent);
+  return recent.length >= FEEDBACK_LIMIT;
+}
+function recordFeedbackAttempt(ip, now = Date.now()) {
+  const recent = (feedbackAttempts.get(ip) || []).filter(at => now - at < FEEDBACK_WINDOW_MS);
+  recent.push(now);
+  feedbackAttempts.set(ip, recent);
+  if (feedbackAttempts.size > 2000) {
+    for (const [key, values] of feedbackAttempts)
+      if (!values.some(at => now - at < FEEDBACK_WINDOW_MS)) feedbackAttempts.delete(key);
+  }
+}
+const neutralizeSheetFormula = value => /^[=+\-@]/.test(value) ? `'${value}` : value;
+async function forwardFeedback(payload) {
+  const webhookUrl = String(process.env.FEEDBACK_WEBHOOK_URL || '').trim();
+  const webhookToken = String(process.env.FEEDBACK_WEBHOOK_TOKEN || '');
+  if (!webhookUrl || !webhookToken) throw new Error('feedback_not_configured');
+  const response = await fetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    body: JSON.stringify({ ...payload, token: webhookToken }),
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!response.ok) throw new Error(`feedback_upstream_${response.status}`);
+  const result = await response.json().catch(() => null);
+  if (!result || result.ok !== true) throw new Error('feedback_upstream_rejected');
+}
 const MIME = {
   html: 'text/html', css: 'text/css', js: 'text/javascript', json: 'application/json',
   png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', webm: 'video/webm',
@@ -3544,6 +3584,34 @@ const server = http.createServer(async (req, res) => {
   if (p === '/api/fixture') {
     // v0.66: 描画パリティ確認用の固定state(ルームは登録しない・開発用)
     return json(res, publicState(url.searchParams.get('result') ? makeResultFixtureRoom() : makeFixtureRoom(), null));
+  }
+
+  if (p === '/api/feedback' && req.method === 'POST') {
+    const b = await readBody(req, FEEDBACK_BODY_LIMIT);
+    if (b.__tooLarge) return json(res, { error: '送信内容が大きすぎます' }, 400);
+    // Botには受付済みに見せるが、外部サービスへは一切転送しない。
+    if (String(b.website || '').trim()) return json(res, { ok: true });
+    const category = String(b.category || '');
+    const message = String(b.message || '').trim();
+    if (!FEEDBACK_CATEGORIES.has(category) || !message || message.length > 1200)
+      return json(res, { error: '入力内容を確認してください' }, 400);
+    const ip = feedbackIp(req);
+    if (feedbackRateLimited(ip))
+      return json(res, { error: '短時間の送信回数が上限に達しました。10分ほど待ってからお試しください' }, 429);
+    recordFeedbackAttempt(ip);
+    try {
+      await forwardFeedback({
+        category,
+        message: neutralizeSheetFormula(message),
+        submittedAt: new Date().toISOString(),
+        version: VERSION,
+        sendId: crypto.randomUUID(),
+      });
+      return json(res, { ok: true });
+    } catch (error) {
+      console.error('[feedback] delivery failed:', error && error.message ? error.message : 'unknown');
+      return json(res, { error: '現在送信できません。時間をおいてもう一度お試しください' }, 503);
+    }
   }
 
   if (p === '/api/create' && req.method === 'POST') {

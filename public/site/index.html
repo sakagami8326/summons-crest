@@ -41,6 +41,7 @@
       <a href="#game-system">GAME SYSTEM</a>
       <a href="#cards">CARDS</a>
       <a href="#summoners">SUMMONERS</a>
+      <a href="#feedback">FEEDBACK</a>
       <div class="site-nav__socials" role="group" aria-label="SUMMONS CODE公式SNS">
         <a class="site-social-link site-social-link--x" href="https://x.com/gamitestman" target="_blank" rel="me noopener noreferrer" aria-label="開発者のXアカウント @gamitestman を開く">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.657l-5.214-6.817-5.967 6.817H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z"/></svg>
@@ -299,6 +300,50 @@
       </div>
     </section>
 
+    <section class="page-section feedback" id="feedback" aria-labelledby="feedback-title">
+      <div class="feedback__watermark" aria-hidden="true"></div>
+      <div class="feedback__stars" aria-hidden="true"></div>
+      <div class="section-shell feedback__shell">
+        <header class="feedback__heading reveal">
+          <p class="feedback__wordmark" aria-hidden="true">FEEDBACK</p>
+          <p class="feedback__eyebrow">YOUR VOICE SHAPES THE GAME</p>
+          <h2 id="feedback-title">あなたの声を、<br><span>次のアップデートへ。</span></h2>
+          <p>遊んで気づいたことや、もっとこうなったら面白いというアイデアをお寄せください。匿名で送信できます。</p>
+        </header>
+        <div class="feedback__panel reveal" data-feedback-panel>
+          <form class="feedback-form" data-feedback-form novalidate>
+            <fieldset class="feedback-form__categories">
+              <legend>ご意見の種類を選んでください <span>必須</span></legend>
+              <div class="feedback-form__category-grid">
+                <label><input class="feedback-form__radio" type="radio" name="category" value="improvement" required><span><b>01</b><strong>改善要望</strong><small>遊びやすさ・機能の提案</small></span></label>
+                <label><input class="feedback-form__radio" type="radio" name="category" value="bug" required><span><b>02</b><strong>バグ報告</strong><small>不具合や表示の問題</small></span></label>
+                <label><input class="feedback-form__radio" type="radio" name="category" value="impression" required><span><b>03</b><strong>感想</strong><small>遊んで感じたこと</small></span></label>
+                <label><input class="feedback-form__radio" type="radio" name="category" value="other" required><span><b>04</b><strong>その他</strong><small>上記以外のご意見</small></span></label>
+              </div>
+            </fieldset>
+            <div class="feedback-form__message">
+              <div class="feedback-form__label-row"><label for="feedback-message">内容 <span>必須</span></label><output for="feedback-message" data-feedback-count>0 / 1,200</output></div>
+              <textarea id="feedback-message" name="message" rows="8" maxlength="1200" required aria-describedby="feedback-help feedback-status" placeholder="ご意見をご自由にお書きください"></textarea>
+              <p id="feedback-help">バグ報告の場合は、使用端末や発生した場面も書いていただけると助かります。</p>
+            </div>
+            <div class="feedback-form__honeypot" aria-hidden="true"><label for="feedback-website">ウェブサイト</label><input id="feedback-website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
+            <p class="feedback-form__status" id="feedback-status" data-feedback-status aria-live="polite" tabindex="-1"></p>
+            <button class="feedback-submit play-cta" type="submit" data-feedback-submit>
+              <span class="feedback-submit__copy">この内容で送信する</span><span class="play-cta__arrow" aria-hidden="true">→</span>
+            </button>
+            <p class="feedback-form__privacy">名前・メールアドレス・IPアドレスは保存しません。</p>
+          </form>
+          <div class="feedback-complete" data-feedback-complete hidden tabindex="-1">
+            <span aria-hidden="true"></span>
+            <p>MESSAGE RECEIVED</p>
+            <h3>ご意見ありがとうございます</h3>
+            <p>いただいた内容は、今後の改善とアップデートの参考にします。</p>
+            <button type="button" data-feedback-again>続けて送る</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="final-cta" aria-labelledby="final-title">
       <div class="final-cta__ring" aria-hidden="true"></div>
       <img src="/assets/summons-code-gold.svg" alt="" width="1415" height="744" loading="lazy">
@@ -323,7 +368,7 @@
         </a>
       </div>
     </div>
-    <nav aria-label="フッターメニュー"><a href="#concept">CONCEPT</a><a href="#how-to-play">HOW TO PLAY</a><a href="#cards">CARDS</a><a href="#summoners">SUMMONERS</a><a href="/play">GAME START</a></nav>
+    <nav aria-label="フッターメニュー"><a href="#concept">CONCEPT</a><a href="#how-to-play">HOW TO PLAY</a><a href="#cards">CARDS</a><a href="#summoners">SUMMONERS</a><a href="#feedback">FEEDBACK</a><a href="/play">GAME START</a></nav>
     <img src="/assets/summons-code-white.svg" alt="SUMMONS CODE" width="1415" height="744" loading="lazy">
     <div class="site-footer__meta">
       <p class="site-footer__notice">SUMMONS CODEは個人開発ゲームです。</p>

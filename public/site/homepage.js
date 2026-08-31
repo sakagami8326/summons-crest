@@ -202,6 +202,90 @@
     start();
   }
 
+  const feedbackForm = document.querySelector('[data-feedback-form]');
+  if (feedbackForm) {
+    const panel = document.querySelector('[data-feedback-panel]');
+    const message = feedbackForm.querySelector('[name="message"]');
+    const website = feedbackForm.querySelector('[name="website"]');
+    const count = feedbackForm.querySelector('[data-feedback-count]');
+    const status = feedbackForm.querySelector('[data-feedback-status]');
+    const submit = feedbackForm.querySelector('[data-feedback-submit]');
+    const submitCopy = submit?.querySelector('.feedback-submit__copy');
+    const complete = panel?.querySelector('[data-feedback-complete]');
+    const again = panel?.querySelector('[data-feedback-again]');
+    const categoryFieldset = feedbackForm.querySelector('fieldset');
+    const setCount = () => { if (count && message) count.textContent = `${message.value.length.toLocaleString('ja-JP')} / 1,200`; };
+    const setError = (text, target) => {
+      if (status) status.textContent = text;
+      target?.setAttribute('aria-invalid', 'true');
+      target?.focus();
+    };
+    const clearError = () => {
+      if (status) status.textContent = '';
+      message?.removeAttribute('aria-invalid');
+      categoryFieldset?.removeAttribute('aria-invalid');
+    };
+    message?.addEventListener('input', () => { setCount(); message.removeAttribute('aria-invalid'); });
+    feedbackForm.querySelectorAll('[name="category"]').forEach(radio => radio.addEventListener('change', () => {
+      categoryFieldset?.removeAttribute('aria-invalid');
+    }));
+    setCount();
+
+    feedbackForm.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (submit?.disabled) return;
+      clearError();
+      const selected = feedbackForm.querySelector('[name="category"]:checked');
+      const body = message?.value.trim() || '';
+      if (!selected) {
+        if (status) status.textContent = 'ご意見の種類を選んでください。';
+        categoryFieldset?.setAttribute('aria-invalid', 'true');
+        feedbackForm.querySelector('[name="category"]')?.focus();
+        return;
+      }
+      if (!body) return setError('内容を入力してください。', message);
+      if (body.length > 1200) return setError('内容は1,200文字以内で入力してください。', message);
+
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 12000);
+      if (submit) submit.disabled = true;
+      if (submitCopy) submitCopy.textContent = '送信しています…';
+      try {
+        const response = await fetch('/api/feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ category: selected.value, message: body, website: website?.value || '' }),
+          signal: controller.signal,
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || result.ok !== true) throw new Error(result.error || '送信できませんでした。');
+        feedbackForm.hidden = true;
+        if (complete) {
+          complete.hidden = false;
+          complete.focus();
+        }
+      } catch (error) {
+        const text = error?.name === 'AbortError'
+          ? '通信に時間がかかっています。入力内容はそのままです。もう一度お試しください。'
+          : (error?.message || '送信できませんでした。入力内容を残したまま再送できます。');
+        setError(text, status);
+      } finally {
+        window.clearTimeout(timeout);
+        if (submit) submit.disabled = false;
+        if (submitCopy) submitCopy.textContent = 'この内容で送信する';
+      }
+    });
+
+    again?.addEventListener('click', () => {
+      feedbackForm.reset();
+      clearError();
+      setCount();
+      if (complete) complete.hidden = true;
+      feedbackForm.hidden = false;
+      feedbackForm.querySelector('[name="category"]')?.focus();
+    });
+  }
+
   const revealItems = document.querySelectorAll('.reveal');
   if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     const revealObserver = new IntersectionObserver(entries => {
@@ -216,8 +300,13 @@
 
   const launcher = document.querySelector('[data-game-launcher]');
   const footer = document.querySelector('.site-footer');
+  const launcherRetreatZones = document.querySelectorAll('#feedback, .final-cta, .site-footer');
   if (launcher && footer && 'IntersectionObserver' in window) {
-    const footerObserver = new IntersectionObserver(entries => launcher.classList.toggle('is-raised', entries[0].isIntersecting), { threshold: .05 });
-    footerObserver.observe(footer);
+    const visibleZones = new Set();
+    const footerObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => entry.isIntersecting ? visibleZones.add(entry.target) : visibleZones.delete(entry.target));
+      launcher.classList.toggle('is-raised', visibleZones.size > 0);
+    }, { threshold: .05 });
+    launcherRetreatZones.forEach(zone => footerObserver.observe(zone));
   }
 })();

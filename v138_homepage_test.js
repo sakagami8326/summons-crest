@@ -41,7 +41,7 @@ ok(/@keyframes play-cta-sheen/.test(css) && /\.play-cta:focus-visible\s*\{[^}]*o
 ok(/prefers-reduced-motion:[\s\S]*\.play-cta::before[^}]*animation:\s*none !important/.test(css), 'play CTA motion stops for reduced-motion users');
 ok(/\.sc-game-launcher--play\s*\{[^}]*align-items:\s*center[^}]*justify-content:\s*center[^}]*text-align:\s*center/.test(css) && /\.sc-game-launcher--play (?:strong|small)\s*\{[^}]*width:\s*100%[^}]*text-align:\s*center/.test(css), 'fixed game launcher centers its copy horizontally and vertically');
 
-for (const id of ['concept','play-style','how-to-play','game-system','cards','summoners','early-access','news'])
+for (const id of ['concept','play-style','how-to-play','game-system','cards','summoners','early-access','news','feedback'])
   ok(new RegExp(`id="${id}"`).test(html), `section exists: ${id}`);
 
 for (const file of ['heading-concept-a.png','heading-play-style.png','heading-how-to-play.png','heading-game-system.png',

@@ -58,8 +58,10 @@ cat >/etc/summons-crest.env <<EOF
 NODE_ENV=production
 PORT=3000
 PUBLIC_URL=${PUBLIC_URL}
+FEEDBACK_WEBHOOK_URL=
+FEEDBACK_WEBHOOK_TOKEN=
 EOF
-chmod 0644 /etc/summons-crest.env
+chmod 0600 /etc/summons-crest.env
 
 cat >/etc/caddy/Caddyfile <<EOF
 ${PUBLIC_URL} {

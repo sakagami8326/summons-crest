@@ -67,6 +67,26 @@ journalctl -u summons-crest-deploy.service -n 100 --no-pager
 
 Because active rooms are held in memory, do not push `main` while a match is running.
 
+## Feedback form and Google Sheets
+
+The homepage feedback form posts only to the Lightsail server. The browser never receives the Google Apps Script URL or its shared token.
+
+1. Open the `SUMMONS CODE フィードバック` Google Sheet and create a bound Apps Script project from **Extensions > Apps Script**.
+2. Paste `deploy/google-apps-script/feedback-webhook.gs` into the project.
+3. In Apps Script **Project Settings > Script Properties**, add `FEEDBACK_TOKEN` with a long random value. `SPREADSHEET_ID` is optional because the dedicated sheet ID is already the default in the script.
+4. Deploy it as a Web app, execute as the sheet owner, and allow access for anyone. Complete the one-time Google authorization as the sheet owner.
+5. Add the deployment URL and the same token to `/etc/summons-crest.env` without committing either value:
+
+```bash
+sudoedit /etc/summons-crest.env
+# FEEDBACK_WEBHOOK_URL=https://script.google.com/macros/s/DEPLOYMENT_ID/exec
+# FEEDBACK_WEBHOOK_TOKEN=LONG_RANDOM_SECRET
+sudo chmod 0600 /etc/summons-crest.env
+sudo systemctl restart summons-crest
+```
+
+Verify with one test submission from the homepage. The `回答` tab must receive only 受付日時, 種別, 内容, サイトバージョン, and 送信ID. Do not add the sender IP, request headers, or other personal data to Apps Script logging.
+
 ## Manual deployment
 
 To deploy immediately after `main` has been pushed:
