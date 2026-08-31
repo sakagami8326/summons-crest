@@ -80,7 +80,7 @@ ok(/\.site-card-flipper[^}]*aspect-ratio: 2 \/ 3/.test(css), 'showcase card rati
 ok(/\.site-card-art[^}]*filter: drop-shadow\(0 0 [^)]+rgb\(255 255 255/.test(css), 'showcase artwork has a soft white alpha-outline glow');
 ok(!/\.site-card-art[^}]*box-shadow:/.test(css) && !/\.site-game-card[^}]*box-shadow:/.test(css), 'showcase card and artwork have no rectangular box shadow');
 ok(!/\.card-panel img[^}]*(?:border|box-shadow):/.test(css), 'generic card panel styles do not add a border or shadow to showcase art');
-ok(/\.news\s*\{[^}]*padding-bottom:\s*0/.test(css), 'news section removes the unexplained trailing gap');
+ok(/\.news\s*\{[^}]*padding:\s*clamp\(3\.5rem, 6vw, 5\.5rem\) 0 clamp\(2\.5rem, 4vw, 4rem\)/.test(css), 'news section uses compact vertical spacing');
 ok(/<time datetime="2026-08-31">2026\.08\.31<\/time>/.test(html) && /SUMMONS CODEを公開しました/.test(html), 'news section announces the early access release');
 ok(/class="news-entry__link play-cta play-cta--news" href="\/play"/.test(html) && !/公開準備中/.test(html), 'release news links to the game and removes the preparation placeholder');
 ok(/\.final-cta\s*\{[^}]*min-height:\s*0[^}]*padding:\s*clamp\(3\.5rem, 6vw, 5rem\)/.test(css), 'final call to action no longer creates a large empty block below news');

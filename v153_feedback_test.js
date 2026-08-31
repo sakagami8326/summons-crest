@@ -21,7 +21,10 @@ ok(/const VERSION = '1\.53'/.test(serverSource) && require('./package.json').ver
 ok(/<section class="page-section feedback" id="feedback"/.test(html), 'feedback section exists');
 ok(html.indexOf('id="news"') < html.indexOf('id="feedback"') && html.indexOf('id="feedback"') < html.indexOf('class="final-cta"'), 'feedback sits between NEWS and final CTA');
 ok(html.indexOf('id="top"') < html.indexOf('id="news"') && html.indexOf('id="news"') < html.indexOf('id="concept"'), 'NEWS sits directly after the hero and before CONCEPT');
-ok(/FEEDBACK OPEN/.test(html) && /フィードバックを送れるようになりました/.test(html) && /href="#feedback"[^>]*><span>意見を送る/.test(html), 'NEWS announces that feedback is available and links to the form');
+ok(/フィードバックを送れるようになりました/.test(html) && /href="#feedback"[^>]*><span>意見を送る/.test(html), 'NEWS announces that feedback is available and links to the form');
+ok(/class="news__wordmark"[^>]*>NEWS<\/p>[\s\S]*<h2 id="news-title">更新情報<\/h2>/.test(html) && /\.news__wordmark\s*\{[^}]*text-align:\s*left/.test(css), 'NEWS and its Japanese heading share the same left alignment');
+ok(!/FEEDBACK OPEN|EARLY ACCESS START/.test(html), 'article eyebrow labels are removed');
+ok(/\.news-entry\s*\{[^}]*min-height:\s*10\.5rem[^}]*padding:\s*clamp\(1\.35rem, 2\.2vw, 2rem\)/.test(css), 'NEWS articles use compact vertical dimensions');
 ok(/\.news \.section-shell\s*\{[^}]*grid-template-columns:\s*minmax\(16rem, \.68fr\) minmax\(0, 1\.32fr\)/.test(css), 'desktop NEWS uses a heading column and an article column');
 ok(/\.news-list\s*\{[^}]*display:\s*grid[^}]*gap:/.test(css) && /\.news-entry\s*\{[^}]*grid-template-columns:\s*7rem minmax\(0, 1fr\)/.test(css), 'NEWS articles stack vertically with compact internal columns');
 ok(/@media \(max-width: 52rem\)[\s\S]*\.news \.section-shell\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/.test(css), 'NEWS returns to one column on smaller screens');
