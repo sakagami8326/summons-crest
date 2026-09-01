@@ -49,8 +49,8 @@ for (const file of ['heading-concept-a.png','heading-play-style.png','heading-ho
   ok(exists('public/assets/site/' + file), `site asset exists: ${file}`);
 
 for (const weight of [400,600,700])
-  ok(exists(`public/assets/site/fonts/shippori-mincho-${weight}.woff2`), `self-hosted Shippori Mincho ${weight}`);
-ok(/shippori-mincho-400\.woff2/.test(read('public/site/design-system.css')), 'design system loads self-hosted font');
+  ok(exists(`public/assets/site/fonts/shippori-mincho-${weight}-site-v154.woff2`), `self-hosted Shippori Mincho ${weight} subset`);
+ok(/shippori-mincho-400-site-v154\.woff2/.test(read('public/site/design-system.css')), 'design system loads the site font subset');
 
 ok(/class="site-game-card\b/.test(html) && /bg-fire\.webp/.test(html) && /bg-water\.webp/.test(html) && /bg-earth\.webp/.test(html) && /bg-wind\.webp/.test(html), 'creature showcase uses all four in-game elemental card backgrounds');
 ok(/<strong>100<\/strong><span>種類以上<small>※リリース時点<\/small>/.test(html), 'cards section announces more than 100 cards at release');

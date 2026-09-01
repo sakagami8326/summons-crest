@@ -17,7 +17,7 @@ body {
   background:
     radial-gradient(circle at 76% 48%, rgb(201 162 39 / 12%), transparent 29rem),
     linear-gradient(115deg, rgb(11 13 24 / 97%) 12%, rgb(20 18 39 / 92%) 58%, rgb(11 13 24 / 98%)),
-    url('../assets/summoner-select-bg-v1.png') center / cover;
+    image-set(url('../assets/site/summoner-bg-v154-1280.webp') 1x, url('../assets/site/summoner-bg-v154-1920.webp') 2x) center / cover;
 }
 
 .concept::before,

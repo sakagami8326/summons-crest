@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>公式ルール | SUMMONS CODE</title>
+  <meta name="description" content="SUMMONS CODEの遊び方と詳細仕様をまとめた公式ルール。勝利条件、ターン、領地、戦闘、カード、称号、セーブまで確認できます。">
+  <meta name="theme-color" content="#0b0d18">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="SUMMONS CODE">
+  <meta property="og:url" content="https://summonscode.jp/rules">
+  <meta property="og:title" content="公式ルール | SUMMONS CODE">
+  <meta property="og:description" content="初めて遊ぶ方にも、細かな仕様を確認したい方にも使えるSUMMONS CODE公式ルール。">
+  <meta property="og:image" content="https://summonscode.jp/assets/site/og-summons-code-v1.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://summonscode.jp/rules">
+  <link rel="icon" href="/assets/site/spark-star.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/site/design-system.css?v=154">
+  <link rel="stylesheet" href="/site/site-pages.css?v=154">
+  <link rel="stylesheet" href="/site/rules.css?v=154">
+  <script src="/analytics.js"></script>
+  <script src="/site/site-pages.js?v=154" defer></script>
+  <script src="/site/rules.js?v=154" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#rules-content">ルール本文へ移動</a>
+  <header class="sub-header">
+    <a class="sub-header__logo" href="/" aria-label="SUMMONS CODE ホーム"><img src="/assets/summons-code-white.svg" alt="SUMMONS CODE" width="1415" height="744"></a>
+    <nav class="sub-nav" id="sub-nav" aria-label="メインメニュー" data-sub-nav><a href="/">HOME</a><a href="/cards">CARDS</a><a href="/rules" aria-current="page">RULES</a><a href="/#how-to-play">HOW TO PLAY</a><a href="/#feedback">FEEDBACK</a></nav>
+    <a class="sub-header__play" href="/play" data-game-cta="rules-header">無料でプレイ</a>
+    <button class="sub-nav-toggle" type="button" aria-expanded="false" aria-controls="sub-nav" aria-label="メニューを開く" data-sub-nav-toggle><span></span><span></span></button>
+  </header>
+
+  <main class="sub-main">
+    <section class="sub-hero rules-hero" aria-labelledby="page-title"><div class="sub-shell"><p class="sub-kicker">OFFICIAL GAME RULES</p><h1 class="sub-title" id="page-title">RULES</h1><p class="sub-lead">初めて遊ぶ時の流れから、戦闘や資産計算の細かな仕様まで。遊んでいて迷った時に確認できる公式ルールです。</p><p class="sub-meta"><span>GAME VERSION <b>1.54</b></span><span>UPDATED 2026.09.01</span></p></div></section>
+
+    <section class="rules-area" id="rules-content">
+      <div class="sub-shell">
+        <label class="rules-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.2"></circle><path d="m15.5 15.5 5 5"></path></svg><span class="visually-hidden">ルール内を検索</span><input type="search" placeholder="ルール内を検索（例：通行料、進化、セーブ）" data-rules-search autocomplete="off"></label>
+        <p class="rules-search__result" data-rules-result aria-live="polite"></p>
+        <div class="rules-layout">
+          <details class="rules-toc" open data-rules-toc><summary>目次</summary><nav aria-label="ルール目次">
+            <a href="#overview">ゲームの目的</a><a href="#setup">ゲームの準備</a><a href="#victory">勝利条件と総資産</a><a href="#turn">ターンの流れ</a><a href="#board">マップと土地</a><a href="#cards-rule">カードとデッキ</a><a href="#battle">戦闘</a><a href="#facilities">特殊なマス</a><a href="#territory">領地操作</a><a href="#titles">称号と破産</a><a href="#save">セーブ</a><a href="#summoners-rule">召喚士</a><a href="#faq">よくある質問</a>
+          </nav></details>
+
+          <div class="rules-document">
+            <article class="rule-section" id="overview" data-rule-section><p class="rule-section__number">01</p><h2>ゲームの目的</h2><p>カードを集めてデッキを育て、クリーチャーを土地へ配置し、相手の領地を侵略しながら総資産を増やすボードゲームです。</p><div class="rule-callout"><strong>1人でも、みんなでも</strong><p>BOT戦は1人でプレイできます。通常対戦は2〜4人で、テレビまたはPCに盤面を映し、各プレイヤーのスマホをコントローラーとして使用します。</p></div></article>
+
+            <article class="rule-section" id="setup" data-rule-section><p class="rule-section__number">02</p><h2>ゲームの準備</h2><ol class="rule-steps"><li>テレビまたはPCでゲーム画面を開き、ルームを作成します。</li><li>表示されたQRコードを各自のスマホで読み取ります。</li><li>プレイヤー名と召喚士を選び、全員が確定すると開始できます。</li><li>各プレイヤーは300G、初期デッキ12枚、最初の手札5枚で開始します。</li></ol><p class="rule-note">アプリのインストールは不要です。同じWi-Fiに接続していなくても参加できます。</p></article>
+
+            <article class="rule-section" id="victory" data-rule-section><p class="rule-section__number">03</p><h2>勝利条件と総資産</h2><p><strong>総資産8,000G以上</strong>の状態で城を通過すると勝利します。7,000Gへ到達するとラストスパートに入ります。</p><div class="formula"><span>総資産</span><b>所持金 ＋ 所有する土地の地価 ＋ 称号価値</b></div><p>「覇者」と「大巡礼者」はそれぞれ総資産へ500Gを加算します。単に8,000Gへ到達しただけでは勝利せず、城への帰還が必要です。</p></article>
+
+            <article class="rule-section" id="turn" data-rule-section><p class="rule-section__number">04</p><h2>ターンの流れ</h2><ol class="rule-flow"><li><b>選択ドロー</b><span>自分の山札から2枚を見て1枚を手札へ、残りを捨て札へ置きます。</span></li><li><b>スペル</b><span>使用する場合はサイコロを振る前に選びます。基本は1ターンに1回です。</span></li><li><b>サイコロ</b><span>出目の数だけ現在の進行方向へ移動します。最初の移動時に左右どちらへ進むか選びます。</span></li><li><b>停止マスの処理</b><span>召喚、侵略、領地強化、ショップなど、止まったマスに応じた行動を行います。</span></li><li><b>手札整理</b><span>手札が8枚以上なら、7枚になるまで捨てて手番を終えます。</span></li></ol></article>
+
+            <article class="rule-section" id="board" data-rule-section><p class="rule-section__number">05</p><h2>マップ、土地、属性、連鎖</h2><p>盤面は28マスで構成され、通常土地には火・水・土・風の属性があります。自分のクリーチャーを空き地へ召喚すると、その土地を領地にできます。</p><h3>地価</h3><div class="formula"><span>地価</span><b>100G × 土地Lv倍率 × 同属性連鎖倍率</b></div><div class="rule-table-wrap"><table><thead><tr><th>土地Lv</th><th>倍率</th><th>連鎖数</th><th>倍率</th></tr></thead><tbody><tr><td>Lv1</td><td>×1</td><td>1</td><td>×1.0</td></tr><tr><td>Lv2</td><td>×2.5</td><td>2</td><td>×1.4</td></tr><tr><td>Lv3</td><td>×8</td><td>3</td><td>×1.8</td></tr><tr><td>Lv4</td><td>×20</td><td>4 / 5以上</td><td>×2.2 / ×2.6</td></tr></tbody></table></div><h3>通行料</h3><div class="formula"><span>基本通行料</span><b>地価 × 25%</b></div><p>敵領地へ止まり侵略しない場合、表示された通行料を所有者へ支払います。クリーチャー能力による増減はマップ上の表示額へ反映されます。</p><h3>属性親和</h3><p>召喚士と同じ属性の土地は、強化費用が20%安くなります。</p></article>
+
+            <article class="rule-section" id="cards-rule" data-rule-section><p class="rule-section__number">06</p><h2>カード、デッキ、進化</h2><div class="rule-cards"><div><b>クリーチャー</b><p>空き地への召喚や侵略に使います。AT、HP、属性、固有能力を持ちます。</p></div><div><b>スペル</b><p>サイコロ前に使用し、移動、土地、カード、経済へ干渉します。</p></div><div><b>ウェポン</b><p>戦闘時に使用し、ATやDFを補正します。使用後は原則として廃棄されます。</p></div></div><p>市場、祠、門、戦闘勝利などで獲得したカードは自分の山札へ加わり、シャッフルされます。山札がなくなると捨て札をシャッフルして新しい山札にします。</p><h3>進化</h3><p>進化先を持つクリーチャーは、領地がLv3へ到達した時に進化します。門の鍛錬では150Gを支払い、手札の対象クリーチャーを進化できます。</p><p><a class="rule-link" href="/cards?card=mermaid&amp;evolved=1">進化例：マーメイド → セレナーデを見る</a></p><p><a class="rule-link" href="/cards">全カードと進化先を確認する</a></p></article>
+
+            <article class="rule-section" id="battle" data-rule-section><p class="rule-section__number">07</p><h2>戦闘</h2><ol class="rule-steps"><li>敵領地へ止まり「侵略する」を選ぶと、手札から侵略するクリーチャーを選びます。</li><li>攻撃側と防御側が、使用可能ならウェポンを選びます。</li><li>AT、地形補正、能力、ウェポンを反映して戦闘を解決します。</li><li>防御側の総耐久値を0以下にすると侵略成功です。失敗した場合は防衛側が領地を維持します。</li></ol><h3>領地ボーナス</h3><p>防御クリーチャーの属性と土地属性が一致すると、土地Lv×10のDFを得ます。無属性の一部クリーチャーは、どの属性の土地でも領地ボーナスを受けられます。</p><div class="formula"><span>例</span><b>水属性クリーチャーが水属性Lv3土地を防衛 → DF＋30</b></div><p>戦闘の勝者は、共通山札の3枚から1枚を選んで自分の山札へ加えます。<a class="rule-link" href="/cards?card=pakawata">先制</a>、<a class="rule-link" href="/cards?card=avalanche">双撃</a>、能力無効などは各カードの効果文に従います。</p></article>
+
+            <article class="rule-section" id="facilities" data-rule-section><p class="rule-section__number">08</p><h2>城、門、祠、ショップ</h2><div class="facility-grid"><div><h3>城</h3><p>刻印を持って通過すると、完了周回数×100G、所有地価合計の20%、カード獲得、自領地の負傷回復を得ます。刻印がなければ帰還ボーナスはありません。</p></div><div><h3>門</h3><p>初めて通過した時に200Gと刻印を獲得します。停止時はカード獲得、鍛錬などから恩恵を選びます。</p></div><div><h3>祠</h3><p>停止時に100Gを獲得し、共通山札の3枚から1枚を選びます。参拝回数は称号判定にも使われます。</p></div><div><h3>ショップ</h3><p>公開された商品を所持金で購入します。購入カードは山札へ加わります。80Gでカードを1枚削除することもできます。</p></div></div></article>
+
+            <article class="rule-section" id="territory" data-rule-section><p class="rule-section__number">09</p><h2>領地強化、侵略、防衛</h2><p>自分の領地へ止まるか城へ到着すると、所有する領地を強化できます。強化費用は次のLvに応じて加算されます。</p><div class="rule-table-wrap"><table><thead><tr><th>強化</th><th>基本費用</th><th>属性親和時</th></tr></thead><tbody><tr><td>Lv1 → Lv2</td><td>100G</td><td>80G</td></tr><tr><td>Lv2 → Lv3</td><td>450G</td><td>360G</td></tr><tr><td>Lv3 → Lv4</td><td>950G</td><td>760G</td></tr></tbody></table></div><p>侵略に成功すると、土地Lvや土地に残っている状態を引き継いで所有者が変わります。負傷したクリーチャーはHPが減った状態で戦闘へ参加します。</p></article>
+
+            <article class="rule-section" id="titles" data-rule-section><p class="rule-section__number">10</p><h2>称号と破産</h2><div class="rule-cards"><div><b>覇者</b><p>戦闘3勝以上で獲得候補になります。最多勝利記録を更新すると保持者から奪取します。総資産＋500G。</p></div><div><b>大巡礼者</b><p>祠参拝4回以上で獲得候補になります。最多参拝記録を更新すると保持者から奪取します。総資産＋500G。</p></div></div><h3>破産</h3><p>所持金がマイナスになると、0G以上になるまで領地を地価の70%で売却します。すべて売却しても支払えない場合は破産して脱落し、最後の1人になったプレイヤーが勝利します。</p></article>
+
+            <article class="rule-section" id="save" data-rule-section><p class="rule-section__number">11</p><h2>セーブデータ</h2><p>ゲームはテレビ側ブラウザへ自動保存されます。「セーブして終了」からタイトルへ戻り、「続きから再開」で同じルームを復元できます。</p><ul><li>セーブデータはテレビとして使用したブラウザに保存されます。</li><li>ファイルとしてPCへ書き出し、別のブラウザへ読み込むこともできます。</li><li>スマホ側にはゲーム全体のセーブデータを保持しません。</li></ul></article>
+
+            <article class="rule-section" id="summoners-rule" data-rule-section><p class="rule-section__number">12</p><h2>召喚士と固有スキル</h2><p>召喚士ごとに初期デッキ、得意属性、プレイ傾向、1ゲームに1回の固有スキルが異なります。固有スキルは自分の手番中、使用条件を満たしている時だけ発動できます。</p><p>能力確認はスマホの必殺技ボタンからいつでも行えます。発動できない場合は、その理由が画面に表示されます。</p></article>
+
+            <article class="rule-section" id="faq" data-rule-section><p class="rule-section__number">13</p><h2>よくある質問</h2><details><summary>オンラインで離れた相手と遊べますか？</summary><p>現在は、盤面を映した画面を画面共有し、参加用URLを相手へ送る方法で遊べます。各参加者はスマホから同じルームへ接続します。</p></details><details><summary>カードを使う順番は変更できますか？</summary><p>スマホの手札は長押ししてドラッグすると並び替えられます。並び順はその端末とルームごとに保存されます。</p></details><details><summary>属性が一致しない土地にも配置できますか？</summary><p>配置できます。ただし通常は領地ボーナスを得られず、召喚士と同属性の強化費用割引も適用されません。</p></details><details><summary>詳細なカード効果はどこで確認できますか？</summary><p><a class="rule-link" href="/cards">カード一覧</a>から、カード名、効果、進化前後のステータスを検索できます。</p></details></article>
+
+            <div class="rules-empty" data-rules-empty hidden><p>検索条件に一致するルールがありません。</p><button type="button" data-rules-clear>検索をクリア</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="sub-footer"><img src="/assets/summons-code-gold.svg" alt="SUMMONS CODE" width="1415" height="744" loading="lazy"><nav aria-label="フッターメニュー"><a href="/">HOME</a><a href="/cards">CARDS</a><a href="/rules">RULES</a><a href="/#feedback">FEEDBACK</a><a href="/play" data-game-cta="rules-footer">GAME START</a></nav><small>© 2026 SUMMONS CODE</small></footer>
+</body>
+</html>

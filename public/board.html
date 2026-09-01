@@ -4385,7 +4385,7 @@ function render() {
   if (!state) return;
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.52';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.54';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {

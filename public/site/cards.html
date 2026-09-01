@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>カード一覧 | SUMMONS CODE</title>
+  <meta name="description" content="SUMMONS CODEに登場するクリーチャー、スペル、ウェポンを検索できる公式カード一覧。進化前後のステータスと効果も確認できます。">
+  <meta name="theme-color" content="#0b0d18">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="SUMMONS CODE">
+  <meta property="og:url" content="https://summonscode.jp/cards">
+  <meta property="og:title" content="カード一覧 | SUMMONS CODE">
+  <meta property="og:description" content="クリーチャー、スペル、ウェポンを検索できるSUMMONS CODE公式カード一覧。">
+  <meta property="og:image" content="https://summonscode.jp/assets/site/og-summons-code-v1.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://summonscode.jp/cards">
+  <link rel="icon" href="/assets/site/spark-star.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/site/design-system.css?v=154">
+  <link rel="stylesheet" href="/site/site-pages.css?v=154">
+  <link rel="stylesheet" href="/site/cards.css?v=154">
+  <script src="/analytics.js"></script>
+  <script src="/site/site-pages.js?v=154" defer></script>
+  <script src="/site/cards.js?v=154" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#catalog">カード一覧へ移動</a>
+  <header class="sub-header">
+    <a class="sub-header__logo" href="/" aria-label="SUMMONS CODE ホーム">
+      <img src="/assets/summons-code-white.svg" alt="SUMMONS CODE" width="1415" height="744">
+    </a>
+    <nav class="sub-nav" id="sub-nav" aria-label="メインメニュー" data-sub-nav>
+      <a href="/">HOME</a>
+      <a href="/cards" aria-current="page">CARDS</a>
+      <a href="/rules">RULES</a>
+      <a href="/#how-to-play">HOW TO PLAY</a>
+      <a href="/#feedback">FEEDBACK</a>
+    </nav>
+    <a class="sub-header__play" href="/play" data-game-cta="cards-header">無料でプレイ</a>
+    <button class="sub-nav-toggle" type="button" aria-expanded="false" aria-controls="sub-nav" aria-label="メニューを開く" data-sub-nav-toggle><span></span><span></span></button>
+  </header>
+
+  <main class="sub-main">
+    <section class="sub-hero card-hero" aria-labelledby="page-title">
+      <div class="sub-shell">
+        <p class="sub-kicker">OFFICIAL CARD ARCHIVE</p>
+        <h1 class="sub-title" id="page-title">CARDS</h1>
+        <p class="sub-lead">名前や効果からカードを探し、進化前後の能力を見比べられます。デッキと領地を組み立てる一手を見つけよう。</p>
+        <p class="sub-meta" aria-live="polite"><span>GAME VERSION <b data-version>1.54</b></span><span><b data-total>68</b> CARD TYPES</span><span><b data-evolutions>32</b> EVOLUTIONS</span></p>
+      </div>
+    </section>
+
+    <section class="catalog" id="catalog" aria-labelledby="catalog-heading">
+      <div class="sub-shell">
+        <h2 class="visually-hidden" id="catalog-heading">カード検索</h2>
+        <form class="catalog-filter" data-filter-form role="search">
+          <div class="catalog-filter__count"><strong data-result-count>—</strong><span>件</span></div>
+          <label class="catalog-filter__search"><span class="visually-hidden">カード名・効果を検索</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.2"></circle><path d="m15.5 15.5 5 5"></path></svg><input type="search" name="query" placeholder="名前や効果を検索" autocomplete="off"></label>
+          <label><span class="visually-hidden">カードの種類</span><select name="kind"><option value="all">すべての種類</option><option value="creature">クリーチャー</option><option value="spell">スペル</option><option value="weapon">ウェポン</option></select></label>
+          <label><span class="visually-hidden">属性</span><select name="element"><option value="all">すべての属性</option><option value="fire">火属性</option><option value="water">水属性</option><option value="earth">土属性</option><option value="wind">風属性</option><option value="neutral">無属性</option></select></label>
+          <label><span class="visually-hidden">レアリティ</span><select name="rarity"><option value="all">すべてのレアリティ</option><option value="N">N</option><option value="R">R</option><option value="L">L</option></select></label>
+          <button class="catalog-filter__clear" type="reset">条件をクリア</button>
+        </form>
+
+        <div class="catalog-summary">
+          <p data-result-summary>カード情報を読み込んでいます</p>
+          <span>カードを選ぶと詳細を表示</span>
+        </div>
+        <div class="catalog-state" data-catalog-state role="status">カード情報を読み込んでいます。</div>
+        <div class="catalog-grid" data-card-grid aria-live="polite"></div>
+        <div class="catalog-sentinel" data-card-sentinel aria-hidden="true"></div>
+      </div>
+    </section>
+  </main>
+
+  <dialog class="card-dialog" data-card-dialog aria-labelledby="card-dialog-title">
+    <div class="card-dialog__frame">
+      <button class="card-dialog__close" type="button" data-dialog-close aria-label="カード詳細を閉じる">×</button>
+      <div class="card-dialog__visual" data-dialog-card></div>
+      <div class="card-dialog__info">
+        <p class="card-dialog__kind" data-dialog-kind></p>
+        <h2 id="card-dialog-title" data-dialog-name></h2>
+        <div class="card-dialog__modes" data-dialog-modes hidden><button type="button" data-dialog-mode="base">進化前</button><button type="button" data-dialog-mode="evolution">進化後</button></div>
+        <dl class="card-dialog__meta" data-dialog-meta></dl>
+        <div class="card-dialog__effect"><small>ABILITY / EFFECT</small><p data-dialog-effect></p></div>
+        <div class="card-dialog__nav"><button type="button" data-dialog-prev>前のカード</button><span data-dialog-position></span><button type="button" data-dialog-next>次のカード</button></div>
+      </div>
+    </div>
+  </dialog>
+
+  <footer class="sub-footer">
+    <img src="/assets/summons-code-gold.svg" alt="SUMMONS CODE" width="1415" height="744" loading="lazy">
+    <nav aria-label="フッターメニュー"><a href="/">HOME</a><a href="/cards">CARDS</a><a href="/rules">RULES</a><a href="/#feedback">FEEDBACK</a><a href="/play" data-game-cta="cards-footer">GAME START</a></nav>
+    <small>© 2026 SUMMONS CODE</small>
+  </footer>
+</body>
+</html>

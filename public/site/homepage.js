@@ -55,6 +55,7 @@
     const order = [...cards];
     let evolutionRunning = false;
     let carouselMoving = false;
+    let showcaseVisible = !('IntersectionObserver' in window);
     const wait = ms => new Promise(resolve => window.setTimeout(resolve, ms));
 
     const positionCards = (items = order) => {
@@ -66,7 +67,7 @@
     };
 
     const advanceCards = async () => {
-      if (document.hidden || reducedMotion.matches || evolutionRunning || carouselMoving) return;
+      if (!showcaseVisible || document.hidden || reducedMotion.matches || evolutionRunning || carouselMoving) return;
       carouselMoving = true;
       const exiting = order[0];
       const incoming = exiting.cloneNode(true);
@@ -96,7 +97,7 @@
     };
 
     const runEvolutionWave = async () => {
-      if (document.hidden || reducedMotion.matches || evolutionRunning) return;
+      if (!showcaseVisible || document.hidden || reducedMotion.matches || evolutionRunning) return;
       if (carouselMoving) {
         window.setTimeout(runEvolutionWave, 800);
         return;
@@ -117,6 +118,11 @@
     };
 
     positionCards();
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(entries => {
+        showcaseVisible = entries.some(entry => entry.isIntersecting);
+      }, { rootMargin: '240px 0px' }).observe(cardShowcase);
+    }
     window.setInterval(advanceCards, 4000);
     const scheduleEvolutionWave = () => {
       runEvolutionWave();
@@ -141,6 +147,7 @@
     let active = 0;
     let timer = 0;
     let paused = false;
+    let carouselVisible = !('IntersectionObserver' in window);
     let pointerStart = null;
 
     slides.forEach((slide, index) => {
@@ -185,7 +192,7 @@
     const stop = () => { window.clearInterval(timer); timer = 0; };
     const start = () => {
       stop();
-      if (paused || reducedMotion.matches || document.hidden) return;
+      if (paused || !carouselVisible || reducedMotion.matches || document.hidden) return;
       timer = window.setInterval(() => show(active + 1), 5000);
     };
     const restart = () => { stop(); start(); };
@@ -206,6 +213,12 @@
     stage?.addEventListener('pointercancel', () => { pointerStart = null; setPaused(false); });
     document.addEventListener('visibilitychange', start);
     reducedMotion.addEventListener?.('change', start);
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(entries => {
+        carouselVisible = entries.some(entry => entry.isIntersecting);
+        start();
+      }, { rootMargin: '240px 0px' }).observe(carousel);
+    }
     show(0);
     start();
   }

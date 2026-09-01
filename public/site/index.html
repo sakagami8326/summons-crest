@@ -22,24 +22,25 @@
   <meta name="twitter:image" content="https://summonscode.jp/assets/site/og-summons-code-v1.png">
   <link rel="canonical" href="https://summonscode.jp/">
   <link rel="icon" href="/assets/site/spark-star.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/site/design-system.css">
-  <link rel="stylesheet" href="/site/concept-section.css">
-  <link rel="stylesheet" href="/site/homepage.css">
+  <link rel="stylesheet" href="/site/design-system.css?v=154">
+  <link rel="stylesheet" href="/site/concept-section.css?v=154">
+  <link rel="stylesheet" href="/site/homepage.css?v=154">
   <script src="/analytics.js"></script>
-  <script src="/site/homepage.js" defer></script>
+  <script src="/site/homepage.js?v=154" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">本文へ移動</a>
 
   <header class="site-header" data-header>
-    <a class="site-header__logo" href="#top" aria-label="SUMMONS CODE ホーム">
+    <a class="site-header__logo" href="/" aria-label="SUMMONS CODE ホーム">
       <img src="/assets/summons-code-white.svg" alt="SUMMONS CODE" width="1415" height="744">
     </a>
     <nav class="site-nav" id="site-nav" aria-label="メインメニュー" data-nav>
       <a href="#concept">CONCEPT</a>
       <a href="#how-to-play">HOW TO PLAY</a>
       <a href="#game-system">GAME SYSTEM</a>
-      <a href="#cards">CARDS</a>
+      <a href="/cards">CARDS</a>
+      <a href="/rules">RULES</a>
       <a href="#summoners">SUMMONERS</a>
       <a href="#feedback">FEEDBACK</a>
       <div class="site-nav__socials" role="group" aria-label="SUMMONS CODE公式SNS">
@@ -154,9 +155,9 @@
               <div class="concept__phone-speaker" aria-hidden="true"></div>
               <p>自分の手札</p>
               <div class="concept__cards">
-                <img src="/assets/cards/spell-restore-art-v1.webp" alt="" width="1024" height="1536">
-                <img src="/assets/cards/spell-flame-vortex-art-v1.webp" alt="" width="1024" height="1536">
-                <img src="/assets/cards/spell-wind-turn-art-v1.webp" alt="" width="1024" height="1536">
+                <img src="/assets/cards/spell-restore-art-v1.webp" alt="" width="1024" height="1536" loading="lazy" decoding="async">
+                <img src="/assets/cards/spell-flame-vortex-art-v1.webp" alt="" width="1024" height="1536" loading="lazy" decoding="async">
+                <img src="/assets/cards/spell-wind-turn-art-v1.webp" alt="" width="1024" height="1536" loading="lazy" decoding="async">
               </div><span>スマホがコントローラー</span>
             </div>
             <p class="concept__caption concept__caption--phone"><span>SMARTPHONE</span>手札を見て操作</p>
@@ -189,8 +190,8 @@
         </header>
         <ol class="steps">
           <li class="reveal"><span>STEP 01</span><figure class="step-visual step-visual--tv"><div><img src="/assets/site/how-step-title-screen-v1.png" alt="テレビに映るSUMMONS CODEのタイトル画面" width="1296" height="902" loading="lazy"></div></figure><b>テレビやPCで開く</b><p>大きな画面でSUMMONS CODEを開き、ゲームを作成します。</p></li>
-          <li class="reveal"><span>STEP 02</span><figure class="step-visual"><img src="/assets/site/how-step-qr-redani-v1.png" alt="テレビのQRコードをスマホで読み取るデフォルメされたレダーニ" width="1536" height="1024" loading="lazy"></figure><b>QRコードを読み取る</b><p>テレビに表示されたQRコードを、参加者のスマホで読み取ります。</p></li>
-          <li class="reveal"><span>STEP 03</span><figure class="step-visual"><img src="/assets/site/how-step-summoner-select-current-v3.png" alt="現在の4人の召喚士が選択済みの召喚士選択画面" width="1200" height="750" loading="lazy"></figure><b>召喚士を選ぶ</b><p>スマホから召喚士を選びます。2〜4人の対戦に加え、BOT戦なら1人でも開始できます。</p></li>
+          <li class="reveal"><span>STEP 02</span><figure class="step-visual"><picture><source srcset="/assets/site/how-step-qr-redani-v154-768.webp 768w, /assets/site/how-step-qr-redani-v154-1280.webp 1280w" sizes="(max-width: 576px) 100vw, 25vw" type="image/webp"><img src="/assets/site/how-step-qr-redani-v154-1280.webp" alt="テレビのQRコードをスマホで読み取るデフォルメされたレダーニ" width="1280" height="853" loading="lazy" decoding="async"></picture></figure><b>QRコードを読み取る</b><p>テレビに表示されたQRコードを、参加者のスマホで読み取ります。</p></li>
+          <li class="reveal"><span>STEP 03</span><figure class="step-visual"><picture><source srcset="/assets/site/how-step-summoner-v154-768.webp 768w, /assets/site/how-step-summoner-v154-1200.webp 1200w" sizes="(max-width: 576px) 100vw, 25vw" type="image/webp"><img src="/assets/site/how-step-summoner-v154-1200.webp" alt="現在の4人の召喚士が選択済みの召喚士選択画面" width="1200" height="750" loading="lazy" decoding="async"></picture></figure><b>召喚士を選ぶ</b><p>スマホから召喚士を選びます。2〜4人の対戦に加え、BOT戦なら1人でも開始できます。</p></li>
           <li class="reveal"><span>STEP 04</span><figure class="step-visual step-visual--phone"><div><img src="/assets/site/how-step-phone-screen-v1.png" alt="スマホに映るSUMMONS CODEの操作画面" width="1280" height="720" loading="lazy"></div></figure><b>スマホで操作する</b><p>手札、サイコロ、カード、領地の操作をスマホから行います。</p></li>
         </ol>
         <div class="how-to__notes reveal"><p><b>インストール不要</b>最新ブラウザから参加</p><p><b>同じWi-FiでなくてもOK</b>表示されたURLから接続</p></div>
@@ -217,7 +218,7 @@
           </div>
           <ol class="gameplay-steps">
             <li><b>01</b><span>サイコロで進む</span></li>
-            <li><b>02</b><span>カードを獲得</span></li>
+          <li><b>02</b><span>カードを獲得</span></li>
             <li><b>03</b><span>デッキを構築</span></li>
             <li><b>04</b><span>領地を侵略・防衛</span></li>
             <li><b>05</b><span>城へ帰還</span></li>
@@ -257,6 +258,7 @@
               </div>
               <p>属性と能力を組み合わせ、<br>自分だけのデッキを構築する。</p>
             </div>
+            <p class="card-showcase__archive"><a class="sc-button" href="/cards">全カードを見る <span aria-hidden="true">→</span></a></p>
           </div>
         </div>
       </div>
@@ -380,7 +382,7 @@
         </a>
       </div>
     </div>
-    <nav aria-label="フッターメニュー"><a href="#concept">CONCEPT</a><a href="#how-to-play">HOW TO PLAY</a><a href="#cards">CARDS</a><a href="#summoners">SUMMONERS</a><a href="#feedback">FEEDBACK</a><a href="/play" data-game-cta="footer">GAME START</a></nav>
+    <nav aria-label="フッターメニュー"><a href="#concept">CONCEPT</a><a href="#how-to-play">HOW TO PLAY</a><a href="/cards">CARDS</a><a href="/rules">RULES</a><a href="#summoners">SUMMONERS</a><a href="#feedback">FEEDBACK</a><a href="/play" data-game-cta="footer">GAME START</a></nav>
     <img src="/assets/summons-code-white.svg" alt="SUMMONS CODE" width="1415" height="744" loading="lazy">
     <div class="site-footer__meta">
       <p class="site-footer__notice">SUMMONS CODEは個人開発ゲームです。</p>

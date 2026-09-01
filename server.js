@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.53';
+const VERSION = '1.54';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TURN_TRANSITION_TIMEOUT_MS = 20000;
@@ -260,6 +260,110 @@ const ART_IDS = (() => {
       .filter(f => /^c_.+\.(?:png|webp)$/.test(f)).map(f => f.replace(/^c_/, '').replace(/\.(?:png|webp)$/, ''));
   } catch (e) { return []; }
 })();
+const PUBLIC_SPELL_ART = {
+  sp_gold: '/assets/cards/spell-gold-art-v1.webp',
+  sp_weaken: '/assets/cards/spell-weaken-art-v1.webp',
+  sp_gale: '/assets/cards/spell-double-roll-art-v1.webp',
+  sp_quake: '/assets/cards/spell-quake-art-v1.webp',
+  sp_bedrock_uplift: '/assets/cards/spell-restore-art-v1.webp',
+  sp_ward: '/assets/cards/spell-barrier-art-v1.webp',
+  sp_flame_vortex: '/assets/cards/spell-flame-vortex-art-v1.webp',
+  sp_bloodstained_blade: '/assets/cards/spell-bloodstained-blade-art-v1.webp',
+  sp_wind_shift: '/assets/cards/spell-wind-turn-art-v1.webp',
+  sp_step: '/assets/cards/spell-step-art-v1.webp',
+  sp_move: '/assets/cards/spell-move-art-v1.webp',
+  sp_insight: '/assets/cards/spell-insight-art-v1.webp',
+  sp_swap: '/assets/cards/spell-swap-art-v1.webp',
+  sp_volcanic_core: '/assets/cards/spell-flame-shift-art-v1.webp',
+  sp_abyssal_pearl: '/assets/cards/spell-aqua-shift-art-v1.webp',
+  sp_earth_mother_stone: '/assets/cards/spell-earth-shift-art-v1.webp',
+  sp_sky_crystal: '/assets/cards/spell-wind-shift-art-v1.webp',
+  sp_fatal_reward: '/assets/cards/spell-fatal-reward-art-v1.webp',
+  sp_dice_1: '/assets/cards/spell-dice-1.webp',
+  sp_dice_2: '/assets/cards/spell-dice-2.webp',
+  sp_dice_3: '/assets/cards/spell-dice-3.webp',
+  sp_dice_4: '/assets/cards/spell-dice-4.webp',
+  sp_dice_5: '/assets/cards/spell-dice-5.webp',
+  sp_dice_6: '/assets/cards/spell-dice-6.webp',
+};
+const PUBLIC_SUPPORT_ART = {
+  weapon: '/assets/cards/support-sword-v1.webp',
+  gweapon: '/assets/cards/support-heavy-axe-v1.webp',
+  shield: '/assets/cards/support-shield-v2.webp',
+  gshield: '/assets/cards/support-big-shield-v1.webp',
+  jinx: '/assets/cards/support-disarm-v1.webp',
+};
+let publicCatalogCache = null;
+function publicCardCatalog() {
+  if (publicCatalogCache) return publicCatalogCache;
+  const creatures = Object.entries(CREATURES).filter(([id]) => !id.endsWith('_f')).map(([id, card]) => ({
+    id,
+    kind: 'creature',
+    name: card.name,
+    element: card.elem || 'neutral',
+    rarity: card.rarity || 'N',
+    cost: card.cost || 0,
+    at: card.st || 0,
+    hp: card.hp || 0,
+    effect: card.fx || '',
+    imageId: id,
+    artPath: fs.existsSync(path.join(__dirname, 'public', 'assets', 'cards', `c_${id}.webp`))
+      ? `/assets/cards/c_${id}.webp` : null,
+    evolution: card.evo ? {
+      id: `${id}_f`,
+      name: card.evo,
+      at: card.evoSt || 0,
+      hp: card.evoHp || 0,
+      effect: card.evoFx || card.fx || '',
+      imageId: `${id}_f`,
+      artPath: fs.existsSync(path.join(__dirname, 'public', 'assets', 'cards', `e_${id}.webp`))
+        ? `/assets/cards/e_${id}.webp` : null,
+    } : null,
+  }));
+  const spells = Object.entries(SPELLS).map(([id, card]) => ({
+    id,
+    kind: 'spell',
+    name: card.name,
+    element: null,
+    rarity: card.rarity || 'N',
+    cost: card.cost || 0,
+    at: null,
+    hp: null,
+    effect: card.desc || '',
+    exileAfterUse: !!card.exileAfterUse,
+    imageId: id,
+    artPath: PUBLIC_SPELL_ART[id] || null,
+    evolution: null,
+  }));
+  const weapons = Object.entries(SUPPORTS).map(([id, card]) => ({
+    id,
+    kind: 'weapon',
+    name: card.name,
+    element: null,
+    rarity: null,
+    cost: card.cost || 0,
+    at: card.st || 0,
+    hp: card.hp || 0,
+    effect: card.fx || (card.jinx ? '相手のウェポンを無効化する' : card.st ? `攻撃力を${card.st}上昇させる` : `防御力を${card.hp}上昇させる`),
+    exileAfterUse: !!card.exileAfterUse,
+    imageId: id,
+    artPath: PUBLIC_SUPPORT_ART[id] || null,
+    evolution: null,
+  }));
+  publicCatalogCache = {
+    version: VERSION,
+    updatedAt: '2026-09-01',
+    counts: {
+      total: creatures.length + spells.length + weapons.length,
+      creatures: creatures.length,
+      evolutions: creatures.filter(card => card.evolution).length,
+      spells: spells.length,
+      weapons: weapons.length,
+    },
+    cards: [...creatures, ...spells, ...weapons],
+  };
+  return publicCatalogCache;
+}
 const RARITY_COPIES = { L: 1, R: 2, N: 3 };
 const MARKET_COPY_OVERRIDES = { marlow: 3 };
 const RANDOM_SUPPORT_POOL = ['gweapon', 'gshield'];
@@ -3459,7 +3563,11 @@ const readBody = (req, limit = BODY_LIMIT) => new Promise(res => {
     try { res(JSON.parse(raw || '{}')); } catch (e) { res({}); }
   });
 });
-const json = (res, o, s = 200) => { res.writeHead(s, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(o)); };
+const json = (res, o, s = 200) => {
+  if (!res.hasHeader('Cache-Control')) res.setHeader('Cache-Control', 'no-store');
+  res.writeHead(s, { 'Content-Type': 'application/json; charset=utf-8', 'X-Content-Type-Options': 'nosniff' });
+  res.end(JSON.stringify(o));
+};
 const feedbackIp = req => String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '')
   .split(',')[0].trim().slice(0, 96);
 function feedbackRateLimited(ip, now = Date.now()) {
@@ -3499,12 +3607,37 @@ const MIME = {
 function serveFile(res, rel) {
   const fp = path.join(__dirname, 'public', rel);
   if (!fp.startsWith(path.join(__dirname, 'public'))) { res.writeHead(403); return res.end(); }
-  fs.readFile(fp, (err, data) => {
-    if (err) { res.writeHead(404); return res.end('not found'); }
+  fs.stat(fp, (statErr, stat) => {
+    if (statErr || !stat.isFile()) { res.writeHead(404); return res.end('not found'); }
     const type = MIME[fp.split('.').pop()] || 'application/octet-stream';
     const charset = /^(?:text\/|application\/(?:javascript|json))/.test(type) ? '; charset=utf-8' : '';
-    res.writeHead(200, { 'Content-Type': type + charset });
-    res.end(data);
+    const ext = path.extname(fp).toLowerCase();
+    const versioned = /-v\d+(?:\.|-|$)/i.test(path.basename(fp));
+    const isHtml = ext === '.html';
+    const isCode = ext === '.css' || ext === '.js' || ext === '.json';
+    const cacheControl = isHtml ? 'no-cache' : isCode ? 'public, max-age=300, must-revalidate'
+      : versioned ? 'public, max-age=31536000, immutable' : 'public, max-age=604800, stale-while-revalidate=86400';
+    const etag = `W/\"${stat.size.toString(16)}-${Math.trunc(stat.mtimeMs).toString(16)}\"`;
+    const headers = {
+      'Content-Type': type + charset,
+      'Cache-Control': cacheControl,
+      'ETag': etag,
+      'Last-Modified': stat.mtime.toUTCString(),
+      'X-Content-Type-Options': 'nosniff',
+    };
+    const request = res.req;
+    if (request && (request.headers['if-none-match'] === etag ||
+        (!request.headers['if-none-match'] && request.headers['if-modified-since'] &&
+         Date.parse(request.headers['if-modified-since']) >= Math.trunc(stat.mtimeMs / 1000) * 1000))) {
+      res.writeHead(304, headers);
+      return res.end();
+    }
+    fs.readFile(fp, (err, data) => {
+      if (err) { res.writeHead(404); return res.end('not found'); }
+      res.writeHead(200, headers);
+      if (request && request.method === 'HEAD') return res.end();
+      res.end(data);
+    });
   });
 }
 // v0.66: 描画パリティ確認用のフィクスチャルーム(roomsに登録せず、publicState生成にだけ使う)
@@ -3571,6 +3704,8 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const p = url.pathname;
   if (p === '/') return serveFile(res, 'site/index.html');
+  if (p === '/cards') return serveFile(res, 'site/cards.html');
+  if (p === '/rules') return serveFile(res, 'site/rules.html');
   if (p === '/play') return serveFile(res, 'board.html');
   if (p === '/board') { res.writeHead(302, { Location: '/play' }); return res.end(); }
   if (p === '/site') { res.writeHead(302, { Location: '/' }); return res.end(); }
@@ -3584,6 +3719,10 @@ const server = http.createServer(async (req, res) => {
   if (p === '/api/fixture') {
     // v0.66: 描画パリティ確認用の固定state(ルームは登録しない・開発用)
     return json(res, publicState(url.searchParams.get('result') ? makeResultFixtureRoom() : makeFixtureRoom(), null));
+  }
+  if (p === '/api/catalog' && req.method === 'GET') {
+    res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=3600');
+    return json(res, publicCardCatalog());
   }
 
   if (p === '/api/feedback' && req.method === 'POST') {

@@ -1,0 +1,126 @@
+.visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.card-hero::after { background: linear-gradient(90deg, transparent 9%, rgb(239 217 143 / 8%) 9% 9.1%, transparent 9.1% 90.9%, rgb(239 217 143 / 8%) 90.9% 91%, transparent 91%); }
+.catalog { position: relative; padding: clamp(3rem, 7vw, 6rem) 0 7rem; background: linear-gradient(180deg, #111221, #0b0d18 24rem); }
+.catalog::before { content: ""; position: absolute; inset: 0; opacity: .22; pointer-events: none; background: url('/assets/site/paper-grain-v2.webp') center / 46rem repeat; mix-blend-mode: soft-light; }
+.catalog > * { position: relative; }
+
+.catalog-filter { display: grid; grid-template-columns: auto minmax(15rem, 1.6fr) repeat(3, minmax(10rem, 1fr)) auto; gap: .7rem; align-items: stretch; padding: 1.15rem; border: 1px solid rgb(239 217 143 / 24%); background: rgb(30 27 60 / 80%); box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 22%); }
+.catalog-filter__count { min-width: 5.8rem; display: flex; align-items: baseline; justify-content: center; gap: .25rem; padding-inline: .65rem; color: var(--sc-gold-300); border-right: 1px solid rgb(239 217 143 / 20%); }
+.catalog-filter__count strong { font: 600 2rem/1 var(--sc-font-display); }
+.catalog-filter__count span { font-size: .72rem; }
+.catalog-filter label { min-width: 0; }
+.catalog-filter input, .catalog-filter select { width: 100%; height: 3.25rem; border: 1px solid rgb(239 217 143 / 22%); border-radius: 0; outline: 0; color: var(--sc-ivory-50); background: rgb(8 9 17 / 76%); }
+.catalog-filter input:focus, .catalog-filter select:focus { border-color: var(--sc-gold-300); box-shadow: 0 0 0 2px rgb(239 217 143 / 13%); }
+.catalog-filter__search { position: relative; display: block; }
+.catalog-filter__search svg { position: absolute; left: 1rem; top: 50%; width: 1.15rem; height: 1.15rem; fill: none; stroke: rgb(241 232 208 / 48%); stroke-width: 1.8; transform: translateY(-50%); pointer-events: none; }
+.catalog-filter__search input { padding: 0 1rem 0 2.75rem; }
+.catalog-filter select { appearance: none; padding: 0 2.5rem 0 1rem; background-image: linear-gradient(45deg, transparent 50%, var(--sc-gold-300) 50%), linear-gradient(135deg, var(--sc-gold-300) 50%, transparent 50%); background-position: calc(100% - 1.15rem) 1.35rem, calc(100% - .8rem) 1.35rem; background-size: .36rem .36rem; background-repeat: no-repeat; cursor: pointer; }
+.catalog-filter__clear { min-width: 7rem; border: 1px solid rgb(239 217 143 / 35%); color: var(--sc-gold-300); background: transparent; cursor: pointer; }
+.catalog-filter__clear:is(:hover, :focus-visible) { color: var(--sc-ink-950); background: var(--sc-gold-300); }
+
+.catalog-summary { display: flex; justify-content: space-between; gap: 1rem; margin: 2.2rem 0 1.2rem; padding-bottom: .8rem; border-bottom: 1px solid rgb(239 217 143 / 30%); color: rgb(241 232 208 / 56%); font-size: .72rem; }
+.catalog-summary p { margin: 0; color: var(--sc-ivory-50); }
+.catalog-state { min-height: 12rem; display: grid; place-items: center; color: rgb(241 232 208 / 52%); }
+.catalog-state[hidden] { display: none; }
+.catalog-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: clamp(1rem, 2vw, 1.6rem); align-items: start; }
+.catalog-sentinel { height: 1px; }
+
+.catalog-card { position: relative; min-width: 0; }
+.catalog-card__open { width: 100%; display: block; padding: 0; border: 0; color: inherit; background: transparent; cursor: pointer; text-align: left; }
+.catalog-card__open:focus-visible { outline: 3px solid var(--sc-ivory-50); outline-offset: 5px; }
+.catalog-card__open:hover .game-card { transform: translateY(-.55rem); filter: brightness(1.07); box-shadow: 0 1.4rem 2.8rem rgb(0 0 0 / 48%), 0 0 1.5rem var(--element-glow, rgb(239 217 143 / 15%)); }
+.catalog-card__caption { min-height: 3rem; padding: .75rem .25rem 0; color: rgb(241 232 208 / 68%); font-size: .68rem; line-height: 1.5; text-align: center; }
+.catalog-card__caption b { display: block; color: var(--sc-ivory-50); font-size: .8rem; }
+.catalog-card__evolution { position: absolute; z-index: 20; top: .65rem; right: .65rem; display: flex; padding: .18rem; border: 1px solid rgb(255 248 231 / 30%); border-radius: 99px; background: rgb(8 9 17 / 82%); box-shadow: 0 .3rem .8rem rgb(0 0 0 / 30%); }
+.catalog-card__evolution button { min-width: 2.55rem; padding: .42rem .5rem; border: 0; border-radius: 99px; color: rgb(241 232 208 / 58%); background: transparent; font: 700 .52rem/1 var(--sc-font-display); cursor: pointer; }
+.catalog-card__evolution button[aria-pressed="true"] { color: var(--sc-ink-950); background: var(--sc-gold-300); }
+
+.game-card { --element-glow: rgb(239 217 143 / 16%); position: relative; aspect-ratio: 2 / 3; overflow: hidden; border-radius: .55rem; color: #172536; background: #17192c; box-shadow: 0 .8rem 1.8rem rgb(0 0 0 / 38%); transition: transform .22s var(--sc-ease), filter .22s var(--sc-ease), box-shadow .22s var(--sc-ease); isolation: isolate; container-type: inline-size; }
+.game-card[data-element="fire"] { --element-glow: rgb(255 122 69 / 35%); }
+.game-card[data-element="water"] { --element-glow: rgb(86 168 232 / 35%); }
+.game-card[data-element="earth"] { --element-glow: rgb(217 182 79 / 35%); }
+.game-card[data-element="wind"] { --element-glow: rgb(91 224 208 / 35%); }
+.game-card__background { position: absolute; inset: 0; z-index: -3; width: 100%; height: 100%; object-fit: cover; }
+.game-card__header { position: absolute; z-index: 8; top: 3%; left: 5%; right: 5%; height: 9%; display: grid; place-items: center; }
+.game-card__name { max-width: 88%; overflow: hidden; color: #fff4d5; font: 700 clamp(.7rem, 9cqw, 1.45rem)/1 var(--sc-font-card); text-shadow: 0 2px 4px rgb(0 0 0 / 45%); white-space: nowrap; text-overflow: ellipsis; }
+.game-card__art { position: absolute; z-index: 2; top: 9%; left: 2%; width: 96%; height: 59%; display: grid; place-items: center; }
+.game-card__art img { width: 100%; height: 100%; object-fit: contain; }
+.game-card--creature .game-card__art img { filter: drop-shadow(0 0 2px rgb(255 255 255 / 70%)) drop-shadow(0 0 8px rgb(255 255 255 / 25%)); }
+.game-card__fallback { width: 58%; aspect-ratio: 1; display: grid; place-items: center; border: 1px solid rgb(255 255 255 / 36%); border-radius: 50%; color: white; background: var(--element-glow); font: 700 12cqw/1 var(--sc-font-display); }
+.game-card__cost { position: absolute; z-index: 12; left: 4%; top: 62.5%; min-width: 30%; padding: 2.2% 5%; border: 1px solid #d7b85d; border-radius: 99px; color: #fff4d5; background: #49370e; font: 700 clamp(.62rem, 5cqw, 1rem)/1 var(--sc-font-card); text-align: center; }
+.game-card__info { position: absolute; z-index: 5; inset: 70% 0 0; display: grid; align-content: start; padding: 5% 7%; background: #f6e9c8; }
+.game-card__stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8%; margin-bottom: 4%; }
+.game-card__stat { display: flex; align-items: center; justify-content: center; gap: 7%; font: 700 clamp(.72rem, 9cqw, 1.45rem)/1 var(--sc-font-card); }
+.game-card__stat img { width: 30%; aspect-ratio: 1; padding: 5%; border: 1px solid #d9bd67; border-radius: 50%; background: #101a32; }
+.game-card__effect { display: -webkit-box; overflow: hidden; margin: 0; color: #172536; font: 700 clamp(.55rem, 3.7cqw, .78rem)/1.35 var(--sc-font-body); text-align: center; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; }
+.game-card--spell .game-card__art { inset: 0; width: 100%; height: 71%; }
+.game-card--spell .game-card__art img { width: 100%; height: 100%; object-fit: cover; }
+.game-card--spell .game-card__info { padding-top: 7%; }
+.game-card--spell .game-card__effect { -webkit-line-clamp: 5; line-clamp: 5; }
+.game-card--weapon .game-card__background { filter: saturate(.92); }
+.game-card--weapon .game-card__art { top: 11%; left: 9%; width: 82%; height: 49%; }
+.game-card--weapon .game-card__power { margin: 0 0 6%; color: #a32156; font: 700 clamp(.72rem, 8cqw, 1.25rem)/1 var(--sc-font-card); text-align: center; }
+.game-card__exile { position: absolute; right: 6%; bottom: 4%; color: #bd2632; font: 700 clamp(.55rem, 4.6cqw, .8rem)/1 var(--sc-font-card); }
+
+.card-dialog { width: min(68rem, calc(100% - 2rem)); max-height: min(48rem, calc(100dvh - 2rem)); padding: 0; border: 1px solid rgb(239 217 143 / 60%); color: var(--sc-parchment-100); background: #111326; box-shadow: 0 2rem 7rem rgb(0 0 0 / 70%); }
+.card-dialog::backdrop { background: rgb(3 4 10 / 84%); backdrop-filter: blur(5px); }
+.card-dialog__frame { position: relative; min-height: 38rem; display: grid; grid-template-columns: minmax(17rem, 23rem) minmax(0, 1fr); gap: clamp(2rem, 5vw, 5rem); align-items: center; padding: clamp(2rem, 5vw, 4rem); overflow: auto; }
+.card-dialog__frame::before { content: ""; position: absolute; inset: .65rem; border: 1px solid rgb(239 217 143 / 12%); pointer-events: none; }
+.card-dialog__visual { position: relative; z-index: 1; width: 100%; }
+.card-dialog__visual .game-card { width: min(100%, 21rem); margin-inline: auto; box-shadow: 0 1.7rem 4rem rgb(0 0 0 / 48%); }
+.card-dialog__close { position: absolute; z-index: 5; top: 1rem; right: 1rem; width: 2.8rem; aspect-ratio: 1; border: 1px solid rgb(239 217 143 / 42%); border-radius: 50%; color: var(--sc-gold-300); background: #0b0d18; font-size: 1.4rem; cursor: pointer; }
+.card-dialog__info { position: relative; z-index: 1; min-width: 0; }
+.card-dialog__kind { margin: 0 0 .8rem; color: var(--sc-gold-300); font: 700 .68rem/1 var(--sc-font-display); letter-spacing: .18em; }
+.card-dialog__info h2 { margin: 0; color: var(--sc-ivory-50); font: 600 clamp(2rem, 5vw, 3.8rem)/1.2 var(--sc-font-display); }
+.card-dialog__modes { display: flex; gap: .45rem; margin: 1.5rem 0; }
+.card-dialog__modes button { min-width: 6rem; padding: .65rem 1rem; border: 1px solid rgb(239 217 143 / 30%); color: rgb(241 232 208 / 62%); background: transparent; cursor: pointer; }
+.card-dialog__modes button[aria-pressed="true"] { color: var(--sc-ink-950); border-color: var(--sc-gold-300); background: var(--sc-gold-300); }
+.card-dialog__meta { display: flex; flex-wrap: wrap; gap: .55rem; margin: 1.4rem 0 1.8rem; }
+.card-dialog__meta div { min-width: 5.5rem; padding: .75rem 1rem; border: 1px solid rgb(239 217 143 / 24%); background: rgb(8 9 17 / 45%); }
+.card-dialog__meta dt { color: rgb(241 232 208 / 44%); font-size: .58rem; letter-spacing: .08em; }
+.card-dialog__meta dd { margin: .35rem 0 0; color: var(--sc-ivory-50); font-weight: 700; }
+.card-dialog__effect { padding: 1.4rem; border-left: 2px solid var(--sc-gold-400); background: rgb(8 9 17 / 42%); }
+.card-dialog__effect small { color: var(--sc-gold-300); font: 700 .58rem/1 var(--sc-font-display); letter-spacing: .16em; }
+.card-dialog__effect p { margin: .8rem 0 0; color: var(--sc-parchment-100); line-height: 1.9; }
+.card-dialog__nav { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 1rem; margin-top: 2rem; }
+.card-dialog__nav button { padding: .75rem 1rem; border: 1px solid rgb(239 217 143 / 25%); color: var(--sc-gold-300); background: transparent; cursor: pointer; }
+.card-dialog__nav button:last-child { justify-self: end; }
+.card-dialog__nav span { color: rgb(241 232 208 / 45%); font-size: .65rem; }
+
+@media (max-width: 68rem) {
+  .catalog-filter { grid-template-columns: auto minmax(14rem, 1fr) repeat(2, minmax(9rem, .7fr)); }
+  .catalog-filter label:has(select[name="rarity"]) { grid-column: 2; }
+  .catalog-filter__clear { grid-column: 4; }
+  .catalog-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 48rem) {
+  .catalog-filter { grid-template-columns: 1fr 1fr; }
+  .catalog-filter__count { grid-column: 1 / -1; justify-content: start; border-right: 0; border-bottom: 1px solid rgb(239 217 143 / 18%); padding: 0 0 .8rem; }
+  .catalog-filter__search { grid-column: 1 / -1; }
+  .catalog-filter label:has(select[name="rarity"]), .catalog-filter__clear { grid-column: auto; }
+  .catalog-filter__clear { min-height: 3.25rem; }
+  .catalog-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .card-dialog__frame { grid-template-columns: minmax(13rem, 18rem) minmax(0, 1fr); gap: 1.7rem; padding: 2.8rem 1.5rem 2rem; }
+}
+@media (max-width: 36rem) {
+  .catalog { padding-top: 2rem; }
+  .catalog-filter { padding: .85rem; gap: .55rem; }
+  .catalog-filter input, .catalog-filter select { height: 3rem; font-size: .76rem; }
+  .catalog-summary { display: block; }
+  .catalog-summary span { display: block; margin-top: .35rem; }
+  .catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem .7rem; }
+  .catalog-card__caption { font-size: .58rem; }
+  .catalog-card__caption b { font-size: .7rem; }
+  .catalog-card__evolution { top: .4rem; right: .4rem; }
+  .catalog-card__evolution button { min-width: 2.1rem; padding: .36rem .38rem; font-size: .46rem; }
+  .card-dialog { width: calc(100% - 1rem); max-height: calc(100dvh - 1rem); }
+  .card-dialog__frame { grid-template-columns: 1fr; padding: 3.5rem 1.25rem 1.5rem; }
+  .card-dialog__visual .game-card { width: min(72vw, 15rem); }
+  .card-dialog__info h2 { font-size: 2rem; }
+  .card-dialog__nav { position: sticky; bottom: 0; padding: .7rem 0; background: #111326; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .catalog-card__open:hover .game-card { transform: none; }
+  .game-card { transition: none; }
+}
