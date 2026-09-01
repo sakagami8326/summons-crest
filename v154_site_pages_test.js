@@ -41,6 +41,10 @@ for (const route of ['/cards', '/rules']) {
 }
 ok(/card-showcase__archive[\s\S]*href="\/cards"/.test(home), 'home card showcase links to the archive');
 ok(/grid-template-columns:\s*repeat\(5/.test(cardsCss) && /max-width:\s*36rem[\s\S]*repeat\(2/.test(cardsCss), 'card grid uses five desktop and two mobile columns');
+ok(/\.game-card__name\s*\{[^}]*var\(--sc-font-display\)/.test(cardsCss), 'card names use the bold Mincho display font');
+ok(/\.game-card__stat img\s*\{[^}]*width:\s*clamp\([^;]+;[^}]*height:\s*clamp\(/s.test(cardsCss), 'AT and HP icons use explicit equal dimensions');
+ok(/\.catalog-card__details\s*\{[^}]*grid-template-columns/.test(cardsCss), 'evolution controls use the below-card details row');
+ok(!/\.catalog-card__evolution\s*\{[^}]*position:\s*absolute/.test(cardsCss), 'evolution controls do not overlap card names');
 ok(/BATCH_SIZE = 20/.test(cardsJs) && /IntersectionObserver/.test(cardsJs), 'catalog renders in lazy batches');
 ok(/data-evolution="base"/.test(cardsJs) && /data-evolution="evolution"/.test(cardsJs), 'evolution stays inside one card frame');
 ok(/showModal\(\)/.test(cardsJs) && /event\.target === dialog/.test(cardsJs) && /addEventListener\('cancel'/.test(cardsJs), 'card modal supports open, backdrop close, and Escape');

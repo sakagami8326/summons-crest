@@ -83,10 +83,10 @@
     const modes = card.evolution ? `<div class="catalog-card__evolution" aria-label="${escapeHtml(card.name)}の進化表示">
       <button type="button" data-evolution="base" aria-pressed="${!evolved}">進化前</button>
       <button type="button" data-evolution="evolution" aria-pressed="${evolved}">進化後</button></div>` : '';
-    return `<article class="catalog-card" data-card-id="${escapeHtml(card.id)}">${modes}
+    return `<article class="catalog-card" data-card-id="${escapeHtml(card.id)}">
       <button class="catalog-card__open" type="button" data-open-card aria-label="${escapeHtml(side.name)}の詳細を見る">
-        ${visualHtml(card, evolved)}<span class="catalog-card__caption"><b>${escapeHtml(side.name)}</b>${escapeHtml(LABELS.kind[card.kind])}</span>
-      </button></article>`;
+        ${visualHtml(card, evolved)}
+      </button><div class="catalog-card__details"><span class="catalog-card__caption"><b>${escapeHtml(side.name)}</b>${escapeHtml(LABELS.kind[card.kind])}</span>${modes}</div></article>`;
   }
 
   function appendBatch() {
@@ -124,8 +124,10 @@
     evolutionState.set(card.id, evolved);
     const open = host.querySelector('[data-open-card]');
     const side = evolved ? card.evolution : card;
-    open.innerHTML = `${visualHtml(card, evolved)}<span class="catalog-card__caption"><b>${escapeHtml(side.name)}</b>${escapeHtml(LABELS.kind[card.kind])}</span>`;
+    open.innerHTML = visualHtml(card, evolved);
     open.setAttribute('aria-label', `${side.name}の詳細を見る`);
+    const caption = host.querySelector('.catalog-card__caption');
+    caption.innerHTML = `<b>${escapeHtml(side.name)}</b>${escapeHtml(LABELS.kind[card.kind])}`;
     host.querySelectorAll('[data-evolution]').forEach(button => button.setAttribute('aria-pressed', String((button.dataset.evolution === 'evolution') === evolved)));
   }
 
