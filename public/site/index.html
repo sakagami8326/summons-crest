@@ -59,7 +59,7 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="4.2"/><path class="youtube-play" d="m10 8.7 5.4 3.3-5.4 3.3V8.7Z"/></svg>
       </a>
     </div>
-    <a class="site-header__play play-cta play-cta--header" href="/play"><span>無料でプレイ</span><span class="play-cta__arrow" aria-hidden="true">→</span></a>
+    <a class="site-header__play play-cta play-cta--header" href="/play" data-game-cta="header"><span>無料でプレイ</span><span class="play-cta__arrow" aria-hidden="true">→</span></a>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="メニューを開く" data-nav-toggle>
       <span></span><span></span>
     </button>
@@ -75,7 +75,7 @@
         <h1 id="hero-title">ボードゲーム <em>×</em> カードゲーム</h1>
         <p class="hero__lead">テレビに盤面を映し、スマホをコントローラーにして遊ぶ、<br>2〜4人用ゲーム。BOT戦なら1人でもプレイできます。</p>
         <div class="hero__actions">
-          <a class="sc-button hero__primary play-cta play-cta--hero" href="/play">
+          <a class="sc-button hero__primary play-cta play-cta--hero" href="/play" data-game-cta="hero">
             <span class="play-cta__copy"><strong>無料でゲームを始める</strong><small>ブラウザですぐにプレイ</small></span>
             <span class="play-cta__arrow" aria-hidden="true">→</span>
           </a>
@@ -113,7 +113,7 @@
               <h3>SUMMONS CODEを公開しました</h3>
               <p>テレビに盤面を映し、スマホをコントローラーにして遊ぶ「SUMMONS CODE」を公開しました。1人で遊べるBOT戦にも対応しています。</p>
             </div>
-            <a class="news-entry__link play-cta play-cta--news" href="/play" aria-label="SUMMONS CODEのゲーム画面を開く"><span>無料でプレイ</span><span class="play-cta__arrow" aria-hidden="true">→</span></a>
+            <a class="news-entry__link play-cta play-cta--news" href="/play" aria-label="SUMMONS CODEのゲーム画面を開く" data-game-cta="news"><span>無料でプレイ</span><span class="play-cta__arrow" aria-hidden="true">→</span></a>
           </article>
         </div>
       </div>
@@ -361,7 +361,7 @@
       <img src="/assets/summons-code-gold.svg" alt="" width="1415" height="744" loading="lazy">
       <h2 id="final-title">盤面を開き、召喚を始めよう。</h2>
       <p>テレビとスマホを用意して、SUMMONS CODEの世界へ。</p>
-      <a class="sc-button play-cta play-cta--hero" href="/play">
+      <a class="sc-button play-cta play-cta--hero" href="/play" data-game-cta="final">
         <span class="play-cta__copy"><strong>無料でゲームを始める</strong><small>ブラウザですぐにプレイ</small></span>
         <span class="play-cta__arrow" aria-hidden="true">→</span>
       </a>
@@ -380,7 +380,7 @@
         </a>
       </div>
     </div>
-    <nav aria-label="フッターメニュー"><a href="#concept">CONCEPT</a><a href="#how-to-play">HOW TO PLAY</a><a href="#cards">CARDS</a><a href="#summoners">SUMMONERS</a><a href="#feedback">FEEDBACK</a><a href="/play">GAME START</a></nav>
+    <nav aria-label="フッターメニュー"><a href="#concept">CONCEPT</a><a href="#how-to-play">HOW TO PLAY</a><a href="#cards">CARDS</a><a href="#summoners">SUMMONERS</a><a href="#feedback">FEEDBACK</a><a href="/play" data-game-cta="footer">GAME START</a></nav>
     <img src="/assets/summons-code-white.svg" alt="SUMMONS CODE" width="1415" height="744" loading="lazy">
     <div class="site-footer__meta">
       <p class="site-footer__notice">SUMMONS CODEは個人開発ゲームです。</p>
@@ -388,6 +388,6 @@
     </div>
   </footer>
 
-  <a class="sc-game-launcher sc-game-launcher--play" href="/play" aria-label="無料でゲームを始める" data-game-launcher><strong>GAME<br>START</strong><small>無料でプレイ</small></a>
+  <a class="sc-game-launcher sc-game-launcher--play" href="/play" aria-label="無料でゲームを始める" data-game-launcher data-game-cta="floating"><strong>GAME<br>START</strong><small>無料でプレイ</small></a>
 </body>
 </html>

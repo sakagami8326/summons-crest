@@ -2462,6 +2462,14 @@ document.getElementById('selectionStartBtn').onclick = async () => {
       body:JSON.stringify({ room:code, type:'start_game', token:boardToken }) });
     const out = await res.json();
     if (!res.ok || out.error) throw new Error(out.error || 'ゲームを開始できませんでした');
+    const matchType = state.botMode ? 'bot' : 'multiplayer';
+    const playerCount = Array.isArray(state.players) ? state.players.length : 0;
+    const botCount = Array.isArray(state.players) ? state.players.filter(player => player.isBot).length : 0;
+    window.SummonsAnalytics?.trackOnce(`match-start:${code}`, state.botMode ? 'bot_match_started' : 'match_started', {
+      match_type: matchType,
+      player_count: playerCount,
+      bot_count: botCount,
+    });
   } catch (e) {
     startGameSubmitting = false;
     btn.disabled = false;
@@ -2497,9 +2505,21 @@ function connectBoard() {
     $('connBar').style.display = 'none';
     const next = JSON.parse(e.data);
     if (state && next.stateRev != null && next.stateRev <= (state.stateRev || 0)) return;
+    const previousPhase = state?.phase || '';
     if (state && (next.phase !== state.phase || next.turn !== state.turn || next.turnEpoch !== state.turnEpoch))
       resetPresentationCamera('phase-or-turn-change');
     state = next;
+    if (state.phase === 'ended') {
+      const resultId = state.resultReview?.id || state.matchResult?.id || `${code}:ended`;
+      const players = Array.isArray(state.players) ? state.players : [];
+      window.SummonsAnalytics?.trackOnce(`match-completed:${code}:${resultId}`, 'match_completed', {
+        match_type: state.botMode ? 'bot' : 'multiplayer',
+        player_count: players.length,
+        bot_count: players.filter(player => player.isBot).length,
+        round_count: Number(state.round) || 0,
+        end_transition: previousPhase === 'ended' ? 'reconnect' : 'live',
+      });
+    }
     syncHasArt();
     render();
     maybeAutoSave();
@@ -2616,8 +2636,11 @@ $('optSaveQuit').onclick = async () => {
   } catch (e) { $('optMsg').textContent = '保存に失敗しました(サーバー接続を確認)'; }
 };
 async function boot(mode = 'normal') {
-  const c = await (await fetch('/api/create', { method: 'POST',
-    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode }) })).json();
+  const response = await fetch('/api/create', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode }) });
+  const c = await response.json();
+  if (!response.ok || c.error || !c.code || !c.boardToken) throw new Error(c.error || 'ルームを作成できませんでした');
+  window.SummonsAnalytics?.track('room_created', { room_mode: mode === 'bot' ? 'bot' : 'normal' });
   enterRoom(c.code, c.phoneUrl, c.boardToken);
 }
 ['redani','linnei','grease','mio','lia','adel','villa','nerasio'].forEach(c => {

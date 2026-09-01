@@ -1150,6 +1150,9 @@ $('joinBtn').onclick = async () => {
   if (d.error) { $('err').textContent = d.error; return; }
   room = d.room; pid = d.playerId;
   try { localStorage.setItem('sc_session', JSON.stringify({ room, pid })); } catch (e) {}
+  window.SummonsAnalytics?.trackOnce(`phone-joined:${room}:${pid}`, 'phone_joined', {
+    join_method: presetRoom ? 'qr' : 'manual',
+  });
   enterGame();
 };
 function readSavedSession() {

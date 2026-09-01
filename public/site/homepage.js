@@ -24,6 +24,14 @@
   window.addEventListener('resize', () => { if (window.innerWidth > 832) closeNav(); });
   window.addEventListener('scroll', () => header?.classList.toggle('is-scrolled', window.scrollY > 32), { passive: true });
 
+  document.querySelectorAll('[data-game-cta]').forEach(link => {
+    link.addEventListener('click', () => {
+      window.SummonsAnalytics?.track('game_start_cta_click', {
+        cta_location: link.dataset.gameCta || 'unknown',
+      });
+    });
+  });
+
   document.querySelectorAll('[data-youtube-player]').forEach(player => {
     const trigger = player.querySelector('[data-youtube-play]');
     trigger?.addEventListener('click', () => {
@@ -259,6 +267,9 @@
         });
         const result = await response.json().catch(() => ({}));
         if (!response.ok || result.ok !== true) throw new Error(result.error || '送信できませんでした。');
+        window.SummonsAnalytics?.track('feedback_submit_success', {
+          feedback_category: selected.value,
+        });
         feedbackForm.hidden = true;
         if (complete) {
           complete.hidden = false;
