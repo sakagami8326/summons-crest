@@ -1,6 +1,6 @@
 (() => {
-  const toggle = document.querySelector('[data-sub-nav-toggle]');
-  const nav = document.querySelector('[data-sub-nav]');
+  const toggle = document.querySelector('[data-nav-toggle]');
+  const nav = document.querySelector('[data-nav]');
   const close = () => {
     nav?.classList.remove('is-open');
     toggle?.setAttribute('aria-expanded', 'false');

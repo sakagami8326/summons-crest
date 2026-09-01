@@ -23,6 +23,7 @@ const rulesCss = read('public/site/rules.css');
 const rulesJs = read('public/site/rules.js');
 const designCss = read('public/site/design-system.css');
 const sitePagesCss = read('public/site/site-pages.css');
+const siteHeaderCss = read('public/site/site-header.css');
 
 ok(/const VERSION = '1\.54'/.test(serverSource) && require('./package.json').version === '1.54.0', 'release is v1.54');
 ok(/if \(p === '\/cards'\).*site\/cards\.html/.test(serverSource), '/cards is a formal route');
@@ -42,12 +43,18 @@ for (const route of ['/cards', '/rules']) {
 }
 ok(/card-showcase__archive[\s\S]*href="\/cards"/.test(home), 'home card showcase links to the archive');
 for (const page of [cardsHtml, rulesHtml]) {
-  ok(/sub-header__play[\s\S]*無料でプレイ[\s\S]*sub-nav-toggle/.test(page), 'subpage mobile header keeps the same play CTA and hamburger order as home');
+  ok(/site-header__play[\s\S]*無料でプレイ[\s\S]*nav-toggle/.test(page), 'subpage uses the same play CTA and hamburger structure as home');
   ok(/site-nav__socials[\s\S]*x\.com\/gamitestman[\s\S]*youtube\.com\/@SUMMONSCODE/.test(page), 'subpage mobile menu includes the same X and YouTube links as home');
+  for (const label of ['CONCEPT', 'HOW TO PLAY', 'GAME SYSTEM', 'CARDS', 'RULES', 'SUMMONERS', 'FEEDBACK']) {
+    ok(page.includes(`>${label}</a>`), `subpage navigation includes the same ${label} item as home`);
+  }
 }
-ok(/site-pages\.css\?v=154-2/.test(cardsHtml) && /site-pages\.css\?v=154-2/.test(rulesHtml), 'subpages cache-bust the unified header styles');
-ok(/@media\s*\(max-width:\s*52rem\)[\s\S]*\.sub-header__play\s*\{[^}]*width:\s*7\.5rem/.test(sitePagesCss) && !/@media\s*\(max-width:\s*30rem\)[\s\S]*\.sub-header__play\s*\{[^}]*display:\s*none/.test(sitePagesCss), 'subpage mobile header keeps the same visible CTA sizing as home');
-ok(/@media\s*\(max-width:\s*52rem\)[\s\S]*\.sub-nav\s*\{[^}]*width:\s*100%[^}]*justify-self:\s*stretch/.test(sitePagesCss), 'subpage mobile menu spans the same full width as home');
+for (const page of [home, cardsHtml, rulesHtml]) ok(/site-header\.css\?v=154-3/.test(page), 'every public page loads the shared header stylesheet');
+ok(!/\.sub-header|\.sub-nav/.test(sitePagesCss), 'subpages do not retain a second header implementation');
+ok(/\.site-nav\s*>\s*a/.test(siteHeaderCss) && !/\.site-nav\s+a\s*\{/.test(siteHeaderCss), 'navigation styles only target direct menu links');
+ok(/\.site-social-link\s*\{[^}]*color:\s*#080911[^}]*background:\s*#f5f2e9/s.test(siteHeaderCss), 'X icon has a dark glyph on an ivory circular background');
+ok(/\.site-social-link--youtube\s*\{[^}]*color:\s*#ff0033[^}]*background:\s*#f5f2e9/s.test(siteHeaderCss), 'YouTube icon has a red glyph on an ivory circular background');
+ok(/@media\s*\(max-width:\s*52rem\)[\s\S]*\.site-header__play\s*\{[^}]*width:\s*7\.5rem/.test(siteHeaderCss), 'shared mobile header keeps the visible CTA sizing');
 ok(/grid-template-columns:\s*repeat\(5/.test(cardsCss) && /max-width:\s*36rem[\s\S]*repeat\(2/.test(cardsCss), 'card grid uses five desktop and two mobile columns');
 ok(/\.game-card__name\s*\{[^}]*var\(--sc-font-display\)/.test(cardsCss), 'card names use the bold Mincho display font');
 ok(/\.game-card__stat img\s*\{[^}]*width:\s*clamp\([^;]+;[^}]*height:\s*clamp\(/s.test(cardsCss), 'AT and HP icons use explicit equal dimensions');

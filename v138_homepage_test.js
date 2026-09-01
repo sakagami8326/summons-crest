@@ -7,7 +7,7 @@ const ok = (cond, name) => { if (!cond) throw new Error('FAIL: ' + name); pass++
 const read = rel => fs.readFileSync(path.join(__dirname, rel), 'utf8');
 const exists = rel => fs.existsSync(path.join(__dirname, rel));
 const html = read('public/site/index.html');
-const css = read('public/site/homepage.css');
+const css = read('public/site/homepage.css') + '\n' + read('public/site/site-header.css');
 const conceptCss = read('public/site/concept-section.css');
 const js = read('public/site/homepage.js');
 const server = read('server.js');
