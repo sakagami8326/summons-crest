@@ -22,6 +22,7 @@ const rulesHtml = read('public/site/rules.html');
 const rulesCss = read('public/site/rules.css');
 const rulesJs = read('public/site/rules.js');
 const designCss = read('public/site/design-system.css');
+const sitePagesCss = read('public/site/site-pages.css');
 
 ok(/const VERSION = '1\.54'/.test(serverSource) && require('./package.json').version === '1.54.0', 'release is v1.54');
 ok(/if \(p === '\/cards'\).*site\/cards\.html/.test(serverSource), '/cards is a formal route');
@@ -40,6 +41,13 @@ for (const route of ['/cards', '/rules']) {
   ok(cardsHtml.includes(`href="${route}"`) && rulesHtml.includes(`href="${route}"`), `subpage navigation links to ${route}`);
 }
 ok(/card-showcase__archive[\s\S]*href="\/cards"/.test(home), 'home card showcase links to the archive');
+for (const page of [cardsHtml, rulesHtml]) {
+  ok(/sub-header__play[\s\S]*無料でプレイ[\s\S]*sub-nav-toggle/.test(page), 'subpage mobile header keeps the same play CTA and hamburger order as home');
+  ok(/site-nav__socials[\s\S]*x\.com\/gamitestman[\s\S]*youtube\.com\/@SUMMONSCODE/.test(page), 'subpage mobile menu includes the same X and YouTube links as home');
+}
+ok(/site-pages\.css\?v=154-2/.test(cardsHtml) && /site-pages\.css\?v=154-2/.test(rulesHtml), 'subpages cache-bust the unified header styles');
+ok(/@media\s*\(max-width:\s*52rem\)[\s\S]*\.sub-header__play\s*\{[^}]*width:\s*7\.5rem/.test(sitePagesCss) && !/@media\s*\(max-width:\s*30rem\)[\s\S]*\.sub-header__play\s*\{[^}]*display:\s*none/.test(sitePagesCss), 'subpage mobile header keeps the same visible CTA sizing as home');
+ok(/@media\s*\(max-width:\s*52rem\)[\s\S]*\.sub-nav\s*\{[^}]*width:\s*100%[^}]*justify-self:\s*stretch/.test(sitePagesCss), 'subpage mobile menu spans the same full width as home');
 ok(/grid-template-columns:\s*repeat\(5/.test(cardsCss) && /max-width:\s*36rem[\s\S]*repeat\(2/.test(cardsCss), 'card grid uses five desktop and two mobile columns');
 ok(/\.game-card__name\s*\{[^}]*var\(--sc-font-display\)/.test(cardsCss), 'card names use the bold Mincho display font');
 ok(/\.game-card__stat img\s*\{[^}]*width:\s*clamp\([^;]+;[^}]*height:\s*clamp\(/s.test(cardsCss), 'AT and HP icons use explicit equal dimensions');

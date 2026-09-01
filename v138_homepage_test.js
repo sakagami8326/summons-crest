@@ -59,6 +59,7 @@ ok(/class="card-fan"/.test(html) && (html.match(/c_[a-z_]+\.webp/g) || []).lengt
 ok((html.match(/class="card-element card-element--/g) || []).length === 4, 'cards section displays all four element marks');
 ok(/@media\s*\(max-width:\s*36rem\)[\s\S]*\.card-showcase__elements\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*7\.1rem\)/.test(css), 'mobile cards section keeps the four attributes in a two-column grid');
 ok(/@media\s*\(max-width:\s*36rem\)[\s\S]*\.card-showcase__lead\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)[^}]*width:\s*100%/.test(css) && /\.card-showcase__lead p\s*\{[^}]*width:\s*100%[^}]*text-align:\s*center/.test(css), 'mobile attribute explanation is horizontally centered');
+ok(/\.card-panel \.card-showcase__archive\s*\{[^}]*margin:\s*clamp\(3rem,\s*5vw,\s*4\.5rem\)/.test(css), 'card archive CTA clears the attribute cards with a specific lower margin');
 for (const label of ['火属性','水属性','土属性','風属性'])
   ok(html.includes(`<small>${label}</small>`), `cards section shows the localized element label: ${label}`);
 for (const element of ['fire','water','earth','wind'])

@@ -217,7 +217,7 @@ img { max-width: 100%; }
 .card-element--earth { --element-color: #e0b94f; --element-logo: url('/assets/element-earth.svg'); --element-tilt: -1.5deg; --element-lift: .25rem; }
 .card-element--wind { --element-color: #55e6cf; --element-logo: url('/assets/element-wind.svg'); --element-tilt: 3deg; --element-lift: -.1rem; }
 .card-showcase__lead p { margin: 0; color: rgb(241 232 208 / 68%); font: 600 clamp(.9rem, 1.7vw, 1.2rem)/1.9 var(--sc-font-display); text-align: right; letter-spacing: .05em; }
-.card-showcase__archive { display: flex; justify-content: center; margin: 2.2rem 0 0; }
+.card-panel .card-showcase__archive { display: flex; justify-content: center; margin: clamp(3rem, 5vw, 4.5rem) 0 0; }
 .card-showcase__archive .sc-button { min-width: 13rem; min-height: 3.25rem; gap: 1rem; border-color: rgb(239 217 143 / 48%); color: var(--sc-ink-950); background: linear-gradient(120deg, #efd98f, #c9a227 58%, #d9b64f); box-shadow: 0 .8rem 2rem rgb(0 0 0 / 30%), 0 0 1.4rem rgb(201 162 39 / 14%); font-weight: 700; text-decoration: none; }
 .card-showcase__archive .sc-button:hover, .card-showcase__archive .sc-button:focus-visible { box-shadow: 0 1rem 2.2rem rgb(0 0 0 / 34%), 0 0 1.8rem rgb(239 217 143 / 28%); transform: translateY(-2px); }
 
