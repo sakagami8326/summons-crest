@@ -409,6 +409,8 @@
   .mmT .mmOwn { position:absolute; inset:auto 2px 2px 2px; height:3px; border-radius:2px; }
   .mmT .mmMe { position:absolute; top:-1dvh; right:-.6dvh; width:2.2dvh; height:2.2dvh;
       border-radius:50%; border:2px solid #fff; }
+  .mmT .mmAbyss { position:absolute; top:-1.15dvh; left:-.7dvh; width:2.8dvh; height:2.8dvh;
+      object-fit:contain; z-index:3; filter:drop-shadow(0 0 4px #43c9ff) drop-shadow(0 1px 2px #071427); }
   /* リザルト画面 */
   #resultOv { position:fixed; inset:0; display:none; z-index:60; background:rgba(10,8,25,.96);
       flex-direction:column; align-items:center; justify-content:center; gap:1.6dvh; }
@@ -1377,10 +1379,17 @@ function mmCellContent(t, o) {
   const pl = state.players.find(q => q.id === o.player);
   return pl && pl.charId ? `<img class="mmFace" src="/assets/f_${pl.charId}.png">` : '';
 }
+function abyssMarkAt(i) {
+  return state && Array.isArray(state.abyssMarks) ? state.abyssMarks.find(mark => mark.tile === i) : null;
+}
+function mmAbyssMark(i) {
+  const mark = abyssMarkAt(i);
+  return mark ? `<img class="mmAbyss" src="/assets/abyss-mark-v1.webp" alt="深淵標" title="深淵標 +${mark.bonus}G">` : '';
+}
 function tileTargets(p) {
   const m = {};
   p.options.forEach(o => {
-    const mt = /^(up|ct|qt|mt|mv|mb|sw|sl|st|sd|tg|lu|nu|mh|ms|md):(\d+)$/.exec(o.id);
+    const mt = /^(up|ct|qt|mt|mv|mb|sw|sl|st|sd|tg|lu|nu|mh|ms|md|am):(\d+)$/.exec(o.id);
     if (mt) m[+mt[2]] = o.id;
   });
   return m;
@@ -1500,7 +1509,7 @@ function renderMiniMap(p) {
     const cls = targets[i] ? 'pickable' : 'dim';
     const selectedHere = multi ? selected.includes(i) : mmSel === i;
     cells.push(`<div class="mmT ${cls} ${selectedHere ? 'sel' : ''}" style="grid-column:${gx + 1}; grid-row:${gy + 1}; background:${bg}"
-      ${targets[i] ? `onclick="mmTap(${i})"` : ''}>${glyph}${own}${meHere}</div>`);
+      ${targets[i] ? `onclick="mmTap(${i})"` : ''}>${glyph}${own}${meHere}${mmAbyssMark(i)}</div>`);
   });
   const selOpt = mmSel !== null && targets[mmSel];
   const selLabel = selOpt ? ((p.options.find(o => o.id === selOpt) || {}).label || '') : '';
@@ -1583,6 +1592,7 @@ function tileDetailHTML(i) {
   const fxLine = fx ? [fx.vortex && '炎の渦', fx.uplift && 'リストア']
     .filter(Boolean).join('・') : '';
   const curse = state.curses && state.curses[i];
+  const abyss = abyssMarkAt(i);
   return `<div class="tdRow"><img class="tdFace" style="--tdc:${pl.color || '#888'}" src="/assets/f_${pl.charId}.png">
       <div><b style="font-size:max(2.3dvh,14px)">${pl.name || '?'}の領地</b>
       <span class="tdSub" style="display:block">Lv${o.level} ｜ 通行料 ${state.tolls ? state.tolls[i] : '?'}G</span></div></div>
@@ -1590,6 +1600,7 @@ function tileDetailHTML(i) {
       <span class="tdStat" style="display:block"><img class="inlineStatSymbol" src="/assets/cards/stat-at-icon.svg" alt="">AT <b>${at}</b> ／ <img class="inlineStatSymbol" src="/assets/cards/stat-hp-icon.svg" alt="">HP <i>${curHp}</i>/${maxHp}${o.shade ? ` ｜ 死影${o.shade}` : ''}</span>
       <span class="tdSub" style="display:block">${elemJaIc(t.e)}</span></div></div>
     ${fxLine ? `<div class="tdSub">継続効果: ${fxLine}</div>` : ''}
+    ${abyss ? `<div class="tdSub" style="color:#8cddff"><img src="/assets/abyss-mark-v1.webp" alt="" style="width:2.2dvh;height:2.2dvh;vertical-align:-.5dvh;object-fit:contain"> 深淵標 +${abyss.bonus}G ｜ 合計通行料 ${state.tolls ? state.tolls[i] : '?'}G</div>` : ''}
     ${curse ? `<div class="tdSub">☠ 衰弱の呪い(HP−${curse.hp})</div>` : ''}`;
 }
 // ===== 領地閲覧モード(「領地を見る」ボタン) =====
@@ -1603,7 +1614,7 @@ function renderMapView() {
     const own = o ? `<div class="mmOwn" style="background:${(state.players.find(q => q.id === o.player) || {}).color || '#888'}"></div>` : '';
     const meHere = state.players.some(q => q.pos === i && q.id === pid) ? `<div class="mmMe" style="background:${(me() || {}).color || '#fff'}"></div>` : '';
     cells.push(`<div class="mmT ${viewSel === i ? 'sel' : ''}" style="grid-column:${gx + 1}; grid-row:${gy + 1}; background:${bg}"
-      onclick="viewTap(${i})">${glyph}${own}${meHere}</div>`);
+      onclick="viewTap(${i})">${glyph}${own}${meHere}${mmAbyssMark(i)}</div>`);
   });
   $('mapOvTitle').textContent = '領地マップ ─ マスをタップで詳細';
   $('mapOvMap').innerHTML = `<div id="miniMap">${cells.join('')}</div>`;
@@ -2499,6 +2510,7 @@ function taskPrompt(p) {
     gaust_exile:'廃棄するカードを選べ', fatal_exile:'廃棄するカードを選べ',
     ult_villa_recover:'回収するカードを選べ', daitekkan_recover:'回収するウェポンを選べ',
     mermaid_heal:'回復する味方を選べ',
+    abyss_mark:'深淵標を置く領地を選べ',
     toxy_target:'対象のプレイヤーを選べ', ult_nerasio_elem:'変更後の属性を選べ',
     ult_mio:'対象の領地を選べ', ult_lia:'炎の渦を起こす領地を選べ', ult_nerasio_land:'再構成する領地を選べ',
     ult_resolve:'必殺技の演出完了を待て', forge_pick:'進化させるカードを選べ',
@@ -2614,7 +2626,7 @@ function render() {
     const pov = $('pickOv');
     if (pov.classList.contains('on')) { pov.classList.remove('on'); pov.dataset.k = ''; }
   }
-  const MAP_TYPES = ['curse_target','quake_target','ult_mio','ult_lia','ult_nerasio_land','move_a','move_b','swap_land','upgrade','marlow_src','marlow_dest','mermaid_heal',
+  const MAP_TYPES = ['curse_target','quake_target','ult_mio','ult_lia','ult_nerasio_land','move_a','move_b','swap_land','upgrade','marlow_src','marlow_dest','mermaid_heal','abyss_mark',
     'sell','step_a','step_b','spell_target'];
   if (!mapView && (!p || !MAP_TYPES.includes(p.type))) hideMapOv();
   const liaSelectedKey = p && (p.type === 'ult_lia' || p.type === 'ult_nerasio_land') ? `${p.type}|${(p.selected || []).join(',')}` : '';
@@ -2675,7 +2687,7 @@ function render() {
       const speed = state.presentationSpeed === 2 && state.players.find(q => q.id === ld.player)?.isBot ? 2 : 1;
       const scale = ms => GAME_TIMING.scaled(ms, speed);
       const GT = GAME_TIMING;  // 盤面と共有の移動タイミング(直書き禁止)
-      const steps = ld.multi ? ld.multi.reduce((a, b) => a + b, 0) : ld.value;
+      const steps = Number.isInteger(ld.resolvedSteps) ? ld.resolvedSteps : (ld.multi ? ld.multi.reduce((a, b) => a + b, 0) : ld.value);
       const init = scale(ld.multi ? GT.moveStartDelayMulti : GT.moveStartDelay);
       let doneAt = ld.at + init + steps * scale(GT.stepMs) + scale(GT.arriveBuf);
       if (ld.castle && p.type !== 'draft') {
@@ -2689,6 +2701,7 @@ function render() {
         doneAt = p.availableAt || ld.castle.availableAt ||
           ld.at + init + (ld.castle.castleStep || steps) * scale(GT.stepMs) + scale(GT.castleDraftLead);
       }
+      if (ld.forcedStop && p.type !== 'draft') doneAt += scale(GT.anchorStop);
       // サーバーとの時計ズレで「移動中…」から抜けなくなるのを防ぐ(最大8秒で強制解除)
       doneAt = Math.min(doneAt, pendSince + GT.moveWaitMax);
       const serverNow = Date.now() + serverClockOffset;
@@ -2810,7 +2823,7 @@ function render() {
     })), { key:`nerasio-elem|${(p.selected || []).join(',')}` });
   } else if (p.type === 'curse_target' || p.type === 'quake_target' || p.type === 'ult_mio' || p.type === 'ult_lia' || p.type === 'ult_nerasio_land' ||
              p.type === 'move_a' || p.type === 'move_b' || p.type === 'swap_land' || p.type === 'upgrade' ||
-             p.type === 'marlow_src' || p.type === 'marlow_dest' ||
+              p.type === 'marlow_src' || p.type === 'marlow_dest' || p.type === 'abyss_mark' ||
              p.type === 'sell' || p.type === 'step_a' || p.type === 'step_b' || p.type === 'mermaid_heal' ||
              p.type === 'spell_target') {
     renderMiniMap(p);

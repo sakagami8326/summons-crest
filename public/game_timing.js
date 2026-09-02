@@ -5,6 +5,7 @@ const GAME_TIMING = {
   moveStartDelay: 1900,       // ダイス確定から移動開始まで(単独ダイス)
   moveStartDelayMulti: 2900,  // 複数ダイス(疾風・烈火の進軍)時の移動開始まで
   stepMs: 250,                // 1歩あたりのホップ間隔
+  anchorStop: 1500,           // 深淵の錨による強制停止の発光・バナー時間
   otherStartDelay: 250,       // 自分以外のコマ移動の初動(盤面のみ)
   castleResume: 650,          // 城ドラフト後にコマ移動を再開するまでの間
   castleZoom: 550,            // 城到着からズーム・効果音まで

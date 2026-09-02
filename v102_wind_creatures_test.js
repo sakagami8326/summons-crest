@@ -127,7 +127,7 @@ ok(/async function submitMapChoice\(optionId\)/.test(phone) && /通信できま�
   'phone keeps map choices recoverable after a communication failure');
 ok(/res\.status === 409[\s\S]*?renderMiniMap\(active\)/.test(phone),
   'phone keeps the server-refreshed map visible after a stale choice');
-ok(/\^\(up\|ct[\s\S]*?ms\|md\)/.test(phone) && /\/cancel\$\|\^pass\$/.test(phone),
+ok(/\^\(up\|ct[\s\S]*?ms\|md(?:\|am)?\)/.test(phone) && /\/cancel\$\|\^pass\$/.test(phone),
   'phone supports Marlow source and destination cancellation in the shared map flow');
 
 console.log(`V1.02 ALL ${pass} CHECKS PASSED`);

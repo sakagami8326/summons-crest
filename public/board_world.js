@@ -951,7 +951,7 @@ const PW = (() => {
   function syncBoard(st) {
     if (failed) return;
     if (!ready) { pendingState = st; return; }
-    const key = JSON.stringify(st.owners) + JSON.stringify(st.tolls || []) + JSON.stringify(st.curses || {}) + JSON.stringify(st.barrier || {}) +
+    const key = JSON.stringify(st.owners) + JSON.stringify(st.tolls || []) + JSON.stringify(st.curses || {}) + JSON.stringify(st.abyssMarks || []) + JSON.stringify(st.barrier || {}) +
       st.players.map(p => p.id + p.color).join('') + st.tiles.map(t => t.e || t.t).join('');
     if (key === boardKey) return;
     boardKey = key;
@@ -1029,6 +1029,13 @@ const PW = (() => {
         });
       }
     }
+    // 深淵標（配置計算はDOMと共有）
+    const abyssMarks = buildAbyssMarkBadges(st);
+    if (abyssMarks.length) jobs.push(pngTexture('pwImg_abyss_mark', '/assets/abyss-mark-v1.webp'));
+    for (const mark of abyssMarks) makers.push(() => {
+      const obj = makeAbyssMark(mark);
+      if (obj) boardObjs.push(obj);
+    });
     // 通行料・呪いバッジ(配置計算はDOMと共有)
     for (const b of buildTollBadges(st)) {
       if (b.icon) { jobs.push(pngTexture('pwImg_ic_curse', '/assets/ic_curse.png')); }
@@ -1047,6 +1054,20 @@ const PW = (() => {
       tileTexKeys = newTileTex;
       makers.forEach(fn => { try { fn(); } catch (e) {} });
     });
+  }
+
+  function makeAbyssMark(mark) {
+    if (!scene.textures.exists('pwImg_abyss_mark')) return null;
+    const cont = scene.add.container(mark.x, mark.y).setDepth(mark.z);
+    const img = scene.add.image(0, -5, 'pwImg_abyss_mark').setOrigin(0.5, 0.5);
+    img.setScale(46 / Math.max(img.width, img.height));
+    const txt = scene.add.text(0, 21, `+${mark.bonus}G`, {
+      fontFamily:'Arial, sans-serif', fontSize:'11px', fontStyle:'bold', color:'#C9F3FF',
+      backgroundColor:'rgba(6,20,48,.9)', padding:{ left:5, right:5, top:1, bottom:1 },
+    }).setOrigin(0.5, 0.5);
+    txt.setStroke('#153F6A', 1); txt.setShadow(0, 1, '#000000', 2);
+    cont.add([img, txt]);
+    return cont;
   }
 
   function makeBadge(b) {

@@ -36,6 +36,13 @@
   .toll { position:absolute; transform:translate(-50%,-50%) skewX(-6deg); padding:1px 11px 2px;
           font:700 13px sans-serif; color:#fff; border-radius:3px; border:1px solid rgba(255,255,255,.5);
           box-shadow:0 2px 5px rgba(0,0,0,.5); text-shadow:0 1px 2px rgba(0,0,0,.45); }
+  .abyssMark { position:absolute; transform:translate(-50%,-50%); width:58px; height:58px; pointer-events:none; }
+  .abyssMark img { width:46px; height:46px; object-fit:contain; display:block; margin:0 auto;
+      filter:drop-shadow(0 0 6px rgba(77,205,255,.9)) drop-shadow(0 2px 3px rgba(0,0,0,.8)); }
+  .abyssMark span { position:absolute; left:50%; bottom:-2px; transform:translateX(-50%); white-space:nowrap;
+      color:#c9f3ff; background:rgba(6,20,48,.9); border:1px solid rgba(111,220,255,.78); border-radius:8px;
+      padding:0 5px 1px; font:700 11px sans-serif; text-shadow:0 1px 2px #000; }
+  @media (prefers-reduced-motion: reduce) { .abyssMark { animation:none!important; } }
 
   /* HUD */
   #hud { position:fixed; top:14px; left:14px; width:236px; z-index:30; }
@@ -3118,6 +3125,7 @@ function tileInfoHTML(i) {
   const hp = evolved && cr.evoHp ? cr.evoHp : cr.hp;
   const soulCount = o.creature.replace(/_f$/, '') === 'alter' ? Number(pl.exileCount || 0) : null;
   const curse = state.curses && state.curses[i];
+  const abyss = (state.abyssMarks || []).find(mark => mark.tile === i);
   const combatUi = state.landCombat && state.landCombat[i];
   const effect = combatUi && combatUi.effect;
   const dmg = o.dmg || 0;
@@ -3137,6 +3145,7 @@ function tileInfoHTML(i) {
         ${(evolved ? (cr.evoFx || cr.fx) : cr.fx) ? `<div class="tiFx ${effectStateClass(effect)}">${evolved ? (cr.evoFx || cr.fx) : cr.fx}
           ${effect ? `<small>${effectStateLabel(effect)}${effect.reason ? ` ─ ${effect.reason}` : ''}</small>` : ''}</div>` : ''}
         ${soulCount !== null ? `<div class="tiSoul">廃棄札 ${soulCount}枚<br>【魂喰らい】DF +${soulCount * 5}</div>` : ''}
+        ${abyss ? `<div class="tiSub" style="color:#8cddff"><img src="/assets/abyss-mark-v1.webp" alt="" style="width:24px;height:24px;vertical-align:-7px"> 深淵標 +${abyss.bonus}G</div>` : ''}
         <div class="tiToll">通行料 ${toll}G</div>
       </div>
     </div>`;
@@ -3156,7 +3165,7 @@ function updateTileInfo() {
     if (pd && pd.type === 'tile') target = tp.pos;
   }
   if (target === null) { el.classList.remove('on'); el.dataset.k = ''; return; }
-  const k = target + ':' + JSON.stringify(state.owners[target]) + ':' + JSON.stringify(state.curses[target] || 0) + ':' + Number(state.tolls && state.tolls[target] || 0);
+  const k = target + ':' + JSON.stringify(state.owners[target]) + ':' + JSON.stringify(state.curses[target] || 0) + ':' + Number(state.tolls && state.tolls[target] || 0) + ':' + JSON.stringify((state.abyssMarks || []).find(mark => mark.tile === target) || null);
   if (el.dataset.k !== k) { el.dataset.k = k; el.innerHTML = tileInfoHTML(target); }
   el.classList.add('on');
 }
@@ -3272,7 +3281,7 @@ function renderBoard() {
   renderBoardDom();
 }
 function renderBoardDom() {
-  const key = JSON.stringify(state.owners) + JSON.stringify(state.tolls || []) + JSON.stringify(state.curses || {}) + JSON.stringify(state.barrier || {}) + state.players.map(p => p.id + p.color).join('') + state.tiles.map(t => t.e || t.t).join('');
+  const key = JSON.stringify(state.owners) + JSON.stringify(state.tolls || []) + JSON.stringify(state.curses || {}) + JSON.stringify(state.abyssMarks || []) + JSON.stringify(state.barrier || {}) + state.players.map(p => p.id + p.color).join('') + state.tiles.map(t => t.e || t.t).join('');
   if (key === ownersCache) return;
   ownersCache = key;
   const st = $('stage');
@@ -3328,6 +3337,14 @@ function renderBoardDom() {
     el.innerHTML = artHTML(o.creature, o.level, 80);
     st.appendChild(el);
   }
+  // 深淵標（DOM版／Phaser版で同じ座標計算を使用）
+  for (const mark of buildAbyssMarkBadges(state)) {
+    const el = document.createElement('div');
+    el.className = 'abyssMark';
+    el.style.left = mark.x + 'px'; el.style.top = mark.y + 'px'; el.style.zIndex = mark.z;
+    el.innerHTML = `<img src="/assets/abyss-mark-v1.webp" alt="深淵標"><span>+${mark.bonus}G</span>`;
+    st.appendChild(el);
+  }
   // バッジ(通行料・呪い): 配置計算は共有のbuildTollBadgesで行う
   for (const b of buildTollBadges(state)) {
     const el = document.createElement('div');
@@ -3338,6 +3355,16 @@ function renderBoardDom() {
     el.innerHTML = (b.icon ? '<img src="/assets/ic_curse.png" style="height:13px;vertical-align:-2px"> ' : '') + b.text;
     st.appendChild(el);
   }
+}
+function buildAbyssMarkBadges(st2) {
+  return (st2.abyssMarks || []).map(mark => {
+    const o = st2.owners[mark.tile];
+    if (!o || !GEO[mark.tile]) return null;
+    const { x, y } = proj(GEO[mark.tile][0], GEO[mark.tile][1]);
+    const lift = (o.level - 1) * 7;
+    // 最上段のLv4領地でも58px標が画面上端から欠けない位置へ収める。
+    return { ...mark, x, y:Math.max(34, y - lift - 108), z:GEO[mark.tile][0] + GEO[mark.tile][1] + 106 };
+  }).filter(Boolean);
 }
 // バッジ配置(DOM描画/Phaser描画で共有)
 function buildTollBadges(st2) {
@@ -3355,7 +3382,7 @@ function buildTollBadges(st2) {
     const p = proj(GEO[i][0], GEO[i][1]), lf = (o.level - 1) * 7;
     return { i, x1: p.x-44, x2: p.x+44, y1: p.y-lf-92, y2: p.y-lf+16 };
   })() : null).filter(Boolean);
-  const placed = [];
+  const placed = buildAbyssMarkBadges(st2).map(mark => ({ x1:mark.x-31, x2:mark.x+31, y1:mark.y-31, y2:mark.y+31 }));
   const hitTest = (b, self) =>
     occ.some(r => r.i !== self && !(b.x2<r.x1||b.x1>r.x2||b.y2<r.y1||b.y1>r.y2)) ||
     placed.some(r => !(b.x2<r.x1||b.x1>r.x2||b.y2<r.y1||b.y1>r.y2));
@@ -4385,7 +4412,7 @@ function render() {
   if (!state) return;
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.54';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.55';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -4732,6 +4759,20 @@ function render() {
       const tollEvent = { ...state.lastEvent };
       queueFx(3, () => playTollCutin(tollEvent), {
         actorId:tollEvent.from, id:presentationId('toll', tollEvent.at), kind:'toll' });
+    }
+    else if (state.lastEvent.type === 'abyss_anchor') {
+      const ev = { ...state.lastEvent };
+      queueFx(2, async () => {
+        fxAt(ev.tile, 'fxRing', '#56D7FF');
+        await showBannerAsync('深淵の錨 ─ 強制停止', `${player(ev.player)?.name || ''}は土地${ev.tile}で足止めされた`, GAME_TIMING.anchorStop);
+      }, { actorId:ev.player, id:presentationId('abyss-anchor', ev.at), kind:'abyss-anchor' });
+    }
+    else if (state.lastEvent.type === 'abyss_mark') {
+      const ev = { ...state.lastEvent };
+      queueFx(2, async () => {
+        fxAt(ev.tile, 'fxRing', '#56D7FF');
+        await showBannerAsync('深淵標を刻印', `土地${ev.tile}の通行料 +${ev.bonus}G`, 2100);
+      }, { actorId:ev.player, id:presentationId('abyss-mark', ev.at), kind:'abyss-mark' });
     }
     else if (state.lastEvent.type === 'bankrupt') {
       const bp = player(state.lastEvent.player);

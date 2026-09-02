@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.54';
+const VERSION = '1.55';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TURN_TRANSITION_TIMEOUT_MS = 20000;
@@ -156,6 +156,13 @@ const CREATURES = {
   komao:   { name: 'コマオー', evo: 'シシガルム', elem: 'earth', st: 30, hp: 30, cost: 70,
              evoSt: 30, evoHp: 50, fx: '【地脈転成】配置した土地を土属性に変える',
              evoFx: '【地脈転成】配置土地を土属性化。【獅子地脈】自分の土領地1つにつきDF+5', rarity: 'N' },
+  mist_jelly:{ name: 'ミストジェリー', evo: 'アビスアンカー', elem: 'water', st: 20, hp: 40, cost: 130,
+             evoSt: 40, evoHp: 60,
+             fx: '【深淵の錨】他プレイヤーがこのマスを通過する時、その場で移動を終了させる', rarity: 'L' },
+  night_jelly:{ name: 'ナイトジェリー', evo: 'アビストール', elem: 'water', st: 25, hp: 45, cost: 100,
+             evoSt: 45, evoHp: 65,
+             fx: '【深淵標】配置時に自領地を選び、通行料を100G増額',
+             evoFx: '【深淵標】配置時に自領地を選び、通行料をLv×50G増額（最低100G）', rarity: 'R' },
 };
 const ITEMS = {}; // v0.34: 呪いアイテムは廃止(スペル「衰弱の呪文」に移行)
 const SPELLS = {
@@ -250,7 +257,7 @@ for (const [cid, c] of Object.entries({ ...CREATURES }))
   if (c.evo) CREATURES[cid + '_f'] = { name: c.evo, elem: c.elem, st: c.evoSt, hp: c.evoHp,
     cost: c.cost, fx: c.evoFx || c.fx, rarity: c.rarity, forged: true };
 
-const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral','mermaid','bunnyhop','strauk','samurai_saga','marlow','shuterio','gaust','alter','toxy','kamadoma','swordgear','komao'];
+const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral','mermaid','bunnyhop','strauk','samurai_saga','marlow','shuterio','gaust','alter','toxy','kamadoma','swordgear','komao','mist_jelly','night_jelly'];
 // アートが存在するクリーチャーID(assetsのc_*.pngを起動時に走査 ─ v0.82)。
 // クライアントはcatalog.artIds経由で受け取る。手書きリストの二重管理はしない
 // (新クリーチャーはIDとファイル名を一致させて置くだけで盤面・カード・戦闘に反映される)
@@ -352,7 +359,7 @@ function publicCardCatalog() {
   }));
   publicCatalogCache = {
     version: VERSION,
-    updatedAt: '2026-09-01',
+    updatedAt: '2026-09-02',
     counts: {
       total: creatures.length + spells.length + weapons.length,
       creatures: creatures.length,
@@ -365,25 +372,29 @@ function publicCardCatalog() {
   return publicCatalogCache;
 }
 const RARITY_COPIES = { L: 1, R: 2, N: 3 };
-const MARKET_COPY_OVERRIDES = { marlow: 3 };
+const MARKET_COPY_OVERRIDES = { marlow: 3, mist_jelly: 2 };
 const RANDOM_SUPPORT_POOL = ['gweapon', 'gshield'];
 const RANDOM_SUPPORT_COPIES = 2;
 function makeDeck() {
   const d = [];
   for (const c of MARKET_POOL)
-    for (let i = 0; i < (MARKET_COPY_OVERRIDES[c] || RARITY_COPIES[CREATURES[c].rarity]); i++) d.push(c);
+    for (let i = 0; i < marketCopies(c); i++) d.push(c);
   for (const [sid, sp] of Object.entries(SPELLS))
     for (let i = 0; i < RARITY_COPIES[sp.rarity]; i++) d.push(sid);
   for (const sid of RANDOM_SUPPORT_POOL)
     for (let i = 0; i < RANDOM_SUPPORT_COPIES; i++) d.push(sid);
   return d.sort(() => Math.random() - 0.5);
 }
+function marketCopies(id) {
+  const info = CREATURES[id] || SPELLS[id];
+  return MARKET_COPY_OVERRIDES[id] || RARITY_COPIES[info.rarity];
+}
 const SHOP_PRICE = { N: 60, R: 100, L: 160 };
 function shopRandomPool() {
   const weighted = [];
   for (const id of [...MARKET_POOL, ...Object.keys(SPELLS)]) {
     const info = CREATURES[id] || SPELLS[id];
-    for (let i = 0; i < RARITY_COPIES[info.rarity]; i++) weighted.push(id);
+    for (let i = 0; i < marketCopies(id); i++) weighted.push(id);
   }
   for (const sid of RANDOM_SUPPORT_POOL)
     for (let i = 0; i < RANDOM_SUPPORT_COPIES; i++) weighted.push(sid);
@@ -536,7 +547,7 @@ const CREATURE_EFFECT_CONTEXT = Object.freeze({
   mimic:'battle', beruf:'battle', grayble:'battle', trooper:'other', survey:'battle',
   palecoral:'turn', bunnyhop:'spell', strauk:'battle', samurai_saga:'battle', marlow:'land',
   shuterio:'battle', gaust:'placement', alter:'battle', toxy:'exile', kamadoma:'other',
-  swordgear:'battle', komao:'other', mermaid:'battle',
+  swordgear:'battle', komao:'other', mermaid:'battle', mist_jelly:'other', night_jelly:'toll',
 });
 function terrainBreakdown(r, tile, attackerCreature = null) {
   const o = r.owners[tile];
@@ -774,6 +785,20 @@ function onCreatureSummoned(r, p, creatureId, reason, tile) {
     if (askMandatoryHandExile(r, p, 'gaust_exile', '【魂の選別】廃棄する手札を1枚選ぶ', { after: reason, tile }))
       return true;
   }
+  if (baseId(creatureId) === 'night_jelly' && Number.isInteger(tile)) {
+    reconcileAbyssMarks(r);
+    const occupiedTargets = new Set(activeAbyssMarks(r).map(mark => mark.tile));
+    const opts = r.owners.map((owner, i) => owner && owner.player === p.id && TILES[i]?.t === 'land' && !occupiedTargets.has(i)
+      ? { id: `am:${i}`, tile: i,
+          label: `土地${i}（${ELEM_JA[tileElem(r, i)]} Lv${owner.level}／現在${tollOf(r, i)}G）` }
+      : null).filter(Boolean);
+    if (opts.length) {
+      ask(r, p.id, 'abyss_mark', '【深淵標】通行料を増額する自領地を選ぶ', opts);
+      Object.assign(r.pending[p.id], { sourceTile: tile, after: reason });
+      return true;
+    }
+    log(r, `【深淵標】${p.name}には標を置ける領地がなかった`);
+  }
   if (baseId(creatureId) !== 'samurai_saga' || !Number.isInteger(tile)) return false;
   ask(r, p.id, 'samurai_elem', '【地脈改変】この土地の属性を変更しますか?', [
     { id: 'se:fire', label: '火属性に変更' },
@@ -785,12 +810,42 @@ function onCreatureSummoned(r, p, creatureId, reason, tile) {
   Object.assign(r.pending[p.id], { tile, after: reason });
   return true;
 }
+function abyssMarkBonusFor(source, target) {
+  if (!source || !target || baseId(source.creature) !== 'night_jelly') return 0;
+  return isEvolved(source) ? Math.max(100, (target.level || 1) * 50) : 100;
+}
+function activeAbyssMarks(r) {
+  const marks = [];
+  const usedTargets = new Set();
+  (r.owners || []).forEach((source, sourceTile) => {
+    if (!source || baseId(source.creature) !== 'night_jelly' || !Number.isInteger(source.abyssMarkTarget)) return;
+    const tile = source.abyssMarkTarget;
+    const target = r.owners[tile];
+    if (!TILES[tile] || TILES[tile].t !== 'land' || !target || target.player !== source.player || usedTargets.has(tile)) return;
+    usedTargets.add(tile);
+    marks.push({ tile, sourceTile, player: source.player, bonus: abyssMarkBonusFor(source, target) });
+  });
+  return marks;
+}
+function reconcileAbyssMarks(r) {
+  const validSources = new Set(activeAbyssMarks(r).map(mark => mark.sourceTile));
+  (r.owners || []).forEach((source, sourceTile) => {
+    if (source && Number.isInteger(source.abyssMarkTarget) && !validSources.has(sourceTile)) delete source.abyssMarkTarget;
+  });
+  return activeAbyssMarks(r);
+}
+function abyssMarkBonus(r, tile) {
+  const mark = activeAbyssMarks(r).find(entry => entry.tile === tile);
+  return mark ? mark.bonus : 0;
+}
 function tollOf(r, i) {
   const o = r.owners[i];
+  if (!o) return 0;
   let rate = 1;
   if (baseId(o.creature) === 'orphe') rate += 0.2;                       // 清流
   if (baseId(o.creature) === 'kbaby') rate *= isEvolved(o) ? 2 : 1.5;   // 王の徴収
-  return Math.round(landValue(r, i) * 0.25 * rate);
+  // 深淵標は既存の割合効果を計算・丸めた後に固定額として加算する。
+  return Math.round(landValue(r, i) * 0.25 * rate) + abyssMarkBonus(r, i);
 }
 // スペルの直接ダメージ処理: 不動(ベデベロ-10)・死影(ベルーフDF+10/上限なし)・撃破は捨て札
 // 戻り値: true=撃破して空き地化
@@ -1471,9 +1526,11 @@ function performMove(r, p, steps, meta, moveLabel) {
   r.lastDice = Object.assign({ player: p.id, at: stamp(r) }, meta);
   const dir = p.dir || 1;
   let bonus = 0, gotSeal = false, noSeal = false, castleStep = 0, usedSeal = false;
+  let movedSteps = 0, forcedStop = null;
   let completedLaps = Math.max(0, (p.lap || 1) - 1);
   for (let s2 = 0; s2 < steps; s2++) {
     p.pos = (p.pos + dir + TILES.length) % TILES.length;
+    movedSteps = s2 + 1;
     if (p.pos === GATE_TILE && !p.seal) { p.seal = true; gotSeal = true; }
     if (p.pos === 0) {
       castleStep = s2 + 1;
@@ -1482,6 +1539,23 @@ function performMove(r, p, steps, meta, moveLabel) {
       if (p.seal) { bonus += castleLapBonus(completedLaps); p.seal = false; usedSeal = true; }
       else noSeal = true;
     }
+    // 深淵の錨は「通過しようとした」時だけ発動する。出目の最終地点・自分の錨は通常着地。
+    const anchor = r.owners[p.pos];
+    if (s2 < steps - 1 && anchor && anchor.player !== p.id && baseId(anchor.creature) === 'mist_jelly') {
+      forcedStop = { tile: p.pos, owner: anchor.player, creature: anchor.creature,
+        rolledSteps: steps, resolvedSteps: movedSteps, remainingSteps: steps - movedSteps };
+      break;
+    }
+  }
+  r.lastDice.resolvedSteps = movedSteps;
+  if (forcedStop) {
+    const initial = presentationMs(r, p.id, meta && meta.multi ? GAME_TIMING.moveStartDelayMulti : GAME_TIMING.moveStartDelay);
+    forcedStop.availableAt = r.lastDice.at + initial + movedSteps * presentationMs(r, p.id, GAME_TIMING.stepMs) +
+      presentationMs(r, p.id, GAME_TIMING.anchorStop);
+    r.lastDice.forcedStop = forcedStop;
+    r.lastEvent = { type: 'abyss_anchor', player: p.id, owner: forcedStop.owner,
+      tile: forcedStop.tile, creature: forcedStop.creature, at: stamp(r) };
+    log(r, `【深淵の錨】${p.name}は土地${forcedStop.tile}で強制停止した（${steps}歩→${movedSteps}歩）`);
   }
   if (gotSeal) {
     // v0.59: 門通過で+200Gと刻印を入手(オーナー指示)
@@ -1527,6 +1601,12 @@ function performMove(r, p, steps, meta, moveLabel) {
     r.lastDice.castle = { usedSeal: false, completedLaps, bonusPerLap: RULES.castleBonusPerLap,
       baseBonus: 0, gold: 0, landValue: 0, landRate: CASTLE_LAND_RATE,
       landBonus: 0, total: 0, drew: 0, healed: [], castleStep, availableAt };
+    if (forcedStop && movedSteps > castleStep) {
+      // 城演出を挟んだ後の強制停止は、城の全景復帰と残りの移動時間も待ってから操作を解放する。
+      forcedStop.availableAt = availableAt + presentationMs(r, p.id, GAME_TIMING.castleResume) +
+        (movedSteps - castleStep) * presentationMs(r, p.id, GAME_TIMING.stepMs) +
+        presentationMs(r, p.id, GAME_TIMING.anchorStop);
+    }
     log(r, `${p.name}は${moveLabel} ─ 刻印がないため一周ボーナスなし…`);
     if (points(r, p) >= ASSET_GOAL) return declareWin(r, p, `総資産${points(r, p)}Gで城に凱旋!`);
   } else {
@@ -1536,6 +1616,7 @@ function performMove(r, p, steps, meta, moveLabel) {
   if (meta && meta.villaUlt) return startVillaRecovery(r, p,
     r.lastDice && r.lastDice.castle ? r.lastDice.castle.availableAt : 0);
   resolveTile(r, p);
+  if (forcedStop && r.pending[p.id]) r.pending[p.id].availableAt = forcedStop.availableAt;
 }
 function doRoll(r, p) {
   if (p.fixedDice) {
@@ -1978,8 +2059,9 @@ function resolveBattle(r) {
       def.discard.push(o.creature);
     }
     r.owners[b.tile] = (mvSrc || corridor)
-      ? { player: atk.id, level: o.level, creature: b.atkCreature, dmg: atkCarried,
-          shade: (mvSrc && mvSrc.shade) || b.atkShade || 0 }  // 移動侵略は負傷・死影を維持
+      ? Object.assign({ player: atk.id, level: o.level, creature: b.atkCreature, dmg: atkCarried,
+          shade: (mvSrc && mvSrc.shade) || b.atkShade || 0 },
+          mvSrc && Number.isInteger(mvSrc.abyssMarkTarget) ? { abyssMarkTarget: mvSrc.abyssMarkTarget } : null)  // 移動侵略は負傷・死影・深淵標を維持
       : { player: atk.id, level: o.level, creature: b.atkCreature };  // 手札からの占領は全快
     atk.battleWins++;
     log(r, `${ac.name}の${hitsDone === 2 ? '連撃' : '一撃'}(実ダメージ${dealt})が${dc.name}を討ち取った! Lv${o.level}の土地を奪取!`);
@@ -2217,6 +2299,25 @@ function handleChoose(r, playerId, optionId) {
     log(r, `${p.name}は${CHARS[optionId].name}を選択`);
     if (r.botMode && !p.isBot) assignBotCharacters(r, p.charId);
     return trySelectResolve(r);
+  }
+
+  if (pend.type === 'abyss_mark') {
+    const sourceTile = pend.sourceTile;
+    const tile = +optionId.slice(3);
+    const source = r.owners[sourceTile];
+    const target = r.owners[tile];
+    reconcileAbyssMarks(r);
+    const alreadyMarked = activeAbyssMarks(r).some(mark => mark.tile === tile && mark.sourceTile !== sourceTile);
+    if (source && source.player === p.id && baseId(source.creature) === 'night_jelly' &&
+        target && target.player === p.id && TILES[tile]?.t === 'land' && !alreadyMarked) {
+      source.abyssMarkTarget = tile;
+      const bonus = abyssMarkBonusFor(source, target);
+      r.lastEvent = { type: 'abyss_mark', player: p.id, tile, sourceTile, bonus, at: stamp(r) };
+      log(r, `【深淵標】${p.name}の${CREATURES[source.creature].name}が土地${tile}へ標を刻んだ（通行料+${bonus}G）`);
+    } else {
+      log(r, `【深淵標】選択候補が変化したため、標を置けなかった`);
+    }
+    return resumeAfterPlacement(r, p, pend);
   }
 
   // --- サムライ・サガ召喚時の土地属性変更 ---
@@ -2577,7 +2678,7 @@ function handleChoose(r, playerId, optionId) {
       const dest = r.owners[j];
       if (!dest) {
         // 空き地へ移動: Lv1で取得・負傷維持・元は空き地に
-        r.owners[j] = { player: p.id, level: 1, creature: src.creature, dmg: src.dmg || 0 };
+        r.owners[j] = Object.assign({}, src, { player: p.id, level: 1, dmg: src.dmg || 0 });
         r.owners[i] = null;
         log(r, `📜 ${p.name}の${SPELLS.sp_step.name}! ${CREATURES[r.owners[j].creature].name}が隣の空き地(${ELEM_JA[tileElem(r, j)] || ''}属性)へ進出し、Lv1の領地とした`);
         spellFx(r, 'sp_step', [i, j], p.id);
@@ -2610,6 +2711,9 @@ function handleChoose(r, playerId, optionId) {
       if (oa && ob && oa.player === p.id && ob.player === p.id) {
         [oa.creature, ob.creature] = [ob.creature, oa.creature];
         [oa.dmg, ob.dmg] = [ob.dmg || 0, oa.dmg || 0];
+        [oa.abyssMarkTarget, ob.abyssMarkTarget] = [ob.abyssMarkTarget, oa.abyssMarkTarget];
+        if (!Number.isInteger(oa.abyssMarkTarget)) delete oa.abyssMarkTarget;
+        if (!Number.isInteger(ob.abyssMarkTarget)) delete ob.abyssMarkTarget;
         p.hand.splice(p.hand.indexOf('sp_move'), 1);
         p.discard.push('sp_move');
         p.gold -= spellCost;
@@ -2645,7 +2749,7 @@ function handleChoose(r, playerId, optionId) {
         const oldC = o.creature;
         p.discard.push(oldC);                 // 元のクリーチャーは捨て札へ
         p.hand.splice(p.hand.indexOf(c), 1);
-        o.creature = c; o.dmg = 0; o.shade = 0; delete o.iceWard;  // 新クリーチャーは全快で配置
+        o.creature = c; o.dmg = 0; o.shade = 0; delete o.iceWard; delete o.abyssMarkTarget;  // 新クリーチャーは全快で配置
         if (baseId(c) === 'fugorm') { gainToDeck(r, p, ['weapon'], 'fugorm'); log(r, `【鍛冶】${p.name}はウェポン「ソード」を山札に得た`); }
         p.hand.splice(p.hand.indexOf('sp_swap'), 1);
         p.discard.push('sp_swap');
@@ -3104,6 +3208,13 @@ function botChooseOption(r, p, pend) {
     return (botBest(r, opts, o => botCardScore(r, p, o.card)) || opts[0]).id;
   if (pend.type === 'mermaid_heal')
     return (botBest(r, opts, o => (r.owners[botTileFromOption(o)]?.dmg || 0)) || opts[0]).id;
+  if (pend.type === 'abyss_mark') {
+    const source = r.owners[pend.sourceTile];
+    return (botBest(r, opts, o => {
+      const tile = botTileFromOption(o), target = r.owners[tile];
+      return tollOf(r, tile) + abyssMarkBonusFor(source, target);
+    }) || opts[0]).id;
+  }
   if (pend.type === 'ult_villa_recover') {
     const confirm = byId('vr:confirm');
     if ((pend.selected || []).length >= Math.min(3, (p.exile || []).length)) return confirm.id;
@@ -3236,7 +3347,7 @@ function botChooseOption(r, p, pend) {
 function botDelayFor(r, pend, optionId) {
   if (pend.type === 'roll') return optionId === 'roll' ? 1200 : 1500;
   if (['pick_creature', 'support'].includes(pend.type)) return 1350;
-  if (['tile', 'spell_target', 'quake_target', 'curse_target'].includes(pend.type)) return 1450;
+  if (['tile', 'spell_target', 'quake_target', 'curse_target', 'abyss_mark'].includes(pend.type)) return 1450;
   return 800 + Math.floor(Math.random() * 701);
 }
 function clearBotTimer(r) {
@@ -3302,6 +3413,7 @@ function publicState(r, viewerId) {
     tiles: TILES.map((t, i) => r.elemOv[i] ? Object.assign({}, t, { e: r.elemOv[i] }) : t),
     tolls: r.owners.map((o, i) => o ? tollOf(r, i) : 0),
     landCombat: r.owners.map((o, i) => o ? landCombatUi(r, i) : null),
+    abyssMarks: activeAbyssMarks(r),
     tileFx: r.tileFx,
     owners: r.owners, market: r.market, shopVisit: r.shopVisit || null, log: r.log,
     titles: r.titles, duel: r.duel, curses: r.curses, lastEvent: r.lastEvent || null,
@@ -3366,6 +3478,7 @@ function publicState(r, viewerId) {
   };
 }
 function broadcast(r) {
+  reconcileAbyssMarks(r);
   captureMatchFrame(r);
   r.saveRev = (r.saveRev || 0) + 1;  // v0.62: 状態変化ごとに単調増加(盤面の自動セーブ契機)
   r.stateRev = (r.stateRev || 0) + 1;
@@ -3391,6 +3504,7 @@ const ROOM_PERSIST_KEYS = new Set([                                            /
   'matchAnalytics', 'matchResult', 'resultReview',
 ]);
 function serializeRoom(r) {
+  reconcileAbyssMarks(r);
   const room = {};
   for (const k of Object.keys(r)) {
     if (ROOM_RUNTIME_KEYS.has(k)) continue;
@@ -3446,6 +3560,8 @@ function validateSave(save) {
     if (!ids.has(o.player)) return '領地の所有者が不正です';
     if (!VALID_CARD(o.creature)) return `盤面に不明なカードID: ${o.creature}`;
     if (typeof o.level !== 'number' || o.level < 1 || o.level > RULES.maxLevel) return '領地レベルが不正です';
+    if (o.abyssMarkTarget != null && (!Number.isInteger(o.abyssMarkTarget) || o.abyssMarkTarget < 0 ||
+        o.abyssMarkTarget >= TILES.length)) return '深淵標の対象マスが不正です';
   }
   if (!Array.isArray(d.deck) || d.deck.length > 500) return '共通山札が不正です';
   for (const c of d.deck) if (!VALID_SAVE_CARD(c)) return `共通山札に不明なカードID: ${c}`;
@@ -3500,6 +3616,7 @@ function restoreRoom(save) {
   if (room.matchAnalytics == null) room.matchAnalytics = null;
   if (room.matchResult == null) room.matchResult = null;
   if (room.resultReview == null) room.resultReview = null;
+  reconcileAbyssMarks(room);
   if (room.turnTransition) {
     if (room.turnTransition.deadline <= Date.now()) completeTurnTransition(room, room.turnTransition.id, 'timeout');
     else armTurnTransition(room);
@@ -3657,6 +3774,7 @@ function makeFixtureRoom() {
   // Lv1〜4・進化・全属性・呪い・結界・土地効果を網羅した盤面
   const own = (i, pl, lv, cr) => { r.owners[i] = { player: 'fx' + pl, level: lv, creature: cr, dmg: lv * 5 }; };
   own(1, 0, 1, 'gecko'); own(2, 0, 2, 'magado'); own(3, 0, 4, 'detropas');     // 火(Lv4=進化)
+  own(5, 0, 3, 'night_jelly_f'); r.owners[5].abyssMarkTarget = 3;              // 深淵標表示
   own(9, 3, 1, 'gaston'); own(10, 3, 3, 'garble'); own(12, 3, 2, 'pakawata');  // 風(Lv3=進化)
   own(16, 2, 2, 'nome'); own(17, 2, 4, 'barbaro'); own(19, 2, 1, 'bedebero');  // 土
   own(21, 1, 3, 'orphe'); own(22, 1, 1, 'cresteria'); own(24, 1, 2, 'kbaby_f'); // 水(手札鍛錬済み_f)
