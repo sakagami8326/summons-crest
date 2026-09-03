@@ -141,7 +141,7 @@ eq(phoneTileTargets({ options: [{ id:'mh:7' }, { id:'pass' }] }),
 
 const manual = fs.readFileSync(path.join(__dirname, 'docs', 'manual.md'), 'utf8');
 const rules = fs.readFileSync(path.join(__dirname, 'docs', 'spec_rules.md'), 'utf8');
-ok(manual.includes('カード一覧(クリーチャー41種)') && manual.includes('マーメイド → セレナーデ'),
+ok(manual.includes('カード一覧(クリーチャー44種)') && manual.includes('マーメイド → セレナーデ'),
   'manual keeps Mermaid in the expanded creature catalog');
 ok(rules.includes('v1.52 マーメイド／セレナーデ仕様'), 'rules document victory-heal timing');
 

@@ -44,8 +44,8 @@ const base = Object.entries(G.CREATURES).filter(([id]) => !id.endsWith('_f'));
 const sorted = base.map(([id, c], order) => ({ id, elem:rank[c.elem] ?? 4, order }))
   .sort((a, b) => a.elem - b.elem || a.order - b.order);
 eq(sorted.map(x => x.elem), [
-  ...Array(9).fill(0), ...Array(10).fill(1), ...Array(8).fill(2), ...Array(9).fill(3), ...Array(5).fill(4)
-], 'gallery contains fire 9, wind 10, earth 8, water 9, neutral 5');
+  ...Array(9).fill(0), ...Array(10).fill(1), ...Array(10).fill(2), ...Array(10).fill(3), ...Array(5).fill(4)
+], 'gallery contains fire 9, wind 10, earth 10, water 10, neutral 5');
 for (let e = 0; e <= 4; e++) {
   const before = base.map(([id, c], order) => ({ id, elem:rank[c.elem] ?? 4, order })).filter(x => x.elem === e).map(x => x.id);
   const after = sorted.filter(x => x.elem === e).map(x => x.id);

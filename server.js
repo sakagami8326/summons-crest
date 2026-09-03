@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.55';
+const VERSION = '1.56';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TURN_TRANSITION_TIMEOUT_MS = 20000;
@@ -163,6 +163,15 @@ const CREATURES = {
              evoSt: 45, evoHp: 65,
              fx: '【深淵標】配置時に自領地を選び、通行料を100G増額',
              evoFx: '【深淵標】配置時に自領地を選び、通行料をLv×50G増額（最低100G）', rarity: 'R' },
+  wakatama:{ name: 'ワカタマ', evo: 'ガマワカメ', elem: 'water', st: 15, hp: 45, cost: 100,
+             evoSt: 35, evoHp: 65,
+             fx: '【恵みの水脈】配置中、味方の実回復HPと同じGを得る（重複なし）', rarity: 'R' },
+  emeri:   { name: 'エメリ', evo: 'エスメラルダ', elem: 'earth', st: 20, hp: 50, cost: 120,
+             evoSt: 40, evoHp: 70,
+             fx: '【地脈駆動】戦闘時、自分の土領地1つにつきAT+5（最大+25）', rarity: 'R' },
+  valk:    { name: 'ヴァルク', evo: 'アヌビス・レガ', elem: 'earth', st: 30, hp: 40, cost: 120,
+             evoSt: 50, evoHp: 60,
+             fx: '【守護ビット】戦闘時、自分の土領地1つにつきDF+5（最大+25）', rarity: 'R' },
 };
 const ITEMS = {}; // v0.34: 呪いアイテムは廃止(スペル「衰弱の呪文」に移行)
 const SPELLS = {
@@ -257,7 +266,7 @@ for (const [cid, c] of Object.entries({ ...CREATURES }))
   if (c.evo) CREATURES[cid + '_f'] = { name: c.evo, elem: c.elem, st: c.evoSt, hp: c.evoHp,
     cost: c.cost, fx: c.evoFx || c.fx, rarity: c.rarity, forged: true };
 
-const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral','mermaid','bunnyhop','strauk','samurai_saga','marlow','shuterio','gaust','alter','toxy','kamadoma','swordgear','komao','mist_jelly','night_jelly'];
+const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral','mermaid','bunnyhop','strauk','samurai_saga','marlow','shuterio','gaust','alter','toxy','kamadoma','swordgear','komao','mist_jelly','night_jelly','wakatama','emeri','valk'];
 // アートが存在するクリーチャーID(assetsのc_*.pngを起動時に走査 ─ v0.82)。
 // クライアントはcatalog.artIds経由で受け取る。手書きリストの二重管理はしない
 // (新クリーチャーはIDとファイル名を一致させて置くだけで盤面・カード・戦闘に反映される)
@@ -509,6 +518,32 @@ const ELEM_JA = { fire: '火', water: '水', earth: '土', wind: '風' };
 function chainCount(r, playerId, elem) {
   return r.owners.reduce((n, o, i) => n + (o && o.player === playerId && tileElem(r, i) === elem ? 1 : 0), 0);
 }
+function earthLandBattleBonus(r, playerId) {
+  const lands = chainCount(r, playerId, 'earth');
+  return { lands, counted:Math.min(5, lands), bonus:Math.min(5, lands) * 5 };
+}
+function recordHeal(r, p, source, targets, extra = {}) {
+  const actual = (targets || []).filter(t => t && Number(t.amount) > 0)
+    .map(t => Object.assign({}, t, { amount: Number(t.amount) }));
+  if (!actual.length) return null;
+  const total = actual.reduce((sum, t) => sum + t.amount, 0);
+  const providers = r.owners.map((o, tile) => o && o.player === p.id && baseId(o.creature) === 'wakatama'
+    ? { tile, creature:o.creature } : null).filter(Boolean);
+  providers.sort((a, b) => a.tile - b.tile);
+  let reward = null;
+  if (providers.length) {
+    const provider = providers[0];
+    const beforeGold = p.gold;
+    p.gold += total;
+    reward = { sourceTile:provider.tile, creature:provider.creature, targetCount:actual.length,
+      healed:total, gold:total, beforeGold, afterGold:p.gold };
+    log(r, `【恵みの水脈】${cardName(provider.creature)}の効果で、回復した${total}HP分の${total}Gを獲得!`);
+  }
+  const event = Object.assign({ player:p.id, source, targets:actual, at:stamp(r) }, extra || {});
+  if (reward) event.reward = reward;
+  r.lastHeal = event;
+  return event;
+}
 function creatureMaxHp(o) {
   const c = CREATURES[baseId(o && o.creature)];
   return c ? (isEvolved(o) && c.evo ? c.evoHp : c.hp) : 0;
@@ -548,6 +583,7 @@ const CREATURE_EFFECT_CONTEXT = Object.freeze({
   palecoral:'turn', bunnyhop:'spell', strauk:'battle', samurai_saga:'battle', marlow:'land',
   shuterio:'battle', gaust:'placement', alter:'battle', toxy:'exile', kamadoma:'other',
   swordgear:'battle', komao:'other', mermaid:'battle', mist_jelly:'other', night_jelly:'toll',
+  wakatama:'other', emeri:'battle', valk:'battle',
 });
 function terrainBreakdown(r, tile, attackerCreature = null) {
   const o = r.owners[tile];
@@ -671,6 +707,14 @@ function creatureEffectUi(r, creatureId, tile, role, context = 'battle', result 
       if (!result) return conditional('戦闘勝利時');
       const won = role === 'attacker' ? !!result.win : !result.win;
       return won ? active('戦闘勝利で発動') : inactive('戦闘に敗北');
+    }
+    case 'emeri': {
+      const earth = owner ? earthLandBattleBonus(r, owner.id) : { lands:0, bonus:0 };
+      return earth.lands ? active(`所有する土領地${earth.lands}つでAT+${earth.bonus}`) : inactive('所有する土領地なし');
+    }
+    case 'valk': {
+      const earth = owner ? earthLandBattleBonus(r, owner.id) : { lands:0, bonus:0 };
+      return earth.lands ? active(`所有する土領地${earth.lands}つでDF+${earth.bonus}`) : inactive('所有する土領地なし');
     }
     default: return conditional('条件成立時');
   }
@@ -1181,7 +1225,7 @@ function resolveUltSequence(r) {
       o.iceWard = true;
       targets.push({ tile: i, amount, creature: o.creature, df: 10 });
     }
-    r.lastHeal = { player: p.id, source: 'ult_adel', targets, at: stamp(r) };
+    recordHeal(r, p, 'ult_adel', targets);
     log(r, `❄ ${p.name}の配置クリーチャー全員を回復し氷晶の守りを与えた`);
     spellFx(r, 'ult_adel', targets.map(t => t.tile), p.id, { targets });
   } else if (seq.charId === 'mio') {
@@ -1408,7 +1452,7 @@ function beginTurn(r) {
       healed.push({ tile: i, amount, creature: o.creature });
       log(r, `【珊瑚再生】${CREATURES[o.creature].name}のHPが${amount}回復した`);
     });
-    if (healed.length) r.lastHeal = { player: p.id, source: 'palecoral', targets: healed, at: stamp(r) };
+    if (healed.length) recordHeal(r, p, 'palecoral', healed);
   }
   log(r, `▶ ${p.name}の手番(ラウンド${r.round})`);
   startPickDraw(r, p);  // v0.61: 選択ドロー(完了後にaskRollへ)
@@ -1584,6 +1628,8 @@ function performMove(r, p, steps, meta, moveLabel) {
     const initial = presentationMs(r, p.id, meta.multi ? GAME_TIMING.moveStartDelayMulti : GAME_TIMING.moveStartDelay);
     const availableAt = r.lastDice.at + initial + castleStep * presentationMs(r, p.id, GAME_TIMING.stepMs) +
       presentationMs(r, p.id, GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown);
+    if (healed.length) recordHeal(r, p, 'castle', healed.map(h => ({ tile:h.tile, amount:h.amount,
+      creature:r.owners[h.tile] ? r.owners[h.tile].creature : h.creature })), { availableAt });
     r.lastDice.castle = { usedSeal, completedLaps, bonusPerLap: RULES.castleBonusPerLap,
       baseBonus: bonus, gold: bonus, landValue: lands, landRate,
       landBonus: lb, total: bonus + lb, drew: 1, healed, castleStep, availableAt };
@@ -1919,10 +1965,20 @@ function resolveBattle(r) {
     ? chainCount(r, atk.id, 'earth') * 5 : 0;
   const defEarthChain = baseId(o.creature) === 'komao' && defEvolved
     ? chainCount(r, def.id, 'earth') * 5 : 0;
+  const atkEarthLand = earthLandBattleBonus(r, atk.id);
+  const defEarthLand = earthLandBattleBonus(r, def.id);
+  const atkEarthAtBonus = baseId(b.atkCreature) === 'emeri' ? atkEarthLand.bonus : 0;
+  const defEarthAtBonus = baseId(o.creature) === 'emeri' ? defEarthLand.bonus : 0;
+  const atkEarthDfBonus = baseId(b.atkCreature) === 'valk' ? atkEarthLand.bonus : 0;
+  const defEarthDfBonus = baseId(o.creature) === 'valk' ? defEarthLand.bonus : 0;
   if (atkSoul) notes.push(`【魂喰らい】廃棄${atk.exile.length}枚で侵略側DF+${atkSoul}!`);
   if (defSoul) notes.push(`【魂喰らい】廃棄${def.exile.length}枚で防衛側DF+${defSoul}!`);
   if (atkEarthChain) notes.push(`【獅子地脈】土領地${atkEarthChain / 5}つで侵略側DF+${atkEarthChain}!`);
   if (defEarthChain) notes.push(`【獅子地脈】土領地${defEarthChain / 5}つで防衛側DF+${defEarthChain}!`);
+  if (atkEarthAtBonus) notes.push(`【地脈駆動】所有する土領地${atkEarthLand.lands}つで侵略側AT+${atkEarthAtBonus}!`);
+  if (defEarthAtBonus) notes.push(`【地脈駆動】所有する土領地${defEarthLand.lands}つで防衛側AT+${defEarthAtBonus}!`);
+  if (atkEarthDfBonus) notes.push(`【守護ビット】所有する土領地${atkEarthLand.lands}つで侵略側DF+${atkEarthDfBonus}!`);
+  if (defEarthDfBonus) notes.push(`【守護ビット】所有する土領地${defEarthLand.lands}つで防衛側DF+${defEarthDfBonus}!`);
   if (atkWeaponMastery) notes.push(`【武装熟練】侵略側の攻撃ウェポンAT補正をさらに+${atkWeaponMastery}!`);
   if (defWeaponMastery) notes.push(`【武装熟練】防衛側の攻撃ウェポンAT補正をさらに+${defWeaponMastery}!`);
   if (baseId(b.atkCreature) === 'grayble' && carried > 0) {
@@ -1939,6 +1995,7 @@ function resolveBattle(r) {
   const bFx = r.tileFx[b.tile] || {};
   if (atk.blade) { st += 10; notes.push('血染めの刃が侵略者のATを10高めた!'); }
   if (bFx.vortex) { st += 10; notes.push('炎の渦が侵略者を後押し!(AT+10)'); }
+  st += atkEarthAtBonus;
   st = Math.max(0, st);
 
   // --- 防衛側HP(地形・女王・呪い) ---
@@ -1972,7 +2029,7 @@ function resolveBattle(r) {
   if (iceWard) notes.push('【氷晶の勅令】防衛DF+10!');
   const shadeDF = baseId(o.creature) === 'beruf' ? (o.shade || 0) * 10 : 0;
   if (shadeDF) notes.push(`【死影】蓄えた影が防衛DFを${shadeDF}高める!`);
-  let defDF = terrain + queenBonus + (dEff ? dEff.hp : 0) + upliftDF + boneArmor + iceWard + shadeDF + defSoul + defEarthChain;
+  let defDF = terrain + queenBonus + (dEff ? dEff.hp : 0) + upliftDF + boneArmor + iceWard + shadeDF + defSoul + defEarthChain + defEarthDfBonus;
   if (corrosion) {
     const reduced = Math.min(defDF, corrosion);
     defDF = Math.max(0, defDF - corrosion);
@@ -1983,10 +2040,10 @@ function resolveBattle(r) {
   const atkShadeDF = baseId(b.atkCreature) === 'beruf'
     ? ((mvSrc && mvSrc.shade) || b.atkShade || 0) * 10 : 0;
   if (atkShadeDF) notes.push(`【死影】蓄えた影が侵略側DFを${atkShadeDF}高める!`);
-  const atkDF = (aEff ? aEff.hp : 0) + atkShadeDF + atkSoul + atkEarthChain;
+  const atkDF = (aEff ? aEff.hp : 0) + atkShadeDF + atkSoul + atkEarthChain + atkEarthDfBonus;
   const atkCarried = mvSrc ? (mvSrc.dmg || 0) : (corridor ? (b.atkCarry || 0) : 0);
   const atkEffHp = Math.max(1, aBase.hp - atkCarried);
-  const defSt = dBase.st + (dEff ? dEff.st : 0) + defWeaponMastery;
+  const defSt = dBase.st + (dEff ? dEff.st : 0) + defWeaponMastery + defEarthAtBonus;
 
   // ===== v0.57 戦闘シーケンス: 戦闘耐久値 = 現在HP + DF =====
   const hits = baseId(b.atkCreature) === 'avalanche' ? 2 : 1;      // 【双撃】侵略時のみ2回
@@ -2025,7 +2082,7 @@ function resolveBattle(r) {
     atkHp: atkEffHp, atkDf: atkDF, counterSt, counterDealt, atkSurvived,
     atkPreAt: atkDmg - (aEff ? aEff.st : 0) - atkWeaponMastery, atkPostAt: atkDmg,
     atkPreHp: atkEffHp, atkPostHp: atkEffHp,
-    atkPreDf: atkSoul + atkShadeDF + atkEarthChain, atkPostDf: atkDF,
+    atkPreDf: atkSoul + atkShadeDF + atkEarthChain + atkEarthDfBonus, atkPostDf: atkDF,
     defPreAt: defSt - (dEff ? dEff.st : 0) - defWeaponMastery, defPostAt: defSt,
     defPreHp: effHp, defPostHp: effHp,
     defPreDf: Math.max(0, defDF - (dEff ? dEff.hp : 0)), defPostDf: defDF,
@@ -2034,6 +2091,8 @@ function resolveBattle(r) {
     atkSoulBonus: atkSoul, defSoulBonus: defSoul,
     atkSoulDfBonus: atkSoul, defSoulDfBonus: defSoul,
     atkEarthChainBonus: atkEarthChain, defEarthChainBonus: defEarthChain,
+    atkEarthLandCount: atkEarthLand.lands, defEarthLandCount: defEarthLand.lands,
+    atkEarthAtBonus, defEarthAtBonus, atkEarthDfBonus, defEarthDfBonus,
     atkWeaponMastery, defWeaponMastery,
     hits: hitsDone, preempt,
     moveFrom: b.moveFrom,
@@ -2073,7 +2132,9 @@ function resolveBattle(r) {
     // 防衛成功(削られたHPは土地に引き継ぐ)+反撃
     o.dmg = carried + dealt;
     if (baseId(o.creature) === 'goagoa' && o.dmg > 0) {
+      const beforeHeal = o.dmg;
       o.dmg = Math.max(0, o.dmg - 10);
+      recordHeal(r, def, 'goagoa', [{ tile:b.tile, amount:beforeHeal - o.dmg, creature:o.creature }]);
       log(r, `【深海】${dc.name}は深き水に癒される(負傷-10 → ${o.dmg})`);
     }
     log(r, `${dc.name}は${dealt}のダメージに耐えた!(残HP${effHp - dealt})${atkDmg > dealt ? ` ─ DFが${atkDmg - dealt}軽減` : ''}`);
@@ -2162,7 +2223,7 @@ function continuePostBattle(r) {
           targets.push({ tile, amount, creature: o.creature });
         }
         if (targets.length) {
-          r.lastHeal = { player: winner.id, source: 'serenade', targets, at: stamp(r) };
+          recordHeal(r, winner, 'serenade', targets);
           log(r, `【大海の讃歌】${winner.name}の味方${targets.length}体が歌声に癒やされた(HP+10)`);
         }
       } else if (wounded.length) {
@@ -2234,7 +2295,7 @@ function handleChoose(r, playerId, optionId) {
     if (Number.isInteger(tile) && o && o.player === p.id && (o.dmg || 0) > 0) {
       const amount = Math.min(10, o.dmg);
       o.dmg -= amount;
-      r.lastHeal = { player: p.id, source: 'mermaid', targets: [{ tile, amount, creature: o.creature }], at: stamp(r) };
+      recordHeal(r, p, 'mermaid', [{ tile, amount, creature: o.creature }]);
       log(r, `【癒やしの歌】${cardName(o.creature)}のHPが${amount}回復した`);
     }
     return continuePostBattle(r);
@@ -2638,6 +2699,7 @@ function handleChoose(r, playerId, optionId) {
       pay();
       const before = o.dmg || 0;
       o.dmg = Math.max(0, before - 20);
+      recordHeal(r, p, 'restore', [{ tile:i, amount:before - o.dmg, creature:o.creature }]);
       fx().uplift = true;
       r.lastEvent.desc = `${CREATURES[o.creature].name}の負傷${before}→${o.dmg}。次の戦闘でDF+10`;
       log(r, `⛰ リストア! ${CREATURES[o.creature].name}の負傷${before}→${o.dmg}。次の戦闘でDF+10`);
@@ -3149,6 +3211,8 @@ function botCardScore(r, p, id) {
   if (id === 'sp_fatal_reward') score += p.charId === 'villa' ? 34 : 10;
   if (baseId(id) === 'alter') score += Math.min(60, (p.exile || []).length * 6);
   if (baseId(id) === 'gaust' && p.charId === 'villa') score += 24;
+  if (baseId(id) === 'wakatama') score += (p.charId === 'adel' ? 30 : 0) + (CHARS[p.charId]?.elem === 'water' ? 12 : 0);
+  if (baseId(id) === 'emeri' || baseId(id) === 'valk') score += earthLandBattleBonus(r, p.id).bonus * 1.5;
   if (SUPPORTS[id]) score += (c.st || 0) + (c.hp || 0) + (c.jinx ? 35 : 0);
   const owned = [...(p.hand || []), ...(p.deck || []), ...(p.discard || [])].filter(x => x === id).length;
   return score - Math.max(0, owned - 2) * 12;
@@ -3427,7 +3491,7 @@ function publicState(r, viewerId) {
       startedAt: r.ultSequence.startedAt, resolveAt: r.ultSequence.resolveAt,
       resolved: !!r.ultSequence.resolved } : null,
     battlePreview: publicBattle(r),
-    lastBattle: r.lastBattle, lastDice: r.lastDice || null,
+    lastBattle: r.lastBattle, lastDice: r.lastDice || null, lastHeal: r.lastHeal || null,
     lastSeal: r.lastSeal || null, lastRuin: r.lastRuin || null,
     lastBarrierHit: r.lastBarrierHit || null,
     upgradePreview: r.upgradePreview || null,   // 強化候補プレビュー(揮発 ─ v0.75)

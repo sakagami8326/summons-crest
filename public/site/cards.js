@@ -246,7 +246,7 @@
     return response.json();
   }).then(data => {
     cards = Array.isArray(data.cards) ? data.cards : [];
-    $('[data-version]').textContent = data.version || '1.55';
+    $('[data-version]').textContent = data.version || '1.56';
     $('[data-total]').textContent = data.counts?.total ?? cards.length;
     $('[data-evolutions]').textContent = data.counts?.evolutions ?? cards.filter(card => card.evolution).length;
     stateBox.hidden = true;

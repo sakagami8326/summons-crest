@@ -24,7 +24,7 @@ function game() {
   return r;
 }
 
-eq(G.VERSION, '1.55', 'server version');
+eq(G.VERSION, '1.56', 'current server version');
 eq([G.CREATURES.mist_jelly.name, G.CREATURES.mist_jelly.evo, G.CREATURES.mist_jelly.elem,
   G.CREATURES.mist_jelly.rarity, G.CREATURES.mist_jelly.cost, G.CREATURES.mist_jelly.st,
   G.CREATURES.mist_jelly.hp, G.CREATURES.mist_jelly.evoSt, G.CREATURES.mist_jelly.evoHp],
@@ -36,11 +36,11 @@ eq([G.CREATURES.night_jelly.name, G.CREATURES.night_jelly.evo, G.CREATURES.night
 eq([G.CREATURES.mist_jelly_f.name, G.CREATURES.night_jelly_f.name], ['アビスアンカー','アビストール'],
   'evolved entries');
 const deck = G.makeDeck(), shop = G.shopRandomPool();
-eq([G.MARKET_POOL.length, deck.length], [36,138], 'expanded market and common deck totals');
+eq([G.MARKET_POOL.length, deck.length], [39,144], 'current market and common deck totals');
 eq([count(deck,'mist_jelly'), count(deck,'night_jelly'), count(deck,'mist_jelly_f'), count(deck,'night_jelly_f')],
   [2,2,0,0], 'common deck copy counts');
 eq([count(shop,'mist_jelly'), count(shop,'night_jelly')], [2,2], 'shop weights share copy settings');
-eq(G.publicCardCatalog().counts, { total:70, creatures:41, evolutions:34, spells:24, weapons:5 }, 'catalog counts');
+eq(G.publicCardCatalog().counts, { total:73, creatures:44, evolutions:37, spells:24, weapons:5 }, 'current catalog counts');
 eq(G.publicState(G.makeFixtureRoom(), null).abyssMarks[0],
   { tile:3, sourceTile:5, player:'fx0', bonus:200 }, 'visual fixture includes a Lv4 Abyss Mark');
 
@@ -182,7 +182,7 @@ ok(board.includes('function buildAbyssMarkBadges') && board.includes('y:Math.max
 ok(world.includes('pwImg_abyss_mark') && world.includes('makeAbyssMark'), 'Phaser draws the same mark asset');
 const manual = fs.readFileSync(path.join(__dirname, 'docs/manual.md'), 'utf8');
 const rules = fs.readFileSync(path.join(__dirname, 'docs/spec_rules.md'), 'utf8');
-ok(manual.includes('カード一覧(クリーチャー41種)') && manual.includes('v1.55 深淵系水クリーチャー'), 'manual updated');
-ok(rules.includes('共通山札138枚') && rules.includes('v1.55 深淵系水クリーチャー仕様'), 'spec updated');
+ok(manual.includes('カード一覧(クリーチャー44種)') && manual.includes('v1.55 深淵系水クリーチャー'), 'manual keeps v1.55 coverage');
+ok(rules.includes('共通山札144枚') && rules.includes('v1.55 深淵系水クリーチャー仕様'), 'spec keeps v1.55 coverage');
 
 console.log(`v1.55 abyss creature tests passed: ${pass}`);

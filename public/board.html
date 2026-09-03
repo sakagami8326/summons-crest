@@ -1267,6 +1267,20 @@
   .mrBreak b { color:#ead27e; }
   .mrStats { border-top:1px solid rgba(215,181,88,.25); padding-top:.8vh; color:#cfc2a4; font-size:1.2vh; }
   @media (max-height:760px) { .mrHead { height:7.5vh; } .mrRanks { height:21vh; } #mrCallout { padding:.8vh 1vw; } }
+  #healRewardCutin { position:fixed; inset:0; z-index:72; display:none; place-items:center;
+    grid-template-columns:min(28vw,340px) min(46vw,680px); gap:4vw; padding:5vh 8vw;
+    background:radial-gradient(circle at 35% 50%,rgba(54,170,201,.32),transparent 34%),rgba(5,9,22,.9);
+    pointer-events:none; }
+  #healRewardCutin.on { display:grid; animation:healRewardIn .35s ease both; }
+  #healRewardCard { position:relative; width:min(28vw,340px); aspect-ratio:2/3; overflow:hidden; isolation:isolate;
+    border-radius:2.2vh; box-shadow:0 0 0 2px #e8d27d,0 0 38px rgba(79,216,235,.58); }
+  #healRewardMessage { color:#f7efd8; text-align:left; text-shadow:0 2px 8px #000; }
+  #healRewardMessage h2 { margin:0 0 2vh; color:#83e5f4; font:700 clamp(28px,4.2vw,66px)/1.15 Marudeco,sans-serif; }
+  #healRewardMessage p { margin:0; font:700 clamp(22px,3vw,48px)/1.45 'Yu Mincho',serif; }
+  #healRewardMessage strong { color:#f2d062; font-size:1.22em; }
+  #healRewardMessage small { display:block; margin-top:1.5vh; color:#bed9df; font-size:clamp(14px,1.4vw,22px); }
+  @keyframes healRewardIn { from{opacity:0;transform:scale(.97)} to{opacity:1;transform:scale(1)} }
+  @media (prefers-reduced-motion:reduce) { #healRewardCutin.on { animation:none; } }
 </style>
 </head>
 <body>
@@ -1292,6 +1306,7 @@
   <div id="diceOv"></div>
   <div id="ultCut"><div id="ultBg"></div><img id="ultArt"><div id="ultFxHost"></div><div id="ultSlash"></div>
     <div id="ultInfo"><div id="ultSub"></div><div id="ultDesc"></div></div></div>
+  <div id="healRewardCutin"><div id="healRewardCard" class="battleCreatureCard"></div><div id="healRewardMessage"></div></div>
   <div id="centerBanner"></div>
   <div id="castleBreakdown"><div class="castlePanel" id="castlePanel"></div></div>
   <div id="tileMsg"></div>
@@ -1702,7 +1717,7 @@ function syncHasArt() {
     HAS_ART = new Set(state.catalog.artIds);
 }
 
-let code = null, state = null, prev = { phase: null, turn: -1, turnEpoch: -1, battleAt: 0, diceAt: 0 };
+let code = null, state = null, stateReceivedAt = Date.now(), prev = { phase: null, turn: -1, turnEpoch: -1, battleAt: 0, diceAt: 0 };
 const revealedSummoners = new Set();
 const pawnAnim = {}, prevPos = {};
 const prevGold = {};
@@ -2189,6 +2204,22 @@ async function showBannerAsync(main, sub, dur) {
   const actual = showBanner(main, sub, dur);
   await new Promise(resolve => setTimeout(resolve, actual + 30));
 }
+async function playHealReward(ev) {
+  if (!ev || !ev.reward) return;
+  const reward = ev.reward;
+  const delay = Math.max(0, Number(ev.availableAt || 0) - Number(state.serverNow || Date.now()) - (Date.now() - stateReceivedAt));
+  if (delay) await new Promise(resolve => setTimeout(resolve, delay));
+  const card = state.catalog.CREATURES[reward.creature] || state.catalog.CREATURES[String(reward.creature).replace(/_f$/, '')];
+  if (!card) return;
+  const evolved = /_f$/.test(reward.creature);
+  $('healRewardCard').innerHTML = summonCardHTML(reward.creature, evolved);
+  $('healRewardMessage').innerHTML = `<h2>【恵みの水脈】</h2><p>このクリーチャーの効果で、<br>回復した<strong>${reward.healed}HP</strong>分の<strong>${reward.gold}G</strong>を獲得！</p>${reward.targetCount > 1 ? `<small>対象 ${reward.targetCount}体</small>` : ''}`;
+  const el = $('healRewardCutin');
+  el.classList.add('on');
+  bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(2800));
+  await wait(2800);
+  el.classList.remove('on');
+}
 function showDiceMulti(arr) {
   const ov = $('diceOv');
   ov.innerHTML = '<div class="dRow">' + arr.map((_, k) =>
@@ -2516,6 +2547,7 @@ function connectBoard() {
     if (state && (next.phase !== state.phase || next.turn !== state.turn || next.turnEpoch !== state.turnEpoch))
       resetPresentationCamera('phase-or-turn-change');
     state = next;
+    stateReceivedAt = Date.now();
     if (state.phase === 'ended') {
       const resultId = state.resultReview?.id || state.matchResult?.id || `${code}:ended`;
       const players = Array.isArray(state.players) ? state.players : [];
@@ -4412,7 +4444,7 @@ function render() {
   if (!state) return;
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.55';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.56';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -4749,6 +4781,12 @@ function render() {
     queueMajorPresentation(ult.at, 'ultimate', ult.player, () => playUlt(ult));
   }
   // 祠イベントの中央表示
+  if (state.lastHeal && state.lastHeal.reward && state.lastHeal.at !== prev.healAt) {
+    prev.healAt = state.lastHeal.at;
+    const heal = JSON.parse(JSON.stringify(state.lastHeal));
+    queueFx(3, () => playHealReward(heal), {
+      actorId:heal.player, id:presentationId('heal-reward', heal.at), kind:'heal-reward', at:heal.at });
+  }
   if (state.lastEvent && state.lastEvent.at !== prev.eventAt) {
     prev.eventAt = state.lastEvent.at;
     if (state.lastEvent.type === 'shrine')
