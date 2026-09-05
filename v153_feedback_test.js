@@ -17,7 +17,7 @@ const client = read('public/site/homepage.js');
 const serverSource = read('server.js');
 const appsScript = read('deploy/google-apps-script/feedback-webhook.gs');
 
-ok(/const VERSION = '1\.56'/.test(serverSource) && require('./package.json').version === '1.56.0', 'v1.53 feedback remains covered by v1.56');
+ok(/const VERSION = '1\.57'/.test(serverSource) && require('./package.json').version === '1.57.0', 'v1.53 feedback remains covered by v1.57');
 ok(/<section class="page-section feedback" id="feedback"/.test(html), 'feedback section exists');
 ok(html.indexOf('id="news"') < html.indexOf('id="feedback"') && html.indexOf('id="feedback"') < html.indexOf('class="final-cta"'), 'feedback sits between NEWS and final CTA');
 ok(html.indexOf('id="top"') < html.indexOf('id="news"') && html.indexOf('id="news"') < html.indexOf('id="concept"'), 'NEWS sits directly after the hero and before CONCEPT');
@@ -117,7 +117,7 @@ const waitFor = async (url, attempts = 50) => {
     result = await post({ category: 'improvement', message: '=SUM(A1:A2)' });
     ok(result.status === 200 && result.body.ok === true, 'valid feedback succeeds');
     ok(received[0].message === "'=SUM(A1:A2)", 'formula-like message is neutralized before Google');
-    ok(received[0].token === 'test-only-shared-token' && received[0].version === '1.56' && received[0].sendId, 'server adds token, current version, and submission ID');
+    ok(received[0].token === 'test-only-shared-token' && received[0].version === '1.57' && received[0].sendId, 'server adds token, current version, and submission ID');
     ok(!('ip' in received[0]) && !('headers' in received[0]), 'forwarded record contains no IP or headers');
     await post({ category: 'impression', message: '楽しかったです' });
     await post({ category: 'other', message: 'その他の意見' });

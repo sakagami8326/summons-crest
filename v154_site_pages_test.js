@@ -25,7 +25,7 @@ const designCss = read('public/site/design-system.css');
 const sitePagesCss = read('public/site/site-pages.css');
 const siteHeaderCss = read('public/site/site-header.css');
 
-ok(/const VERSION = '1\.56'/.test(serverSource) && require('./package.json').version === '1.56.0', 'v1.54 site pages remain covered by v1.56');
+ok(/const VERSION = '1\.57'/.test(serverSource) && require('./package.json').version === '1.57.0', 'v1.54 site pages remain covered by v1.57');
 ok(/if \(p === '\/cards'\).*site\/cards\.html/.test(serverSource), '/cards is a formal route');
 ok(/if \(p === '\/rules'\).*site\/rules\.html/.test(serverSource), '/rules is a formal route');
 ok(/p === '\/api\/catalog' && req\.method === 'GET'/.test(serverSource), 'read-only catalog endpoint exists');
@@ -125,7 +125,7 @@ const waitFor = async (url, attempts = 60) => {
     await waitFor(`${base}/api/catalog`);
     const catalogResponse = await fetch(`${base}/api/catalog`);
     const catalog = await catalogResponse.json();
-    ok(catalog.version === '1.56', 'catalog identifies current release');
+    ok(catalog.version === '1.57', 'catalog identifies current release');
     ok(catalog.counts.total === 73 && catalog.cards.length === 73, 'catalog contains all 73 base card types');
     ok(catalog.counts.creatures === 44 && catalog.counts.spells === 24 && catalog.counts.weapons === 5, 'catalog category counts are 44/24/5');
     ok(catalog.counts.evolutions === 37, 'catalog contains all 37 evolution pairs');
