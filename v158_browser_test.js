@@ -13,7 +13,12 @@ const out=path.join(__dirname,'output','v158');fs.mkdirSync(out,{recursive:true}
   const title=await browser.newPage({viewport:{width:1280,height:720}});observe(title);
   await title.goto(base+'/play');await title.locator('#titleCreate').click();
   await title.locator('[data-map="twin_gate_cavern"]').click();
-  assert.match(await title.locator('[data-map="twin_gate_cavern"]').innerText(),/中央は各属性4マス・祠1、外周は各属性5マス・祠3・店2/);
+  await title.locator('.mapSelectCard img').evaluateAll(imgs=>Promise.all(imgs.map(i=>i.decode())));
+  for(const image of await title.locator('.mapSelectCard img').evaluateAll(imgs=>imgs.map(i=>({src:i.src,w:i.naturalWidth,h:i.naturalHeight,fit:getComputedStyle(i).objectFit})))) {
+   assert.ok(image.src.endsWith('-preview-v2.webp'));assert.equal(image.w,960);assert.equal(image.h,540);assert.equal(image.fit,'contain');
+  }
+  assert.match(await title.locator('[data-map="starting_corridor"]').innerText(),/初めての方におすすめ。分岐のないシンプルなマップで、領地を広げる基本の駆け引きを楽しめます。/);
+  assert.match(await title.locator('[data-map="twin_gate_cavern"]').innerText(),/基本に慣れた方におすすめ。近道を急ぐか、寄り道するか。盤面を見ながら進路を選ぶ、分岐のあるマップです。/);
   await title.screenshot({path:path.join(out,'map-selection.png')});
   await title.locator('#mapSelectCreate').click();await title.waitForFunction(()=>state?.mapId==='twin_gate_cavern');
   assert.match(await title.locator('#joined').innerText(),/双門の洞窟/);

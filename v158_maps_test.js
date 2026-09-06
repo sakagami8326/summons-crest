@@ -14,6 +14,16 @@ function game(n=2,mapId='twin_gate_cavern'){
 function move(r,n,next){const p=r.players[r.turn];G.performMove(r,p,n,{value:n},`${n}歩`);if(next!=null)choose(r,'route:'+next);return p;}
 function choose(r,id){G.handleChoose(r,r.players[r.turn].id,id);}
 const map=G.MAPS.twin_gate_cavern;
+// Selection thumbnails are real, tile-inclusive board captures, not background art.
+for(const m of Object.values(G.MAPS)) {
+ ok(m.preview.endsWith('-preview-v2.webp'),'tile-inclusive thumbnail version');
+ const bytes=fs.readFileSync(path.join(__dirname,'public',m.preview));
+ eq(bytes.toString('ascii',0,4),'RIFF','thumbnail RIFF');
+ eq(bytes.toString('ascii',8,12),'WEBP','thumbnail WebP');
+ ok(bytes.length<250000,'thumbnail stays lightweight');
+}
+const mapCss=fs.readFileSync(path.join(__dirname,'public/map-ui.css'),'utf8');
+ok(/\.mapSelectCard img\s*\{[^}]*height:auto;[^}]*object-fit:contain/.test(mapCss),'thumbnail preserves whole board');
 eq(map.tiles.length,33,'33 tiles');
 for(const e of ['fire','water','earth','wind'])eq(map.tiles.filter(t=>t.e===e).length,6,e+' six');
 for(const [t,n] of [['shrine',4],['market',2],['castle',1],['gate',2]])eq(map.tiles.filter(v=>v.t===t).length,n,t);

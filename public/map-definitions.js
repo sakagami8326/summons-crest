@@ -18,8 +18,8 @@
     return Object.assign({id,name,tiles,geo,neighbors,castle:types.indexOf('castle'),gates:types.flatMap((t,i)=>t==='gate'?[i]:[]),width:Math.max(...geo.map(c=>c[0]))+1,height:Math.max(...geo.map(c=>c[1]))+1},extra);
   }
   const maps = {
-    starting_corridor:make('starting_corridor','始まりの回廊',legacy,legacyGeo,{branching:false,gateBonus:200,background:'/assets/bg.jpg',preview:'/assets/maps/starting-corridor-preview-v1.webp',description:'分岐のない基本マップ。土地の確保と強化が勝負の鍵。',lapSteps:[28]}),
-    twin_gate_cavern:make('twin_gate_cavern','双門の洞窟',cave,caveGeo,{branching:true,gateBonus:100,background:'/assets/maps/twin-gate-cavern-v1.webp',preview:'/assets/maps/twin-gate-cavern-preview-v1.webp',description:'中央は各属性4マス・祠1、外周は各属性5マス・祠3・店2。両門を通って城へ帰還。',lapSteps:[20,28]})
+    starting_corridor:make('starting_corridor','始まりの回廊',legacy,legacyGeo,{branching:false,gateBonus:200,background:'/assets/bg.jpg',preview:'/assets/maps/starting-corridor-preview-v2.webp',description:'初めての方におすすめ。分岐のないシンプルなマップで、領地を広げる基本の駆け引きを楽しめます。',lapSteps:[28]}),
+    twin_gate_cavern:make('twin_gate_cavern','双門の洞窟',cave,caveGeo,{branching:true,gateBonus:100,background:'/assets/maps/twin-gate-cavern-v1.webp',preview:'/assets/maps/twin-gate-cavern-preview-v2.webp',description:'基本に慣れた方におすすめ。近道を急ぐか、寄り道するか。盤面を見ながら進路を選ぶ、分岐のあるマップです。',lapSteps:[20,28]})
   };
   maps.starting_corridor.neighbors=legacy.map((_,i)=>[(i+27)%28,(i+1)%28]);
   function freeze(o){Object.values(o).forEach(v=>{if(v&&typeof v==='object')freeze(v);});return Object.freeze(o);}
