@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.58';
+const VERSION = '1.59';
 const MAPS = require('./public/map-definitions');
 const mapOf = r => MAPS[r.mapId || 'starting_corridor'];
 const tilesOf = r => mapOf(r).tiles;
@@ -2074,10 +2074,8 @@ function consumeBattleSupport(r, pid, choice) {
     else p.discard.push(c.cardId);
   }
 }
-function resolveBattle(r) {
-  const b = r.battle;
+function calculateBattle(r, b = r.battle) {
   const atk = pById(r, b.attacker), def = pById(r, b.defender);
-  markMatchCause(r, 'invasion', { actor: atk.id, target: def.id, tile: b.tile });
   const o = r.owners[b.tile];
   const tile = tilesOf(r)[b.tile];
   const ac = CREATURES[b.atkCreature], dc = CREATURES[o.creature];
@@ -2166,8 +2164,6 @@ function resolveBattle(r) {
   const curse = (r.curses[b.tile] && baseId(o.creature) !== 'beruf') ? r.curses[b.tile].hp : 0;
   const hp = dBase.hp + terrain + queenBonus + (dEff ? dEff.hp : 0) - curse;
 
-  // ウェポンは勝敗問わず消費
-  for (const [pid, sc] of Object.entries(b.supports)) consumeBattleSupport(r, pid, sc);
 
   // ===== v0.47 戦闘: AT / HP / DF モデル =====
   // DF(防御) = 地形補正+女王+支援HP。ダメージ = AT − DF(最低0)。負傷は軽減後の実ダメージだけ蓄積
@@ -2221,6 +2217,15 @@ function resolveBattle(r) {
     counterDealt = Math.max(0, counterSt - atkDF);
     atkSurvived = counterDealt < atkEffHp;
   }
+
+  return { b, atk, def, o, tile, ac, dc, defEvolved, notes, aSup, dSup, aEff, dEff, mvSrc, corridor, carried, atkEvolved, atkWeaponMastery, defWeaponMastery, atkSoul, defSoul, atkEarthChain, defEarthChain, atkEarthLand, defEarthLand, atkEarthAtBonus, defEarthAtBonus, atkEarthDfBonus, defEarthDfBonus, aBase, dBase, atkDmg, effHp, defDF, dealt, atkEffHp, atkDF, defSt, counterSt, counterDealt, atkSurvived, atkShadeDF, hitsDone, preempt, terrain, terrainUi, curse, win, iceWard, atkCarried };
+}
+
+function resolveBattle(r) {
+  const { b, atk, def, o, tile, ac, dc, defEvolved, notes, aSup, dSup, aEff, dEff, mvSrc, corridor, carried, atkEvolved, atkWeaponMastery, defWeaponMastery, atkSoul, defSoul, atkEarthChain, defEarthChain, atkEarthLand, defEarthLand, atkEarthAtBonus, defEarthAtBonus, atkEarthDfBonus, defEarthDfBonus, aBase, dBase, atkDmg, effHp, defDF, dealt, atkEffHp, atkDF, defSt, counterSt, counterDealt, atkSurvived, atkShadeDF, hitsDone, preempt, terrain, terrainUi, curse, win, iceWard, atkCarried } = calculateBattle(r);
+  markMatchCause(r, 'invasion', { actor: atk.id, target: def.id, tile: b.tile });
+  // ウェポンは勝敗問わず消費
+  for (const [pid, sc] of Object.entries(b.supports)) consumeBattleSupport(r, pid, sc);
 
   const battleResultUi = { win, atkSurvived, atkSupport: aSup, defSupport: dSup, attacker: atk.id };
   r.lastBattle = { battleKey: b.startedAt || null, tile: b.tile, attacker: atk.id, defender: def.id,
@@ -3365,9 +3370,6 @@ function startGame(r) {
 }
 
 // ===== v1.05 BOT判断・実行 =====
-const BOT_CANCEL_IDS = new Set(['pass', 'done', 'skip', 'back', 'sup:none', 'mt:cancel', 'lu:cancel',
-  'qt:cancel', 'st:cancel', 'sd:cancel', 'mv:cancel', 'sw:cancel', 'fg:cancel', 'ms:cancel', 'md:cancel',
-  'ul:cancel']);
 const botCardInfo = id => CREATURES[baseId(id)] || SPELLS[id] || SUPPORTS[id] || {};
 function botCardScore(r, p, id) {
   const c = botCardInfo(id);
@@ -3391,203 +3393,125 @@ function botLandScore(r, p, i, attacking = false) {
   const toll = tollOf(r, i);
   return attacking ? 35 + landValue(r, i) * .08 - o.level * 12 : -Math.min(180, toll * .25);
 }
-function botBest(r, options, scoreFn, low = false) {
-  if (!options.length) return null;
-  const scored = options.map(o => ({ o, s: scoreFn(o) + Math.random() * .01 }));
-  scored.sort((a, b) => low ? a.s - b.s : b.s - a.s);
-  return scored[0].o;
+// BOT-only heuristics: read own cards and public terrain, never opponents' hands/decks.
+const botInventory = p => [...(p.hand || []), ...(p.deck || []), ...(p.discard || [])];
+function botTollRisk(r, p, tile) {
+  const o = r.owners[tile];
+  if (!o || o.player === p.id) return 0;
+  const toll = tollOf(r, tile);
+  // Paying also funds a rival. Liquidity shortfalls add risk; there is no toll cap.
+  // Do not assume an invasion will win against an unknown defensive weapon.
+  return toll * 1.25 + Math.max(0, toll + 100 - p.gold) * 1.5;
 }
-function botTileFromOption(o) {
-  if (Number.isInteger(o.tile)) return o.tile;
-  const m = String(o.id).match(/(?:^|:)(\d+)(?::\d+)?$/);
-  return m ? +m[1] : null;
+function botWalkEndpoints(r, p, next, steps) {
+  const map = mapOf(r), found = new Set(), seen = new Set();
+  const walk = (from, tile, left) => {
+    const key = `${from}:${tile}:${left}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    if (!left || cavernAnchor(r, p, tile)) { found.add(tile); return; }
+    map.neighbors[tile].filter(n => n !== from).forEach(n => walk(tile, n, left - 1));
+  };
+  walk(p.pos, next, Math.max(0, steps - 1));
+  return [...found];
 }
-function botChooseOption(r, p, pend) {
-  const opts = (pend && pend.options || []).slice();
-  if (!opts.length) return null;
-  const byId = id => opts.find(o => o.id === id);
-  const nonCancel = opts.filter(o => !BOT_CANCEL_IDS.has(o.id));
-  if (pend.type === 'route_choice') {
-    const goals=mapOf(r).gates.filter(i=>!(p.gatesVisited||[]).includes(i));
-    if(!goals.length) goals.push(mapOf(r).castle);
-    const distance=(from,previous)=>{
-      const queue=[[from,previous,0]],seen=new Set();
-      for(let k=0;k<queue.length;k++){const [tile,prev,n]=queue[k];
-        if(goals.includes(tile))return n;
-        const key=tile+':'+prev;if(seen.has(key))continue;seen.add(key);
-        mapOf(r).neighbors[tile].filter(i=>i!==prev).forEach(i=>queue.push([i,tile,n+1]));
-      }return 100;
-    };
-    return opts.map((o,i)=>({o,i,score:Math.max(...o.destinations.map(d=>botLandScore(r,p,d.tile)))/10-distance(o.tile,p.pos)*20}))
-      .sort((a,b)=>b.score-a.score||a.i-b.i)[0].o.id;
+function botCashReserve(r, p) {
+  const handCosts = (p.hand || []).filter(id => CREATURES[id]).map(id => CREATURES[id].cost);
+  let reserve = Math.max(150, 100 + (handCosts.length ? Math.min(...handCosts) : 0));
+  const map = mapOf(r);
+  const next = isCavern(r) ? cavernNeighbors(r, p) : p.dir
+    ? [(p.pos + p.dir + map.tiles.length) % map.tiles.length] : map.neighbors[p.pos];
+  // Keep money for unavoidable tolls within a normal next roll; an avoidable fork
+  // does not freeze the entire budget. This is a buffer, not a prediction of the die.
+  for (let steps = 1; steps <= 6; steps++) {
+    const endpoints = next.flatMap(n => botWalkEndpoints(r, p, n, steps));
+    const unavoidable = Math.min(...endpoints.map(tile => {
+      const o = r.owners[tile];
+      return o && o.player !== p.id ? tollOf(r, tile) : 0;
+    }));
+    if (Number.isFinite(unavoidable)) reserve = Math.max(reserve, unavoidable + 100);
   }
-  if (pend.type === 'roll') {
-    const ult = byId('ult');
-    if (ult && !p.ultUsed && (points(r, p) >= ASSET_REACH || Math.random() < .16)) return ult.id;
-    const spells = opts.filter(o => o.id.startsWith('sp:'));
-    if (spells.length && p.gold >= 100 && Math.random() < .38)
-      return botBest(r, spells, o => botCardScore(r, p, o.id.slice(3))).id;
-    return (byId('roll') || opts[0]).id;
-  }
-  if (pend.type === 'direction') {
-    const steps = r.dirPend?.steps || 1;
-    return botBest(r, opts, o => {
-      const dir = o.id === 'dir:-1' ? -1 : 1;
-      return botLandScore(r, p, (p.pos + dir * steps % tilesOf(r).length + tilesOf(r).length) % tilesOf(r).length);
-    }).id;
-  }
-  if (pend.type === 'pick_draw' || pend.type === 'draft') {
-    const cards = nonCancel.filter(o => o.card || o.id.startsWith('take:'));
-    const best = botBest(r, cards, o => botCardScore(r, p, o.card || o.id.slice(5)));
-    return (best || byId('skip') || opts[0]).id;
-  }
-  if (pend.type === 'gaust_exile' || pend.type === 'fatal_exile')
-    return (botBest(r, opts.filter(o => o.card), o => botCardScore(r, p, o.card), true) || opts[0]).id;
-  if (pend.type === 'toxy_target')
-    return (botBest(r, opts, o => {
-      const target = pById(r, o.player || String(o.id).slice(3));
-      return target ? target.hand.length * 20 + points(r, target) * 4 : 0;
-    }) || opts[0]).id;
-  if (pend.type === 'daitekkan_recover')
-    return (botBest(r, opts, o => botCardScore(r, p, o.card)) || opts[0]).id;
-  if (pend.type === 'mermaid_heal')
-    return (botBest(r, opts, o => (r.owners[botTileFromOption(o)]?.dmg || 0)) || opts[0]).id;
-  if (pend.type === 'abyss_mark') {
-    const source = r.owners[pend.sourceTile];
-    return (botBest(r, opts, o => {
-      const tile = botTileFromOption(o), target = r.owners[tile];
-      return tollOf(r, tile) + abyssMarkBonusFor(source, target);
-    }) || opts[0]).id;
-  }
-  if (pend.type === 'ult_villa_recover') {
-    const confirm = byId('vr:confirm');
-    if ((pend.selected || []).length >= Math.min(3, (p.exile || []).length)) return confirm.id;
-    const choices = opts.filter(o => /^vr:\d+$/.test(o.id) && !(pend.selected || []).includes(+o.id.slice(3)));
-    return (botBest(r, choices, o => botCardScore(r, p, o.card)) || confirm).id;
-  }
-  if (pend.type === 'tile') {
-    const summons = opts.filter(o => o.id.startsWith('summon:'));
-    if (summons.length) return botBest(r, summons, o => botCardScore(r, p, o.id.slice(7))).id;
-    if (byId('invade')) {
-      const enemy = r.owners[p.pos];
-      const bestAtk = Math.max(0, ...(p.hand || []).filter(c => CREATURES[c]).map(c => CREATURES[c].st));
-      const defHp = enemy ? Math.max(1, creatureMaxHp(enemy) - (enemy.dmg || 0) + enemy.level * 10) : 999;
-      if (bestAtk + 15 >= defHp || tollOf(r, p.pos) > Math.max(80, p.gold * .2)) return 'invade';
-    }
-    return (byId('toll') || byId('pass') || opts[0]).id;
-  }
-  if (pend.type === 'pick_creature')
-    return botBest(r, opts, o => CREATURES[o.id.slice(4)]?.st || 0).id;
-  if (pend.type === 'support') {
-    const sideAttack = r.battle?.attacker === p.id;
-    const useful = opts.filter(o => o.id !== 'sup:none');
-    if (!useful.length) return 'sup:none';
-    const best = botBest(r, useful, o => {
-      const id = o.id.slice(6), c = botCardInfo(id);
-      return (sideAttack ? (c.st || 0) * 2 + (c.hp || 0) : (c.hp || 0) * 2 + (c.st || 0)) + (c.jinx ? 45 : 0) - (o.id.startsWith('sup:c:') ? c.cost * .15 : 0);
-    });
-    return (Math.random() < .72 ? best : byId('sup:none')).id;
-  }
-  if (pend.type === 'upgrade') {
-    const lands = opts.filter(o => o.id.startsWith('up:'));
-    if (lands.length && p.gold >= 180)
-      return botBest(r, lands, o => botLandScore(r, p, botTileFromOption(o))).id;
-    if (byId('marlow:move') && Math.random() < .2) return 'marlow:move';
-    return (byId('pass') || opts[0]).id;
-  }
-  if (pend.type === 'upgrade_lv') {
-    const levels = opts.filter(o => o.id.startsWith('ul:') && o.id !== 'ul:cancel');
-    if (!levels.length || p.gold < 180) return (byId('ul:cancel') || opts[0]).id;
-    const affordableReserve = levels.filter(o => {
-      const [, i, lv] = o.id.split(':');
-      return p.gold - upCostRange(r, p, +i, +lv) >= 100;
-    });
-    return (affordableReserve[affordableReserve.length - 1] || levels[0]).id;
-  }
-  if (pend.type === 'market') {
-    const visit = r.shopVisit;
-    const choices = opts.filter(o => o.id.startsWith('buy:')).filter(o => {
-      const item = visit && visit.items.find(x => x.slotId === o.id.slice(4));
-      return item && !item.sold && item.price <= p.gold;
-    });
-    const best = botBest(r, choices, o => {
-      const item = visit.items.find(x => x.slotId === o.id.slice(4));
-      if (item.kind === 'remove') return p.gold >= 260 && (p.hand.length + p.discard.length) ? 20 : -100;
-      const score = item.kind === 'support'
-        ? ({ shield:65, weapon:70, jinx:72, gweapon:84, gshield:80 }[item.card] || 60)
-        : botCardScore(r, p, item.card);
-      return score - item.price * .45;
-    });
-    if (best && botCardScore(r, p, (visit.items.find(x => x.slotId === best.id.slice(4)) || {}).card) > 25)
-      return best.id;
-    return (byId('done') || opts[0]).id;
-  }
-  if (pend.type === 'gate') {
-    if (byId('g_up') && p.gold >= 250) return 'g_up';
-    if (byId('g_forge') && p.gold >= 300) return 'g_forge';
-    return (byId('g_draft') || byId('pass') || opts[0]).id;
-  }
-  if (pend.type === 'forge') {
-    const choices = opts.filter(o => o.id.startsWith('fg:'));
-    return (botBest(r, choices, o => botCardScore(r, p, p.hand[+o.id.slice(3)])) || byId('back') || opts[0]).id;
-  }
-  if (pend.type === 'sell')
-    return botBest(r, opts, o => botLandScore(r, p, botTileFromOption(o)), true).id;
-  if (pend.type === 'overflow' || pend.type === 'forget') {
-    const cards = nonCancel.filter(o => o.card);
-    return (botBest(r, cards, o => botCardScore(r, p, o.card), true) || opts[0]).id;
-  }
-  if (pend.type === 'ult_lia') {
-    if ((pend.selected || []).length >= Math.min(3, r.owners.filter(o => o && o.player !== p.id).length))
-      return (byId('lu:confirm') || opts[0]).id;
-    const targets = opts.filter(o => /^lu:\d+$/.test(o.id) && !(pend.selected || []).includes(+o.id.slice(3)));
-    return (botBest(r, targets, o => landValue(r, +o.id.slice(3))) || byId('lu:confirm') || byId('lu:cancel')).id;
-  }
-  if (pend.type === 'ult_nerasio_land') {
-    const confirm = byId('nu:confirm');
-    if ((pend.selected || []).length >= Math.min(2, r.owners.filter((o, i) =>
-      o && o.player === p.id && tilesOf(r)[i].t === 'land').length)) return (confirm || opts[0]).id;
-    const targets = opts.filter(o => /^nu:\d+$/.test(o.id) && !(pend.selected || []).includes(+o.id.slice(3)));
-    return (botBest(r, targets, o => {
-      const i = +o.id.slice(3);
-      return landValue(r, i) + (tileElem(r, i) === CHARS[p.charId]?.elem ? -100 : 100);
-    }) || confirm || byId('nu:cancel')).id;
-  }
-  if (pend.type === 'ult_nerasio_elem') {
-    const selected = new Set(pend.selected || []);
-    return (botBest(r, opts.filter(o => o.id.startsWith('ne:') && o.id !== 'ne:cancel'), o => {
-      const elem = o.id.slice(3);
-      let count = 0, levels = 0;
-      r.owners.forEach((owner, i) => {
-        if (!owner || owner.player !== p.id || tilesOf(r)[i].t !== 'land') return;
-        if (selected.has(i) || tileElem(r, i) === elem) { count++; levels += owner.level || 1; }
-      });
-      return count * 40 + levels * 5 + (elem === CHARS[p.charId]?.elem ? 15 : 0);
-    }) || opts[0]).id;
-  }
-  if (pend.type === 'samurai_elem') {
-    const wanted = CHARS[p.charId]?.elem;
-    return (byId('se:' + wanted) || nonCancel[0] || opts[0]).id;
-  }
-  if (['curse_target', 'quake_target', 'spell_target', 'step_b', 'ult_mio'].includes(pend.type)) {
-    const choices = nonCancel.filter(o => botTileFromOption(o) !== null);
-    return (botBest(r, choices, o => botLandScore(r, p, botTileFromOption(o), true)) || opts[0]).id;
-  }
-  if (['marlow_dest'].includes(pend.type)) {
-    const choices = nonCancel.filter(o => botTileFromOption(o) !== null);
-    return (botBest(r, choices, o => botLandScore(r, p, botTileFromOption(o))) || opts[0]).id;
-  }
-  if (['move_a', 'move_b', 'swap_land', 'swap_pick', 'step_a', 'marlow_src'].includes(pend.type)) {
-    const choice = botBest(r, nonCancel, o => {
-      const tile = botTileFromOption(o);
-      if (tile !== null) return botLandScore(r, p, tile);
-      const card = o.card || p.hand[+String(o.id).split(':')[1]];
-      return card ? botCardScore(r, p, card) : 0;
-    });
-    return (choice || opts.find(o => BOT_CANCEL_IDS.has(o.id)) || opts[0]).id;
-  }
-  return (opts.find(o => BOT_CANCEL_IDS.has(o.id)) || opts[Math.floor(Math.random() * opts.length)]).id;
+  return reserve;
 }
+function botCardNeedScore(r, p, id) {
+  const c = botCardInfo(id), inventory = botInventory(p);
+  if (!CREATURES[id] && !SPELLS[id] && !SUPPORTS[id]) return -Infinity;
+  const ownCopies = inventory.filter(x => baseId(x) === baseId(id)).length;
+  const creatures = inventory.filter(x => CREATURES[x]), weapons = inventory.filter(x => SUPPORTS[x]);
+  const spells = inventory.filter(x => SPELLS[x]);
+  let value = 0;
+  if (CREATURES[id]) {
+    const average = creatures.length ? creatures.reduce((sum, x) => sum + botCardScore(r, p, x), 0) / creatures.length : 0;
+    const synergy = c.elem === CHARS[p.charId]?.elem || chainCount(r, p.id, c.elem) >= 2;
+    value = (creatures.length < 3 ? 115 : creatures.length < 5 ? 90 : creatures.length < 7 ? 45 : 0)
+      + Math.max(-30, botCardScore(r, p, id) - average) + (synergy ? 25 : 0) - ownCopies * 35;
+  } else if (SUPPORTS[id]) {
+    if (weapons.length >= 3) return -20;
+    const sameRole = weapons.some(x => c.jinx ? SUPPORTS[x].jinx : c.st ? SUPPORTS[x].st : SUPPORTS[x].hp);
+    value = (3 - weapons.length) * 45 + (sameRole ? 0 : 25) - ownCopies * 30;
+  } else {
+    const ownLand = r.owners.some(o => o && o.player === p.id);
+    const wounded = r.owners.some(o => o && o.player === p.id && o.dmg > 0);
+    const enemyLand = r.owners.some(o => o && o.player !== p.id);
+    const shift = ELEM_OF_SPELL[id];
+    if (id === 'sp_gold') value = Math.min(180, Math.max(1, p.lap || 1) * 100);
+    else if (id === 'sp_insight') value = creatures.length >= 3 ? 90 : 35;
+    else if (id === 'sp_bedrock_uplift') value = wounded || p.charId === 'adel' && ownLand ? 100 : 20;
+    else if (shift) value = ownLand && shift === CHARS[p.charId]?.elem ? 100 : 10;
+    else if (['sp_move', 'sp_step', 'sp_swap', 'sp_ward'].includes(id)) value = ownLand ? 85 : 0;
+    else if (['sp_weaken', 'sp_quake', 'sp_flame_vortex', 'sp_bloodstained_blade'].includes(id)) value = enemyLand ? 85 : 0;
+    else if (id === 'sp_fatal_reward') value = p.charId === 'villa' ? 90 : 20;
+    else value = 75; // movement/dice utility; do not stock several interchangeable fixes.
+    if (c.fixedDice && spells.some(x => SPELLS[x].fixedDice)) value -= 60;
+    value -= ownCopies * 55 + Math.max(0, spells.length - 3) * 12;
+  }
+  return value - Math.max(0, inventory.length - 16) * 6;
+}
+function botPurchaseScore(r, p, item, reserve) {
+  if (!item || item.sold || item.kind === 'remove' || !Number.isFinite(item.price) || item.price < 0) return -Infinity;
+  const id=item.card, cards=botInventory(p);
+  if (!CREATURES[id] && !SPELLS[id] && !SUPPORTS[id]) return -Infinity;
+  const cost=CREATURES[id]?.cost || (SPELLS[id] ? effectiveSpellCost(r,p,id) : 0);
+  if (cards.filter(x=>baseId(x)===baseId(id)).length>=2 ||
+      SUPPORTS[id] && cards.filter(x=>SUPPORTS[x]).length>=3 ||
+      p.gold-item.price<Math.max(reserve,cost+100)) return -Infinity;
+  return botCardNeedScore(r,p,id)-item.price*.6;
+}
+function botLandingScore(r, p, tile) {
+  const t = tilesOf(r)[tile], o = r.owners[tile];
+  if (o && o.player !== p.id) return -botTollRisk(r, p, tile);
+  if (t.t === 'land' && !o && !(p.hand || []).some(id => CREATURES[id] && CREATURES[id].cost <= p.gold)) return 10;
+  if (t.t === 'market') {
+    // Future inventory is unknown: value resupply needs, never peek at the market deck.
+    if (p.gold < botCashReserve(r, p) + 80) return 10;
+    const cards = botInventory(p);
+    return cards.filter(id => CREATURES[id]).length < 5 || cards.filter(id => SUPPORTS[id]).length < 2 ? 85 : 25;
+  }
+  return botLandScore(r, p, tile);
+}
+function botRouteDistance(r, p, from) {
+  const map = mapOf(r), goals = map.gates.filter(i => !(p.gatesVisited || []).includes(i));
+  if (!goals.length) goals.push(map.castle);
+  const queue = [[from, p.pos, 0]], seen = new Set();
+  for (let k = 0; k < queue.length; k++) {
+    const [tile, prev, n] = queue[k];
+    if (goals.includes(tile)) return n;
+    const key = `${tile}:${prev}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    map.neighbors[tile].filter(i => i !== prev).forEach(i => queue.push([i, tile, n + 1]));
+  }
+  return map.tiles.length * 2;
+}
+const standardBot = require('./bot-standard')({
+  CREATURES, SPELLS, SUPPORTS, CHARS, RULES, ELEM_OF_SPELL, ASSET_GOAL,
+  baseId, mapOf, tilesOf, tileElem, isCavern, cavernNeighbors, cavernRouteProjection,
+  botCashReserve, botPurchaseScore, botCardScore, botCardNeedScore, botLandingScore, botRouteDistance,
+  botWalkEndpoints, calculateBattle, creatureMaxHp, terrainBreakdown, chainCount,
+  landValue, tollOf, points, upCostRange, effectiveSpellCost, stepSources, stepDests,
+  marlowSources, marlowDests, abyssMarkBonusFor, creatureSupportEnabled,
+});
+function botChooseOption(r, p, pend) { return standardBot.choose(r, p, pend).id; }
 function botDelayFor(r, pend, optionId) {
   if (pend.type === 'roll') return optionId === 'roll' ? 1200 : 1500;
   if (['pick_creature', 'support'].includes(pend.type)) return 1350;
@@ -3608,12 +3532,14 @@ function scheduleBotAction(r) {
   if (!optionId) return;
   const seq = ++r.botActionSeq;
   const type = pend.type;
+  const promptId = pend.promptId, turnEpoch = pend.turnEpoch;
   const availableDelay = Math.max(0, (pend.availableAt || 0) - Date.now());
   r.botTimer = setTimeout(() => {
     r.botTimer = null;
     if (r.botActionSeq !== seq || r.phase !== 'playing') return;
     const now = r.pending[pid];
-    if (!now || now.type !== type || !now.options.some(o => o.id === optionId)) return scheduleBotAction(r);
+    if (!now || now.type !== type || now.promptId !== promptId || now.turnEpoch !== turnEpoch ||
+        !now.options.some(o => o.id === optionId)) return scheduleBotAction(r);
     handleChoose(r, pid, optionId);
     touch(r);
     broadcast(r);

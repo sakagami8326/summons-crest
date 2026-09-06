@@ -11,7 +11,7 @@
   for(let x=5;x>=0;x--) caveGeo.push([x,8]);
   for(let y=7;y>=1;y--) caveGeo.push([0,y]);
   for(let x=1;x<=5;x++) caveGeo.push([x,4]);
-  const cave = ['market','earth','wind','wind','fire','fire','market','water','shrine','earth','earth','wind','gate','water','shrine','earth','wind','castle','fire','water','shrine','earth','gate','fire','wind','fire','shrine','water','water','wind','fire','earth','water'];
+  const cave = ['market','fire','fire','shrine','water','water','market','wind','shrine','wind','wind','wind','gate','wind','fire','fire','fire','castle','water','water','water','earth','gate','earth','earth','earth','shrine','earth','earth','fire','shrine','water','wind'];
   function make(id,name,types,geo,extra) {
     const tiles = types.map(t=>['fire','water','earth','wind'].includes(t)?{t:'land',e:t}:{t});
     const neighbors = geo.map(([x,y],i)=>geo.flatMap(([a,b],j)=>i!==j&&Math.abs(x-a)+Math.abs(y-b)===1?[j]:[]));
@@ -19,7 +19,7 @@
   }
   const maps = {
     starting_corridor:make('starting_corridor','始まりの回廊',legacy,legacyGeo,{branching:false,gateBonus:200,background:'/assets/bg.jpg',preview:'/assets/maps/starting-corridor-preview-v1.webp',description:'分岐のない基本マップ。土地の確保と強化が勝負の鍵。',lapSteps:[28]}),
-    twin_gate_cavern:make('twin_gate_cavern','双門の洞窟',cave,caveGeo,{branching:true,gateBonus:100,background:'/assets/maps/twin-gate-cavern-v1.webp',preview:'/assets/maps/twin-gate-cavern-preview-v1.webp',description:'近道か、施設への寄り道か。両方の門を通って城へ帰還。',lapSteps:[20,28]})
+    twin_gate_cavern:make('twin_gate_cavern','双門の洞窟',cave,caveGeo,{branching:true,gateBonus:100,background:'/assets/maps/twin-gate-cavern-v1.webp',preview:'/assets/maps/twin-gate-cavern-preview-v1.webp',description:'中央は各属性4マス・祠1、外周は各属性5マス・祠3・店2。両門を通って城へ帰還。',lapSteps:[20,28]})
   };
   maps.starting_corridor.neighbors=legacy.map((_,i)=>[(i+27)%28,(i+1)%28]);
   function freeze(o){Object.values(o).forEach(v=>{if(v&&typeof v==='object')freeze(v);});return Object.freeze(o);}

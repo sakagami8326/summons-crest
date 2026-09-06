@@ -18,6 +18,41 @@ eq(map.tiles.length,33,'33 tiles');
 for(const e of ['fire','water','earth','wind'])eq(map.tiles.filter(t=>t.e===e).length,6,e+' six');
 for(const [t,n] of [['shrine',4],['market',2],['castle',1],['gate',2]])eq(map.tiles.filter(v=>v.t===t).length,n,t);
 eq([map.castle,...map.gates],[17,12,22],'facility IDs');
+// Approved v1.59 layout: every element has equal access on either complete lap.
+const approvedRows=[
+ ['market','fire','fire','shrine','water','water','market'],
+ ['earth',null,null,null,null,null,'wind'],
+ ['shrine',null,null,null,null,null,'shrine'],
+ ['earth',null,null,null,null,null,'wind'],
+ ['earth','earth','fire','shrine','water','wind','wind'],
+ ['earth',null,null,null,null,null,'wind'],
+ ['gate',null,null,null,null,null,'gate'],
+ ['earth',null,null,null,null,null,'wind'],
+ ['water','water','water','castle','fire','fire','fire']
+];
+map.geo.forEach(([x,y],i)=>eq(map.tiles[i].e||map.tiles[i].t,approvedRows[y][x],'approved tile '+i));
+const outer=map.tiles.slice(0,28),short=map.tiles.filter((_,i)=>i>=10&&i<=24||i>=28);
+eq([outer.length,short.length],[28,20],'lap length unchanged');
+for(const e of ['fire','water','earth','wind'])eq([outer.filter(t=>t.e===e).length,short.filter(t=>t.e===e).length],[5,4],'balanced access '+e);
+eq([outer.filter(t=>t.t==='shrine').length,short.filter(t=>t.t==='shrine').length],[3,1],'shrine split');
+eq(map.tiles.flatMap((t,i)=>t.t==='shrine'?[i]:[]),[3,8,26,30],'relocated shrines');
+for(const tile of [3,8,26,30]){
+ const r=game(),p=r.players[0];G.cavernTeleport(r,p,tile);
+ eq([p.gold,p.shrineVisits,r.pending[p.id].type],[1100,1,'draft'],'shrine arrival still gives gold and draft '+tile);
+}
+for(const tile of [14,20]){
+ const r=game(),p=r.players[0];G.cavernTeleport(r,p,tile);
+ eq([p.gold,p.shrineVisits,r.pending[p.id].type],[1000,0,'tile'],'former shrine is summonable land '+tile);
+ ok(r.pending[p.id].options.some(o=>o.id.startsWith('summon:')),'new land allows summon');
+ r.owners[tile]={player:p.id,creature:'gaston',level:2,dmg:5};
+ const saved=G.serializeRoom(r);eq(G.validateSave(saved),null,'new land saves');
+ ok(!G.restoreRoom(saved).error,'new land restores');
+ eq(G.publicState(G.rooms.get(r.code),p.id).tiles[tile],map.tiles[tile],'restored public terrain');
+}
+for(const [from,prev] of [[2,1],[29,28]]){
+ const r=game(),p=r.players[0];p.pos=from;p.previousTile=prev;move(r,2);
+ eq([p.pos,p.gold,p.shrineVisits],[from+2,1000,0],'passing a shrine has no reward');
+}
 map.neighbors.forEach((ns,i)=>{eq(ns.length,[10,24].includes(i)?3:2,'degree '+i);ns.forEach(j=>ok(map.neighbors[j].includes(i),'symmetric'));});
 {
  const r=game(),p=r.players[0];move(r,8);eq(r.pending[p.id].type,'route_choice','initial choice');eq(p.pos,17,'no move before selection');

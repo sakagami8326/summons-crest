@@ -15,7 +15,7 @@ const G = new Function('require', '__dirname', 'process', 'console', 'setInterva
 let pass = 0;
 const ok = (value, name) => { if (!value) throw new Error('FAIL: ' + name); pass++; };
 
-ok(G.VERSION === '1.58' && pkg.version === '1.58.0', 'release version is v1.58');
+ok(G.VERSION === '1.59' && pkg.version === '1.59.0', 'release version is v1.59');
 ok(/\.dkCard\s*\{[\s\S]*?width:calc\(\(100% - 2dvh\) \/ 3\)/.test(css),
   'deck and choice cards use container-based three columns');
 ok(/\.gCard\s*\{[\s\S]*?width:calc\(\(100% - 3\.2dvh\) \/ 3\)/.test(css),

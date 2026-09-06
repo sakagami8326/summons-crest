@@ -46,15 +46,18 @@ function makeBotGame(humanChar = 'redani') {
   G.rooms.delete(out.room.code);
 }
 
-// 固定局面: ドローは高評価カード、支援は攻撃側ならAT、売却は低価値土地を選ぶ。
+// 固定局面: 戦力不足なら補充し、実在する防衛クリーチャーに対して支援を評価する。
 {
   const { r } = makeBotGame('linnei');
   const bot = r.players.find(p => p.isBot);
   bot.hand = ['gecko', 'weapon', 'shield']; bot.gold = 300;
+  bot.deck = []; bot.discard = []; bot.charId = 'redani';
   let pick = G.botChooseOption(r, bot, { type: 'pick_draw', options: [
     { id: 'pd:0', card: 'gecko' }, { id: 'pd:1', card: 'sp_gold' },
   ] });
   assert.equal(pick, 'pd:0', '戦力になるクリーチャーを優先する');
+  r.owners[1] = { player:'human', creature:'gaston', level:1, dmg:20 };
+  r.players.find(p => p.id === 'human').hand = [];
   r.battle = { attacker: bot.id, defender: 'human', tile: 1, atkCreature: 'gecko', supports: {} };
   pick = G.botChooseOption(r, bot, { type: 'support', options: [
     { id: 'sup:s:weapon' }, { id: 'sup:s:shield' }, { id: 'sup:none' },

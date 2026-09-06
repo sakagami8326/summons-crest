@@ -24,7 +24,7 @@ function game() {
   return r;
 }
 
-eq(G.VERSION, '1.58', 'current server version');
+eq(G.VERSION, '1.59', 'current server version');
 eq([G.CREATURES.mist_jelly.name, G.CREATURES.mist_jelly.evo, G.CREATURES.mist_jelly.elem,
   G.CREATURES.mist_jelly.rarity, G.CREATURES.mist_jelly.cost, G.CREATURES.mist_jelly.st,
   G.CREATURES.mist_jelly.hp, G.CREATURES.mist_jelly.evoSt, G.CREATURES.mist_jelly.evoHp],

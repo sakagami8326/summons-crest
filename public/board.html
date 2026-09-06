@@ -1564,7 +1564,7 @@ const QR = (() => {
 })();
 </script>
 <link rel="stylesheet" href="/map-ui.css?v=158">
-<script src="/map-definitions.js?v=158"></script>
+<script src="/map-definitions.js?v=159-2"></script>
 <script src="/map-ui.js?v=158"></script>
 <script src="/game_timing.js"></script>
 <script src="/fx_manifest.js"></script>
@@ -4534,7 +4534,7 @@ function render() {
   syncSelectedMap();
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.58';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.59';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {

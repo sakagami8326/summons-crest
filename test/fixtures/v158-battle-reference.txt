@@ -1,0 +1,276 @@
+// Frozen pre-v1.59 reference for differential tests; not loaded by the server.
+function resolveBattle(r) {
+  const b = r.battle;
+  const atk = pById(r, b.attacker), def = pById(r, b.defender);
+  markMatchCause(r, 'invasion', { actor: atk.id, target: def.id, tile: b.tile });
+  const o = r.owners[b.tile];
+  const tile = tilesOf(r)[b.tile];
+  const ac = CREATURES[b.atkCreature], dc = CREATURES[o.creature];
+  const defEvolved = isEvolved(o);
+  const notes = [];
+
+  // --- ウェポン(ディスアーム・雲隠れによる無効化) ---
+  const aSup = supportStats(b.supports[atk.id]);
+  const dSup = supportStats(b.supports[def.id]);
+  let aJinxed = dSup && dSup.jinx, dJinxed = aSup && aSup.jinx;
+  if (baseId(o.creature) === 'ludi' && aSup && !aJinxed) {
+    aJinxed = true;
+    notes.push('【雲隠れ】' + dc.name + 'が相手のウェポンを無効化!');
+  }
+  const aEff = aJinxed ? null : aSup, dEff = dJinxed ? null : dSup;
+
+  // --- 進化ステータスの適用(Lv3以上の防衛側/ムーブで進出した攻撃側) ---
+  const mvSrc = b.moveFrom !== undefined ? r.owners[b.moveFrom] : null;
+  const corridor = !!b.corridor;
+  const dEvoS = defEvolved && dc.evo ? { st: dc.evoSt, hp: dc.evoHp } : { st: dc.st, hp: dc.hp };
+  const aEvo = mvSrc ? isEvolved(mvSrc) : false;
+  const aEvoS = aEvo && ac.evo ? { st: ac.evoSt, hp: ac.evoHp } : { st: ac.st, hp: ac.hp };
+  // --- 擬態(基礎値のコピー) ---
+  let aBase = { st: aEvoS.st, hp: aEvoS.hp }, dBase = { st: dEvoS.st, hp: dEvoS.hp };
+  if (baseId(b.atkCreature) === 'mimic') { aBase = { st: dEvoS.st, hp: dEvoS.hp }; notes.push('【擬態】ミミックが' + dc.name + 'をコピー!'); }
+  if (baseId(o.creature) === 'mimic') { dBase = { st: aEvoS.st, hp: aEvoS.hp }; notes.push('【擬態】ミミックが' + ac.name + 'をコピー!'); }
+
+  // --- 攻撃側AT ---
+  const carried = o.dmg || 0;
+  const atkEvolved = aEvo || /_f$/.test(b.atkCreature);
+  const atkWeaponMastery = weaponMasteryBonus(b.atkCreature, atkEvolved, aEff);
+  const defWeaponMastery = weaponMasteryBonus(o.creature, defEvolved, dEff);
+  let st = aBase.st + (aEff ? aEff.st : 0) + atkWeaponMastery;
+  const atkSoul = baseId(b.atkCreature) === 'alter' ? (atk.exile || []).length * 5 : 0;
+  const defSoul = baseId(o.creature) === 'alter' ? (def.exile || []).length * 5 : 0;
+  const atkEarthChain = baseId(b.atkCreature) === 'komao' && atkEvolved
+    ? chainCount(r, atk.id, 'earth') * 5 : 0;
+  const defEarthChain = baseId(o.creature) === 'komao' && defEvolved
+    ? chainCount(r, def.id, 'earth') * 5 : 0;
+  const atkEarthLand = earthLandBattleBonus(r, atk.id);
+  const defEarthLand = earthLandBattleBonus(r, def.id);
+  const atkEarthAtBonus = baseId(b.atkCreature) === 'emeri' ? atkEarthLand.bonus : 0;
+  const defEarthAtBonus = baseId(o.creature) === 'emeri' ? defEarthLand.bonus : 0;
+  const atkEarthDfBonus = baseId(b.atkCreature) === 'valk' ? atkEarthLand.bonus : 0;
+  const defEarthDfBonus = baseId(o.creature) === 'valk' ? defEarthLand.bonus : 0;
+  if (atkSoul) notes.push(`【魂喰らい】廃棄${atk.exile.length}枚で侵略側DF+${atkSoul}!`);
+  if (defSoul) notes.push(`【魂喰らい】廃棄${def.exile.length}枚で防衛側DF+${defSoul}!`);
+  if (atkEarthChain) notes.push(`【獅子地脈】土領地${atkEarthChain / 5}つで侵略側DF+${atkEarthChain}!`);
+  if (defEarthChain) notes.push(`【獅子地脈】土領地${defEarthChain / 5}つで防衛側DF+${defEarthChain}!`);
+  if (atkEarthAtBonus) notes.push(`【地脈駆動】所有する土領地${atkEarthLand.lands}つで侵略側AT+${atkEarthAtBonus}!`);
+  if (defEarthAtBonus) notes.push(`【地脈駆動】所有する土領地${defEarthLand.lands}つで防衛側AT+${defEarthAtBonus}!`);
+  if (atkEarthDfBonus) notes.push(`【守護ビット】所有する土領地${atkEarthLand.lands}つで侵略側DF+${atkEarthDfBonus}!`);
+  if (defEarthDfBonus) notes.push(`【守護ビット】所有する土領地${defEarthLand.lands}つで防衛側DF+${defEarthDfBonus}!`);
+  if (atkWeaponMastery) notes.push(`【武装熟練】侵略側の攻撃ウェポンAT補正をさらに+${atkWeaponMastery}!`);
+  if (defWeaponMastery) notes.push(`【武装熟練】防衛側の攻撃ウェポンAT補正をさらに+${defWeaponMastery}!`);
+  if (baseId(b.atkCreature) === 'grayble' && carried > 0) {
+    const chase = atkEvolved ? 20 : 10;
+    st += chase;
+    notes.push(`【追撃】負傷した相手へAT+${chase}!`);
+  }
+  if (baseId(b.atkCreature) === 'gecko') { st += 10; notes.push('【猛攻】AT+10!'); }
+  if (baseId(b.atkCreature) === 'detropas') {
+    const fires = r.owners.reduce((n, oo, i) => n + (oo && oo.player === atk.id && tileElem(r, i) === 'fire' ? 1 : 0), 0);
+    if (fires) { st += fires * 10; notes.push(`【群れ】火の領地${fires}つでAT+${fires * 10}!`); }
+  }
+  // スペル継続効果(プレイヤー→土地の順、最後に最低0へ補正)
+  const bFx = r.tileFx[b.tile] || {};
+  if (atk.blade) { st += 10; notes.push('血染めの刃が侵略者のATを10高めた!'); }
+  if (bFx.vortex) { st += 10; notes.push('炎の渦が侵略者を後押し!(AT+10)'); }
+  st += atkEarthAtBonus;
+  st = Math.max(0, st);
+
+  // --- 防衛側HP(地形・女王・呪い) ---
+  const tElem = tileElem(r, b.tile);
+  const terrainUi = terrainBreakdown(r, b.tile, b.atkCreature);
+  let terrain = terrainUi.appliedBonus;
+  if (terrainUi.affinity === 'universal' && dc.elem !== tElem)
+    notes.push('【地脈適応】属性を問わず地形補正を獲得!');
+  if (terrainUi.abilityBonus) notes.push(`【岩壁】地形補正+${terrainUi.abilityBonus}!`);
+  if (terrainUi.nullifiedBy === 'garble') notes.push('【風刃】地形補正を無視!');
+  let queenBonus = 0;
+  if (tElem === 'fire') for (const no of r.owners)
+    if (no && no.player === def.id && baseId(no.creature) === 'qbaby')
+      queenBonus = Math.max(queenBonus, isEvolved(no) ? 20 : 10);  // 威光は重複しない(最大のみ)
+  if (queenBonus) notes.push(`【女王の威光】防衛DF+${queenBonus}!`);
+  const curse = (r.curses[b.tile] && baseId(o.creature) !== 'beruf') ? r.curses[b.tile].hp : 0;
+  const hp = dBase.hp + terrain + queenBonus + (dEff ? dEff.hp : 0) - curse;
+
+  // ウェポンは勝敗問わず消費
+  for (const [pid, sc] of Object.entries(b.supports)) consumeBattleSupport(r, pid, sc);
+
+  // ===== v0.47 戦闘: AT / HP / DF モデル =====
+  // DF(防御) = 地形補正+女王+支援HP。ダメージ = AT − DF(最低0)。負傷は軽減後の実ダメージだけ蓄積
+  if (carried) notes.push(`負傷を引き継いでいる(−${carried})`);
+  const upliftDF = bFx.uplift ? 10 : 0;
+  if (upliftDF) notes.push('リストアが大地を固める!(防衛DF+10)');
+  const boneArmor = baseId(o.creature) === 'bonerex' ? (defEvolved ? 20 : 10) : 0;
+  if (boneArmor) notes.push(`【骨鎧】防衛DF+${boneArmor}!`);
+  const corrosion = baseId(b.atkCreature) === 'morbill' ? (atkEvolved ? 20 : 10) : 0;
+  const iceWard = o.iceWard ? 10 : 0;
+  if (iceWard) notes.push('【氷晶の勅令】防衛DF+10!');
+  const shadeDF = baseId(o.creature) === 'beruf' ? (o.shade || 0) * 10 : 0;
+  if (shadeDF) notes.push(`【死影】蓄えた影が防衛DFを${shadeDF}高める!`);
+  let defDF = terrain + queenBonus + (dEff ? dEff.hp : 0) + upliftDF + boneArmor + iceWard + shadeDF + defSoul + defEarthChain + defEarthDfBonus;
+  if (corrosion) {
+    const reduced = Math.min(defDF, corrosion);
+    defDF = Math.max(0, defDF - corrosion);
+    notes.push(`【腐蝕】相手の防衛DFを${reduced}溶かした!`);
+  }
+  const effHp = Math.max(1, dBase.hp - curse - carried);   // 現在HP(呪いは一時的な減少)
+  const atkDmg = st;                                        // AT = 基礎AT+固有+効果+支援
+  const atkShadeDF = baseId(b.atkCreature) === 'beruf'
+    ? ((mvSrc && mvSrc.shade) || b.atkShade || 0) * 10 : 0;
+  if (atkShadeDF) notes.push(`【死影】蓄えた影が侵略側DFを${atkShadeDF}高める!`);
+  const atkDF = (aEff ? aEff.hp : 0) + atkShadeDF + atkSoul + atkEarthChain + atkEarthDfBonus;
+  const atkCarried = mvSrc ? (mvSrc.dmg || 0) : (corridor ? (b.atkCarry || 0) : 0);
+  const atkEffHp = Math.max(1, aBase.hp - atkCarried);
+  const defSt = dBase.st + (dEff ? dEff.st : 0) + defWeaponMastery + defEarthAtBonus;
+
+  // ===== v0.57 戦闘シーケンス: 戦闘耐久値 = 現在HP + DF =====
+  const hits = baseId(b.atkCreature) === 'avalanche' ? 2 : 1;      // 【双撃】侵略時のみ2回
+  if (hits === 2) notes.push('【双撃】同じATで2回続けて攻撃!');
+  const preempt = baseId(o.creature) === 'pakawata';               // 【先制】防衛側が先に攻撃
+  if (preempt) notes.push('【先制】パカワタは侵略側より先に攻撃する!');
+  let atkPool = atkEffHp + atkDF, defPool = effHp + defDF;
+  let hitsDone = 0, win = false, atkSurvived = true, counterSt = 0, counterDealt = 0;
+  if (preempt) {
+    counterSt = defSt;
+    atkPool -= counterSt;
+    counterDealt = Math.max(0, counterSt - atkDF);
+    atkSurvived = atkPool > 0;
+  }
+  if (atkSurvived) {
+    defPool -= atkDmg; hitsDone = 1;
+    if (defPool > 0 && hits === 2) { defPool -= atkDmg; hitsDone = 2; }
+    win = defPool <= 0;
+  }
+  const dealt = Math.max(0, hitsDone * atkDmg - defDF);            // DFを超えてHPへ到達した合計
+  if (!win && !preempt && atkSurvived) {                           // 通常の反撃(先制は反撃の代わり)
+    counterSt = defSt;
+    counterDealt = Math.max(0, counterSt - atkDF);
+    atkSurvived = counterDealt < atkEffHp;
+  }
+
+  const battleResultUi = { win, atkSurvived, atkSupport: aSup, defSupport: dSup, attacker: atk.id };
+  r.lastBattle = { battleKey: b.startedAt || null, tile: b.tile, attacker: atk.id, defender: def.id,
+    terrainElem: tileElem(r, b.tile),
+    atkCreature: b.atkCreature, defCreature: o.creature,
+    defLevel: o.level,
+    atkSupport: aSup, defSupport: dSup,
+    st: atkDmg, hp: effHp, df: defDF, dealt,
+    atkBaseAt: aBase.st, atkBaseHp: atkEffHp,
+    defBaseAt: dBase.st, defBaseHp: effHp, defSt,
+    atkHp: atkEffHp, atkDf: atkDF, counterSt, counterDealt, atkSurvived,
+    atkPreAt: atkDmg - (aEff ? aEff.st : 0) - atkWeaponMastery, atkPostAt: atkDmg,
+    atkPreHp: atkEffHp, atkPostHp: atkEffHp,
+    atkPreDf: atkSoul + atkShadeDF + atkEarthChain + atkEarthDfBonus, atkPostDf: atkDF,
+    defPreAt: defSt - (dEff ? dEff.st : 0) - defWeaponMastery, defPostAt: defSt,
+    defPreHp: effHp, defPostHp: effHp,
+    defPreDf: Math.max(0, defDF - (dEff ? dEff.hp : 0)), defPostDf: defDF,
+    atkExileCount: (atk.exile || []).length, defExileCount: (def.exile || []).length,
+    // v1.28: 旧フィールド名は保存・旧UI互換のため残し、値はDF補正として扱う。
+    atkSoulBonus: atkSoul, defSoulBonus: defSoul,
+    atkSoulDfBonus: atkSoul, defSoulDfBonus: defSoul,
+    atkEarthChainBonus: atkEarthChain, defEarthChainBonus: defEarthChain,
+    atkEarthLandCount: atkEarthLand.lands, defEarthLandCount: defEarthLand.lands,
+    atkEarthAtBonus, defEarthAtBonus, atkEarthDfBonus, defEarthDfBonus,
+    atkWeaponMastery, defWeaponMastery,
+    hits: hitsDone, preempt,
+    moveFrom: b.moveFrom,
+    remainHp: win ? 0 : effHp - dealt,
+    terrain, terrainBreakdown: terrainUi,
+    effectStates: battleEffectStates(r, b, battleResultUi),
+    curse, notes, win, at: stamp(r) };
+  log(r, `⚔ ${atk.name}の${ac.name}(AT${atkDmg}${hitsDone === 2 ? '×2回' : ''}) vs ${def.name}の${dc.name}(HP${effHp}/DF${defDF}) → 実ダメージ${dealt}`);
+  for (const n of notes) log(r, n);
+  if (iceWard) delete o.iceWard;
+
+  if (win) {
+    // 一撃で削り切った → 侵略成功
+    if (mvSrc) {
+      r.owners[b.moveFrom] = null;  // 元の土地は空き地に(クリーチャーは移動)
+    } else if (!corridor) {
+      atk.hand.splice(atk.hand.indexOf(b.atkCreature), 1);
+    }
+    if (baseId(o.creature) === 'gaston') {
+      def.hand.push(o.creature);
+      log(r, `【旋風】${def.name}のガストンは風に乗って帰還した`);
+    } else {
+      def.discard.push(o.creature);
+    }
+    r.owners[b.tile] = (mvSrc || corridor)
+      ? Object.assign({ player: atk.id, level: o.level, creature: b.atkCreature, dmg: atkCarried,
+          shade: (mvSrc && mvSrc.shade) || b.atkShade || 0 },
+          mvSrc && Number.isInteger(mvSrc.abyssMarkTarget) ? { abyssMarkTarget: mvSrc.abyssMarkTarget } : null)  // 移動侵略は負傷・死影・深淵標を維持
+      : { player: atk.id, level: o.level, creature: b.atkCreature };  // 手札からの占領は全快
+    atk.battleWins++;
+    log(r, `${ac.name}の${hitsDone === 2 ? '連撃' : '一撃'}(実ダメージ${dealt})が${dc.name}を討ち取った! Lv${o.level}の土地を奪取!`);
+    if (baseId(b.atkCreature) === 'zati') {
+      const got = payTo(r, def, atk, 50);
+      if (got) log(r, `【略奪】ザーティーが${def.name}から${got}Gを奪った!`);
+    }
+  } else {
+    // 防衛成功(削られたHPは土地に引き継ぐ)+反撃
+    o.dmg = carried + dealt;
+    if (baseId(o.creature) === 'goagoa' && o.dmg > 0) {
+      const beforeHeal = o.dmg;
+      o.dmg = Math.max(0, o.dmg - 10);
+      recordHeal(r, def, 'goagoa', [{ tile:b.tile, amount:beforeHeal - o.dmg, creature:o.creature }]);
+      log(r, `【深海】${dc.name}は深き水に癒される(負傷-10 → ${o.dmg})`);
+    }
+    log(r, `${dc.name}は${dealt}のダメージに耐えた!(残HP${effHp - dealt})${atkDmg > dealt ? ` ─ DFが${atkDmg - dealt}軽減` : ''}`);
+    if (!atkSurvived) {
+      if (baseId(b.atkCreature) === 'gaston') {
+        if (mvSrc) r.owners[b.moveFrom] = null;
+        if (mvSrc || corridor) atk.hand.push(b.atkCreature);
+        log(r, `【旋風】反撃を受けたガストンは風に乗って手札へ帰還した`);
+      } else if (corridor) {
+        atk.discard.push(b.atkCreature);
+        log(r, `${dc.name}の反撃(実ダメージ${counterDealt})が${ac.name}を討ち取った!`);
+      } else if (mvSrc) {
+        r.owners[b.moveFrom] = null;  // 移動侵略で討たれた: 元の土地ごと失う
+        atk.discard.push(b.atkCreature);
+        log(r, `${dc.name}の反撃(実ダメージ${counterDealt})が${ac.name}を討ち取った! 元の土地も空き地に…`);
+      } else {
+        atk.hand.splice(atk.hand.indexOf(b.atkCreature), 1);
+        atk.discard.push(b.atkCreature);
+        log(r, `${dc.name}の反撃(実ダメージ${counterDealt})が${ac.name}を討ち取った!`);
+      }
+    } else if (corridor) {
+      atk.hand.push(b.atkCreature);  // 風の回廊: 生き残れば全快して手札へ
+      log(r, `${ac.name}は反撃(実ダメージ${counterDealt})を耐え、全快して手札へ戻った`);
+    } else if (mvSrc) {
+      mvSrc.dmg = atkCarried + counterDealt;  // 削られた状態で元のマスへ戻る
+      log(r, `${ac.name}は反撃(実ダメージ${counterDealt})を受けつつ元の土地へ戻った(負傷${mvSrc.dmg})`);
+    } else {
+      log(r, `${ac.name}は反撃(実ダメージ${counterDealt})を耐えて帰還した(HPは全快する)`);
+    }
+    if (!mvSrc && !corridor) {
+      const toll = tollOf(r, b.tile);
+      payTo(r, atk, def, toll);
+      log(r, `${def.name}が防衛成功! 通行料${toll}Gも支払わせた`);
+    } else {
+      log(r, `${def.name}が防衛成功!(移動系スペルによる侵略のため通行料なし)`);
+    }
+    def.battleWins++;
+    if (baseId(o.creature) === 'barbaro') {
+      const extra = payTo(r, atk, def, defEvolved ? 50 : 30);
+      if (extra) log(r, `【逆鱗】バーグランダの怒りで追加${extra}Gを支払った!`);
+    }
+  }
+  // --- スペル継続効果の後処理 ---
+  if (win && atk.blade) {
+    const got = payTo(r, def, atk, 30);
+    log(r, `血染めの刃が輝く ─ ${atk.name}は${def.name}から${got}Gを奪った!`);
+  }
+  atk.blade = false;                                  // 侵略したら成否問わず解除
+  const endFx = r.tileFx[b.tile];
+  if (endFx) { delete endFx.vortex; delete endFx.uplift; }  // 戦闘終了で解除
+  r.battle = null;
+  // v0.74: 戦勝報酬は共通山札から3枚ドラフト(勝者=攻守どちらでも)。
+  // ドラフト完了後にsettleAll→endTurnへ続く(進行を直列化し、r.draftの競合を防ぐ)
+  const bWinner = win ? atk : def;
+  r.battleAfter = { winner: bWinner.id, attacker: atk.id, defender: def.id, tile: b.tile,
+    invasionWon: !!win, mermaidDone: false, recoveryDone: false };
+  if (win && onCreatureSummoned(r, atk, b.atkCreature, 'battle', b.tile)) {
+    Object.assign(r.pending[atk.id], { battleWinner: bWinner.id });
+    return;
+  }
+  return continuePostBattle(r);
+}

@@ -24,7 +24,7 @@ function game() {
   return r;
 }
 
-eq(G.VERSION, '1.58', 'server version');
+eq(G.VERSION, '1.59', 'server version');
 eq([G.CREATURES.wakatama.name, G.CREATURES.wakatama.evo, G.CREATURES.wakatama.elem,
   G.CREATURES.wakatama.rarity, G.CREATURES.wakatama.cost, G.CREATURES.wakatama.st,
   G.CREATURES.wakatama.hp, G.CREATURES.wakatama.evoSt, G.CREATURES.wakatama.evoHp],

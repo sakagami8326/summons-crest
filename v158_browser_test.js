@@ -13,6 +13,7 @@ const out=path.join(__dirname,'output','v158');fs.mkdirSync(out,{recursive:true}
   const title=await browser.newPage({viewport:{width:1280,height:720}});observe(title);
   await title.goto(base+'/play');await title.locator('#titleCreate').click();
   await title.locator('[data-map="twin_gate_cavern"]').click();
+  assert.match(await title.locator('[data-map="twin_gate_cavern"]').innerText(),/中央は各属性4マス・祠1、外周は各属性5マス・祠3・店2/);
   await title.screenshot({path:path.join(out,'map-selection.png')});
   await title.locator('#mapSelectCreate').click();await title.waitForFunction(()=>state?.mapId==='twin_gate_cavern');
   assert.match(await title.locator('#joined').innerText(),/双門の洞窟/);
@@ -30,9 +31,11 @@ const out=path.join(__dirname,'output','v158');fs.mkdirSync(out,{recursive:true}
   const board=await browser.newPage({viewport:{width:1280,height:720}});observe(board);await board.goto(base+'/play');
   await board.evaluate(({code,token})=>{document.getElementById('titleOv').classList.remove('on');enterRoom(code,'',token);},{code:cave.code,token:cave.boardToken});
   await board.waitForFunction(()=>state?.mapId==='twin_gate_cavern'&&PW.isReady());
+  assert.deepEqual(await board.evaluate(()=>state.tiles.flatMap((t,i)=>t.t==='shrine'?[i]:[])),[3,8,26,30],'TV uses relocated shrines');
   const phone=await browser.newPage({viewport:{width:667,height:375}});observe(phone);
   await phone.addInitScript(({room,pid})=>localStorage.setItem('sc_session',JSON.stringify({room,pid})),{room:cave.code,pid:actor.id});
   await phone.goto(base+'/phone');await phone.locator('#routeConfirm').waitFor({state:'visible'});
+  assert.deepEqual(await phone.evaluate(()=>state.tiles.flatMap((t,i)=>t.t==='shrine'?[i]:[])),[3,8,26,30],'phone uses same shrine layout');
   assert.equal(await phone.locator('[data-route]').count(),3);assert.equal(await phone.locator('#routeConfirm').isDisabled(),true);
   await phone.locator('[data-route="route:28"]').click();
   await board.waitForFunction(()=>state?.routePreview?.optionId==='route:28');
@@ -69,12 +72,14 @@ const out=path.join(__dirname,'output','v158');fs.mkdirSync(out,{recursive:true}
   await phone.setViewportSize({width:667,height:375});
   await phone.evaluate(()=>{renderMapView();});await phone.screenshot({path:path.join(out,'phone-territory.png')});
   assert.equal(await phone.locator('#miniMap .mmT').count(),33,'territory mini map includes central tiles');
+  assert.deepEqual(await phone.locator('#miniMap .mmT').evaluateAll(nodes=>nodes.filter(n=>n.textContent.includes('祠')).map(n=>[n.style.gridColumn,n.style.gridRow])),[['4','1'],['7','3'],['1','3'],['4','5']],'mini-map shrine coordinates');
   const dom=await browser.newPage({viewport:{width:1280,height:720}});observe(dom);
   // Exercise the retained DOM renderer without exposing a production renderer switch.
   await dom.route('**/play?render=dom',async route=>{const res=await route.fetch();let html=await res.text();html=html.replace("const renderModeActive = 'phaser';","const renderModeActive = 'dom';").replace("$('world').style.display = 'none';","$('world').style.display = 'block'; $('phaserHost').style.display = 'none';");await route.fulfill({response:res,body:html});});
   await dom.goto(base+'/play?render=dom');await dom.evaluate(({code,token})=>{document.getElementById('titleOv').classList.remove('on');enterRoom(code,'',token);},{code:cave.code,token:cave.boardToken});
   await dom.waitForFunction(()=>state?.tiles.length===33);await dom.waitForTimeout(500);await dom.screenshot({path:path.join(out,'tv-dom.png')});
   assert.ok(await dom.locator('#stage img[src="/assets/e_night_jelly.png"]').count()>0,'DOM central creature drawn');
+  assert.equal(await dom.locator('#stage img[src="/assets/struct_shrine.png"]').count(),4,'DOM renders four shrines');
   await phone.emulateMedia({reducedMotion:'reduce'});await phone.setViewportSize({width:375,height:667});await phone.screenshot({path:path.join(out,'phone-portrait.png')});
   // Observe a new segment live, including ordered gate notification at its actual hop.
   const gateRoom=G.makeRoom('normal','twin_gate_cavern');
