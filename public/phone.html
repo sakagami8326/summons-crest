@@ -1036,6 +1036,9 @@
   </div></div>
   <div id="drawModal"><div id="drawTitle"></div><div id="drawCard"></div><div class="tap">タップで次へ</div></div>
 
+<link rel="stylesheet" href="/map-ui.css?v=158">
+<script src="/map-definitions.js?v=158"></script>
+<script src="/map-ui.js?v=158"></script>
 <script src="/game_timing.js"></script>
 <script src="/vendor/phaser.min.js"></script>
 <script src="/ult_fx_world.js"></script>
@@ -1148,6 +1151,7 @@ const spellArt = (c, h) => SPELL_ART.has(c)
 let es = null, lastMsgAt = 0, serverClockOffset = 0;
 function connect() {
   if (es) es.close();
+  let reconnecting=true;
   es = new EventSource('/api/events?room=' + room + '&me=' + pid);
   es.onmessage = e => {
     lastMsgAt = Date.now();
@@ -1157,12 +1161,17 @@ function connect() {
     if (handGesture && handInteractionContextKey(state) !== handInteractionContextKey(next)) {
       cancelHandGesture({ rerender:false });
     }
+    if(reconnecting&&next.mapId==='twin_gate_cavern'&&next.phase==='playing'){
+      phoneUltAt=next.lastUlt?.at||0;
+      lastDiceAt=next.lastDice?.at||0;
+    }
+    reconnecting=false;
     state = next;
     serverClockOffset = (state.serverNow || Date.now()) - Date.now();
     syncHasArt();
     render();
   };
-  es.onerror = () => { $('connBar').style.display = 'block'; };
+  es.onerror = () => { reconnecting=true; $('connBar').style.display = 'block'; };
 }
 function enterGame() {
   $('join').style.display = 'none';
@@ -1375,8 +1384,7 @@ function closePickOv() {
   }
 }
 // ===== 領地選択ミニマップ =====
-const MM_GEO = [[4,7],[3,7],[2,7],[1,7],[0,7],[0,6],[0,5],[0,4],[0,3],[0,2],[0,1],[0,0],
-  [1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],[6,7],[5,7]];
+let MM_GEO = SummonsMaps.starting_corridor.geo;
 const MM_COL = { fire:'#B0452A', water:'#2E6EB0', earth:'#B08225', wind:'#3E837C' };
 let mmSel = null;
 let mmPendingKey = '';
@@ -1434,7 +1442,32 @@ function syncMapPendingSelection(p) {
   mmPendingKey = next;
   mmSel = null;
 }
-function hideMapOv() { $('mapOv').classList.remove('on'); }
+function hideMapOv() { $('mapOv').classList.remove('on','routePicking'); }
+let routeSelected=null,routePrompt=null,routeBusy=false,routeError='',routeSequence=0;
+function renderRouteChoice(p){
+  if(routePrompt!==p.promptId){routePrompt=p.promptId;routeSelected=null;routeBusy=false;routeError='';}
+  mapView=false;
+  $('mapOv').classList.add('routePicking');
+  $('mapOvTitle').textContent=`進路選択 ─ 残り${p.remainingSteps}歩`;
+  $('mapOvMap').innerHTML=SummonsMapUI.mini(state,p,routeSelected);
+  const chosen=p.options.find(o=>o.id===routeSelected),esc=SummonsMapUI.esc;
+  $('mapOvSide').innerHTML=`<div class="routeOptions">${p.options.map(o=>`<button class="abtn routeOption" data-route="${o.id}" aria-pressed="${o.id===routeSelected}" ${routeBusy?'disabled':''}>${o.number}</button>`).join('')}</div><div class="routeDetail">${chosen?chosen.destinations.map(d=>{const owner=state.players.find(q=>q.id===d.owner);return `<div>マス${d.tile}：${esc(owner?.name||'未所有／施設')} ${d.level?'Lv'+d.level:''}　通行料 ${d.toll}G${d.forcedStop?'（深淵の錨）':''}</div>`;}).join(''):'番号をタップすると経路と到着候補を表示します。'}<small>実線：確定経路 ／ 破線：次の分岐で選べる経路</small></div><div role="status" style="color:#ffb2a4">${esc(routeError)}</div><button class="abtn" id="routeConfirm" ${!chosen||routeBusy?'disabled':''}>ここに決定</button>`;
+  $('mapOvSide').querySelectorAll('[data-route]').forEach(b=>b.onclick=async()=>{
+    routeSelected=b.dataset.route;routeError='';renderRouteChoice(p);
+    try{
+      routeSequence=Math.max(routeSequence,state.routePreview?.sequence||0)+1;
+      const res=await fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room,type:'route_preview',playerId:pid,optionId:routeSelected,turnEpoch:p.turnEpoch,promptId:p.promptId,sequence:routeSequence})});
+      if(!res.ok)throw new Error('プレビューを同期できませんでした。再選択できます。');
+    }catch(e){if(pend()?.promptId===p.promptId){routeError=e.message;renderRouteChoice(pend());}}
+  });
+  $('routeConfirm').onclick=async()=>{
+    if(routeBusy||!routeSelected)return;routeBusy=true;renderRouteChoice(p);
+    try{const res=await choose(routeSelected);if(!res?.ok)throw new Error('確定できませんでした。もう一度選択してください。');hideMapOv();}
+    catch(e){routeError=e.message;}
+    finally{routeBusy=false;if(pend()?.type==='route_choice')renderRouteChoice(pend());}
+  };
+  openBlockingOverlay('mapOv');
+}
 
 async function submitMapChoice(optionId) {
   if (mapChoiceLock) return;
@@ -2644,11 +2677,14 @@ function setContextActions(title, options) {
 
 function render() {
   if (!state) return;
+  MM_GEO = SummonsMapUI.get(state).geo;
+  document.body.dataset.mapId = SummonsMapUI.get(state).id;
   if (state.lastUlt && state.lastUlt.at !== phoneUltAt) playPhoneUlt(state.lastUlt);
   const m = me(), C = state.catalog, p = pend();
   $('msg').textContent = p ? taskPrompt(p) : waitingTaskPrompt();
   const lobbyWaiting = state.phase === 'lobby';
   $('lobbyWait').classList.toggle('on', lobbyWaiting);
+  $('lobbyWait').querySelector('.lwTitle').textContent = SummonsMapUI.get(state).name + ' ─ ゲームの開始を待っています。';
   if (document.body && document.body.classList) document.body.classList.toggle('lobby-wait', lobbyWaiting);
   const showGui = !!m.charId && (state.phase === 'playing' || state.phase === 'ended');
   document.querySelector('.me').style.display = showGui ? '' : 'none';
@@ -2680,6 +2716,10 @@ function render() {
     $('myStat').dataset.h = statHtml;
     $('myStat').innerHTML = statHtml;
   }
+  if(SummonsMapUI.get(state).branching){
+    const seal=$('myStat').querySelector('span[style]');
+    if(seal)seal.innerHTML=SummonsMapUI.gates(state,m);
+  }
 
   // ダイスの出目が自分のものなら着地させる
   if (rolling && state.lastDice && state.lastDice.player === pid && state.lastDice.at !== lastDiceAt) {
@@ -2689,7 +2729,7 @@ function render() {
     return;
   }
   // 方向選択待ちでダイス演出が終わっている(または来ない)場合は描画を止めない
-  if (rolling && p && p.type === 'direction' && Date.now() > settleT) rolling = false;
+  if (rolling && p && ['direction','route_choice'].includes(p.type) && Date.now() > settleT) rolling = false;
   if (rolling) return;
 
   // キャラ選択オーバーレイ
@@ -2703,7 +2743,7 @@ function render() {
     const pov = $('pickOv');
     if (pov.classList.contains('on')) { pov.classList.remove('on'); pov.dataset.k = ''; }
   }
-  const MAP_TYPES = ['curse_target','quake_target','ult_mio','ult_lia','ult_nerasio_land','move_a','move_b','swap_land','upgrade','marlow_src','marlow_dest','mermaid_heal','abyss_mark',
+  const MAP_TYPES = ['route_choice','curse_target','quake_target','ult_mio','ult_lia','ult_nerasio_land','move_a','move_b','swap_land','upgrade','marlow_src','marlow_dest','mermaid_heal','abyss_mark',
     'sell','step_a','step_b','spell_target'];
   if (!mapView && (!p || !MAP_TYPES.includes(p.type))) hideMapOv();
   const liaSelectedKey = p && (p.type === 'ult_lia' || p.type === 'ult_nerasio_land') ? `${p.type}|${(p.selected || []).join(',')}` : '';
@@ -2760,7 +2800,7 @@ function render() {
       return;
     }
     const ld = state.lastDice;
-    if (p && ['tile', 'upgrade', 'market', 'draft', 'gate', 'forge'].includes(p.type) && ld && ld.player === pid) {
+    if (p && ['tile', 'upgrade', 'market', 'draft', 'gate', 'forge'].includes(p.type) && ld && !ld.segment && ld.player === pid) {
       const speed = state.presentationSpeed === 2 && state.players.find(q => q.id === ld.player)?.isBot ? 2 : 1;
       const scale = ms => GAME_TIMING.scaled(ms, speed);
       const GT = GAME_TIMING;  // 盤面と共有の移動タイミング(直書き禁止)
@@ -2904,6 +2944,9 @@ function render() {
              p.type === 'sell' || p.type === 'step_a' || p.type === 'step_b' || p.type === 'mermaid_heal' ||
              p.type === 'spell_target') {
     renderMiniMap(p);
+  } else if (p.type === 'route_choice') {
+    A.innerHTML = '';
+    renderRouteChoice(p);
   } else if (p.type === 'direction') {
     $('diceDock').innerHTML = `<div style="font-size:max(2dvh,13px);color:var(--gold-soft)">${state.lastDice ? state.lastDice.value + ' が出た' : ''}</div>`;
     A.innerHTML = '';

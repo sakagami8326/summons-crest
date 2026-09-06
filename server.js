@@ -8,7 +8,11 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const VERSION = '1.57';
+const VERSION = '1.58';
+const MAPS = require('./public/map-definitions');
+const mapOf = r => MAPS[r.mapId || 'starting_corridor'];
+const tilesOf = r => mapOf(r).tiles;
+const isCavern = r => r.mapId === 'twin_gate_cavern';
 const GAME_TIMING = require('./public/game_timing');
 const PORT = process.env.PORT || 3000;
 const TURN_TRANSITION_TIMEOUT_MS = 20000;
@@ -73,25 +77,7 @@ function gainToDeck(r, p, cards, reason = 'gain') {
 }
 
 // ===== 盤面(28マス周回) =====
-const TILES = [
-  { t: 'castle' },
-  { t: 'land', e: 'fire' }, { t: 'land', e: 'fire' }, { t: 'land', e: 'fire' },
-  { t: 'shrine' },
-  { t: 'land', e: 'fire' }, { t: 'land', e: 'fire' }, { t: 'land', e: 'wind' },
-  { t: 'market' },
-  { t: 'land', e: 'wind' }, { t: 'land', e: 'wind' },
-  { t: 'shrine' },
-  { t: 'land', e: 'wind' }, { t: 'land', e: 'wind' }, { t: 'land', e: 'earth' },
-  { t: 'gate' },
-  { t: 'land', e: 'earth' }, { t: 'land', e: 'earth' },
-  { t: 'shrine' },
-  { t: 'land', e: 'earth' }, { t: 'land', e: 'earth' }, { t: 'land', e: 'water' },
-  { t: 'land', e: 'water' },
-  { t: 'market' },
-  { t: 'land', e: 'water' },
-  { t: 'shrine' },
-  { t: 'land', e: 'water' }, { t: 'land', e: 'water' },
-];
+const TILES = MAPS.starting_corridor.tiles; // Legacy test/API compatibility; gameplay uses tilesOf(room).
 
 // ===== カードカタログ =====
 const CREATURES = {
@@ -467,14 +453,16 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000);
 
-function makeRoom(mode = 'normal') {
+function makeRoom(mode = 'normal', mapId = 'starting_corridor') {
+  if (!Object.hasOwn(MAPS, mapId)) throw new Error('不明なマップです');
   const deck = makeDeck();
   const room = {
-    code: code4(), phase: 'lobby', clients: new Set(), players: [],
+    code: code4(), phase: 'lobby', clients: new Set(), players: [], mapId,
+    movement: null, routePreview: null,
     botMode: mode === 'bot', botTimer: null, botActionSeq: 0, presentationSpeed: 1,
     boardSeen: false, turnTransition: null, turnTransitionTimer: null,
     turnEpoch: 0, promptSeq: 0, stateRev: 0, processedActions: [],
-    owners: TILES.map(() => null),        // { player, level, creature }
+    owners: MAPS[mapId].tiles.map(() => null),        // { player, level, creature }
     deck, market: deck.splice(0, 5), shopVisit: null,
     turn: 0, round: 1, log: [],
     pending: {},                          // playerId → { type, prompt, options }
@@ -511,7 +499,7 @@ function stamp(r) { r.atSeq = Math.max(Date.now(), (r.atSeq || 0) + 1); return r
 function spellFx(r, sid, tiles, caster, extra) {
   r.lastSpellFx = Object.assign({ spell: sid, tiles, caster: caster || null, at: stamp(r) }, extra || {});
 }
-function tileElem(r, i) { return (r.elemOv && r.elemOv[i]) || TILES[i].e; }
+function tileElem(r, i) { return (r.elemOv && r.elemOv[i]) || tilesOf(r)[i].e; }
 const ELEM_OF_SPELL = { sp_volcanic_core: 'fire', sp_abyssal_pearl: 'water',
                         sp_earth_mother_stone: 'earth', sp_sky_crystal: 'wind' };
 const ELEM_JA = { fire: '火', water: '水', earth: '土', wind: '風' };
@@ -805,7 +793,7 @@ function onCreatureSummoned(r, p, creatureId, reason, tile) {
   if (!['summon', 'swap', 'battle'].includes(reason)) return false;
   if (baseId(creatureId) === 'komao' && Number.isInteger(tile)) {
     const before = tileElem(r, tile);
-    if (TILES[tile]?.e === 'earth') delete r.elemOv[tile];
+    if (tilesOf(r)[tile]?.e === 'earth') delete r.elemOv[tile];
     else r.elemOv[tile] = 'earth';
     log(r, `【地脈転成】${CREATURES.komao.name}が土地${tile}を${before === 'earth' ? '土属性に固定した' : '土属性へ変えた'}`);
   }
@@ -832,7 +820,7 @@ function onCreatureSummoned(r, p, creatureId, reason, tile) {
   if (baseId(creatureId) === 'night_jelly' && Number.isInteger(tile)) {
     reconcileAbyssMarks(r);
     const occupiedTargets = new Set(activeAbyssMarks(r).map(mark => mark.tile));
-    const opts = r.owners.map((owner, i) => owner && owner.player === p.id && TILES[i]?.t === 'land' && !occupiedTargets.has(i)
+    const opts = r.owners.map((owner, i) => owner && owner.player === p.id && tilesOf(r)[i]?.t === 'land' && !occupiedTargets.has(i)
       ? { id: `am:${i}`, tile: i,
           label: `土地${i}（${ELEM_JA[tileElem(r, i)]} Lv${owner.level}／現在${tollOf(r, i)}G）` }
       : null).filter(Boolean);
@@ -865,7 +853,7 @@ function activeAbyssMarks(r) {
     if (!source || baseId(source.creature) !== 'night_jelly' || !Number.isInteger(source.abyssMarkTarget)) return;
     const tile = source.abyssMarkTarget;
     const target = r.owners[tile];
-    if (!TILES[tile] || TILES[tile].t !== 'land' || !target || target.player !== source.player || usedTargets.has(tile)) return;
+    if (!tilesOf(r)[tile] || tilesOf(r)[tile].t !== 'land' || !target || target.player !== source.player || usedTargets.has(tile)) return;
     usedTargets.add(tile);
     marks.push({ tile, sourceTile, player: source.player, bonus: abyssMarkBonusFor(source, target) });
   });
@@ -1229,6 +1217,7 @@ function resolveUltSequence(r) {
     log(r, `❄ ${p.name}の配置クリーチャー全員を回復し氷晶の守りを与えた`);
     spellFx(r, 'ult_adel', targets.map(t => t.tile), p.id, { targets });
   } else if (seq.charId === 'mio') {
+    if (isCavern(r)) { r.ultSequence = null; return cavernTeleport(r, p, d.target); }
     p.pos = d.target;
     r.ultSequence = null;
     return resolveTile(r, p);
@@ -1260,14 +1249,14 @@ function resolveUltSequence(r) {
     const elem = d.elem;
     const targets = [...new Set((d.targets || []).map(Number))].filter(i => {
       const o = r.owners[i];
-      return i >= 0 && i < TILES.length && TILES[i].t === 'land' && o && o.player === p.id;
+      return i >= 0 && i < tilesOf(r).length && tilesOf(r)[i].t === 'land' && o && o.player === p.id;
     }).slice(0, 2);
     if (!['fire', 'water', 'earth', 'wind'].includes(elem) || !targets.length) {
       r.ultSequence = null;
       return askRoll(r, p);
     }
     for (const i of targets) {
-      if (TILES[i].e === elem) delete r.elemOv[i];
+      if (tilesOf(r)[i].e === elem) delete r.elemOv[i];
       else r.elemOv[i] = elem;
     }
     updateTitles(r);
@@ -1286,7 +1275,7 @@ function askRoll(r, p) {
       : p.charId === 'villa'
         ? (p.exile || []).length > 0
       : p.charId === 'nerasio'
-        ? r.owners.some((o, i) => o && o.player === p.id && TILES[i].t === 'land')
+        ? r.owners.some((o, i) => o && o.player === p.id && tilesOf(r)[i].t === 'land')
       : true;
   if (!p.fixedDice && !p.ultUsed && ULTS[p.charId] && ultAvailable)
     opts.push({ id: 'ult', label: `固有スキル【${ULTS[p.charId].name}】` });
@@ -1301,7 +1290,7 @@ function askRoll(r, p) {
     if (sid === 'sp_move' &&
         r.owners.filter(o => o && o.player === p.id).length < 2) continue;
     if (sid === 'sp_step' && !stepSources(r, p).length) continue;
-    if (sid === 'sp_wind_shift' && !p.dir) continue;
+    if (sid === 'sp_wind_shift' && (!p.dir || (isCavern(r) && p.previousTile == null))) continue;
     if ((sid === 'sp_volcanic_core' || sid === 'sp_abyssal_pearl' ||
          sid === 'sp_earth_mother_stone' || sid === 'sp_sky_crystal') &&
         !r.owners.some((o, i) => o && o.player === p.id && tileElem(r, i) !== ELEM_OF_SPELL[sid])) continue;
@@ -1343,7 +1332,7 @@ function ultimateStatus(r, p) {
 }
 function askNerasioUlt(r, p, selected = []) {
   const valid = new Set(r.owners.map((o, i) =>
-    o && o.player === p.id && TILES[i].t === 'land' ? i : null).filter(i => i !== null));
+    o && o.player === p.id && tilesOf(r)[i].t === 'land' ? i : null).filter(i => i !== null));
   const chosen = [...new Set(selected.map(Number))].filter(i => valid.has(i)).slice(0, 2);
   const opts = [];
   for (const i of valid) {
@@ -1360,7 +1349,7 @@ function askNerasioUlt(r, p, selected = []) {
 function askNerasioElem(r, p, targets) {
   const selected = [...new Set((targets || []).map(Number))].filter(i => {
     const o = r.owners[i];
-    return TILES[i]?.t === 'land' && o && o.player === p.id;
+    return tilesOf(r)[i]?.t === 'land' && o && o.player === p.id;
   }).slice(0, 2);
   if (!selected.length) return askRoll(r, p);
   ask(r, p.id, 'ult_nerasio_elem', '🌐【天地転成】変更後の属性を選択',
@@ -1555,7 +1544,171 @@ function endTurn(r) {
 }
 
 const GATE_TILE = TILES.findIndex(t => t.t === 'gate');
+// A movement is committed one segment at a time. Choices never reroll or replay rewards.
+function cavernNeighbors(r, p) {
+  const ns = mapOf(r).neighbors[p.pos];
+  return p.reverseNext && ns.includes(p.previousTile) ? [p.previousTile] : ns.filter(i => i !== p.previousTile);
+}
+function cavernAnchor(r, p, tile) {
+  const o = r.owners[tile];
+  return o && o.player !== p.id && baseId(o.creature) === 'mist_jelly';
+}
+function cavernRouteProjection(r, p, next, steps) {
+  const endpoints = new Map(), edges = new Map(), seen = new Set();
+  const map=mapOf(r), initialAssets=points(r,p);
+  const landTotal=r.owners.reduce((n,o,i)=>n+(o&&o.player===p.id?landValue(r,i):0),0);
+  const recoveryGold=r.owners.some(o=>o&&o.player===p.id&&baseId(o.creature)==='wakatama');
+  const initialMask=map.gates.reduce((mask,tile,i)=>mask|((p.gatesVisited||[]).includes(tile)?1<<i:0),0);
+  const project=(tile,left,prior)=>{
+    const st={...prior};const gi=map.gates.indexOf(tile);
+    if(gi>=0 && !(st.mask&(1<<gi))){st.mask|=1<<gi;st.assets+=map.gateBonus;}
+    if(tile===map.castle && st.mask===3){
+      st.mask=0;st.laps++;
+      st.assets+=castleLapBonus((p.lap||1)-1+st.laps)+castleLandBonus(landTotal);
+      if(recoveryGold)st.assets+=r.owners.reduce((sum,o)=>sum+(o&&o.player===p.id?Math.min(10,Math.max(0,(o.dmg||0)-(st.laps-1)*10)):0),0);
+      st.victory=st.assets>=ASSET_GOAL;
+    }
+    st.forcedStop=left>0&&!!cavernAnchor(r,p,tile);
+    st.stop=!left||st.forcedStop||st.victory;
+    return st;
+  };
+  const initial={mask:initialMask,laps:0,assets:initialAssets,victory:false};
+  const visit = (from, tile, remaining, prior) => {
+    edges.set(`${from}:${tile}`, [from,tile]);
+    const st=project(tile,remaining,prior);
+    const key = `${from}:${tile}:${remaining}:${st.mask}:${st.laps}:${st.assets}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    if(st.stop){const old=endpoints.get(tile);endpoints.set(tile,{forcedStop:st.forcedStop||!!old?.forcedStop,victory:st.victory||!!old?.victory});return;}
+    map.neighbors[tile].filter(n=>n!==from).forEach(n=>visit(tile,n,remaining-1,st));
+  };
+  visit(p.pos,next,steps-1,initial);
+  const prefix = [p.pos,next];
+  let prev=p.pos, at=next, left=steps-1, projected=project(next,steps-1,initial);
+  while(!projected.stop) {
+    const ns=map.neighbors[at].filter(n=>n!==prev);
+    if(ns.length!==1) break;
+    [prev,at]=[at,ns[0]]; prefix.push(at); left--;
+    projected=project(at,left,projected);
+  }
+  return { prefix, edges:[...edges.values()], destinations:[...endpoints.keys()].sort((a,b)=>a-b).map(tile=>({tile,
+    owner:r.owners[tile]?.player || null, level:r.owners[tile]?.level || null,
+    toll:r.owners[tile]?tollOf(r,tile):0, elem:tileElem(r,tile), type:tilesOf(r)[tile].t,
+    ...endpoints.get(tile)})) };
+}
+function askCavernRoute(r,p) {
+  const m=r.movement;
+  const options=cavernNeighbors(r,p).map((tile,i)=>({id:`route:${tile}`,tile,number:i+1,
+    label:`${i+1}方向へ進む`,...cavernRouteProjection(r,p,tile,m.remaining)}));
+  r.routePreview=null;
+  ask(r,p.id,'route_choice',`${p.name}の進路選択 ─ 残り${m.remaining}歩`,options);
+  Object.assign(r.pending[p.id],{remainingSteps:m.remaining,availableAt:r.lastDice?.segment?.availableAt || Date.now()});
+}
+function publishCavernSegment(r,p,path,events,initial=false) {
+  const m=r.movement;
+  const delay=initial && !m.meta.suppressPresentation ? presentationMs(r,p.id,m.meta.multi?GAME_TIMING.moveStartDelayMulti:GAME_TIMING.moveStartDelay):0;
+  const startAt=Date.now()+delay;
+  r.lastDice=Object.assign({},m.meta,{at:m.at,player:p.id,movementId:m.id,resolvedSteps:m.resolved,
+    segment:{id:`${m.id}:${++m.segmentSeq}`,from:m.segmentFrom,path,events,startAt,
+      availableAt:startAt+path.length*presentationMs(r,p.id,GAME_TIMING.stepMs)}});
+  m.segmentFrom=p.pos;
+  return r.lastDice.segment;
+}
+function cavernGate(r,p,events,step=0) {
+  const map=mapOf(r);
+  if(!map.gates.includes(p.pos)) return;
+  p.gatesVisited=p.gatesVisited || [];
+  if(p.gatesVisited.includes(p.pos)) return;
+  p.gatesVisited.push(p.pos); p.gold+=map.gateBonus;
+  p.seal=map.gates.every(i=>p.gatesVisited.includes(i));
+  const ev={type:'gate',tile:p.pos,gold:map.gateBonus,step}; events.push(ev);
+  r.lastSeal={player:p.id,tile:p.pos,gold:map.gateBonus,at:stamp(r)};
+  log(r,`❖ ${p.name}は${p.pos===22?'西門':'東門'}を通過 ─ +100G (${p.gatesVisited.length}/2)`);
+}
+function cavernCastle(r,p) {
+  const m=r.movement, seg=r.lastDice.segment;
+  const usedSeal=mapOf(r).gates.every(i=>(p.gatesVisited||[]).includes(i));
+  if(!usedSeal) { log(r,`${p.name}は城へ帰還 ─ 両門未通過のため周回未成立`); return false; }
+  p.lap=(p.lap||1)+1; p.gatesVisited=[]; p.seal=false;
+  const completedLaps=p.lap-1, bonus=castleLapBonus(completedLaps);
+  const lands=r.owners.reduce((n,o,i)=>n+(o&&o.player===p.id?landValue(r,i):0),0), lb=castleLandBonus(lands);
+  markMatchCause(r,'castle',{actor:p.id,amount:bonus+lb}); p.gold+=bonus+lb;
+  const healed=[];
+  r.owners.forEach((o,i)=>{if(o&&o.player===p.id&&o.dmg>0){const before=o.dmg;o.dmg=Math.max(0,before-10);healed.push({tile:i,creature:cardName(o.creature),before,after:o.dmg,amount:before-o.dmg});}});
+  const availableAt=seg.availableAt+presentationMs(r,p.id,GAME_TIMING.castleZoom+GAME_TIMING.castleBreakdown);
+  seg.events.push({type:'castle',tile:p.pos,gold:bonus+lb}); seg.availableAt=availableAt;
+  r.lastDice.castle={usedSeal:true,completedLaps,bonusPerLap:100,baseBonus:bonus,gold:bonus,landValue:lands,
+    landRate:CASTLE_LAND_RATE,landBonus:lb,total:bonus+lb,drew:1,healed,castleStep:seg.path.length,availableAt};
+  if(healed.length) recordHeal(r,p,'castle',healed.map(h=>({tile:h.tile,amount:h.amount,creature:r.owners[h.tile].creature})),{availableAt});
+  log(r,`${p.name}は第${completedLaps}周を完了 ─ 城帰還 +${bonus}G＋領地ボーナス${lb}G`);
+  if(points(r,p)>=ASSET_GOAL){r.movement=null;r.routePreview=null;declareWin(r,p,`総資産${points(r,p)}Gで城に凱旋!`);return true;}
+  m.resume='castle';
+  startDraft(r,p,'cavern_move',availableAt);
+  return true;
+}
+function finishCavernMove(r,p) {
+  const m=r.movement, wait=r.lastDice.segment.availableAt+presentationMs(r,p.id,GAME_TIMING.arriveBuf);
+  r.movement=null; r.routePreview=null;
+  r.turnReadyAt=Math.max(r.turnReadyAt||0,wait);
+  if(m.meta.villaUlt) return startVillaRecovery(r,p,wait);
+  resolveTile(r,p);
+  if(r.pending[p.id]) r.pending[p.id].availableAt=Math.max(r.pending[p.id].availableAt||0,wait);
+}
+function advanceCavernMove(r,p,next=null,initial=false) {
+  const m=r.movement;
+  if(!m||m.player!==p.id) return;
+  m.resume=null; r.routePreview=null;
+  if(!m.remaining) return finishCavernMove(r,p);
+  const path=[],events=[];
+  while(m.remaining>0) {
+    const choices=cavernNeighbors(r,p);
+    if(next===null && choices.length>1){
+      if(path.length||initial) publishCavernSegment(r,p,path,events,initial);
+      return askCavernRoute(r,p);
+    }
+    const target=next===null?choices[0]:next;
+    if(!choices.includes(target)) return askCavernRoute(r,p);
+    next=null; p.previousTile=p.pos;p.pos=target;p.reverseNext=false;p.dir=1;
+    path.push(target);m.remaining--;m.resolved++;
+    cavernGate(r,p,events,path.length);
+    if(m.remaining>0 && cavernAnchor(r,p,target)) {
+      const seg=publishCavernSegment(r,p,path,events,initial);
+      seg.availableAt+=presentationMs(r,p.id,GAME_TIMING.anchorStop);
+      r.lastDice.forcedStop={tile:target,owner:r.owners[target].player,creature:r.owners[target].creature,
+        rolledSteps:m.steps,resolvedSteps:m.resolved,remainingSteps:m.remaining,availableAt:seg.availableAt};
+      seg.events.push({type:'anchor',tile:target});
+      r.lastEvent={type:'abyss_anchor',player:p.id,owner:r.owners[target].player,tile:target,creature:r.owners[target].creature,at:stamp(r)};
+      log(r,`【深淵の錨】${p.name}は土地${target}で強制停止した`);
+      m.remaining=0;return finishCavernMove(r,p);
+    }
+    if(target===mapOf(r).castle) {
+      if(mapOf(r).gates.every(i=>(p.gatesVisited||[]).includes(i))) {
+        publishCavernSegment(r,p,path,events,initial);
+        if(cavernCastle(r,p)) return;
+      } else log(r,`${p.name}は城へ帰還 ─ 両門未通過のため周回未成立`);
+    }
+  }
+  publishCavernSegment(r,p,path,events,initial);
+  return finishCavernMove(r,p);
+}
+function beginCavernMove(r,p,steps,meta={},moveLabel='') {
+  if(!Number.isInteger(steps)||steps<1||steps>300) throw new Error('移動歩数が不正です');
+  const at=stamp(r);
+  r.movement={id:`move-${at}`,at,player:p.id,steps,remaining:steps,resolved:0,meta:{...meta},segmentSeq:0,segmentFrom:p.pos,resume:null};
+  log(r,`${p.name}は${moveLabel}`);
+  return advanceCavernMove(r,p,null,true);
+}
+function cavernTeleport(r,p,target) {
+  if(!Number.isInteger(target)||!tilesOf(r)[target]) return askRoll(r,p);
+  p.pos=target;p.previousTile=null;p.reverseNext=false;p.dir=0;
+  const at=stamp(r);
+  r.movement={id:`teleport-${at}`,at,player:p.id,steps:0,remaining:0,resolved:0,meta:{suppressPresentation:true,teleport:true},segmentSeq:0,segmentFrom:target,resume:null};
+  const events=[];cavernGate(r,p,events);publishCavernSegment(r,p,[],events);
+  if(target===mapOf(r).castle&&cavernCastle(r,p)) return;
+  return finishCavernMove(r,p);
+}
 function performMove(r, p, steps, meta, moveLabel) {
+  if (isCavern(r)) return beginCavernMove(r, p, steps, meta, moveLabel);
   // 初回の移動時: ダイスの後に進行方向を選ぶ(矢印UI)
   if (!p.dir) {
     const at = stamp(r);
@@ -1573,7 +1726,7 @@ function performMove(r, p, steps, meta, moveLabel) {
   let movedSteps = 0, forcedStop = null;
   let completedLaps = Math.max(0, (p.lap || 1) - 1);
   for (let s2 = 0; s2 < steps; s2++) {
-    p.pos = (p.pos + dir + TILES.length) % TILES.length;
+    p.pos = (p.pos + dir + tilesOf(r).length) % tilesOf(r).length;
     movedSteps = s2 + 1;
     if (p.pos === GATE_TILE && !p.seal) { p.seal = true; gotSeal = true; }
     if (p.pos === 0) {
@@ -1680,7 +1833,7 @@ function doRoll(r, p) {
   performMove(r, p, dice, { value: dice }, `${dice}を出した`);
 }
 function resolveTile(r, p) {
-  const i = p.pos, tile = TILES[i];
+  const i = p.pos, tile = tilesOf(r)[i];
   if (tile.t === 'castle') { log(r, `${p.name}は城に到着`); return askUpgrade(r, p, '城'); }
   if (tile.t === 'gate') { log(r, `${p.name}は門に到着`); return askGate(r, p); }
   if (tile.t === 'shrine') {
@@ -1722,9 +1875,8 @@ function upCost(r, p, i) {
 // ムーブ: マスiの隣で移動可能な行き先(空き属性地 or 結界のない敵属性地)
 function stepDests(r, p, i) {
   const dests = [];
-  for (const d of [-1, 1]) {
-    const j = (i + d + TILES.length) % TILES.length;
-    const t = TILES[j];
+  for (const j of mapOf(r).neighbors[i]) {
+    const t = tilesOf(r)[j];
     if (t.t !== 'land') continue;
     const o = r.owners[j];
     if (!o) dests.push(j);
@@ -1760,15 +1912,15 @@ function marlowSources(r, p) {
 function marlowDests(r) {
   const dests = [];
   r.owners.forEach((o, i) => {
-    if (!o && TILES[i].t === 'land' && tileElem(r, i) === 'wind') dests.push(i);
+    if (!o && tilesOf(r)[i].t === 'land' && tileElem(r, i) === 'wind') dests.push(i);
   });
   return dests;
 }
 function moveMarlow(r, p, src, dest) {
   const o = r.owners[src];
   if (!o || o.player !== p.id || baseId(o.creature) !== 'marlow' ||
-      !Number.isInteger(dest) || !TILES[dest] || r.owners[dest] ||
-      TILES[dest].t !== 'land' || tileElem(r, dest) !== 'wind') return false;
+      !Number.isInteger(dest) || !tilesOf(r)[dest] || r.owners[dest] ||
+      tilesOf(r)[dest].t !== 'land' || tileElem(r, dest) !== 'wind') return false;
   r.owners[dest] = o;
   r.owners[src] = null;
   log(r, `【風渡り】${p.name}のマーローが土地${src}から空いている風属性の土地${dest}へ移動した(Lv${o.level})`);
@@ -1927,7 +2079,7 @@ function resolveBattle(r) {
   const atk = pById(r, b.attacker), def = pById(r, b.defender);
   markMatchCause(r, 'invasion', { actor: atk.id, target: def.id, tile: b.tile });
   const o = r.owners[b.tile];
-  const tile = TILES[b.tile];
+  const tile = tilesOf(r)[b.tile];
   const ac = CREATURES[b.atkCreature], dc = CREATURES[o.creature];
   const defEvolved = isEvolved(o);
   const notes = [];
@@ -2260,6 +2412,10 @@ function handleChoose(r, playerId, optionId) {
   const pend = r.pending[playerId];
   if (!p || !pend || !pend.options.some(o => o.id === optionId)) return;
   delete r.pending[playerId];
+  if (pend.type === 'route_choice') {
+    const tile=Number(optionId.slice(6));
+    return advanceCavernMove(r,p,tile);
+  }
 
   // --- 選択ドロー(v0.61) ---
   if (pend.type === 'pick_draw') {
@@ -2370,7 +2526,7 @@ function handleChoose(r, playerId, optionId) {
     reconcileAbyssMarks(r);
     const alreadyMarked = activeAbyssMarks(r).some(mark => mark.tile === tile && mark.sourceTile !== sourceTile);
     if (source && source.player === p.id && baseId(source.creature) === 'night_jelly' &&
-        target && target.player === p.id && TILES[tile]?.t === 'land' && !alreadyMarked) {
+        target && target.player === p.id && tilesOf(r)[tile]?.t === 'land' && !alreadyMarked) {
       source.abyssMarkTarget = tile;
       const bonus = abyssMarkBonusFor(source, target);
       r.lastEvent = { type: 'abyss_mark', player: p.id, tile, sourceTile, bonus, at: stamp(r) };
@@ -2390,7 +2546,7 @@ function handleChoose(r, playerId, optionId) {
     if (optionId !== 'se:none') {
       const elem = optionId.slice(3);
       if (!['fire', 'water', 'earth', 'wind'].includes(elem)) return resume();
-      if (TILES[i].e === elem) delete r.elemOv[i]; else r.elemOv[i] = elem;
+      if (tilesOf(r)[i].e === elem) delete r.elemOv[i]; else r.elemOv[i] = elem;
       log(r, `【地脈改変】${p.name}のサムライ・サガが土地${i}を${ELEM_JA[elem]}属性へ変更した`);
     } else {
       log(r, `【地脈改変】${p.name}は土地${i}の属性を変更しなかった`);
@@ -2403,7 +2559,7 @@ function handleChoose(r, playerId, optionId) {
   if (pend.type === 'roll' && optionId === 'roll') return doRoll(r, p);
   if (pend.type === 'roll' && optionId === 'ult') {
     if (p.charId === 'mio') {
-      const opts = TILES.map((t, i) => {
+      const opts = tilesOf(r).map((t, i) => {
         if (i === p.pos) return null;
         const o = r.owners[i];
         const desc = t.t === 'land'
@@ -2463,13 +2619,13 @@ function handleChoose(r, playerId, optionId) {
     if (optionId === 'nu:confirm') {
       const targets = [...new Set(selected)].filter(i => {
         const o = r.owners[i];
-        return TILES[i]?.t === 'land' && o && o.player === p.id;
+        return tilesOf(r)[i]?.t === 'land' && o && o.player === p.id;
       }).slice(0, 2);
       return askNerasioElem(r, p, targets);
     }
     const i = +optionId.slice(3);
     const o = r.owners[i];
-    if (!o || o.player !== p.id || TILES[i]?.t !== 'land') return askNerasioUlt(r, p, selected);
+    if (!o || o.player !== p.id || tilesOf(r)[i]?.t !== 'land') return askNerasioUlt(r, p, selected);
     const at = selected.indexOf(i);
     if (at >= 0) selected.splice(at, 1);
     else if (selected.length < 2) selected.push(i);
@@ -2482,7 +2638,7 @@ function handleChoose(r, playerId, optionId) {
     if (!['fire', 'water', 'earth', 'wind'].includes(elem)) return askNerasioElem(r, p, selected);
     const targets = [...new Set(selected)].filter(i => {
       const o = r.owners[i];
-      return TILES[i]?.t === 'land' && o && o.player === p.id;
+      return tilesOf(r)[i]?.t === 'land' && o && o.player === p.id;
     }).slice(0, 2);
     if (!targets.length) return askRoll(r, p);
     return beginUltSequence(r, p, { targets, elem });
@@ -2587,7 +2743,14 @@ function handleChoose(r, playerId, optionId) {
       return askRoll(r, p);
     }
     if (sid === 'sp_wind_shift') {
+      if (isCavern(r) && p.previousTile == null) return askRoll(r,p);
       castLog();
+      if (isCavern(r)) {
+        p.reverseNext=!p.reverseNext;
+        log(r,`${p.name}は風向転換で来た道へ進行方向を反転した!`);
+        spellFx(r,'sp_wind_shift',[],p.id);
+        return askRoll(r,p);
+      }
       p.dir = -(p.dir || 1);
       log(r, `${p.name}は風向転換で進行方向を${p.dir === 1 ? '左回り' : '右回り'}へ反転した!`);
       spellFx(r, 'sp_wind_shift', [], p.id);
@@ -2682,7 +2845,7 @@ function handleChoose(r, playerId, optionId) {
       if (o.player !== p.id || tileElem(r, i) === ELEM_OF_SPELL[sid]) return askRoll(r, p);
       pay();
       const el = ELEM_OF_SPELL[sid];
-      if (TILES[i].e === el) delete r.elemOv[i]; else r.elemOv[i] = el;
+      if (tilesOf(r)[i].e === el) delete r.elemOv[i]; else r.elemOv[i] = el;
       r.lastEvent.desc = `${p.name}の領地(${i}番)が${ELEM_JA[el]}属性に変化!(連鎖・地価を再計算)`;
       log(r, `📜 ${p.name}が${SPELLS[sid].name}を使用。マス${i}が${ELEM_JA[el]}属性に変化した!(連鎖・地価を再計算)`);
       spellFx(r, sid, [i], p.id, { elem: el });
@@ -2900,6 +3063,7 @@ function handleChoose(r, playerId, optionId) {
       log(r, `${p.name}はカードを加えなかった`);
       const resume0 = r.draft.resume;
       r.draft = null;
+      if (resume0 === 'cavern_move') return advanceCavernMove(r,p);
       if (resume0 === 'tile') return resolveTile(r, p);
       if (resume0 === 'villa_recover') return startVillaRecovery(r, p);
       if (resume0 === 'market') return askMarket(r, p);
@@ -2916,6 +3080,7 @@ function handleChoose(r, playerId, optionId) {
     log(r, `${p.name}はカードを1枚獲得し、山札に加えた(中身は非公開)`);
     const resume = r.draft.resume;
     r.draft = null;
+    if (resume === 'cavern_move') return advanceCavernMove(r,p);
     if (resume === 'tile') return resolveTile(r, p);
     if (resume === 'villa_recover') return startVillaRecovery(r, p);
     if (resume === 'market') return askMarket(r, p);
@@ -3184,7 +3349,8 @@ function startGame(r) {
   const order = r.players.slice().sort(() => Math.random() - 0.5);
   r.players = order;
   for (const p of r.players) {
-    p.pos = 0; p.gold = RULES.startGold; p.lap = 1;
+    p.pos = mapOf(r).castle; p.gold = RULES.startGold; p.lap = 1;
+    if (isCavern(r)) { p.previousTile = null; p.reverseNext = false; p.gatesVisited = []; }
     p.deck = shuffle(CHAR_DECKS[p.charId].slice());
     p.discard = []; p.exile = []; p.resolving = []; p.hand = [];
     p.bonusRollPending = false;
@@ -3218,7 +3384,7 @@ function botCardScore(r, p, id) {
   return score - Math.max(0, owned - 2) * 12;
 }
 function botLandScore(r, p, i, attacking = false) {
-  const t = TILES[i], o = r.owners[i];
+  const t = tilesOf(r)[i], o = r.owners[i];
   if (t.t !== 'land') return ({ shrine: 65, gate: 70, market: p.gold >= 100 ? 55 : 18, castle: p.seal ? 90 : 24 }[t.t] || 0);
   if (!o) return 75 + (tileElem(r, i) === CHARS[p.charId]?.elem ? 45 : 0) + chainCount(r, p.id, tileElem(r, i)) * 14;
   if (o.player === p.id) return 44 + o.level * 18 + (o.dmg || 0) * -.5;
@@ -3241,6 +3407,20 @@ function botChooseOption(r, p, pend) {
   if (!opts.length) return null;
   const byId = id => opts.find(o => o.id === id);
   const nonCancel = opts.filter(o => !BOT_CANCEL_IDS.has(o.id));
+  if (pend.type === 'route_choice') {
+    const goals=mapOf(r).gates.filter(i=>!(p.gatesVisited||[]).includes(i));
+    if(!goals.length) goals.push(mapOf(r).castle);
+    const distance=(from,previous)=>{
+      const queue=[[from,previous,0]],seen=new Set();
+      for(let k=0;k<queue.length;k++){const [tile,prev,n]=queue[k];
+        if(goals.includes(tile))return n;
+        const key=tile+':'+prev;if(seen.has(key))continue;seen.add(key);
+        mapOf(r).neighbors[tile].filter(i=>i!==prev).forEach(i=>queue.push([i,tile,n+1]));
+      }return 100;
+    };
+    return opts.map((o,i)=>({o,i,score:Math.max(...o.destinations.map(d=>botLandScore(r,p,d.tile)))/10-distance(o.tile,p.pos)*20}))
+      .sort((a,b)=>b.score-a.score||a.i-b.i)[0].o.id;
+  }
   if (pend.type === 'roll') {
     const ult = byId('ult');
     if (ult && !p.ultUsed && (points(r, p) >= ASSET_REACH || Math.random() < .16)) return ult.id;
@@ -3253,7 +3433,7 @@ function botChooseOption(r, p, pend) {
     const steps = r.dirPend?.steps || 1;
     return botBest(r, opts, o => {
       const dir = o.id === 'dir:-1' ? -1 : 1;
-      return botLandScore(r, p, (p.pos + dir * steps % TILES.length + TILES.length) % TILES.length);
+      return botLandScore(r, p, (p.pos + dir * steps % tilesOf(r).length + tilesOf(r).length) % tilesOf(r).length);
     }).id;
   }
   if (pend.type === 'pick_draw' || pend.type === 'draft') {
@@ -3366,7 +3546,7 @@ function botChooseOption(r, p, pend) {
   if (pend.type === 'ult_nerasio_land') {
     const confirm = byId('nu:confirm');
     if ((pend.selected || []).length >= Math.min(2, r.owners.filter((o, i) =>
-      o && o.player === p.id && TILES[i].t === 'land').length)) return (confirm || opts[0]).id;
+      o && o.player === p.id && tilesOf(r)[i].t === 'land').length)) return (confirm || opts[0]).id;
     const targets = opts.filter(o => /^nu:\d+$/.test(o.id) && !(pend.selected || []).includes(+o.id.slice(3)));
     return (botBest(r, targets, o => {
       const i = +o.id.slice(3);
@@ -3379,7 +3559,7 @@ function botChooseOption(r, p, pend) {
       const elem = o.id.slice(3);
       let count = 0, levels = 0;
       r.owners.forEach((owner, i) => {
-        if (!owner || owner.player !== p.id || TILES[i].t !== 'land') return;
+        if (!owner || owner.player !== p.id || tilesOf(r)[i].t !== 'land') return;
         if (selected.has(i) || tileElem(r, i) === elem) { count++; levels += owner.level || 1; }
       });
       return count * 40 + levels * 5 + (elem === CHARS[p.charId]?.elem ? 15 : 0);
@@ -3469,12 +3649,14 @@ function publicBattle(r) {
 }
 function publicState(r, viewerId) {
   return {
-    ver: VERSION, code: r.code, phase: r.phase, evoLevel: RULES.evoLevel, turn: r.turn, round: r.round, target: ASSET_GOAL, reachAt: ASSET_REACH,
+    ver: VERSION, code: r.code, mapId: r.mapId || 'starting_corridor', mapName:mapOf(r).name,
+    routePreview:r.routePreview || null,
+    phase: r.phase, evoLevel: RULES.evoLevel, turn: r.turn, round: r.round, target: ASSET_GOAL, reachAt: ASSET_REACH,
     stateRev: r.stateRev || 0, turnEpoch: r.turnEpoch || 0, serverNow: Date.now(),
     presentationSpeed: r.presentationSpeed === 2 ? 2 : 1,
     botMode: !!r.botMode,
     selectionReady: isSelectionReady(r),
-    tiles: TILES.map((t, i) => r.elemOv[i] ? Object.assign({}, t, { e: r.elemOv[i] }) : t),
+    tiles: tilesOf(r).map((t, i) => r.elemOv[i] ? Object.assign({}, t, { e: r.elemOv[i] }) : t),
     tolls: r.owners.map((o, i) => o ? tollOf(r, i) : 0),
     landCombat: r.owners.map((o, i) => o ? landCombatUi(r, i) : null),
     abyssMarks: activeAbyssMarks(r),
@@ -3537,6 +3719,7 @@ function publicState(r, viewerId) {
       bankrupt: !!p.bankrupt,
       dir: p.dir || 1,
       seal: !!p.seal,
+      gatesVisited: isCavern(r) ? (p.gatesVisited || []).slice() : (p.seal ? mapOf(r).gates.slice() : []),
       lap: p.lap || 1,
     })),
   };
@@ -3557,7 +3740,7 @@ function broadcast(r) {
 const SAVE_VER = 1;
 // ルームのフィールド分類表。ルームに新しいキーを追加したら必ずどちらかに分類すること
 // (save_testが未分類キーを検出して失敗する)
-const ROOM_RUNTIME_KEYS = new Set(['clients', 'lastActivity', 'upgradePreview', 'botTimer', 'botActionSeq', 'ultTimer', 'processedActions', 'turnReadyAt', 'turnTransitionTimer', 'boardSeen', 'matchCause']);  // 保存しない
+const ROOM_RUNTIME_KEYS = new Set(['clients', 'lastActivity', 'routePreview', 'upgradePreview', 'botTimer', 'botActionSeq', 'ultTimer', 'processedActions', 'turnReadyAt', 'turnTransitionTimer', 'boardSeen', 'matchCause']);  // 保存しない
 const ROOM_PERSIST_KEYS = new Set([                                            // 保存する
   'code', 'phase', 'players', 'owners', 'deck', 'market', 'turn', 'round', 'log',
   'pending', 'titles', 'duel', 'lastBattle', 'winner', 'barrier', 'elemOv', 'tileFx',
@@ -3565,7 +3748,7 @@ const ROOM_PERSIST_KEYS = new Set([                                            /
   'dirPend', 'halfMarket', 'shopVisit', 'effectQueue', 'effectResume', 'battleAfter',
   'lastEvent', 'lastDice', 'lastUlt', 'ultSequence', 'lastHeal', 'lastSeal', 'lastRuin', 'lastDraw', 'lastGain',
   'lastBarrierHit', 'lastSpellFx', 'botMode', 'presentationSpeed', 'turnEpoch', 'promptSeq', 'stateRev', 'turnTransition',
-  'matchAnalytics', 'matchResult', 'resultReview',
+  'matchAnalytics', 'matchResult', 'resultReview', 'mapId', 'movement',
 ]);
 function serializeRoom(r) {
   reconcileAbyssMarks(r);
@@ -3597,6 +3780,8 @@ function validateSave(save) {
     return `このセーブ形式(ver${save.saveVer})には対応していません(対応: ver${SAVE_VER})`;
   const d = save.room;
   if (!d || typeof d !== 'object') return 'セーブデータが壊れています';
+  if (d.mapId != null && (typeof d.mapId !== 'string' || !Object.hasOwn(MAPS,d.mapId))) return 'マップが不正です';
+  const validTile = n => Number.isInteger(n) && n>=0 && n<tilesOf(d).length;
   if (typeof d.code !== 'string' || !/^[A-Z0-9]{4}$/.test(d.code)) return 'ルームコードが不正です';
   if (typeof d.boardToken !== 'string' || d.boardToken.length < 16) return '権限トークンが不正です';
   if (!['lobby', 'select', 'playing', 'ended'].includes(d.phase)) return 'フェーズが不正です';
@@ -3616,16 +3801,23 @@ function validateSave(save) {
     }
     for (const nk of ['gold', 'pos', 'lap', 'gems', 'treasures', 'battleWins', 'shrineVisits'])
       if (q[nk] != null && (typeof q[nk] !== 'number' || !isFinite(q[nk]))) return `数値(${nk})が不正です`;
-    if (q.pos != null && (q.pos < 0 || q.pos >= TILES.length)) return 'プレイヤー位置が不正です';
+    if (q.pos != null && (q.pos < 0 || q.pos >= tilesOf(d).length)) return 'プレイヤー位置が不正です';
+    if (isCavern(d) && d.phase !== 'lobby' && d.phase !== 'select') {
+      if(!validTile(q.pos)) return 'プレイヤー位置が不正です';
+      if(q.previousTile!=null && !mapOf(d).neighbors[q.pos].includes(q.previousTile)) return '進行方向が不正です';
+      if(q.reverseNext!=null && typeof q.reverseNext!=='boolean') return '反転状態が不正です';
+      if(q.reverseNext && q.previousTile==null) return '反転元が不正です';
+      if(!Array.isArray(q.gatesVisited)||new Set(q.gatesVisited).size!==q.gatesVisited.length||q.gatesVisited.some(i=>!mapOf(d).gates.includes(i))) return '門の取得状態が不正です';
+    }
   }
-  if (!Array.isArray(d.owners) || d.owners.length !== TILES.length) return '盤面データが不正です';
+  if (!Array.isArray(d.owners) || d.owners.length !== tilesOf(d).length) return '盤面データが不正です';
   for (const o of d.owners) {
     if (o == null) continue;
     if (!ids.has(o.player)) return '領地の所有者が不正です';
     if (!VALID_CARD(o.creature)) return `盤面に不明なカードID: ${o.creature}`;
     if (typeof o.level !== 'number' || o.level < 1 || o.level > RULES.maxLevel) return '領地レベルが不正です';
     if (o.abyssMarkTarget != null && (!Number.isInteger(o.abyssMarkTarget) || o.abyssMarkTarget < 0 ||
-        o.abyssMarkTarget >= TILES.length)) return '深淵標の対象マスが不正です';
+        o.abyssMarkTarget >= tilesOf(d).length)) return '深淵標の対象マスが不正です';
   }
   if (!Array.isArray(d.deck) || d.deck.length > 500) return '共通山札が不正です';
   for (const c of d.deck) if (!VALID_SAVE_CARD(c)) return `共通山札に不明なカードID: ${c}`;
@@ -3643,12 +3835,13 @@ function validateSave(save) {
     if (d[key] != null) {
       if (typeof d[key] !== 'object') return `${key}が不正です`;
       for (const ti of Object.keys(d[key]))
-        if (!(+ti >= 0 && +ti < TILES.length)) return `${key}のマス番号が不正です`;
+        if (!(+ti >= 0 && +ti < tilesOf(d).length)) return `${key}のマス番号が不正です`;
     }
   if (d.elemOv != null)
     for (const e of Object.values(d.elemOv))
       if (!['fire', 'water', 'earth', 'wind'].includes(e)) return '属性上書きが不正です';
   if (d.matchAnalytics != null) {
+    // Analytics validation follows map-specific movement validation below.
     if (typeof d.matchAnalytics !== 'object' || !Array.isArray(d.matchAnalytics.assetTimeline) ||
         d.matchAnalytics.assetTimeline.length > MATCH_TIMELINE_MAX || !Array.isArray(d.matchAnalytics.candidates) ||
         d.matchAnalytics.candidates.length > MATCH_CANDIDATE_MAX) return '試合履歴が不正です';
@@ -3658,6 +3851,28 @@ function validateSave(save) {
       !Array.isArray(d.matchResult.assetTimeline) || d.matchResult.assetTimeline.length > MATCH_TIMELINE_MAX ||
       !Array.isArray(d.matchResult.turningPoints) || d.matchResult.turningPoints.length > 3))
     return 'リザルトデータが不正です';
+  if(d.movement != null) {
+    const m=d.movement, actor=d.players.find(p=>p.id===m.player);
+    if(!isCavern(d)||!actor||typeof m.id!=='string'||!Number.isInteger(m.steps)||m.steps<0||m.steps>300||
+      !Number.isInteger(m.remaining)||m.remaining<0||m.remaining>m.steps||!Number.isInteger(m.resolved)||m.resolved<0||m.remaining+m.resolved!==m.steps||
+      !validTile(m.segmentFrom)||!Number.isInteger(m.segmentSeq)||m.segmentSeq<1||!m.meta||typeof m.meta!=='object') return '移動途中の状態が不正です';
+    const pending=d.pending?.[actor.id];
+    if(m.resume==='castle') { if(pending?.type!=='draft'||d.draft?.resume!=='cavern_move')return '城の再開状態が不正です'; }
+    else if(m.resume!==null||pending?.type!=='route_choice'||!m.remaining||pending.options.length!==cavernNeighbors(d,actor).length||new Set(pending.options.map(o=>o.tile)).size!==pending.options.length||pending.options.some(o=>!cavernNeighbors(d,actor).includes(o.tile)||o.id!==`route:${o.tile}`)) return '分岐の再開状態が不正です';
+    if(d.players[d.turn]?.id!==actor.id || m.segmentFrom!==actor.pos || !Number.isFinite(m.at)) return '移動手番が不正です';
+    const seg=d.lastDice?.segment;
+    if(!seg||!validTile(seg.from)||!Array.isArray(seg.path)||seg.path.length>m.resolved||!Array.isArray(seg.events)||!Number.isFinite(seg.availableAt)||!Number.isFinite(seg.startAt)) return '移動経路が不正です';
+    let prev=seg.from;
+    for(const tile of seg.path){if(!validTile(tile)||!mapOf(d).neighbors[prev].includes(tile))return '移動経路の接続が不正です';prev=tile;}
+    if(prev!==actor.pos || seg.events.some(e=>!e||!validTile(e.tile)||!['gate','castle','anchor'].includes(e.type)))return '移動イベントが不正です';
+  } else if(Object.values(d.pending||{}).some(p=>p.type==='route_choice')||d.draft?.resume==='cavern_move') return '移動再開データがありません';
+  if(isCavern(d) && d.lastDice?.segment){
+    const ld=d.lastDice,seg=ld.segment;
+    if(!ids.has(ld.player)||typeof ld.movementId!=='string'||typeof seg.id!=='string'||!validTile(seg.from)||!Array.isArray(seg.path)||seg.path.length>300||!Array.isArray(seg.events)||!Number.isFinite(seg.availableAt)||!Number.isFinite(seg.startAt))return '表示用移動データが不正です';
+    let before=seg.from;
+    for(const tile of seg.path){if(!validTile(tile)||!mapOf(d).neighbors[before].includes(tile))return '表示用移動経路が不正です';before=tile;}
+    if(seg.events.some(e=>!e||!validTile(e.tile)||!['gate','castle','anchor'].includes(e.type)))return '表示用イベントが不正です';
+  }
   return null;
 }
 // 復元(原子的): 検証・構築がすべて成功してからroomsへ登録する。失敗時は既存ルームを変更しない
@@ -3673,6 +3888,11 @@ function restoreRoom(save) {
   const room = Object.assign(d, { clients: new Set(), lastActivity: Date.now(), botTimer: null, botActionSeq: 0,
     ultTimer: null, processedActions: [], turnTransitionTimer: null, boardSeen: true });
   if (room.botMode == null) room.botMode = false;
+  room.mapId=room.mapId || 'starting_corridor';
+  room.movement=room.movement || null; room.routePreview=null;
+  if(room.movement && room.pending[room.movement.player]?.type==='route_choice') {
+    askCavernRoute(room,pById(room,room.movement.player));
+  }
   if (room.presentationSpeed !== 2) room.presentationSpeed = 1;
   if (!Number.isInteger(room.turnEpoch)) room.turnEpoch = 0;
   if (!Number.isInteger(room.promptSeq)) room.promptSeq = 0;
@@ -3690,6 +3910,7 @@ function restoreRoom(save) {
   if (room.battleAfter == null) room.battleAfter = null;
   delete room.treasureCost;
   for (const p of room.players) {
+    if(isCavern(room))p.seal=mapOf(room).gates.every(i=>(p.gatesVisited||[]).includes(i));
     delete p.gems; delete p.treasures; delete p.gemThisStop; delete p.forgetThisStop;
     if (!Array.isArray(p.resolving)) p.resolving = [];
     migrateLegacyWindShiftPlayer(p);
@@ -3895,7 +4116,7 @@ const server = http.createServer(async (req, res) => {
   if (p.startsWith('/assets/')) return serveFile(res, p.slice(1));
   if (p.startsWith('/site/')) return serveFile(res, p.slice(1));
   // v0.66: 共有タイミング定数・Phaserワールド描画・同梱ライブラリ
-  if (p === '/analytics.js' || p === '/game_timing.js' || p === '/board_world.js' || p === '/battle_world.js' || p === '/ult_fx_world.js' ||
+  if (p === '/map-definitions.js' || p === '/map-ui.js' || p === '/map-ui.css' || p === '/analytics.js' || p === '/game_timing.js' || p === '/board_world.js' || p === '/battle_world.js' || p === '/ult_fx_world.js' ||
       p === '/fx_manifest.js' || p.startsWith('/vendor/'))
     return serveFile(res, p.slice(1));
   if (p === '/api/fixture') {
@@ -3937,7 +4158,9 @@ const server = http.createServer(async (req, res) => {
 
   if (p === '/api/create' && req.method === 'POST') {
     const b = await readBody(req);
-    const r = makeRoom(b.mode === 'bot' ? 'bot' : 'normal');
+    const mapId = b.mapId === undefined ? 'starting_corridor' : b.mapId;
+    if (typeof mapId !== 'string' || !Object.hasOwn(MAPS, mapId)) return json(res, { error:'不明なマップです' }, 400);
+    const r = makeRoom(b.mode === 'bot' ? 'bot' : 'normal', mapId);
     return json(res, { code: r.code, phoneUrl: phoneUrlForRoom(r.code), boardToken: r.boardToken });
   }
   if (p === '/api/join' && req.method === 'POST') {
@@ -4014,6 +4237,7 @@ const server = http.createServer(async (req, res) => {
     const r = rooms.get((url.searchParams.get('code') || '').toUpperCase());
     if (!r) return json(res, { exists: false });
     return json(res, { exists: true, phase: r.phase, players: r.players.length,
+                       mapId:mapOf(r).id,mapName:mapOf(r).name,
                        phoneUrl: phoneUrlForRoom(r.code) });
   }
   if (p === '/api/action' && req.method === 'POST') {
@@ -4065,6 +4289,16 @@ const server = http.createServer(async (req, res) => {
       if (b.resultId !== r.resultReview.id)
         return json(res, { error: 'リザルトが更新されました' }, 409);
       if (!r.resultReview.completedAt) r.resultReview.completedAt = Date.now();
+    }
+    else if (b.type === 'route_preview') {
+      const actor=pById(r,b.playerId), pend=r.pending[b.playerId];
+      if(!actor||actor.isBot||r.phase!=='playing'||cur(r)?.id!==actor.id||pend?.type!=='route_choice'||
+        b.turnEpoch!==pend.turnEpoch||b.promptId!==pend.promptId||!pend.options.some(o=>o.id===b.optionId))
+        return json(res,{error:'進路選択が更新されました',state:publicState(r,b.playerId)},409);
+      if(Date.now()<(pend.availableAt||0))return json(res,{error:'移動演出中です'},425);
+      if(!Number.isSafeInteger(b.sequence)||b.sequence<1||(r.routePreview?.promptId===pend.promptId&&b.sequence<=r.routePreview.sequence))
+        return json(res,{error:'古いプレビューです'},409);
+      r.routePreview={player:actor.id,promptId:pend.promptId,optionId:b.optionId,sequence:b.sequence};
     }
     else if (b.type === 'upgrade_preview') {
       // 発注書v0.75 §6.3: 強化選択中の候補プレビュー(揮発・非保存・ルール影響なし)。

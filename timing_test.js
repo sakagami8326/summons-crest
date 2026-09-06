@@ -42,7 +42,8 @@ ok(/castleStep \|\| steps\) \* scale\(GT\.stepMs\) \+ scale\(GT\.castleDraftLead
   'phone: 城ドラフト表示の式が共有定数で構成されている');
 
 // 5) 盤面のホップ進行が共有定数で構成されていること
-ok(/setTimeout\(hopStep, presentationMs\(GAME_TIMING\.stepMs, hopState\.id\)\)/.test(board), 'board: 1歩の間隔が共有定数+速度倍率');
+ok(/scheduleHop\(presentationMs\(GAME_TIMING\.stepMs, hopState\.id\)\)/.test(board), 'board: 1歩の間隔が共有定数+速度倍率');
+ok(/if\(hopState===active\)hopStep\(\)/.test(board), 'board: 古い区間のタイマーは新しい移動を進めない');
 ok(/GAME_TIMING\.moveStartDelayMulti : GAME_TIMING\.moveStartDelay/.test(board), 'board: 初動が共有定数');
 ok(/presentationMs\(GAME_TIMING\.castleResume, hopState\.id\)/.test(board), 'board: 城再開が共有定数+速度倍率');
 ok(GT.scaled(1000, 1) === 1000 && GT.scaled(1000, 2) === 500, 'game_timing: 通常/2倍の倍率');

@@ -8,7 +8,7 @@
   :root { --ink:#141227; --ink2:#1E1B3C; --gold:#C9A227; --gold-soft:#EFD98F; --parchment:#F1E8D0;
       --font-mincho:"Yu Mincho","Hiragino Mincho ProN","Hiragino Mincho Pro","Noto Serif JP",serif; }
   * { box-sizing:border-box; margin:0; }
-  body { background:url('/assets/bg.jpg') center / cover no-repeat fixed, #1E1B3C;
+  body { background:#1E1B3C center / cover no-repeat fixed;
          min-height:100vh; overflow:hidden; font-family:var(--font-mincho); font-weight:400;
          color:var(--parchment); }
   body *,button,input,select,textarea { font-family:var(--font-mincho)!important; }
@@ -1563,6 +1563,9 @@ const QR = (() => {
   return { encode, svg };
 })();
 </script>
+<link rel="stylesheet" href="/map-ui.css?v=158">
+<script src="/map-definitions.js?v=158"></script>
+<script src="/map-ui.js?v=158"></script>
 <script src="/game_timing.js"></script>
 <script src="/fx_manifest.js"></script>
 <script src="/vendor/phaser.min.js"></script>
@@ -1702,11 +1705,10 @@ const ICONS = {
   gate:   '<path d="M4 21 V10 A8 8 0 0 1 20 10 V21 H16 V11 A4 4 0 0 0 8 11 V21 Z" fill="#F6EFDD"/>',
 };
 // 28マスのグリッド座標(サーバーのTILES順に対応)
-const GEO = [[4,7],[3,7],[2,7],[1,7],[0,7],[0,6],[0,5],[0,4],[0,3],[0,2],[0,1],[0,0],
-  [1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],[6,7],[5,7]];
+let GEO = SummonsMaps.starting_corridor.geo;
 const TW = 150, TH = 84, THICK = 16, DW = 112, DH = 56;
 const GS = 1.16;                          // マス間隔の倍率(タイル自体の大きさは不変)
-const OX = 640, OY = 150;
+let OX = 640; const OY = 150;
 const proj = (gx, gy) => ({ x: OX + (gx - gy) * TW * GS / 2, y: OY + (gx + gy) * TH * GS / 2 });
 // アートが存在するクリーチャー(それ以外は色トークン表示)
 // アートが存在するクリーチャー。正はサーバーのcatalog.artIds(assetsを走査 ─ v0.82)。
@@ -1877,6 +1879,7 @@ $('mrReplayBtn').onclick=()=>matchResultPlayback&&showMatchResult(matchResultPla
 $('mrTitleBtn').onclick=()=>location.reload();
 $('winReviewBtn').onclick=()=>state?.matchResult?showMatchResult(state.matchResult,false):location.reload();
 let hopState = null;
+function scheduleHop(delay){const active=hopState;return setTimeout(()=>{if(hopState===active)hopStep();},delay);}
 function finishHop() {
   if (!hopState) return;
   delete pawnAnim[hopState.id];
@@ -1889,12 +1892,13 @@ function finishHop() {
 function hopStep() {
   if (!hopState || hopState.holding) return;
   hopState.sN++;
-  const idx = (hopState.from + hopState.sN * (hopState.dir || 1) + 28 * 40) % 28;
+  const idx = hopState.path ? hopState.path[hopState.sN - 1] : (hopState.from + hopState.sN * (hopState.dir || 1) + 28 * 40) % 28;
   pawnAnim[hopState.id] = idx;
   renderPawns();
-  if (idx === 0 && hopState.castleEv) {
+  if(hopState.events)showCavernGateEvents(hopState.events.filter(e=>e.step===hopState.sN),hopState.id);
+  if (idx === SummonsMapUI.get(state).castle && hopState.castleEv) {
     const ev = hopState.castleEv;
-    const castleCameraToken = beginPresentationZoom(0, 'castle', hopState.id);
+    const castleCameraToken = beginPresentationZoom(idx, 'castle', hopState.id);
     cutBusy++;
     hopState.holdUntil = Date.now() + presentationMs(GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown, hopState.id);
     setTimeout(() => {
@@ -1907,7 +1911,7 @@ function hopStep() {
       cutBusy = Math.max(0, cutBusy - 1);
       if (!ev.drew && hopState) {
         hopState.holding = false;
-        if (hopState.sN < hopState.steps) setTimeout(hopStep, presentationMs(GAME_TIMING.castleResume, hopState.id));
+        if (hopState.sN < hopState.steps) scheduleHop(presentationMs(GAME_TIMING.castleResume, hopState.id));
         else finishHop();
       }
     }, presentationMs(GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown, hopState.id));
@@ -1916,7 +1920,7 @@ function hopStep() {
     render();
     return;
   }
-  if (hopState.sN < hopState.steps) setTimeout(hopStep, presentationMs(GAME_TIMING.stepMs, hopState.id));
+  if (hopState.sN < hopState.steps) scheduleHop(presentationMs(GAME_TIMING.stepMs, hopState.id));
   else finishHop();
 }
 function showCastleBreakdown(ev) {
@@ -2274,15 +2278,82 @@ function spawnGold(pid, delta) {
 let animBusy = false, smileT = null;
 let ownersCache = '';
 
+function openMapSelect(mode) {
+  let ov=$('mapSelect');
+  if(!ov){ov=document.createElement('div');ov.id='mapSelect';document.body.appendChild(ov);}
+  let selected='starting_corridor';
+  ov.classList.add('on');
+  ov.innerHTML=`<section class="mapSelectPanel" role="dialog" aria-modal="true" aria-label="マップ選択"><h2>マップを選択</h2><p>作成後は変更できません。勝利目標：8,000G</p><div class="mapSelectCards">${Object.values(SummonsMaps).map(m=>`<button class="mapSelectCard" data-map="${m.id}" aria-pressed="${m.id===selected}"><img src="${m.preview}" alt="" width="480" height="270"><strong>${m.name}</strong><span>${m.description}</span><small>${m.branching?'外周28歩 ／ 中央20歩':'一周28歩'}</small></button>`).join('')}</div><p id="mapSelectMsg" role="status"></p><button class="gbtn" id="mapSelectCreate">このマップでルームを作る</button> <button class="gbtn" id="mapSelectBack">戻る</button></section>`;
+  ov.querySelectorAll('[data-map]').forEach(b=>b.onclick=()=>{selected=b.dataset.map;ov.querySelectorAll('[data-map]').forEach(c=>c.setAttribute('aria-pressed',String(c===b)));});
+  $('mapSelectBack').onclick=()=>{ov.classList.remove('on');$(mode==='bot'?'titleBot':'titleCreate').focus();};
+  $('mapSelectCreate').onclick=async()=>{
+    ov.querySelectorAll('button').forEach(b=>b.disabled=true);
+    try {await boot(mode,selected);ov.classList.remove('on');$('titleOv').classList.remove('on');}
+    catch(e){$('mapSelectMsg').textContent=e.message;ov.querySelectorAll('button').forEach(b=>b.disabled=false);}
+  };
+  ov.onkeydown=e=>{if(e.key==='Escape'&&!$('mapSelectBack').disabled)$('mapSelectBack').click();if(e.key==='Tab'){const bs=[...ov.querySelectorAll('button:not(:disabled)')],i=bs.indexOf(document.activeElement);if((e.shiftKey&&i===0)||(!e.shiftKey&&i===bs.length-1)){e.preventDefault();bs[e.shiftKey?bs.length-1:0].focus();}}};
+  ov.querySelector('[data-map]').focus();
+}
+let selectedMapId=null, cavernSegmentSeen=null, cavernAnimationTimer=null;
+let cavernGateNoticeTimer=null;
+function showCavernGateEvents(events,pid){
+  const gates=events.filter(e=>e.type==='gate');if(!gates.length)return;
+  let el=$('cavernGateNotice');if(!el){el=document.createElement('div');el.id='cavernGateNotice';el.setAttribute('role','status');document.body.appendChild(el);}
+  el.textContent=`${player(pid)?.name||''} ─ `+gates.map(e=>`${e.tile===22?'西門':'東門'}通過 +${e.gold}G`).join(' ／ ');
+  el.hidden=false;clearTimeout(cavernGateNoticeTimer);
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches)gates.forEach(e=>fxAt(e.tile,'fxRing','#ffe393'));
+  cavernGateNoticeTimer=setTimeout(()=>{el.hidden=true;},1400);
+}
+function syncSelectedMap(){
+  const map=SummonsMapUI.get(state);
+  if(selectedMapId===map.id)return;
+  selectedMapId=map.id;GEO=map.geo;OX=map.branching?727:640;
+  document.body.dataset.mapId=map.id;
+  document.body.style.backgroundImage=`url("${map.background}")`;
+  ownersCache='';cavernSegmentSeen=state.lastDice?.segment?.id || null;
+  fitWorld();
+}
+function syncCavernAnimation(){
+  const ld=state.lastDice,seg=ld?.segment;
+  if(!seg || cavernSegmentSeen===seg.id)return;
+  cavernSegmentSeen=seg.id;
+  clearTimeout(cavernAnimationTimer);
+  if(hopState){clearTimeout(hopState.holdTimer);delete pawnAnim[hopState.id];hopState=null;animBusy=false;}
+  const mover=state.players.find(p=>p.id===ld.player);if(!mover)return;
+  const now=Number(state.serverNow||Date.now())+Date.now()-stateReceivedAt;
+  if(!seg.path.length || matchMedia('(prefers-reduced-motion: reduce)').matches){
+    prevPos[mover.id]=mover.pos;
+    showCavernGateEvents(seg.events,mover.id);
+    if(ld.castle && seg.events.some(e=>e.type==='castle')){
+      showCastleBreakdown(ld.castle);
+      cavernAnimationTimer=setTimeout(()=>hideCastleBreakdown(),Math.max(0,seg.availableAt-now));
+    }
+    return;
+  }
+  animBusy=true;
+  hopState={id:mover.id,from:seg.from,to:mover.pos,path:seg.path,events:seg.events,steps:seg.path.length,sN:0,holding:false,
+    castleEv:seg.events.some(e=>e.type==='castle')?ld.castle:null};
+  pawnAnim[mover.id]=seg.from;
+  cavernAnimationTimer=scheduleHop(Math.max(0,seg.startAt-now)+presentationMs(GAME_TIMING.stepMs,mover.id));
+}
+function renderRouteTv(){
+  let el=$('routeTv');
+  if(!el){el=document.createElement('div');el.id='routeTv';document.body.appendChild(el);}
+  const actor=state?.players.find(p=>state.pending?.[p.id]?.type==='route_choice'),pd=actor&&state.pending[actor.id];
+  const now=Date.now()+Number(state?.serverNow||Date.now())-stateReceivedAt;
+  if(!pd||animBusy||now<(pd.availableAt||0)){el.innerHTML='';return;}
+  const point=i=>{const w=worldPos(i);if(renderModeActive==='phaser'&&PW.isReady())return PW.worldToViewport(w.x,w.y);const r=$('world').getBoundingClientRect();return{x:r.left+w.x*r.width/1280,y:r.top+w.y*r.height/905};};
+  el.innerHTML=`<div id="routeTvTitle">${SummonsMapUI.esc(actor.name)}の進路選択　残り${pd.remainingSteps}歩<br><small>スマホで方向を選び「ここに決定」</small></div><svg aria-label="進路選択の矢印" viewBox="0 0 ${innerWidth} ${innerHeight}">${SummonsMapUI.routes(state,pd,state.routePreview?.optionId,point,22)}</svg>`;
+}
+setInterval(renderRouteTv,150);
+
 document.getElementById('titleCreate').onclick = () => {
   initAudio();
-  document.getElementById('titleOv').classList.remove('on');
-  boot('normal');
+  openMapSelect('normal');
 };
 document.getElementById('titleBot').onclick = () => {
   initAudio();
-  document.getElementById('titleOv').classList.remove('on');
-  boot('bot');
+  openMapSelect('bot');
 };
 document.getElementById('titleSettings').onclick = () => {
   initAudio();
@@ -2537,6 +2608,7 @@ function maybeAutoSave() {
 }
 function connectBoard() {
   if (es) es.close();
+  let reconnecting=true;
   es = new EventSource('/api/events?room=' + code);
   es.onmessage = e => {
     lastMsgAt = Date.now();
@@ -2548,6 +2620,15 @@ function connectBoard() {
       resetPresentationCamera('phase-or-turn-change');
     state = next;
     stateReceivedAt = Date.now();
+    if(reconnecting && state.mapId==='twin_gate_cavern' && state.phase==='playing' && previousPhase!=='select'){
+      prev.phase=state.phase;prev.turn=state.turn;prev.turnEpoch=state.turnEpoch;
+      for(const [field,key] of [['lastDice','dice'],['lastBattle','battleAt'],['lastUlt','ultAt'],['lastHeal','healAt'],['lastEvent','eventAt'],['lastSeal','sealAt'],['lastSpellFx','spellFxAt'],['lastBarrierHit','barrierHitAt'],['lastRuin','ruinAt']])prev[key]=state[field]?.at;
+      prev.ownersArr=state.owners;prev.cursesKey=JSON.stringify(state.curses||{});
+      clearTimeout(cavernAnimationTimer);if(hopState)clearTimeout(hopState.holdTimer);
+      hopState=null;animBusy=false;cavernSegmentSeen=state.lastDice?.segment?.id;
+      state.players.forEach(p=>{prevPos[p.id]=p.pos;delete pawnAnim[p.id];});
+    }
+    reconnecting=false;
     if (state.phase === 'ended') {
       const resultId = state.resultReview?.id || state.matchResult?.id || `${code}:ended`;
       const players = Array.isArray(state.players) ? state.players : [];
@@ -2564,6 +2645,7 @@ function connectBoard() {
     maybeAutoSave();
   };
   es.onerror = () => {
+    reconnecting=true;
     resetPresentationCamera('sse-reconnect');
     $('connBar').style.display = 'block';
   };
@@ -2674,9 +2756,9 @@ $('optSaveQuit').onclick = async () => {
     location.reload();  // タイトルに戻る(「続きから再開」ボタンが表示される)
   } catch (e) { $('optMsg').textContent = '保存に失敗しました(サーバー接続を確認)'; }
 };
-async function boot(mode = 'normal') {
+async function boot(mode = 'normal', mapId = 'starting_corridor') {
   const response = await fetch('/api/create', { method: 'POST',
-    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode }) });
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode, mapId }) });
   const c = await response.json();
   if (!response.ok || c.error || !c.code || !c.boardToken) throw new Error(c.error || 'ルームを作成できませんでした');
   window.SummonsAnalytics?.track('room_created', { room_mode: mode === 'bot' ? 'bot' : 'normal' });
@@ -2699,7 +2781,7 @@ addEventListener('pagehide', () => resetPresentationCamera('pagehide'));
     const d = await (await fetch('/api/room?code=' + saved)).json();
     if (d.exists && d.phase !== 'ended') {
       const btn = document.getElementById('titleResume');
-      btn.textContent = '前回のルーム ' + saved + ' に戻る';
+      btn.textContent = '前回のルーム ' + saved + ' に戻る ─ ' + (d.mapName || '始まりの回廊');
       document.getElementById('titleResumeWrap').style.display = 'flex';
       btn.onclick = () => {
         initAudio();
@@ -2741,7 +2823,7 @@ async function restoreFromSave(meta) {
     const dt = new Date(meta.savedAt || 0);
     const pad = n => String(n).padStart(2, '0');
     $('saveResume').textContent =
-      `続きから再開 ─ 第${meta.round || '?'}周(${meta.names || ''})` +
+      `続きから再開 ─ ${SummonsMaps[meta.save.room.mapId || 'starting_corridor']?.name || '不明なマップ'} 第${meta.round || '?'}周(${meta.names || ''})` +
       ` ${dt.getMonth() + 1}/${dt.getDate()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}保存`;
     $('saveResume').onclick = () => restoreFromSave(meta);
   } else {
@@ -3032,7 +3114,7 @@ async function runFxHarness(name) {
     }
     const elemQ = new URLSearchParams(location.search).get('elem');
     const pick = () => {
-      for (let i = 0; i < 28; i++)
+      for (let i = 0; i < state.tiles.length; i++)
         if (state.owners[i] && (!elemQ || state.tiles[i].e === elemQ)) return i;
       return 1;
     };
@@ -3077,6 +3159,13 @@ async function runFxHarness(name) {
 // ===== 停止マスへのズームと詳細ウィンドウ =====
 let worldFit = 1, zoomTile = null, cameraGeneration = 0, cameraOwner = null;
 function applyZoom(force, speed) {
+  if (renderModeActive !== 'phaser') {
+    const world=$('world'), focus=zoomTile==null?null:worldPos(zoomTile);
+    const scale=worldFit*(focus?1.45:1);
+    world.style.transition=force||matchMedia('(prefers-reduced-motion: reduce)').matches?'none':'transform 300ms ease';
+    world.style.transform=`translateX(-50%) scale(${scale})${focus?` translate(${640-focus.x}px, ${400-focus.y}px)`:''}`;
+    return;
+  }
   return PW.setCamera(zoomTile, { speed:speed || (presentationContext ? presentationContext.speed : 1), force:!!force });
 }
 function setZoom(ti, force, speed) {
@@ -3352,7 +3441,7 @@ function renderBoardDom() {
     st.appendChild(el);
   });
   // クリーチャー
-  for (let i = 0; i < 28; i++) {
+  for (let i = 0; i < state.tiles.length; i++) {
     const o = state.owners[i];
     if (!o) continue;
     const { x, y } = proj(GEO[i][0], GEO[i][1]);
@@ -3679,7 +3768,7 @@ function renderHUD() {
         <span class="ic"><img src="/assets/ic_gold.png">${p.gold}</span>
         <span class="ic"><img src="/assets/ic_hand.png">${p.handCount}</span>
         <span class="ic" title="山札/捨て札">${sic('draft')}${p.deckCount ?? 0}<small style="opacity:.65">/${p.discardCount ?? 0}</small></span>
-        <span class="ic sealIc ${p.seal ? 'has' : ''}" title="門の刻印">刻</span>
+        ${SummonsMapUI.get(state).branching ? SummonsMapUI.gates(state,p) : `<span class="ic sealIc ${p.seal ? 'has' : ''}" title="門の刻印">刻</span>`}
         ${p.points >= (state.reachAt || state.target - 1) ? '<span class="reach">ラストスパート</span>' : ''}</div>
       <div class="row3">${['fire','water','earth','wind'].map(e => {
         const n = state.owners.filter((o, i) => o && o.player === p.id && state.tiles[i].e === e).length;
@@ -4442,13 +4531,14 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
+  syncSelectedMap();
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.56';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.58';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
-    $('joined').innerHTML = state.players.map(p => `<span>${p.name}${p.isBot ? ' <b>BOT</b>' : ''}</span>`).join('');
+    $('joined').innerHTML = `<strong>${SummonsMapUI.get(state).name}</strong> ` + state.players.map(p => `<span>${p.name}${p.isBot ? ' <b>BOT</b>' : ''}</span>`).join('');
     $('startBtn').disabled = state.botMode
       ? state.players.filter(p => !p.isBot).length !== 1
       : state.players.length < 2;
@@ -4516,7 +4606,8 @@ function render() {
     if (!visualTurnId || !state.players.some(p => p.id === visualTurnId)) visualTurnId = logicalTurn || null;
     // 移動アニメーション(城でドラフト待ちの中断・再開に対応)
     state.players.forEach(p => { if (!(p.id in prevPos)) prevPos[p.id] = p.pos; });
-    if (!hopState) {
+    if (SummonsMapUI.get(state).branching) syncCavernAnimation();
+    if (!hopState && !SummonsMapUI.get(state).branching) {
       const mover = state.players.find(p => prevPos[p.id] !== p.pos);
       if (mover) {
         animBusy = true;
@@ -4528,11 +4619,11 @@ function render() {
           castleEv: state.lastDice && state.lastDice.player === mover.id ? state.lastDice.castle : null };
         pawnAnim[mover.id] = from;
         const mine = state.lastDice && state.lastDice.player === mover.id;
-        setTimeout(hopStep, presentationMs(mine
+        scheduleHop(presentationMs(mine
           ? (state.lastDice.multi ? GAME_TIMING.moveStartDelayMulti : GAME_TIMING.moveStartDelay)
           : GAME_TIMING.otherStartDelay, mover.id));
       }
-    } else if (hopState.holding) {
+    } else if (hopState?.holding) {
       if (hopState.holdUntil && Date.now() < hopState.holdUntil) {
         clearTimeout(hopState.holdTimer);
         hopState.holdTimer = setTimeout(render, hopState.holdUntil - Date.now() + 30);
@@ -4540,7 +4631,7 @@ function render() {
         const pd = state.pending[hopState.id];
         if (!pd || pd.type !== 'draft') {
           hopState.holding = false;
-          if (hopState.sN < hopState.steps) setTimeout(hopStep, presentationMs(GAME_TIMING.castleResume, hopState.id));
+          if (hopState.sN < hopState.steps) scheduleHop(presentationMs(GAME_TIMING.castleResume, hopState.id));
           else finishHop();
         }
       }
@@ -4631,7 +4722,7 @@ function render() {
   // ===== 召喚カットイン(前はnull→今は所有、のマスを検出) =====
   if (state.phase === 'playing' && prev.ownersArr) {
     // レベルアップ・進化のFX
-    for (let i = 0; i < 28; i++) {
+    for (let i = 0; i < state.tiles.length; i++) {
       const was = prev.ownersArr[i], now = state.owners[i];
       if (was && now && now.level > was.level) {
         const col = player(now.player).color;
@@ -4663,7 +4754,7 @@ function render() {
       }
     }
     if ((!state.lastBattle || state.lastBattle.at === prev.battleAt)) {
-      for (let i = 0; i < 28; i++) {
+      for (let i = 0; i < state.tiles.length; i++) {
         if (!prev.ownersArr[i] && state.owners[i]) {
           const o = state.owners[i];
           const si = i, so = { ...o };
@@ -4834,14 +4925,14 @@ function render() {
     }
   }
   // 門通過 ─ 刻印取得のキャラカットイン
-  if (state.lastSeal && state.lastSeal.at !== prev.sealAt) {
+  if (!SummonsMapUI.get(state).branching && state.lastSeal && state.lastSeal.at !== prev.sealAt) {
     prev.sealAt = state.lastSeal.at;
     const sp = player(state.lastSeal.player), sg = state.lastSeal.gold || 0;
     if (sp) queueFx(3, async () => {   // 経済変化
       bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(2600));
-      await sideCut(sp, `<div class="tcWho">${sp.name} ─ 変化の門を通過</div>
+      await sideCut(sp, `<div class="tcWho">${sp.name} ─ ${SummonsMapUI.get(state).branching?(state.lastSeal.tile===22?'西門':'東門'):'変化の門'}を通過</div>
         <div class="tcAmt plus">❖ 刻印を取得!${sg ? ` +${sg}G` : ''}</div>
-        <div class="tcGold">城まで持ち帰ると一周ボーナス</div>`, 2400);
+        <div class="tcGold">${SummonsMapUI.get(state).branching?'両方の門を取得して城へ戻ると一周成立':'城まで持ち帰ると一周ボーナス'}</div>`, 2400);
     }, { actorId:sp.id, id:presentationId('seal', state.lastSeal.at), kind:'seal' });
   }
   // スペルカード提示→効果説明→対象ズーム→盤面FXをpri2で直列再生。

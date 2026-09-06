@@ -948,9 +948,11 @@ const PW = (() => {
   }
 
   // ===== 盤面(タイル・建造物・クリーチャー・バッジ) =====
+  let displayedMapId=null;
   function syncBoard(st) {
     if (failed) return;
     if (!ready) { pendingState = st; return; }
+    if(displayedMapId!==st.mapId){displayedMapId=st.mapId;computeFit();resetCamera();boardKey='';}
     const key = JSON.stringify(st.owners) + JSON.stringify(st.tolls || []) + JSON.stringify(st.curses || {}) + JSON.stringify(st.abyssMarks || []) + JSON.stringify(st.barrier || {}) +
       st.players.map(p => p.id + p.color).join('') + st.tiles.map(t => t.e || t.t).join('');
     if (key === boardKey) return;
@@ -994,7 +996,7 @@ const PW = (() => {
       });
     });
     // クリーチャー
-    for (let i = 0; i < 28; i++) {
+    for (let i = 0; i < st.tiles.length; i++) {
       const o = st.owners[i];
       if (!o) continue;
       const { x, y } = proj(GEO[i][0], GEO[i][1]);
