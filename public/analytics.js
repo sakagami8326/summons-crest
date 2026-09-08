@@ -57,7 +57,21 @@
   tag.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
   document.head.appendChild(tag);
 
-  const safeLocation = `${window.location.origin}${window.location.pathname}`;
+  // Preserve campaign attribution without forwarding room/player credentials or hashes.
+  // Campaign labels must not contain personal information; all other query keys are dropped.
+  const campaignKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_id',
+    'utm_content', 'utm_term', 'utm_source_platform'];
+  const incomingQuery = new URLSearchParams(window.location.search);
+  const campaignQuery = new URLSearchParams();
+  for (const key of campaignKeys) {
+    const values = incomingQuery.getAll(key);
+    if (values.length !== 1) continue;
+    const value = values[0].trim();
+    if (!value || value.length > 100 || /[\u0000-\u001f\u007f\ufffd]/.test(value)) continue;
+    campaignQuery.set(key, value);
+  }
+  const campaignSearch = campaignQuery.toString();
+  const safeLocation = `${window.location.origin}${window.location.pathname}${campaignSearch ? `?${campaignSearch}` : ''}`;
   window.gtag('js', new Date());
   window.gtag('config', measurementId, {
     page_location: safeLocation,
