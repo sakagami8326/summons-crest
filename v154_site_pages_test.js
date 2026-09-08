@@ -24,6 +24,20 @@ const rulesJs = read('public/site/rules.js');
 const designCss = read('public/site/design-system.css');
 const sitePagesCss = read('public/site/site-pages.css');
 const siteHeaderCss = read('public/site/site-header.css');
+const newsRoute = '/news/2026-09-08-bug-fixes';
+const newsHtml = read('public/site/news-bug-fixes-20260908.html');
+ok(home.includes('href="' + newsRoute + '"'), 'homepage links to the bug fix article');
+ok(home.indexOf('datetime="2026-09-08"') < home.indexOf('datetime="2026-08-31"'), 'latest news precedes existing entries');
+ok(newsHtml.includes('<link rel="canonical" href="https://summonscode.jp' + newsRoute + '">'), 'article has its own canonical URL');
+for (const meta of ['og:title', 'og:description', 'og:url', 'og:image', 'article:published_time']) {
+  ok(newsHtml.includes('property="' + meta + '"'), 'article defines ' + meta);
+}
+ok((newsHtml.match(/<h1\b/g) || []).length === 1, 'article has one primary heading');
+for (const text of ['ムーブ', 'サーベイ', 'ザシャック', 'シュテリオ', 'エアロシュティレ', 'ご報告ありがとうございました', '改善を続けていきます']) {
+  ok(newsHtml.includes(text), 'article covers ' + text);
+}
+ok(newsHtml.includes('href="/#feedback"') && newsHtml.includes('href="/#news"'), 'article links to feedback and news');
+ok(!/src="[^"]*(cards|rules)\.js/.test(newsHtml), 'article avoids unrelated page scripts');
 
 ok(/const VERSION = '1\.59'/.test(serverSource) && require('./package.json').version === '1.59.0', 'v1.54 site pages remain covered by v1.59');
 ok(/if \(p === '\/cards'\).*site\/cards\.html/.test(serverSource), '/cards is a formal route');
@@ -42,14 +56,14 @@ for (const route of ['/cards', '/rules']) {
   ok(cardsHtml.includes(`href="${route}"`) && rulesHtml.includes(`href="${route}"`), `subpage navigation links to ${route}`);
 }
 ok(/card-showcase__archive[\s\S]*href="\/cards"/.test(home), 'home card showcase links to the archive');
-for (const page of [cardsHtml, rulesHtml]) {
+for (const page of [cardsHtml, rulesHtml, newsHtml]) {
   ok(/site-header__play[\s\S]*無料でプレイ[\s\S]*nav-toggle/.test(page), 'subpage uses the same play CTA and hamburger structure as home');
   ok(/site-nav__socials[\s\S]*x\.com\/gamitestman[\s\S]*youtube\.com\/@SUMMONSCODE/.test(page), 'subpage mobile menu includes the same X and YouTube links as home');
   for (const label of ['CONCEPT', 'HOW TO PLAY', 'GAME SYSTEM', 'CARDS', 'RULES', 'SUMMONERS', 'FEEDBACK']) {
     ok(page.includes(`>${label}</a>`), `subpage navigation includes the same ${label} item as home`);
   }
 }
-for (const page of [home, cardsHtml, rulesHtml]) ok(/site-header\.css\?v=154-3/.test(page), 'every public page loads the shared header stylesheet');
+for (const page of [home, cardsHtml, rulesHtml, newsHtml]) ok(/site-header\.css\?v=154-3/.test(page), 'every public page loads the shared header stylesheet');
 ok(!/\.sub-header|\.sub-nav/.test(sitePagesCss), 'subpages do not retain a second header implementation');
 ok(/\.site-nav\s*>\s*a/.test(siteHeaderCss) && !/\.site-nav\s+a\s*\{/.test(siteHeaderCss), 'navigation styles only target direct menu links');
 ok(/\.site-social-link\s*\{[^}]*color:\s*#080911[^}]*background:\s*#f5f2e9/s.test(siteHeaderCss), 'X icon has a dark glyph on an ivory circular background');
@@ -137,7 +151,7 @@ const waitFor = async (url, attempts = 60) => {
     ok(catalog.cards.filter(card => card.kind !== 'creature').every(card => card.artPath && exists(`public${card.artPath}`)), 'all spell and weapon art references resolve');
     ok(/^public, max-age=300/.test(catalogResponse.headers.get('cache-control') || ''), 'catalog uses a short public cache');
 
-    for (const route of ['/cards', '/rules']) {
+    for (const route of ['/cards', '/rules', newsRoute]) {
       const response = await fetch(base + route);
       ok(response.ok && /text\/html/.test(response.headers.get('content-type') || ''), `${route} responds with HTML`);
       ok(response.headers.get('cache-control') === 'no-cache' && response.headers.get('etag'), `${route} checks for updates with ETag`);
@@ -145,6 +159,11 @@ const waitFor = async (url, attempts = 60) => {
       const conditional = await fetch(base + route, { headers: { 'If-None-Match': etag } });
       ok(conditional.status === 304, `${route} returns 304 for a matching ETag`);
     }
+    const articleResponse = await fetch(base + newsRoute);
+    ok((await articleResponse.text()) === newsHtml, 'article route serves the intended article');
+    const articleCss = await fetch(base + '/site/news.css?v=1');
+    ok(articleCss.ok && /text\/css/.test(articleCss.headers.get('content-type') || ''), 'article stylesheet is served');
+    ok((await fetch(base + '/news/nonexistent-article')).status === 404, 'unknown news URLs return 404');
     const font = await fetch(`${base}/assets/site/fonts/shippori-mincho-400-site-v154.woff2`);
     ok(/max-age=31536000/.test(font.headers.get('cache-control') || '') && /immutable/.test(font.headers.get('cache-control') || ''), 'versioned fonts use immutable long-term caching');
     const code = await fetch(`${base}/site/cards.js`);

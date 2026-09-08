@@ -1523,7 +1523,7 @@ function beginTurnTransition(r, p) {
 function endTurn(r) {
   // 手札上限: 8枚以上なら7枚になるまで捨てさせてから手番を渡す
   const p = cur(r);
-  // 墓守の協奏曲の停止マス処理後は、手番を渡さず通常のダイスへ戻る。
+  // ムーブの侵略／墓守の協奏曲の後処理完了後は、手番を渡さず通常のダイスへ戻る。
   if (p && p.bonusRollPending && !p.bankrupt && r.phase === 'playing') {
     p.bonusRollPending = false;
     return askRoll(r, p);
@@ -2917,6 +2917,9 @@ function handleChoose(r, playerId, optionId) {
       // 敵領地へ: そのまま侵略(通行料なし)。攻撃クリーチャーは土地から出撃
       log(r, `📜 ${p.name}の${SPELLS.sp_step.name}! ${CREATURES[src.creature].name}が隣の${pById(r, dest.player).name}の領地へ攻め込む!(通行料なし)`);
       spellFx(r, 'sp_step', [i, j], p.id, { battle: true });
+      // 戦勝ドラフト・配置能力・精算を済ませても、まだ通常ダイスは振っていない。
+      // 既存の保存対象フラグで復帰先を保持し、endTurnで一度だけ消費する。
+      p.bonusRollPending = true;
       r.battle = { tile: j, attacker: p.id, defender: dest.player,
                    atkCreature: src.creature, moveFrom: i, supports: {}, startedAt: stamp(r) };
       return askSupports(r);
@@ -4035,6 +4038,7 @@ const server = http.createServer(async (req, res) => {
   if (p === '/') return serveFile(res, 'site/index.html');
   if (p === '/cards') return serveFile(res, 'site/cards.html');
   if (p === '/rules') return serveFile(res, 'site/rules.html');
+  if (p === '/news/2026-09-08-bug-fixes') return serveFile(res, 'site/news-bug-fixes-20260908.html');
   if (p === '/play') return serveFile(res, 'board.html');
   if (p === '/board') { res.writeHead(302, { Location: '/play' }); return res.end(); }
   if (p === '/site') { res.writeHead(302, { Location: '/' }); return res.end(); }

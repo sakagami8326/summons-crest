@@ -2984,11 +2984,16 @@ async function runFxHarness(name) {
     const result = q2.get('result') || 'win';
     const atkCid = q2.get('atk') || 'orphe';
     const defCid = q2.get('def') || 'nome';
+    // The fixture also accepts creature IDs (including forged _f forms) as weapons.
+    const fixtureSupport = id => {
+      const c = state.catalog.CREATURES[id];
+      return c ? { kind:'creature', cardId:id, artId:id, name:c.name, st:c.st, hp:c.hp, cost:c.cost } : id || 'none';
+    };
     const preempt = result.indexOf('preempt') === 0;
     const b = { tile: 16, attacker: state.players[0].id, defender: state.players[2].id,
       atkCreature: atkCid, defCreature: defCid, st: 40, atkHp: 40, atkDf: 0,
       hp: 30, df: 20, terrain: 10,
-      atkSupport: q2.get('sup') || 'none', defSupport: q2.get('dsup') || 'none',
+      atkSupport: fixtureSupport(q2.get('sup')), defSupport: fixtureSupport(q2.get('dsup')),
       notes: atkCid === 'morbill' ? ['【腐蝕】相手の防衛DF-10'] : [],
       hits: atkCid === 'avalanche' && result === 'win' ? 2 : 1,
       preempt,
@@ -3987,6 +3992,10 @@ const SUPPORT_ART_FILE = {
   jinx:'support-disarm-v1.webp'
 };
 const battleSupportArt = sup => SUPPORT_ART_FILE[supportCardId(sup)];
+const battleCreatureSupportArt = sup => {
+  const cid = sup.artId || sup.cardId;
+  return `/assets/cards/${/_f$/.test(cid) ? 'e_' : 'c_'}${cid.replace(/_f$/, '')}.webp`;
+};
 const battleSupportName = sup => {
   if (!sup || sup === 'none') return 'ウェポンなし';
   if (typeof sup === 'object') return sup.name || sup.cardId || 'ウェポン';
@@ -4007,7 +4016,7 @@ const supportBackHTML = (status, sup) => {
   <div class="sfaceB sfrontB${creature ? ' creatureSupport' : ''}">${!sup || sup === 'none'
     ? '<div style="font-size:2.5vh">─</div><div>ウェポンなし</div>'
     : sup ? (creature
-        ? `<img src="/assets/cards/c_${sup.artId || sup.cardId}.webp" alt="${battleSupportName(sup)}">`
+        ? `<img src="${battleCreatureSupportArt(sup)}" alt="${battleSupportName(sup)}">`
         : battleSupportArt(sup) ? `<img src="/assets/cards/${battleSupportArt(sup)}" alt="">` : '<div style="font-size:2.5vh">⚔</div>')
       + (creature ? '' : '<div>' + battleSupportName(sup) + '</div>' + battleSupportExile(sup)) : ''}</div>
   </div></div><div class="supportStatus">${status}</div>`;
