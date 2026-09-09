@@ -14,7 +14,24 @@ img { max-width: 100%; }
 .hero::after { content: ""; position: absolute; inset: 1.2rem; z-index: -1; border: 1px solid rgb(239 217 143 / 18%); pointer-events: none; }
 .hero__background { position: absolute; inset: 0; z-index: -3; display: block; pointer-events: none; background: var(--sc-ink-950); }
 .hero__background img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
-.hero__background::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 49%, rgb(11 13 24 / 76%) 0%, rgb(11 13 24 / 48%) 32%, transparent 68%), linear-gradient(0deg, rgb(11 13 24 / 88%), transparent 30%, transparent 78%, rgb(11 13 24 / 24%)); }
+.hero__background::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 52%, rgb(11 13 24 / 92%) 0%, rgb(11 13 24 / 76%) 34%, rgb(11 13 24 / 22%) 62%, transparent 82%), linear-gradient(0deg, rgb(11 13 24 / 94%), transparent 35%, transparent 78%, rgb(11 13 24 / 24%)); }
+.hero__effects { position: absolute; inset: 0; z-index: -2; overflow: hidden; pointer-events: none; }
+.hero__effects i { position: absolute; left: var(--x); top: var(--y); display: block; opacity: 0; animation-duration: var(--duration); animation-delay: var(--delay); animation-timing-function: linear; animation-iteration-count: infinite; animation-play-state: paused; }
+.hero__effects.is-active i { animation-play-state: running; }
+.hero__embers i { width: 3px; height: 7px; border-radius: 50%; background: #ffe4a3; box-shadow: 0 0 5px 2px rgb(255 122 35 / 70%), 0 0 12px rgb(255 68 10 / 40%); animation-name: hero-ember-rise; }
+.hero__embers i:nth-child(3n) { width: 2px; height: 4px; }
+.hero__ice i { width: 11px; height: 21px; background: linear-gradient(110deg, #edfaff 0%, #b9eaff 42%, #529bdc 44%, #effcff 80%); clip-path: polygon(50% 0, 88% 42%, 50% 100%, 12% 58%); animation-name: hero-ice-drift; }
+.hero__ice i:nth-child(3n) { width: 8px; height: 15px; }
+@keyframes hero-ember-rise {
+  0% { opacity: 0; transform: translate3d(0, 2rem, 0) rotate(-18deg); }
+  18%, 62% { opacity: .8; }
+  100% { opacity: 0; transform: translate3d(var(--drift), -12rem, 0) rotate(24deg); }
+}
+@keyframes hero-ice-drift {
+  0% { opacity: 0; transform: translate3d(0, -2rem, 0) rotate(-24deg); }
+  25%, 65% { opacity: .65; }
+  100% { opacity: 0; transform: translate3d(var(--drift), 5rem, 0) rotate(40deg); }
+}
 .hero__rings { position: absolute; inset: 0; z-index: -2; pointer-events: none; }
 .hero__rings i { position: absolute; left: 50%; top: 50%; border-radius: 50%; transform: translate(-50%,-50%); }
 .hero__rings i:first-child { width: min(70vw, 54rem); aspect-ratio: 1; border: 1px solid rgb(239 217 143 / 14%); }
@@ -450,7 +467,8 @@ img { max-width: 100%; }
 @media (max-width: 52rem) and (orientation: portrait) {
   .hero { min-height: max(44rem, 100svh); padding: clamp(15rem, 36svh, 21rem) 1.25rem 2rem; }
   .hero__background img { object-position: center top; }
-  .hero__background::after { background: linear-gradient(180deg, rgb(11 13 24 / 14%) 0%, transparent 20%, rgb(11 13 24 / 58%) 43%, rgb(11 13 24 / 66%) 70%, rgb(11 13 24 / 86%) 100%); }
+  .hero__background::after { background: linear-gradient(180deg, rgb(11 13 24 / 14%) 0%, transparent 20%, rgb(11 13 24 / 78%) 43%, rgb(11 13 24 / 84%) 70%, rgb(11 13 24 / 94%) 100%); }
+  .hero__effects i:nth-child(even) { display: none; }
   .hero__release { margin-bottom: .5rem; }
   .hero__logo { width: min(26rem, 82vw); height: clamp(6rem, 16svh, 9rem); }
   .hero h1 { margin: -.4rem 0 .7rem; }
@@ -473,6 +491,8 @@ img { max-width: 100%; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
+  .hero__effects { display: none; }
+  .hero__effects i { animation: none !important; }
   .hero__background, .hero__rings i, .card-showcase__sigil::before, .final-cta__ring { animation: none !important; }
   .play-cta::before, .sc-game-launcher--play::before, .sc-game-launcher--play::after { animation: none !important; }
   .reveal { opacity: 1; transform: none; transition: none; }

@@ -5,6 +5,24 @@
   const nav = document.querySelector('[data-nav]');
   const navToggle = document.querySelector('[data-nav-toggle]');
 
+  // Only composite the small CSS particles while the hero is visible.
+  const heroEffects = document.querySelector('[data-hero-effects]');
+  if (heroEffects) {
+    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let heroVisible = !('IntersectionObserver' in window);
+    const updateHeroEffects = () => heroEffects.classList.toggle('is-active', heroVisible && !document.hidden && !motionPreference.matches);
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver(([entry]) => {
+        heroVisible = entry.isIntersecting;
+        updateHeroEffects();
+      });
+      observer.observe(heroEffects.closest('.hero'));
+    }
+    document.addEventListener('visibilitychange', updateHeroEffects);
+    motionPreference.addEventListener('change', updateHeroEffects);
+    updateHeroEffects();
+  }
+
   const closeNav = () => {
     if (!nav || !navToggle) return;
     nav.classList.remove('is-open');
