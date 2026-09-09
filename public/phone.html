@@ -2,6 +2,9 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
+<script src="/assets/start-guide/device.js"></script>
+<script src="/assets/start-guide/entry.js" data-context="phone"></script>
+<link rel="stylesheet" href="/assets/start-guide/entry.css">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -935,6 +938,8 @@
     <input id="nameIn" placeholder="なまえ" maxlength="8">
     <button id="joinBtn">参加する</button>
     <div id="err"></div>
+    <p class="joinSetupHint" id="joinSetupHint">盤面側のQR、またはルームコードが必要です。</p>
+    <button id="joinGuide" data-start-guide>始め方・画面の準備</button>
     <div style="font-size:12px; color:rgba(241,232,208,.5); letter-spacing:1px;">進行中のゲームには、参加時と同じ名前で入り直すと復帰できます</div>
   </div>
 

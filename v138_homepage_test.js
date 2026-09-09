@@ -17,7 +17,7 @@ const serverVersion = server.match(/const VERSION = '([0-9.]+)'/);
 ok(serverVersion && Number(serverVersion[1]) >= 1.40 && Number(pkg.version.replace(/\.0$/, '')) >= 1.40,
   'v1.38 homepage remains covered by the current release');
 ok(/if \(p === '\/'\) return serveFile\(res, 'site\/index\.html'\)/.test(server), 'root serves official homepage');
-ok(/if \(p === '\/play'\) return serveFile\(res, 'board\.html'\)/.test(server), 'play route serves TV game');
+ok(/if \(p === '\/play'\)[\s\S]*?return serveFile\(res, 'board\.html'\)/.test(server), 'play route keeps TV game after device entry routing');
 ok(/p === '\/board'[\s\S]*Location: '\/play'/.test(server), 'board compatibility route redirects to play');
 ok(/p\.startsWith\('\/site\/'\)/.test(server), 'site static files are served');
 ok(/webp: 'image\/webp'/.test(server) && /webm: 'video\/webm'/.test(server) && /woff2: 'font\/woff2'/.test(server) && /css: 'text\/css'/.test(server), 'web MIME types are explicit');

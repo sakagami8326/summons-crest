@@ -8,9 +8,10 @@ const out=path.join(__dirname,'output','v158');fs.mkdirSync(out,{recursive:true}
  await new Promise(resolve=>G.server.listen(0,'127.0.0.1',resolve));
  const base='http://127.0.0.1:'+G.server.address().port;
  const browser=await chromium.launch({headless:true,channel:process.env.PLAYWRIGHT_CHANNEL||'chrome'}).catch(e=>{G.server.close();throw e;});const errors=[];
- const observe=p=>p.on('pageerror',e=>errors.push(e.stack));
+ // This suite exercises map/gameplay UI. First-visit onboarding has its own browser suite.
+ const observe=async p=>{p.on('pageerror',e=>errors.push(e.stack));await p.addInitScript(()=>localStorage.setItem('sc_start_guide_v1','done'));};
  try{
-  const title=await browser.newPage({viewport:{width:1280,height:720}});observe(title);
+  const title=await browser.newPage({viewport:{width:1280,height:720}});await observe(title);
   await title.goto(base+'/play');await title.locator('#titleCreate').click();
   await title.locator('[data-map="twin_gate_cavern"]').click();
   await title.locator('.mapSelectCard img').evaluateAll(imgs=>Promise.all(imgs.map(i=>i.decode())));
@@ -33,11 +34,11 @@ const out=path.join(__dirname,'output','v158');fs.mkdirSync(out,{recursive:true}
   cave.owners[29]={player:cave.players[1].id,creature:'mist_jelly',level:3};
   G.performMove(cave,actor,8,{value:4,multi:[4,4]},'テスト移動');
   cave.pending[actor.id].availableAt=0;cave.lastDice.segment.startAt=0;cave.lastDice.segment.availableAt=0;
-  const board=await browser.newPage({viewport:{width:1280,height:720}});observe(board);await board.goto(base+'/play');
+  const board=await browser.newPage({viewport:{width:1280,height:720}});await observe(board);await board.goto(base+'/play');
   await board.evaluate(({code,token})=>{document.getElementById('titleOv').classList.remove('on');enterRoom(code,'',token);},{code:cave.code,token:cave.boardToken});
   await board.waitForFunction(()=>state?.mapId==='twin_gate_cavern'&&PW.isReady());
   assert.deepEqual(await board.evaluate(()=>state.tiles.flatMap((t,i)=>t.t==='shrine'?[i]:[])),[3,8,26,30],'TV uses relocated shrines');
-  const phone=await browser.newPage({viewport:{width:667,height:375}});observe(phone);
+  const phone=await browser.newPage({viewport:{width:667,height:375}});await observe(phone);
   await phone.addInitScript(({room,pid})=>localStorage.setItem('sc_session',JSON.stringify({room,pid})),{room:cave.code,pid:actor.id});
   await phone.goto(base+'/phone');await phone.locator('#routeConfirm').waitFor({state:'visible'});
   assert.deepEqual(await phone.evaluate(()=>state.tiles.flatMap((t,i)=>t.t==='shrine'?[i]:[])),[3,8,26,30],'phone uses same shrine layout');
@@ -78,7 +79,7 @@ const out=path.join(__dirname,'output','v158');fs.mkdirSync(out,{recursive:true}
   await phone.evaluate(()=>{renderMapView();});await phone.screenshot({path:path.join(out,'phone-territory.png')});
   assert.equal(await phone.locator('#miniMap .mmT').count(),33,'territory mini map includes central tiles');
   assert.deepEqual(await phone.locator('#miniMap .mmT').evaluateAll(nodes=>nodes.filter(n=>n.textContent.includes('祠')).map(n=>[n.style.gridColumn,n.style.gridRow])),[['4','1'],['7','3'],['1','3'],['4','5']],'mini-map shrine coordinates');
-  const dom=await browser.newPage({viewport:{width:1280,height:720}});observe(dom);
+  const dom=await browser.newPage({viewport:{width:1280,height:720}});await observe(dom);
   // Exercise the retained DOM renderer without exposing a production renderer switch.
   await dom.route('**/play?render=dom',async route=>{const res=await route.fetch();let html=await res.text();html=html.replace("const renderModeActive = 'phaser';","const renderModeActive = 'dom';").replace("$('world').style.display = 'none';","$('world').style.display = 'block'; $('phaserHost').style.display = 'none';");await route.fulfill({response:res,body:html});});
   await dom.goto(base+'/play?render=dom');await dom.evaluate(({code,token})=>{document.getElementById('titleOv').classList.remove('on');enterRoom(code,'',token);},{code:cave.code,token:cave.boardToken});
@@ -90,7 +91,7 @@ const out=path.join(__dirname,'output','v158');fs.mkdirSync(out,{recursive:true}
   const gateRoom=G.makeRoom('normal','twin_gate_cavern');
   gateRoom.players=[{id:'g0',name:'門通過テスト',charId:'adel'},{id:'g1',name:'相手',charId:'redani'}];G.startGame(gateRoom);gateRoom.pending={};
   const gp=gateRoom.players[0];gp.pos=18;gp.previousTile=17;gp.dir=1;
-  const live=await browser.newPage({viewport:{width:1280,height:720}});observe(live);await live.goto(base+'/play');
+  const live=await browser.newPage({viewport:{width:1280,height:720}});await observe(live);await live.goto(base+'/play');
   await live.evaluate(({code,token})=>{document.getElementById('titleOv').classList.remove('on');enterRoom(code,'',token);},{code:gateRoom.code,token:gateRoom.boardToken});
   await live.waitForFunction(()=>state?.players[0]?.pos===18&&PW.isReady());
   G.performMove(gateRoom,gp,6,{value:6,suppressPresentation:true},'門の検査');G.broadcast(gateRoom);

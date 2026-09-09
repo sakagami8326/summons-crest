@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
+const START_DEVICE = require('./public/assets/start-guide/device');
 
 const VERSION = '1.59';
 const MAPS = require('./public/map-definitions');
@@ -4039,7 +4040,16 @@ const server = http.createServer(async (req, res) => {
   if (p === '/cards') return serveFile(res, 'site/cards.html');
   if (p === '/rules') return serveFile(res, 'site/rules.html');
   if (p === '/news/2026-09-08-bug-fixes') return serveFile(res, 'site/news-bug-fixes-20260908.html');
-  if (p === '/play') return serveFile(res, 'board.html');
+  if (p === '/start') return serveFile(res, 'start.html');
+  if (p === '/play') {
+    res.setHeader('Vary', 'User-Agent');
+    const device = START_DEVICE.classify(req.headers['user-agent']);
+    if (device === 'phone' || (device === 'tablet' && url.searchParams.get('screen') !== 'board')) {
+      res.writeHead(302, { Location: '/start?entry=1', 'Cache-Control': 'no-store' });
+      return res.end();
+    }
+    return serveFile(res, 'board.html');
+  }
   if (p === '/board') { res.writeHead(302, { Location: '/play' }); return res.end(); }
   if (p === '/site') { res.writeHead(302, { Location: '/' }); return res.end(); }
   if (p === '/phone') return serveFile(res, 'phone.html');

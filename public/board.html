@@ -2,6 +2,9 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
+<script src="/assets/start-guide/device.js"></script>
+<script src="/assets/start-guide/entry.js" data-context="board"></script>
+<link rel="stylesheet" href="/assets/start-guide/entry.css">
 <title>SUMMONS CODE — 盤面</title>
 <script src="/analytics.js"></script>
 <style>
@@ -1324,8 +1327,9 @@
     <div class="titleCenter">
       <img class="tlogo" src="/assets/summons-code-blue.svg" alt="SUMMONS CODE">
       <div class="titleMenu">
-        <button class="gbtn" id="titleCreate">ルームを作る</button>
-        <button class="gbtn" id="titleBot">BOT戦</button>
+        <button class="gbtn" id="titleCreate">ルームを作る <span class="titleModeHint">2〜4人で対戦</span></button>
+        <button class="gbtn" id="titleBot">BOT戦 <span class="titleModeHint">1人＋BOT</span></button>
+        <button class="gbtn" id="titleGuide" data-start-guide>始め方・画面の準備</button>
         <div id="titleResumeWrap">
           <button class="gbtn" id="titleResume"></button>
           <button id="resumeClose" title="このルームを閉じる">✕ 閉じる</button>
@@ -1336,7 +1340,7 @@
           <button class="gbtn" id="saveResume"></button>
           <div style="display:flex; gap:8px;">
             <button class="saveSmall" id="saveExport">セーブを書き出す</button>
-            <button class="saveSmall" id="saveImportBtn">ファイルから再開</button>
+            <button class="saveSmall" id="saveImportBtn">セーブデータを読み込む</button>
             <input type="file" id="saveImport" accept="application/json,.json" style="display:none">
           </div>
           <div id="saveMsg" style="font-size:13px; color:#8f3028; min-height:1.2em; max-width:60vw;"></div>
@@ -1371,7 +1375,9 @@
     <div class="bigcode" id="bigcode">----</div>
     <div id="qrBox" style="margin-top:4px"></div>
     <div class="joined" id="joined"></div>
+    <p class="lobbySetupHint" id="lobbySetupHint"></p>
     <button class="gbtn" id="startBtn" disabled>キャラ選択を開始</button>
+    <button class="startGuideButton" id="lobbyGuide" data-start-guide>始め方を見る</button>
     <button class="gbtn" id="lobbyCancel" style="background:transparent; color:var(--gold-soft); border:1px solid var(--gold); font-size:14px; padding:9px 24px;">タイトルへ戻る(ルームを閉じる)</button>
   </div>
 
@@ -4552,6 +4558,10 @@ function render() {
       ? state.players.filter(p => !p.isBot).length !== 1
       : state.players.length < 2;
     $('startBtn').textContent = state.botMode ? 'BOT戦のキャラ選択を開始' : 'キャラ選択を開始';
+    const humans = state.players.filter(p => !p.isBot).length;
+    $('lobbySetupHint').textContent = state.botMode
+      ? `スマホから ${humans} / 1 人参加中。1人参加するとキャラ選択を開始できます。`
+      : `${humans} / 4 人参加中。2人以上そろったら、盤面側でキャラ選択を開始してください。`;
   }
   // キャラ選択
   $('selectOv').classList.toggle('on',
