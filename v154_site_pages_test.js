@@ -101,7 +101,7 @@ for (const asset of [
   'how-step-qr-redani-v154-768.webp','how-step-qr-redani-v154-1280.webp',
   'how-step-summoner-v154-768.webp','how-step-summoner-v154-1200.webp',
 ]) ok(exists(`public/assets/site/${asset}`), `optimized asset exists: ${asset}`);
-ok(/image-set\([^)]*summoner-bg-v154-1280\.webp/.test(homeCss), 'hero uses responsive WebP background');
+ok(/<picture class="hero__background"[\s\S]*<source media="\(max-width: 52rem\) and \(orientation: portrait\)"[\s\S]*hero-fire-water-mobile-v1-640\.webp 640w[\s\S]*hero-fire-water-mobile-v1-887\.webp 887w[\s\S]*hero-fire-water-desktop-v1-1280\.webp 1280w[\s\S]*hero-fire-water-desktop-v1-1672\.webp 1672w[\s\S]*fetchpriority="high"[\s\S]*<\/picture>/.test(home), 'hero selects a priority WebP image for portrait or landscape screens');
 ok(/<picture>[\s\S]*how-step-qr-redani-v154-768\.webp/.test(home), 'how-to images use responsive WebP sources');
 ok(/content-visibility:\s*auto/.test(homeCss) && /contain-intrinsic-size/.test(homeCss), 'below-fold sections reserve layout while skipping initial rendering');
 ok(/showcaseVisible/.test(homeJs) && /carouselVisible/.test(homeJs), 'offscreen card and summoner animation work is paused');

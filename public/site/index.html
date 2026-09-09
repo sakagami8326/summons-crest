@@ -24,7 +24,7 @@
   <link rel="icon" href="/assets/site/spark-star.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/site/design-system.css?v=154">
   <link rel="stylesheet" href="/site/concept-section.css?v=154">
-  <link rel="stylesheet" href="/site/homepage.css?v=154">
+  <link rel="stylesheet" href="/site/homepage.css?v=hero-fire-water-1">
   <link rel="stylesheet" href="/site/site-header.css?v=154-3">
   <script src="/analytics.js"></script>
   <script src="/site/homepage.js?v=154" defer></script>
@@ -69,8 +69,10 @@
 
   <main id="main">
     <section class="hero" id="top" aria-labelledby="hero-title">
-      <div class="hero__background" aria-hidden="true"></div>
-      <div class="hero__rings" aria-hidden="true"><i></i><i></i></div>
+      <picture class="hero__background" aria-hidden="true">
+        <source media="(max-width: 52rem) and (orientation: portrait)" srcset="/assets/site/hero-fire-water-mobile-v1-640.webp 640w, /assets/site/hero-fire-water-mobile-v1-887.webp 887w" sizes="100vw">
+        <img src="/assets/site/hero-fire-water-desktop-v1-1672.webp" srcset="/assets/site/hero-fire-water-desktop-v1-1280.webp 1280w, /assets/site/hero-fire-water-desktop-v1-1672.webp 1672w" sizes="(max-aspect-ratio: 1672/941) 178svh, 100vw" width="1672" height="941" alt="" fetchpriority="high">
+      </picture>
       <div class="hero__content">
         <p class="hero__release">EARLY ACCESS <span>2026.08.31</span></p>
         <img class="hero__logo" src="/assets/summons-code-gold.svg" alt="SUMMONS CODE" width="1415" height="744" fetchpriority="high">
