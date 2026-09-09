@@ -14,6 +14,10 @@ const phoneUA='Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKi
     const ctx=await browser.newContext({viewport:{width:1440,height:900}}),p=await ctx.newPage();watch(p);
     await p.goto(base+'/play');let f=p.frameLocator('.sc-guide-dialog iframe');
     await f.getByRole('heading',{name:'遊ぶ環境を選ぶ'}).waitFor();assert.equal(await f.locator('.choices>.choice').count(),3);
+    await p.setViewportSize({width:1920,height:1080});
+    assert.ok(await p.locator('.sc-guide-dialog').evaluate(el=>{const r=el.getBoundingClientRect();return Math.abs(r.left-(innerWidth-r.right))<2&&Math.abs(r.top-(innerHeight-r.bottom))<2;}),'guide dialog is centered on wide screens');
+    await p.screenshot({path:path.join(out,'desktop-centered-1080.png')});
+    await p.setViewportSize({width:1440,height:900});
     await f.locator('h1').focus();await p.keyboard.press('ArrowDown');assert.equal(await f.locator('[data-action="method-pc"]').evaluate(el=>el===document.activeElement),true);
     await p.screenshot({path:path.join(out,'desktop.png')});
     await p.setViewportSize({width:1280,height:720});await p.screenshot({path:path.join(out,'desktop-720.png')});
