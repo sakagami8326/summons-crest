@@ -15,6 +15,7 @@
   }
   let mode = device === 'tablet' && !role ? 'role' : 'choose';
   let method = ['pc','pc-tv','fire-tv','google-tv'].includes(params.get('method')) ? params.get('method') : '';
+  if (device === 'phone' && !params.has('method')) mode = 'mobile';
   let display = 'tv', os = 'windows', step = 0;
   if (method && mode !== 'role') mode = method === 'pc-tv' ? 'display' : 'slides';
   const titles = { pc:'PCの画面で遊ぶ', 'pc-tv':'PCを外部画面に映す', 'fire-tv':'Fire TVで開く', 'google-tv':'Google TVで開く' };
@@ -70,9 +71,14 @@
       {stage:3,title:'スマホでQRを読み取り、参加する',image:'how-step-qr-redani-v154-768.webp',body:'盤面に表示されたQRコードを<strong>各自のスマホ</strong>で読み取り、名前を入力して<strong>「参加する」</strong>を押します。',small:'QRから開けばルームコードの入力は不要です。QRが使えない場合は「ルームコードで参加する」から4文字のコードを入力します。参加後はスマホを横向きにし、画面の案内に沿って召喚士を確定。全員の準備ができたら、盤面側で「ゲーム開始」を押します。'}
     ]);
   }
+  function scanArt() {
+    const qr=(x,y,size)=>`<g transform="translate(${x} ${y}) scale(${size/60})"><rect width="60" height="60" rx="3" fill="#fff"/><g fill="none" stroke="#172b42" stroke-width="4"><path d="M7 7h14v14H7zM39 7h14v14H39zM7 39h14v14H7z"/></g><g fill="#172b42"><path d="M11 11h6v6h-6zM43 11h6v6h-6zM11 43h6v6h-6zM28 7h5v11h-5zM27 25h12v6H27zM7 27h13v5H7zM27 38h6v15h-6zM39 35h7v7h-7zM47 47h7v7h-7zM39 49h5v5h-5zM49 27h5v12h-5z"/></g></g>`;
+    return `<svg class="scan-art" viewBox="0 0 340 190" role="img" aria-label="PC・テレビの盤面に映ったQRコードを、スマホのカメラで読み取る図"><rect x="14" y="12" width="222" height="138" rx="8" fill="#091828" stroke="#a0bad0" stroke-width="3"/><rect x="23" y="21" width="204" height="120" rx="3" fill="#1a344d"/>${boardTiles(29,38,100,82)}${qr(143,49,62)}<path d="M112 151v16H78m34 0h48" fill="none" stroke="#a0bad0" stroke-width="5" stroke-linecap="round"/><path d="M203 60l54 20m-54 31l54 20" stroke="#ebc575" stroke-width="2" stroke-dasharray="5 5"/><g transform="translate(238 49) rotate(9 40 63)"><rect width="79" height="132" rx="13" fill="#0a192b" stroke="#a0bad0" stroke-width="3"/><rect x="7" y="17" width="65" height="98" rx="3" fill="#26445b"/><path d="M30 8h19" stroke="#a0bad0" stroke-width="3" stroke-linecap="round"/>${qr(18,40,44)}<path d="M12 46V34h12m31 0h12v12M12 77v13h12m31 0h12V77" fill="none" stroke="#ebc575" stroke-width="3"/><circle cx="40" cy="105" r="5" fill="#f4e6bd"/></g></svg>`;
+  }
   function render(focus=true) {
     let html='';
-    if(mode==='role') html=header()+`<section class="role-choice"><h1 class="step-heading" tabindex="-1">このタブレットをどう使いますか？</h1><p class="note">みんなで見る盤面にも、手元の操作用にも使えます。</p><div class="choices">${card('role-board','盤面を表示する','みんなで見る画面にする','各自のスマホで操作します','tv')}${card('role-phone','操作用として参加する','手札やサイコロを操作','別の端末に盤面を表示します','phones')}</div></section>`+footer();
+    if(mode==='mobile') html=header().replace(/<span class="progress">[\s\S]*?<\/span>/,'').replace(/<button class="button primary skip-button"[\s\S]*?<\/button>/,embedded?button('finish','閉じる'):'')+`<section class="mobile-welcome"><h1 tabindex="-1">ゲームは<br><strong>PC・テレビ</strong>で<br>開いてください</h1>${roles()}<p class="controller-message">スマホは<span>コントローラー</span>です</p><figure class="scan-instruction">${scanArt()}<figcaption>盤面のQRをスマホで読み取って参加</figcaption></figure>${button('choose','PC・テレビの準備方法を見る　›',true)}</section>`+footer();
+    else if(mode==='role') html=header()+`<section class="role-choice"><h1 class="step-heading" tabindex="-1">このタブレットをどう使いますか？</h1><p class="note">みんなで見る盤面にも、手元の操作用にも使えます。</p><div class="choices">${card('role-board','盤面を表示する','みんなで見る画面にする','各自のスマホで操作します','tv')}${card('role-phone','操作用として参加する','手札やサイコロを操作','別の端末に盤面を表示します','phones')}</div></section>`+footer();
     else if(mode==='choose') html=header()+`<section class="intro"><div><h1 tabindex="-1">遊ぶ環境を選ぶ</h1><p>みんなで見る画面と、操作するスマホを用意しましょう。</p></div>${roles()}</section><div class="choices">${card('method-pc','PCの画面で遊ぶ',['PC','各自のスマホ'],'テレビへの接続は不要','pc',true)}${card('method-pc-tv','PCをテレビ・モニター・<br>スクリーンに映す',['PC','表示機器','映像ケーブル','各自のスマホ'],'スクリーンにはプロジェクターで投映','pc-tv')}${card('stream','Fire TV・Google TVで開く',['テレビ・プロジェクター','対応ブラウザ','各自のスマホ'],'PCを使わずに盤面を表示','stream',false,true)}</div><p class="note">どの方法でも、操作には各自のスマホを使います。<br>1人でBOT戦をする場合も、盤面用の画面と操作用スマホが必要です。</p>`+footer();
     else if(mode==='display'||mode==='stream') {
       const isDisplay=mode==='display';

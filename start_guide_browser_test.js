@@ -45,16 +45,19 @@ const phoneUA='Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKi
     await p.screenshot({path:path.join(out,'title.png')});
     const mobileCtx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,userAgent:phoneUA});
     const m=await mobileCtx.newPage();watch(m);const requests=[];m.on('request',r=>requests.push(r.url()));
-    await m.goto(base+'/play?screen=board');await m.getByRole('heading',{name:'遊ぶ環境を選ぶ'}).waitFor();assert.match(m.url(),/\/start/);
+    await m.goto(base+'/play?screen=board');await m.locator('.mobile-welcome').waitFor();assert.match(m.url(),/\/start/);
     assert.ok(!requests.some(u=>/board_world|phaser|full_redani|map-definitions/.test(u)));
     const imageBytes=await m.evaluate(()=>performance.getEntriesByType('resource').filter(r=>r.initiatorType==='img').reduce((n,r)=>n+r.encodedBodySize,0));assert.ok(imageBytes<100000);
     assert.equal(await m.locator('.footer>.button').count(),0);
     assert.equal(await m.locator('.guide-title').innerText(),'遊び方');
-    assert.ok(await m.getByRole('button',{name:'遊び方をスキップ'}).isVisible());
+    assert.match(await m.locator('h1').innerText(),/PC・テレビ/);
+    assert.ok(await m.locator('.scan-art').isVisible());
+    assert.equal(await m.locator('.choices').count(),0);
     await m.screenshot({path:path.join(out,'mobile.png'),fullPage:true});
     assert.ok(await m.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
     await m.setViewportSize({width:320,height:640});assert.ok(await m.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
     await m.screenshot({path:path.join(out,'mobile-320.png')});await m.setViewportSize({width:390,height:844});
+    await m.getByRole('button',{name:'PC・テレビの準備方法を見る'}).click();await m.getByRole('heading',{name:'遊ぶ環境を選ぶ'}).waitFor();
     for(const route of ['pc','pc-tv','fire-tv','google-tv','unknown']) {await m.goto(base+'/start?method='+route);await m.locator('h1').waitFor();assert.equal(await m.locator('iframe').count(),0);if(route==='unknown')assert.equal(await m.locator('.choices>.choice').count(),3);}
     await m.goto(base+'/start?method=pc');await m.getByRole('heading',{name:'盤面側でルームを作る'}).waitFor();
     assert.equal(await m.locator('[data-action="copy"]').count(),0);assert.equal(await m.locator('#game-url').count(),0);
