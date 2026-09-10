@@ -54,7 +54,8 @@
     "test:save": "node save_test.js",
     "test:timing": "node timing_test.js",
     "test:phaser": "node phaser_test.js",
-    "test:v158": "node v158_maps_test.js"
+    "test:v158": "node v158_maps_test.js",
+    "test:site-audio-news": "node site_audio_news_test.js"
   },
   "engines": {
     "node": "22.x"

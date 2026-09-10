@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
+const SITE_NEWS = require('./site-news');
 const START_DEVICE = require('./public/assets/start-guide/device');
 
 const VERSION = '1.59';
@@ -3936,7 +3937,7 @@ const MIME = {
   png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', webm: 'video/webm',
   svg: 'image/svg+xml', ico: 'image/x-icon', woff: 'font/woff', woff2: 'font/woff2', otf: 'font/otf'
 };
-function serveFile(res, rel) {
+function serveFile(res, rel, newsCategory) {
   const fp = path.join(__dirname, 'public', rel);
   if (!fp.startsWith(path.join(__dirname, 'public'))) { res.writeHead(403); return res.end(); }
   fs.stat(fp, (statErr, stat) => {
@@ -3949,7 +3950,8 @@ function serveFile(res, rel) {
     const isCode = ext === '.css' || ext === '.js' || ext === '.json';
     const cacheControl = isHtml ? 'no-cache' : isCode ? 'public, max-age=300, must-revalidate'
       : versioned ? 'public, max-age=31536000, immutable' : 'public, max-age=604800, stale-while-revalidate=86400';
-    const etag = `W/\"${stat.size.toString(16)}-${Math.trunc(stat.mtimeMs).toString(16)}\"`;
+    const newsTag = rel==='site/index.html'||rel==='site/news-index.html' ? '-'+crypto.createHash('sha256').update(SITE_NEWS.version+String(newsCategory||'')).digest('hex').slice(0,12) : '';
+    const etag = `W/\"${stat.size.toString(16)}-${Math.trunc(stat.mtimeMs).toString(16)}${newsTag}\"`;
     const headers = {
       'Content-Type': type + charset,
       'Cache-Control': cacheControl,
@@ -3959,7 +3961,7 @@ function serveFile(res, rel) {
     };
     const request = res.req;
     if (request && (request.headers['if-none-match'] === etag ||
-        (!request.headers['if-none-match'] && request.headers['if-modified-since'] &&
+        (!newsTag && !request.headers['if-none-match'] && request.headers['if-modified-since'] &&
          Date.parse(request.headers['if-modified-since']) >= Math.trunc(stat.mtimeMs / 1000) * 1000))) {
       res.writeHead(304, headers);
       return res.end();
@@ -3968,7 +3970,7 @@ function serveFile(res, rel) {
       if (err) { res.writeHead(404); return res.end('not found'); }
       res.writeHead(200, headers);
       if (request && request.method === 'HEAD') return res.end();
-      res.end(data);
+      res.end(newsTag ? SITE_NEWS.render(data.toString(),newsCategory) : data);
     });
   });
 }
@@ -4037,6 +4039,10 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const p = url.pathname;
   if (p === '/') return serveFile(res, 'site/index.html');
+  if (p === '/news') return serveFile(res, 'site/news-index.html', url.searchParams.get('category'));
+  if (p === '/news/2026-09-10-start-guide') return serveFile(res, 'site/news-2026-09-10-start-guide.html');
+  if (p === '/news/2026-08-31-feedback') return serveFile(res, 'site/news-2026-08-31-feedback.html');
+  if (p === '/news/2026-08-31-release') return serveFile(res, 'site/news-2026-08-31-release.html');
   if (p === '/cards') return serveFile(res, 'site/cards.html');
   if (p === '/rules') return serveFile(res, 'site/rules.html');
   if (p === '/news/2026-09-08-bug-fixes') return serveFile(res, 'site/news-bug-fixes-20260908.html');

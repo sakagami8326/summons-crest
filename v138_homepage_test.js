@@ -6,7 +6,7 @@ let pass = 0;
 const ok = (cond, name) => { if (!cond) throw new Error('FAIL: ' + name); pass++; };
 const read = rel => fs.readFileSync(path.join(__dirname, rel), 'utf8');
 const exists = rel => fs.existsSync(path.join(__dirname, rel));
-const html = read('public/site/index.html');
+const html = require('./site-news').render(read('public/site/index.html'));
 const css = read('public/site/homepage.css') + '\n' + read('public/site/site-header.css');
 const conceptCss = read('public/site/concept-section.css');
 const js = read('public/site/homepage.js');
@@ -32,7 +32,7 @@ ok(/concept__tv-stand[\s\S]*concept__caption concept__caption--tv/.test(html) &&
 ok(!/秘密の手札|隠された選択/.test(html), 'ambiguous secret-hand copy is absent');
 ok((html.match(/href="\/play"/g) || []).length >= 5, 'all primary game CTAs link to the TV game');
 ok(!/COMING SOON|is-coming-soon|ゲームは2026年8月31日公開予定/.test(html), 'early access launch removes coming-soon states');
-ok((html.match(/<a class="[^"]*\bplay-cta\b[^"]*" href="\/play"/g) || []).length === 4 && /sc-game-launcher sc-game-launcher--play/.test(html), 'all homepage game CTAs use the dedicated play treatment');
+ok((html.match(/<a class="[^"]*\bplay-cta\b[^"]*" href="\/play"/g) || []).length === 3 && /sc-game-launcher sc-game-launcher--play/.test(html), 'all homepage game CTAs use the dedicated play treatment');
 ok((html.match(/無料でゲームを始める/g) || []).length >= 3 && /無料でプレイ/.test(html), 'primary and compact CTAs use the approved free-play copy');
 ok(/play-cta--hero[^>]*href="\/play"[\s\S]*play-cta__copy[\s\S]*ブラウザですぐにプレイ/.test(html), 'hero CTA includes the browser-play supporting copy');
 ok(/\.play-cta\s*\{[^}]*color:\s*var\(--sc-ink-900\)[^}]*linear-gradient\(135deg, #efd98f 0%, #c9a227 55%, #d9b64f 100%\)/.test(css), 'play CTA uses the approved gold fill and navy text');
@@ -82,8 +82,8 @@ ok(/\.site-card-art[^}]*filter: drop-shadow\(0 0 [^)]+rgb\(255 255 255/.test(css
 ok(!/\.site-card-art[^}]*box-shadow:/.test(css) && !/\.site-game-card[^}]*box-shadow:/.test(css), 'showcase card and artwork have no rectangular box shadow');
 ok(!/\.card-panel img[^}]*(?:border|box-shadow):/.test(css), 'generic card panel styles do not add a border or shadow to showcase art');
 ok(/\.news\s*\{[^}]*padding:\s*clamp\(3\.5rem, 6vw, 5\.5rem\) 0 clamp\(2\.5rem, 4vw, 4rem\)/.test(css), 'news section uses compact vertical spacing');
-ok(/<time datetime="2026-08-31">2026\.08\.31<\/time>/.test(html) && /SUMMONS CODEを公開しました/.test(html), 'news section announces the early access release');
-ok(/class="news-entry__link play-cta play-cta--news" href="\/play"/.test(html) && !/公開準備中/.test(html), 'release news links to the game and removes the preparation placeholder');
+ok(html.includes('href="/news"') && html.includes('ゲームの始め方ガイドを追加しました'), 'news shows latest update and links to archive');
+ok(require('./site-news').entries.some(e=>e.slug==='2026-08-31-release') && !/公開準備中/.test(html), 'release article remains in the news archive');
 ok(/\.final-cta\s*\{[^}]*min-height:\s*0[^}]*padding:\s*clamp\(3\.5rem, 6vw, 5rem\)/.test(css), 'final call to action no longer creates a large empty block below news');
 ok(/\.final-cta > :not\(\.final-cta__ring\)/.test(css) && /\.final-cta__ring\s*\{[^}]*position:\s*absolute/.test(css), 'decorative final CTA ring stays out of document flow');
 ok(!/\.card-fan \.is-featured[^}]*(?:top|width):/.test(css) && /--focus-boost/.test(css), 'featured card changes scale without snapping top or width');
@@ -108,8 +108,8 @@ ok(/prefers-reduced-motion/.test(css) && /animation: none !important/.test(css),
 
 ok(/\.hero h1\s*\{[^}]*white-space:\s*nowrap/.test(css), 'hero headline stays on one line');
 ok(/property="og:url" content="https:\/\/summonscode\.jp\/"/.test(html), 'Open Graph URL uses the official domain');
-ok(/property="og:image" content="https:\/\/summonscode\.jp\/assets\/site\/og-summons-code-v1\.png"/.test(html), 'Open Graph image URL uses the official domain');
-ok(/name="twitter:image" content="https:\/\/summonscode\.jp\/assets\/site\/og-summons-code-v1\.png"/.test(html), 'Twitter image metadata uses the official domain');
+ok(/property="og:image" content="https:\/\/summonscode\.jp\/assets\/site\/og-summons-code-v2\.jpg"/.test(html), 'Open Graph image URL uses the official domain');
+ok(/name="twitter:image" content="https:\/\/summonscode\.jp\/assets\/site\/og-summons-code-v2\.jpg"/.test(html), 'Twitter image metadata uses the official domain');
 ok(/rel="canonical" href="https:\/\/summonscode\.jp\/"/.test(html) && /name="description"/.test(html), 'canonical uses the official domain and description metadata is present');
 ok(/class="skip-link"/.test(html) && /aria-live="polite"/.test(html), 'skip navigation and live carousel information are present');
 ok(/SUMMONS CODEは個人開発ゲームです。/.test(html), 'footer identifies SUMMONS CODE as an independently developed game');

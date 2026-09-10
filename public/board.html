@@ -2373,8 +2373,9 @@ document.getElementById('titleSoundToggle').onclick = e => {
 };
 let bgmN = null, bgmR = null, bgmBattle = null, bgmSelect = null, bgmMuted = false, bgmCur = null;
 let bgmFadeTimer = null, bgmFadeFrom = null;
+const caveBgm = {};
 let seTelop = null, seSummon = null, seEvolve = null, seBattleFinish = null, seCastleBonus = null, seUltCutin = null;
-const audioList = () => [bgmN, bgmR, bgmBattle, bgmSelect,
+const audioList = () => [bgmN, bgmR, bgmBattle, bgmSelect, ...Object.values(caveBgm),
   seTelop, seSummon, seEvolve, seBattleFinish, seCastleBonus, seUltCutin].filter(Boolean);
 function stopAudio(a) {
   if (!a) return;
@@ -2433,10 +2434,22 @@ function playSe(a) {
   if (!a || bgmMuted) return;
   try { a.pause(); a.currentTime = 0; a.play().catch(() => {}); } catch (e) {}
 }
+function boardBgmTrack(which) {
+  if (state?.mapId === 'twin_gate_cavern' && (which === 'normal' || which === 'reach')) {
+    if (!caveBgm[which]) {
+      const track = new Audio();
+      track.preload = 'none'; track.loop = true; track.volume = 0.35; track.muted = bgmMuted;
+      track.src = which === 'normal' ? '/assets/bgm-twin-gate-cavern-normal-v1.mp3' : '/assets/bgm-twin-gate-cavern-reach-v1.mp3';
+      caveBgm[which] = track;
+    }
+    return caveBgm[which];
+  }
+  return which === 'battle' ? bgmBattle : which === 'reach' ? bgmR
+    : which === 'normal' ? bgmN : which === 'select' ? bgmSelect : null;
+}
 function setBgm(which) {
   if (!bgmN) return;
-  const t = which === 'battle' ? bgmBattle : which === 'reach' ? bgmR
-    : which === 'normal' ? bgmN : which === 'select' ? bgmSelect : null;
+  const t = boardBgmTrack(which);
   if (bgmCur === t) return;
   clearInterval(bgmFadeTimer); bgmFadeTimer = null;
   if (bgmFadeFrom && bgmFadeFrom !== bgmCur) {
@@ -2449,8 +2462,7 @@ function setBgm(which) {
 }
 function crossfadeBgmTo(which, duration = 650) {
   if (!bgmN || bgmMuted || duration <= 0) return setBgm(which);
-  const to = which === 'battle' ? bgmBattle : which === 'reach' ? bgmR
-    : which === 'normal' ? bgmN : which === 'select' ? bgmSelect : null;
+  const to = boardBgmTrack(which);
   if (!to) return fadeBgmTo(null, duration);
   if (bgmCur === to) {
     to.volume = 0.35;

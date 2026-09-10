@@ -12,7 +12,7 @@ const ok = (condition, name) => {
 const read = rel => fs.readFileSync(path.join(__dirname, rel), 'utf8');
 const exists = rel => fs.existsSync(path.join(__dirname, rel));
 const serverSource = read('server.js');
-const home = read('public/site/index.html');
+const home = require('./site-news').render(read('public/site/index.html'));
 const homeCss = read('public/site/homepage.css');
 const homeJs = read('public/site/homepage.js');
 const cardsHtml = read('public/site/cards.html');
@@ -36,7 +36,7 @@ ok((newsHtml.match(/<h1\b/g) || []).length === 1, 'article has one primary headi
 for (const text of ['ムーブ', 'サーベイ', 'ザシャック', 'シュテリオ', 'エアロシュティレ', 'ご報告ありがとうございました', '改善を続けていきます']) {
   ok(newsHtml.includes(text), 'article covers ' + text);
 }
-ok(newsHtml.includes('href="/#feedback"') && newsHtml.includes('href="/#news"'), 'article links to feedback and news');
+ok(newsHtml.includes('href="/#feedback"') && newsHtml.includes('href="/news"'), 'article links to feedback and news');
 ok(!/src="[^"]*(cards|rules)\.js/.test(newsHtml), 'article avoids unrelated page scripts');
 
 ok(/const VERSION = '1\.59'/.test(serverSource) && require('./package.json').version === '1.59.0', 'v1.54 site pages remain covered by v1.59');

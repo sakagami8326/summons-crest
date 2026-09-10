@@ -35,8 +35,8 @@ ok(pages.every(page => /<script src="\/analytics\.js"><\/script>/.test(page)),
 ok(/p === '\/analytics\.js'/.test(server), '共通タグを公開URLから配信する');
 ok(/window\.SummonsAnalytics\s*=\s*Object\.freeze\(\{ track, trackOnce \}\)/.test(analytics) &&
   /sc_analytics_once_v1/.test(analytics), '共通イベント送信と重複防止を提供する');
-ok((site.match(/data-game-cta="[^"]+"/g) || []).length === 6 &&
-  /game_start_cta_click/.test(homepage), '6か所のゲーム開始CTAクリックを計測する');
+ok((site.match(/data-game-cta="[^"]+"/g) || []).length === 5 &&
+  /game_start_cta_click/.test(homepage), '5か所のゲーム開始CTAクリックを計測する');
 ok(/room_created/.test(board) && /room_mode/.test(board), 'ルーム作成成功をモード付きで計測する');
 ok(/bot_match_started/.test(board) && /match_started/.test(board),
   'BOT戦と通常対戦の開始成功を別イベントで計測する');
