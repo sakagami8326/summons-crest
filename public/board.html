@@ -49,6 +49,15 @@
 
   /* HUD */
   #hud { position:fixed; top:14px; left:14px; width:236px; z-index:30; }
+  #botSpeedBar { position:fixed; top:12px; right:18px; z-index:39; display:flex;
+    align-items:center; gap:7px; flex-wrap:wrap; max-width:290px; padding:8px 10px;
+    background:rgba(13,24,43,.94); border:1px solid #c9a227; border-radius:9px; color:#f1e8d0; font:14px sans-serif; }
+  #botSpeedBar[hidden] { display:none; }
+  #botSpeedBar button { min-width:44px; min-height:32px; border:1px solid #b49742; border-radius:5px;
+    background:#1b263e; color:#f5e8bc; cursor:pointer; font:700 16px sans-serif; }
+  #botSpeedBar button[aria-pressed="true"] { background:#efd98f; color:#14243e; box-shadow:0 0 0 1px #f8eab6; }
+  #botSpeedBar button:disabled { opacity:.6; cursor:wait; }
+  #botSpeedStatus { flex-basis:100%; font-size:11px; line-height:1.4; }
   .plate { position:absolute; left:0; width:236px; height:66px;
            background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22236%22%20height%3D%2266%22%3E%3Cdefs%3E%3Cfilter%20id%3D%22e%22%20x%3D%22-6%25%22%20y%3D%22-14%25%22%20width%3D%22112%25%22%20height%3D%22128%25%22%3E%3CfeTurbulence%20type%3D%22fractalNoise%22%20baseFrequency%3D%220.035%200.1%22%20numOctaves%3D%224%22%20seed%3D%227%22%20result%3D%22t%22%2F%3E%3CfeDisplacementMap%20in%3D%22SourceGraphic%22%20in2%3D%22t%22%20scale%3D%227%22%2F%3E%3C%2Ffilter%3E%3Cfilter%20id%3D%22g%22%3E%3CfeTurbulence%20type%3D%22fractalNoise%22%20baseFrequency%3D%220.8%22%20numOctaves%3D%222%22%20seed%3D%224%22%20result%3D%22n%22%2F%3E%3CfeColorMatrix%20in%3D%22n%22%20values%3D%220%200%200%200%200.32%200%200%200%200%200.25%200%200%200%200%200.13%200%200%200%200.35%200%22%20result%3D%22c%22%2F%3E%3CfeComposite%20in%3D%22c%22%20operator%3D%22in%22%20in2%3D%22SourceAlpha%22%2F%3E%3C%2Ffilter%3E%3CradialGradient%20id%3D%22v%22%20cx%3D%2250%25%22%20cy%3D%2245%25%22%20r%3D%2275%25%22%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%235A3B14%22%20stop-opacity%3D%220%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%235A3B14%22%20stop-opacity%3D%220.38%22%2F%3E%3C%2FradialGradient%3E%3C%2Fdefs%3E%3Cg%20filter%3D%22url%28%23e%29%22%3E%3Crect%20x%3D%225%22%20y%3D%224%22%20width%3D%22226%22%20height%3D%2258%22%20rx%3D%222%22%20fill%3D%22%23E8DAB4%22%2F%3E%3Crect%20x%3D%225%22%20y%3D%224%22%20width%3D%22226%22%20height%3D%2258%22%20rx%3D%222%22%20fill%3D%22%23000%22%20filter%3D%22url%28%23g%29%22%2F%3E%3Crect%20x%3D%225%22%20y%3D%224%22%20width%3D%22226%22%20height%3D%2258%22%20rx%3D%222%22%20fill%3D%22url%28%23v%29%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E") no-repeat center / 100% 100%;
            padding:10px 14px 10px 16px; color:#3A2B18;
@@ -1302,6 +1311,10 @@
   <div id="world"><div id="stage"></div><div id="pawnLayer"></div><div id="spot"></div></div>
   <div id="tileInfo"></div>
   <div id="hud"></div>
+  <div id="botSpeedBar" hidden aria-label="BOT演出速度">
+    <span>BOT演出</span><button id="botSpeed1" type="button" aria-pressed="true">1×</button><button id="botSpeed2" type="button" aria-pressed="false">2×</button>
+    <small id="botSpeedStatus" role="status">BOTの移動・戦闘演出を短縮</small>
+  </div>
   <div id="bankruptCut"><div class="bkTxt">破産</div><div class="bkSub" id="bkSub"></div></div>
   <div id="turnCutin"><div class="tcShade"></div><div class="tcRim"></div><img id="tcImg"><div id="tcMsg"></div></div>
   <div id="telop"><img id="telopImg"><div id="telopSub"></div></div>
@@ -1573,6 +1586,7 @@ const QR = (() => {
 <script src="/map-definitions.js?v=159-3"></script>
 <script src="/map-ui.js?v=158"></script>
 <script src="/game_timing.js"></script>
+<script src="/result-graph-audio.js?v=2"></script>
 <script src="/fx_manifest.js"></script>
 <script src="/vendor/phaser.min.js"></script>
 <script src="/board_world.js"></script>
@@ -1751,6 +1765,8 @@ function armTurnStart() {
 
 // ===== v1.51 試合振り返りリザルト =====
 const MR_COLORS = ['#f15a54','#55b6f2','#e4ba45','#63d3a6'];
+const resultGraphAudio = window.createResultGraphAudio?.();
+document.addEventListener('visibilitychange', () => { if (document.hidden) resultGraphAudio?.stop(); });
 let matchResultPlayback = null, matchResultTimer = null, matchResultStartTimer = null;
 let matchResultOpenId = '', matchResultAckId = '';
 const mrEsc = value => String(value == null ? '' : value).replace(/[&<>"']/g, c =>
@@ -1843,6 +1859,7 @@ async function notifyMatchResultComplete(result) {
   catch(e) { matchResultAckId=''; }
 }
 function finishMatchResultPlayback(result, notify=true) {
+  resultGraphAudio?.stop();
   if(matchResultPlayback) { matchResultPlayback.finished=true; matchResultPlayback.paused=false; }
   updateMatchGraphProgress(1); $('mrCallout').classList.remove('on');
   (result.turningPoints||[]).forEach((_,i)=>{ const m=$('mrGraph').querySelector(`.mrMarker[data-tp="${i}"]`); if(m)m.setAttribute('opacity','1'); });
@@ -1861,24 +1878,27 @@ function matchResultTick(now) {
       p.progress=Math.min(1,p.progress+delta*p.speed/18000);
       if(next && p.progress>=stop) { p.progress=stop; showMatchCallout(p.result,p.eventIndex); p.hold=3000; }
       updateMatchGraphProgress(p.progress);
-      if(p.progress>=1) return finishMatchResultPlayback(p.result,true);
+      if(p.progress>=1) { finishMatchResultPlayback(p.result,true); if(!bgmMuted && !document.hidden) resultGraphAudio?.finish(); return; }
     }
   }
+  resultGraphAudio?.update(p.progress, !p.paused && p.hold<=0 && !bgmMuted && !document.hidden);
   matchResultTimer=requestAnimationFrame(matchResultTick);
 }
 function showMatchResult(result, complete=false) {
   if(!result) return;
+  resultGraphAudio?.reset();
   clearTimeout(matchResultStartTimer); cancelAnimationFrame(matchResultTimer); $('winOv').classList.remove('on');
   matchResultOpenId=result.id; $('matchResultOv').classList.add('on'); $('mrHistory').classList.add('on'); $('mrSummary').classList.remove('on');
   renderMatchResultGraph(result); renderMatchRanks(result,complete); renderMatchSummary(result);
   $('mrPlayBtn').disabled=complete; $('mrSpeedBtn').disabled=complete; $('mrNextBtn').textContent=complete?'次へ':'スキップ';
+  $('mrPlayBtn').textContent='一時停止'; $('mrSpeedBtn').textContent='×2';
   matchResultPlayback={result,progress:complete?1:0,eventIndex:0,hold:0,speed:1,paused:false,finished:complete,last:performance.now()};
   if(complete) { requestAnimationFrame(()=>finishMatchResultPlayback(result,false)); return; }
   if(matchMedia('(prefers-reduced-motion: reduce)').matches) { finishMatchResultPlayback(result,true); return; }
   matchResultTimer=requestAnimationFrame(matchResultTick);
 }
 function openMatchSummary() { if(!matchResultPlayback)return; $('mrHistory').classList.remove('on'); $('mrSummary').classList.add('on'); }
-$('mrPlayBtn').onclick=()=>{ const p=matchResultPlayback;if(!p||p.finished)return;p.paused=!p.paused;p.last=performance.now();$('mrPlayBtn').textContent=p.paused?'再開':'一時停止'; };
+$('mrPlayBtn').onclick=()=>{ const p=matchResultPlayback;if(!p||p.finished)return;p.paused=!p.paused;p.last=performance.now();if(p.paused)resultGraphAudio?.stop();$('mrPlayBtn').textContent=p.paused?'再開':'一時停止'; };
 $('mrSpeedBtn').onclick=()=>{const p=matchResultPlayback;if(!p||p.finished)return;p.speed=p.speed===1?2:1;$('mrSpeedBtn').textContent=p.speed===1?'×2':'通常速度';};
 $('mrNextBtn').onclick=()=>{const p=matchResultPlayback;if(!p)return;p.finished?openMatchSummary():finishMatchResultPlayback(p.result,true);};
 $('mrReplayBtn').onclick=()=>matchResultPlayback&&showMatchResult(matchResultPlayback.result,false);
@@ -2371,11 +2391,11 @@ document.getElementById('titleSoundToggle').onclick = e => {
   initAudio();
   setAudioMuted(!bgmMuted, 'select');
 };
-let bgmN = null, bgmR = null, bgmBattle = null, bgmSelect = null, bgmMuted = false, bgmCur = null;
+let bgmN = null, bgmR = null, bgmBattle = null, bgmSelect = null, bgmResult = null, bgmMuted = false, bgmCur = null;
 let bgmFadeTimer = null, bgmFadeFrom = null;
 const caveBgm = {};
 let seTelop = null, seSummon = null, seEvolve = null, seBattleFinish = null, seCastleBonus = null, seUltCutin = null;
-const audioList = () => [bgmN, bgmR, bgmBattle, bgmSelect, ...Object.values(caveBgm),
+const audioList = () => [bgmN, bgmR, bgmBattle, bgmSelect, bgmResult, ...Object.values(caveBgm),
   seTelop, seSummon, seEvolve, seBattleFinish, seCastleBonus, seUltCutin].filter(Boolean);
 function stopAudio(a) {
   if (!a) return;
@@ -2389,6 +2409,7 @@ function syncAudioButtons() {
 }
 function setAudioMuted(muted, resumeBgm) {
   bgmMuted = !!muted;
+  resultGraphAudio?.setMuted(bgmMuted);
   syncAudioButtons();
   if (bgmMuted) {
     clearInterval(bgmFadeTimer); bgmFadeTimer = null;
@@ -2398,14 +2419,17 @@ function setAudioMuted(muted, resumeBgm) {
   }
   audioList().forEach(a => { a.muted = false; });
   if (resumeBgm) setBgm(resumeBgm);
-  else if (bgmCur) bgmCur.play().catch(() => {});
+  else if (bgmCur) { bgmCur.volume = bgmVolume(bgmCur); bgmCur.play().catch(() => {}); }
 }
 function initAudio() {
+  if (!bgmMuted) resultGraphAudio?.unlock();
   if (bgmN) return;
   bgmN = new Audio('/assets/bgm_normal.mp3');
   bgmR = new Audio('/assets/bgm_reach.mp3');
   bgmBattle = new Audio('/assets/bgm_battle.mp3');
   bgmSelect = new Audio('/assets/bgm_select.mp3');
+  bgmResult = new Audio('/assets/bgm-result-v1.mp3?v=provided-20260916');
+  bgmResult.loop = true; bgmResult.volume = 0.25; bgmResult.preload = 'auto';
   seTelop = new Audio('/assets/se_telop.mp3');
   seSummon = new Audio('/assets/se_summon.mp3');
   seEvolve = new Audio('/assets/se_evolve.mp3');
@@ -2445,8 +2469,9 @@ function boardBgmTrack(which) {
     return caveBgm[which];
   }
   return which === 'battle' ? bgmBattle : which === 'reach' ? bgmR
-    : which === 'normal' ? bgmN : which === 'select' ? bgmSelect : null;
+    : which === 'normal' ? bgmN : which === 'select' ? bgmSelect : which === 'result' ? bgmResult : null;
 }
+const bgmVolume = track => track === bgmResult ? 0.25 : 0.35;
 function setBgm(which) {
   if (!bgmN) return;
   const t = boardBgmTrack(which);
@@ -2458,6 +2483,7 @@ function setBgm(which) {
   bgmFadeFrom = null;
   if (bgmCur) { bgmCur.pause(); bgmCur.currentTime = 0; bgmCur.volume = 0.35; }
   bgmCur = t;
+  if (t) t.volume = bgmVolume(t);
   if (t && !bgmMuted) t.play().catch(() => {});
 }
 function crossfadeBgmTo(which, duration = 650) {
@@ -2465,7 +2491,8 @@ function crossfadeBgmTo(which, duration = 650) {
   const to = boardBgmTrack(which);
   if (!to) return fadeBgmTo(null, duration);
   if (bgmCur === to) {
-    to.volume = 0.35;
+    if (bgmFadeTimer) return;
+    to.volume = bgmVolume(to);
     if (to.paused) to.play().catch(() => {});
     return;
   }
@@ -2482,13 +2509,13 @@ function crossfadeBgmTo(which, duration = 650) {
   const started = Date.now(), fromVolume = from ? from.volume : 0;
   bgmFadeTimer = setInterval(() => {
     const k = Math.min(1, (Date.now() - started) / duration);
-    to.volume = 0.35 * k;
+    to.volume = bgmVolume(to) * k;
     if (from) from.volume = fromVolume * (1 - k);
     if (k >= 1) {
       clearInterval(bgmFadeTimer); bgmFadeTimer = null;
       if (from) { from.pause(); from.currentTime = 0; from.volume = 0.35; }
       bgmFadeFrom = null;
-      to.volume = 0.35;
+      to.volume = bgmVolume(to);
     }
   }, 40);
 }
@@ -2512,16 +2539,25 @@ function fadeBgmTo(which, duration) {
   }, 40);
 }
 function restoreBoardBgm(duration = 0) {
+  if (state?.phase === 'ended') return syncResultBgm();
   if (!state || state.phase !== 'playing') return setBgm(null);
   const reach = state.players.some(p => !p.bankrupt && p.points >= (state.reachAt || state.target - 1));
   const next = reach ? 'reach' : 'normal';
   if (duration > 0) crossfadeBgmTo(next, duration); else setBgm(next);
 }
+function syncResultBgm() {
+  if (state?.phase !== 'ended') return;
+  const queuedBattle = state.lastBattle && presentationRegistry.get(presentationId('battle', state.lastBattle.at)) === 'queued';
+  // Allow the final battle, including a queued result, to finish before the result track.
+  if (queuedBattle || battlePlayingKey || activeBattleKey || battleOpeningKey || state.battlePreview ||
+      (state.lastBattle && state.lastBattle.at !== prev.battleAt)) return;
+  crossfadeBgmTo('result', 1000);
+}
 // BGMが不意に止まった場合の自動復帰(3秒ごとの見張り+タブ復帰時)
 function bgmHeal() {
   const titleOpen = document.getElementById('titleOv').classList.contains('on');
   if (bgmCur && !bgmMuted && bgmCur.paused && (titleOpen || (state &&
-      (state.phase === 'playing' || state.phase === 'lobby' || state.phase === 'select'))))
+      (state.phase === 'playing' || state.phase === 'lobby' || state.phase === 'select' || state.phase === 'ended'))))
     bgmCur.play().catch(() => {});
 }
 function startTitleBgm() {
@@ -2733,31 +2769,47 @@ function renderTicker() {
   if (logExpanded) requestAnimationFrame(() => { ticker.scrollTop = ticker.scrollHeight; });
 }
 let botSpeedSaving = false;
-$('optBotSpeed').onclick = async () => {
+function syncBotSpeedUi(message) {
+  const visible = !!state?.botMode && ['lobby','select','playing'].includes(state.phase);
+  $('botSpeedBar').hidden = !visible;
+  const speed = state?.presentationSpeed === 2 ? 2 : 1;
+  $('optBotSpeed').style.display = state?.botMode ? 'block' : 'none';
+  $('optBotSpeed').textContent = 'BOT演出速度: ' + (speed === 2 ? '2倍' : '通常');
+  ['optBotSpeed','botSpeed1','botSpeed2'].forEach(id => $(id).disabled = botSpeedSaving || !boardToken);
+  [1,2].forEach(n => $('botSpeed'+n).setAttribute('aria-pressed', String(n === speed)));
+  if (message) $('botSpeedStatus').textContent = $('optMsg').textContent = message;
+}
+async function setBotSpeed(requested) {
   if (!state || !state.botMode || botSpeedSaving) return;
   const btn = $('optBotSpeed');
   const previous = state.presentationSpeed === 2 ? 2 : 1;
-  const speed = state.presentationSpeed === 2 ? 1 : 2;
+  const speed = requested || (state.presentationSpeed === 2 ? 1 : 2);
   state.presentationSpeed = speed;
   btn.textContent = 'BOT演出速度: ' + (speed === 2 ? '2倍' : '通常');
   btn.disabled = true;
   botSpeedSaving = true;
+  syncBotSpeedUi('BOT演出速度を変更中…');
   $('optMsg').textContent = 'BOT演出速度を変更中…';
   try {
     const res = await fetch('/api/action', { method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({ room:code, type:'set_presentation_speed', token:boardToken, speed }) });
     const out = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(out.error || '速度を変更できませんでした');
-    $('optMsg').textContent = 'BOT演出速度を' + (speed === 2 ? '2倍' : '通常') + 'に変更しました';
+    state.presentationSpeed = speed;
+    syncBotSpeedUi('BOT演出速度を' + (speed === 2 ? '2倍' : '通常') + 'に変更しました');
   } catch (e) {
     state.presentationSpeed = previous;
     btn.textContent = 'BOT演出速度: ' + (previous === 2 ? '2倍' : '通常');
-    $('optMsg').textContent = e.message || '速度を変更できませんでした';
+    syncBotSpeedUi(e.message || '速度を変更できませんでした');
   } finally {
     botSpeedSaving = false;
     btn.disabled = false;
+    syncBotSpeedUi();
   }
-};
+}
+$('optBotSpeed').onclick = () => setBotSpeed();
+$('botSpeed1').onclick = () => setBotSpeed(1);
+$('botSpeed2').onclick = () => setBotSpeed(2);
 $('optClose').onclick = () => { $('optMenu').style.display = 'none'; };
 $('optSaveQuit').onclick = async () => {
   if (!code || !boardToken) return;
@@ -4558,6 +4610,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
+  syncBotSpeedUi();
   syncSelectedMap();
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
@@ -4825,7 +4878,7 @@ function render() {
       !!(state.lastBattle && state.lastBattle.at !== prev.battleAt);
     if (battleNow) setBgm('battle'); else restoreBoardBgm();
   } else if (state.phase === 'lobby' || state.phase === 'select') setBgm('select');
-  else if (state.phase === 'ended') setBgm(null);
+  else if (state.phase === 'ended') syncResultBgm();
   // ドラフトのオーラ通知(中身は見せず気配だけ)
   {
     const de = Object.entries(state.pending).find(([, x]) => x.type === 'draft');
@@ -5212,6 +5265,8 @@ function render() {
     }
   } else {
     clearTimeout(matchResultStartTimer);
+    resultGraphAudio?.stop();
+    cancelAnimationFrame(matchResultTimer); matchResultPlayback = null;
     $('winOv').classList.remove('on'); $('matchResultOv').classList.remove('on');
     prev.winPlayed = null; matchResultOpenId = '';
   }

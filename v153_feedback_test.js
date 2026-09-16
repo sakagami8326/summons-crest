@@ -22,7 +22,7 @@ ok(/const VERSION = '1\.59'/.test(serverSource) && require('./package.json').ver
 ok(/<section class="page-section feedback" id="feedback"/.test(html), 'feedback section exists');
 ok(html.indexOf('id="news"') < html.indexOf('id="feedback"') && html.indexOf('id="feedback"') < html.indexOf('class="final-cta"'), 'feedback sits between NEWS and final CTA');
 ok(html.indexOf('id="top"') < html.indexOf('id="news"') && html.indexOf('id="news"') < html.indexOf('id="concept"'), 'NEWS sits directly after the hero and before CONCEPT');
-ok(html.includes('href="/news/2026-08-31-feedback"') && read('public/site/news-2026-08-31-feedback.html').includes('href="/#feedback"'), 'feedback news links to its article and form');
+ok(require('./site-news').render(read('public/site/news-index.html')).includes('href="/news/2026-08-31-feedback"') && read('public/site/news-2026-08-31-feedback.html').includes('href="/#feedback"'), 'news archive links to the feedback article and form');
 ok(/class="news__wordmark"[^>]*>NEWS<\/p>[\s\S]*<h2 id="news-title">更新情報<\/h2>/.test(html) && /\.news__wordmark\s*\{[^}]*text-align:\s*left/.test(css), 'NEWS and its Japanese heading share the same left alignment');
 ok(!/FEEDBACK OPEN|EARLY ACCESS START/.test(html), 'article eyebrow labels are removed');
 ok(newsCss.includes('.news-row{display:grid;') && !html.includes('news-entry__body'), 'NEWS uses compact shared rows');

@@ -15,7 +15,7 @@ img { max-width: 100%; }
 
 .sub-main { min-height: 100vh; padding-top: var(--page-header-height); overflow: clip; }
 .sub-hero { position: relative; isolation: isolate; min-height: 24rem; display: grid; align-items: end; padding: clamp(7rem, 12vw, 10rem) 0 clamp(3.5rem, 7vw, 6rem); border-bottom: 1px solid rgb(239 217 143 / 18%); background: radial-gradient(circle at 72% 35%, rgb(64 55 105 / 48%), transparent 34%), linear-gradient(145deg, #111326, #080911); }
-.sub-hero::before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: .07; background: url('/assets/summons-code-line-1px.svg') center 42% / min(74rem, 92vw) auto no-repeat; }
+.sub-hero::before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: .07; background: url('/assets/site/summons-code-line-1px.svg') center 42% / min(74rem, 92vw) auto no-repeat; }
 .sub-hero::after { content: ""; position: absolute; inset: 1rem; border: 1px solid rgb(239 217 143 / 10%); pointer-events: none; }
 .sub-shell { width: min(76rem, calc(100% - 2rem)); margin-inline: auto; }
 .sub-kicker { margin: 0 0 .8rem; color: var(--sc-gold-300); font: 700 .7rem/1.4 var(--sc-font-display); letter-spacing: .24em; }

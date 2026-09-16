@@ -57,7 +57,7 @@
       if (player.classList.contains('is-playing') || !/^[\w-]{11}$/.test(videoId)) return;
       const frame = document.createElement('iframe');
       frame.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1`;
-      frame.title = '1分でわかる SUMMONS CODE';
+      frame.title = 'SUMMONS CODE プロモーションムービー';
       frame.allow = 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share';
       frame.referrerPolicy = 'strict-origin-when-cross-origin';
       frame.allowFullscreen = true;

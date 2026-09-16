@@ -470,6 +470,7 @@ module.exports = function createStandardBot(A) {
   function choose(raw,me,pending) {
     if(!pending?.options?.length)return {id:null,candidates:[]};
     const {r,p,pending:pd}=view(raw,me,pending);
+    if(pd.type==='upgrade_lv') pd.options=pd.options.filter(o=>o.id!=='ul:back');
     const options=pd.options||[];
     if(!options.length)return {id:null,candidates:[]};
     const ranked=evaluateActions(r,p,pd).filter(x=>options.some(o=>o.id===x.id));

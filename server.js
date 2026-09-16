@@ -3162,12 +3162,16 @@ function handleChoose(r, playerId, optionId) {
         const c = upCostRange(r, p, i, t);
         if (c <= p.gold) opts.push({ id: 'ul:' + i + ':' + t, label: `Lv${o.level}→Lv${t} に強化(−${c}G)` });
       }
-      opts.push({ id: 'ul:cancel', label: 'やめる' });
-      return ask(r, p.id, 'upgrade_lv', `${ELEM_JA[tileElem(r, i)] || ''}属性の土地(${CREATURES[o.creature].name}) ─ どのレベルまで上げる?`, opts);
+      opts.push({ id: 'ul:back', label: '別の領地を選ぶ' });
+      opts.push({ id: 'ul:cancel', label: '今回は強化しない' });
+      ask(r, p.id, 'upgrade_lv', `${ELEM_JA[tileElem(r, i)] || ''}属性の土地(${CREATURES[o.creature].name}) ─ どのレベルまで上げる?`, opts);
+      r.pending[p.id].where = pend.where || '自領地';
+      return;
     }
     return endTurn(r);
   }
   if (pend.type === 'upgrade_lv') {
+    if (optionId === 'ul:back') return askUpgrade(r, p, pend.where || '自領地');
     if (optionId !== 'ul:cancel') {
       const [, iS, tS] = optionId.split(':');
       const i = +iS, target = +tS;
@@ -4040,6 +4044,7 @@ const server = http.createServer(async (req, res) => {
   const p = url.pathname;
   if (p === '/') return serveFile(res, 'site/index.html');
   if (p === '/news') return serveFile(res, 'site/news-index.html', url.searchParams.get('category'));
+  if (p === '/news/2026-09-17-player-feedback') return serveFile(res, 'site/news-2026-09-17-player-feedback.html');
   if (p === '/news/2026-09-10-start-guide') return serveFile(res, 'site/news-2026-09-10-start-guide.html');
   if (p === '/news/2026-08-31-feedback') return serveFile(res, 'site/news-2026-08-31-feedback.html');
   if (p === '/news/2026-08-31-release') return serveFile(res, 'site/news-2026-08-31-release.html');
@@ -4063,7 +4068,7 @@ const server = http.createServer(async (req, res) => {
   if (p.startsWith('/site/')) return serveFile(res, p.slice(1));
   // v0.66: 共有タイミング定数・Phaserワールド描画・同梱ライブラリ
   if (p === '/map-definitions.js' || p === '/map-ui.js' || p === '/map-ui.css' || p === '/analytics.js' || p === '/game_timing.js' || p === '/board_world.js' || p === '/battle_world.js' || p === '/ult_fx_world.js' ||
-      p === '/fx_manifest.js' || p.startsWith('/vendor/'))
+      p === '/fx_manifest.js' || p === '/result-graph-audio.js' || p.startsWith('/vendor/'))
     return serveFile(res, p.slice(1));
   if (p === '/api/fixture') {
     // v0.66: 描画パリティ確認用の固定state(ルームは登録しない・開発用)

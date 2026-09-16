@@ -1,5 +1,6 @@
 'use strict';
 const entries = [
+  {date:'2026-09-17',category:'update',title:'いただいた声をもとに、操作性とリザルト演出を改善しました',slug:'2026-09-17-player-feedback'},
   {date:'2026-09-10',category:'update',title:'ゲームの始め方ガイドを追加しました',slug:'2026-09-10-start-guide'},
   {date:'2026-09-08',category:'update',title:'バグ修正のお知らせと、ご報告へのお礼',slug:'2026-09-08-bug-fixes'},
   {date:'2026-08-31',category:'notice',title:'フィードバックを送れるようになりました',slug:'2026-08-31-feedback'},

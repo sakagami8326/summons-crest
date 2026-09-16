@@ -27,7 +27,8 @@ const siteHeaderCss = read('public/site/site-header.css');
 const newsRoute = '/news/2026-09-08-bug-fixes';
 const newsHtml = read('public/site/news-bug-fixes-20260908.html');
 ok(home.includes('href="' + newsRoute + '"'), 'homepage links to the bug fix article');
-ok(home.indexOf('datetime="2026-09-08"') < home.indexOf('datetime="2026-08-31"'), 'latest news precedes existing entries');
+const latestNews = require('./site-news').entries.slice(0,3);
+ok(latestNews.every((entry,i) => home.includes('/news/'+entry.slug) && (!i || (entry.date <= latestNews[i-1].date && home.indexOf('/news/'+latestNews[i-1].slug) < home.indexOf('/news/'+entry.slug)))), 'homepage shows latest news in descending date order');
 ok(newsHtml.includes('<link rel="canonical" href="https://summonscode.jp' + newsRoute + '">'), 'article has its own canonical URL');
 for (const meta of ['og:title', 'og:description', 'og:url', 'og:image', 'article:published_time']) {
   ok(newsHtml.includes('property="' + meta + '"'), 'article defines ' + meta);

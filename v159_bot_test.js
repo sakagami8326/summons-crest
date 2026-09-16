@@ -154,7 +154,10 @@ try {
      const entry=Object.entries(r.pending).find(([,pd])=>pd.options?.length);ok(entry,'game retains actionable pending');
      const [id,pending]=entry,p=r.players.find(x=>x.id===id),t=performance.now();
      ok(G.standardBot.handledPending.has(pending.type),'all encountered pending types are covered');
-     const selected=(policy==='before'?G.legacyBotChooseOption:G.botChooseOption)(r,p,pending);
+     // The frozen policy predates the human-only territory navigation option.
+     const policyPending=policy==='before'&&pending.type==='upgrade_lv'
+       ? {...pending,options:pending.options.filter(o=>o.id!=='ul:back')} : pending;
+     const selected=(policy==='before'?G.legacyBotChooseOption:G.botChooseOption)(r,p,policyPending);
      const ms=performance.now()-t;times.push(ms);maxMs=Math.max(ms,maxMs);types.add(pending.type);
      ok(pending.options.some(o=>o.id===selected),'legal selection');
      if(pending.type==='market'&&selected.startsWith('buy:'))buys++;

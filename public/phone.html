@@ -124,6 +124,8 @@
         white-space:normal; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
   #topTools.hasContext #msg { grid-column:3 / 6; }
   #msg:empty { opacity:0; }
+  #msg.rollReady { background:#14243e; color:#fff2b3; border:2px solid #b68c26;
+    border-radius:8px; font-size:clamp(18px,3.8dvh,24px); text-shadow:none; }
   #action { flex:1; min-width:0; display:flex; align-items:center; justify-content:center; gap:14px;
         padding:0 8px; overflow:hidden; }
   .abtn { font-family:inherit; font-size:max(2.7dvh, 15px); letter-spacing:2px; padding:1.8dvh 3.4dvh;
@@ -167,6 +169,8 @@
   @keyframes dealIn { from { transform:translateX(16dvh) translateY(2dvh) rotate(6deg); opacity:0; } }
   #hand { display:flex; gap:12px; height:100%; overflow-x:auto; padding:10px 6px 4px;
         align-items:flex-end; -webkit-overflow-scrolling:touch; touch-action:none; }
+  #hand.compactHand { gap:0; }
+  #hand.compactHand > :is(.card,.handPlaceholder):not(:first-child) { margin-left:var(--hand-spacing,12px); }
   .card { flex:none; height:100%; aspect-ratio:300/470; width:auto; position:relative;
         perspective:700px; cursor:pointer; transition:transform .15s; }
   #hand .card { filter:drop-shadow(0 1.15dvh 1.25dvh rgba(20,25,39,.48)); }
@@ -559,6 +563,15 @@
   @media (prefers-reduced-motion:reduce) { .diceImgBtn::before { animation:none; opacity:.85; } }
   .diceImgBtn img { height:23dvh; max-height:100%; filter:none; transition:transform .12s; }
   .diceImgBtn:active img { transform:scale(.93); }
+  .diceImgBtn img { animation:diceInvite 1.8s ease-in-out infinite; }
+  .diceTapLabel { position:absolute; bottom:-2px; left:50%; transform:translateX(-50%);
+    white-space:nowrap; padding:3px 7px; border-radius:6px; background:#14243e; color:#fff2b3;
+    font-size:clamp(12px,2.7dvh,16px); border:1px solid #c9a227; pointer-events:none; }
+  @keyframes diceInvite { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-3px); } }
+  @media (prefers-reduced-motion:reduce) { .diceImgBtn img { animation:none; } }
+  .drawHeading { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:6px 20px; flex:none; }
+  .drawGold { font:700 max(2.8dvh,16px)/1.4 sans-serif!important; color:#fff0ad;
+    padding:3px 12px; border:1px solid #c9a227; border-radius:8px; font-variant-numeric:tabular-nums; }
 
   .face .fx { font-size:max(1.55dvh, 10px); color:#5C4A2E; text-align:center; padding:0 8px;
       margin-top:.3dvh; line-height:1.3; min-height:2.4dvh; flex:0 1 auto; overflow:hidden; }
@@ -994,8 +1007,8 @@
     <button class="abtn" id="resultBtn" style="margin-top:1.4dvh">タイトルへ戻る</button></div>
   <div id="charSel"><div id="csMsg" style="font-size:max(2.2dvh,14px);color:var(--gold-soft);letter-spacing:2px"></div><div id="csRow"></div></div>
   <div id="charDetail"></div>
-  <div id="draftOv"><div id="draftTitle">カードを1枚選んで獲得</div><div id="draftRow"></div><div id="draftFoot"></div></div>
-  <div id="pickOv"><div id="pickTitle">手札に加えるカードを選んでください</div>
+  <div id="draftOv"><div class="drawHeading"><div id="draftTitle">カードを1枚選んで獲得</div><div id="draftGold" class="drawGold"></div></div><div id="draftRow"></div><div id="draftFoot"></div></div>
+  <div id="pickOv"><div class="drawHeading"><div id="pickTitle">手札に加えるカードを選んでください</div><div id="pickGold" class="drawGold"></div></div>
     <div id="pickRow"></div><div id="pickHint"></div></div>
   <div id="gateOv"><div id="gateTitle">変化の門 ─ 恩恵を選べ</div><div id="gateBtnsWrap" class="gateBtns"></div></div>
   <div id="actionOv"><div id="actionOvTitle"></div><div id="actionOvBtns" class="gateBtns"></div><div id="actionOvHint"></div></div>
@@ -2481,6 +2494,23 @@ function beginHandPointer(e, el) {
   el.onpointerup = finish;
   el.onpointercancel = () => cancelHandGesture();
 }
+function layoutHand() {
+  const hand = $('hand');
+  if (handGesture) return;
+  const cards = [...hand.querySelectorAll('.card')];
+  if (!cards.length) return;
+  // Deal-in rotation changes the visual bounds; overlap uses the untransformed card width.
+  const width = parseFloat(getComputedStyle(cards[0]).width);
+  if (!width || !hand.clientWidth) return;
+  const css = getComputedStyle(hand);
+  const available = hand.clientWidth - parseFloat(css.paddingLeft) - parseFloat(css.paddingRight);
+  const n = cards.length;
+  const spacing = n <= 1 ? 12 : Math.max(-width * .10, Math.min(12, (available - n * width) / (n - 1)));
+  hand.style.setProperty('--hand-spacing', spacing + 'px');
+  hand.classList.add('compactHand');
+}
+if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => afterUiPaint(layoutHand)).observe($('hand'));
+window.addEventListener('resize', () => { cancelHandGesture(); afterUiPaint(layoutHand); });
 function renderHand() {
   const serverHand = me().hand.slice(), serverKey = handInventoryKey(serverHand);
   if (serverKey !== handServerKey && handGesture) cancelHandGesture({ rerender:false });
@@ -2511,6 +2541,7 @@ function renderHand() {
     el.classList.toggle('dim', cardDim(el.dataset.c));
   });
   if ($('cardZoom').classList.contains('on')) refreshCardZoomAction();
+  afterUiPaint(layoutHand);
 }
 function bindHand() {
   document.querySelectorAll('#hand .card').forEach(el => {
@@ -2550,6 +2581,8 @@ $('ultActivate').onclick = () => {
   choose('ult');
 };
 function startRoll() {
+  if (rolling || !pend() || pend().type !== 'roll') return;
+  $('msg').classList.remove('rollReady');
   rolling = true;
   $('diceDock').innerHTML = `<div class="diceStage drop"><div class="dice3d" id="die3d">${DICE_FACES}</div></div>`;
   const die = $('die3d');
@@ -2601,6 +2634,8 @@ function submitAction(id) {
   });
 }
 function actionDescription(id) {
+  if (id === 'ul:back') return 'Gを使わず、強化する領地を選び直します';
+  if (id === 'ul:cancel') return '強化せず、この行動を終了します';
   if (id === 'pass') return '何もせず、この行動を終了します';
   if (id === 'cancel' || id.endsWith(':cancel')) return '選択をやめて前の状態へ戻ります';
   if (id === 'sup:none') return 'ウェポンを使用せずに戦闘を進めます';
@@ -2717,6 +2752,10 @@ function render() {
   }).join(' ');
   const ic = n => `<img src="/assets/${n}.png" style="height:2dvh;width:2dvh;object-fit:contain;vertical-align:-0.3dvh">`;
   const statHtml = `<span class="assetBig">資産 ${m.points}<small>/${state.target}G</small></span><br>${ic('ic_gold')}${m.gold} ｜ 第${m.lap ?? 1}周 ｜ <span style="color:${m.seal ? '#F2D062' : 'rgba(241,232,208,.35)'}">刻印${m.seal ? '❖' : 'なし'}</span><br>領地: ${elemN} ｜ 山札${m.deckCount ?? 0} 捨${m.discardCount ?? 0}`;
+  $('pickGold').textContent = $('draftGold').textContent = `所持G：${Number(m.gold || 0).toLocaleString('ja-JP')} G`;
+  const canRollNow = state.phase === 'playing' && !m.bankrupt && p?.type === 'roll' && !rolling &&
+    !state.turnTransition && (!p.availableAt || p.availableAt <= Date.now() + serverClockOffset);
+  $('msg').classList.toggle('rollReady', !!canRollNow);
   if ($('myStat').dataset.h !== statHtml) {
     $('myStat').dataset.h = statHtml;
     $('myStat').innerHTML = statHtml;
@@ -2840,7 +2879,7 @@ function render() {
   }
   const A = $('action');
   const sel = selected !== null ? m.hand[selected] : null;
-  $('diceDock').innerHTML = '';
+  if (!canRollNow || !$('diceBtn')) $('diceDock').innerHTML = '';
   $('msg').textContent = p ? taskPrompt(p) : waitingTaskPrompt();
 
   const pnow = pend();
@@ -2887,7 +2926,7 @@ function render() {
     const ultIc = sic('ult', '2.4dvh') + ' ';
     const extraOpts = p.options.filter(o => o.id !== 'roll' && o.id !== 'ult' && !o.id.startsWith('sp:')).map(o => ({
       id:o.id, label:(o.id === 'ult' ? '固有スキル ' : '') + iconize(o.label), desc:o.id === 'ult' ? '1ゲームに1度の固有スキルを確認します' : '' }));
-    $('diceDock').innerHTML = `<button class="diceImgBtn" id="diceBtn"><img src="/assets/dice_btn.png"></button>`;
+    if (!$('diceBtn')) $('diceDock').innerHTML = `<button class="diceImgBtn" id="diceBtn" aria-label="サイコロを振る"><img src="/assets/dice_btn.png" alt=""><span class="diceTapLabel">タップして振る</span></button>`;
     setContextActions(p.prompt, extraOpts);
     $('diceBtn').onclick = startRoll;
   } else if (p.type === 'forget') {

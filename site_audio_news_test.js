@@ -10,7 +10,7 @@ const out=path.join(__dirname,'output/site-audio-news');fs.mkdirSync(out,{recurs
  try{
   const news=require('./site-news');
   const home=await (await fetch(base)).text();assert.equal((home.match(/class="news-row"/g)||[]).length,3);assert.ok(!home.includes('NEWS_LATEST'));
-  for(const [filter,count]of [['',4],['notice',2],['update',2],['bad',4]]){const r=await fetch(base+'/news?category='+filter);assert.equal(r.status,200);assert.equal(((await r.text()).match(/class="news-row"/g)||[]).length,count);}
+  for(const [filter,count]of [['',news.entries.length],['notice',news.entries.filter(e=>e.category==='notice').length],['update',news.entries.filter(e=>e.category==='update').length],['bad',news.entries.length]]){const r=await fetch(base+'/news?category='+filter);assert.equal(r.status,200);assert.equal(((await r.text()).match(/class="news-row"/g)||[]).length,count);}
   const a=await fetch(base+'/news?category=notice'),b=await fetch(base+'/news?category=update',{headers:{'If-None-Match':a.headers.get('etag')}});assert.equal(b.status,200);assert.notEqual(a.headers.get('etag'),b.headers.get('etag'));
   for(const e of news.entries){const r=await fetch(base+'/news/'+e.slug),s=await r.text();assert.equal(r.status,200);assert.ok(s.includes(e.title));assert.ok(s.includes('news-category--'+e.category));assert.ok(s.includes('href="/news"'));assert.ok(s.includes('rel="canonical"'));}
   assert.equal((await fetch(base+'/news/no-such-article')).status,404);
@@ -18,8 +18,8 @@ const out=path.join(__dirname,'output/site-audio-news');fs.mkdirSync(out,{recurs
   await p.goto(base);await p.locator('.site-audio-gate').waitFor();assert.equal(requests.filter(u=>u.includes('bgm_select')).length,0);
   await p.screenshot({path:path.join(out,'sound-choice.png')});await p.locator('[data-audio="off"]').click();assert.equal(await p.evaluate(()=>document.activeElement.tagName),'MAIN');
   await p.locator('#news').scrollIntoViewIfNeeded();await p.waitForFunction(()=>getComputedStyle(document.querySelector('#news .section-heading')).opacity==='1');await p.screenshot({path:path.join(out,'home-news.png')});
-  await p.getByRole('link',{name:'更新情報一覧を見る'}).click();assert.equal(await p.locator('.site-audio-gate').count(),0);assert.equal(await p.locator('.news-row').count(),4);assert.equal(requests.filter(u=>u.includes('bgm_select')).length,0);
-  await p.getByRole('link',{name:'アップデート',exact:true}).click();assert.equal(await p.locator('.news-row').count(),2);
+  await p.getByRole('link',{name:'更新情報一覧を見る'}).click();assert.equal(await p.locator('.site-audio-gate').count(),0);assert.equal(await p.locator('.news-row').count(),news.entries.length);assert.equal(requests.filter(u=>u.includes('bgm_select')).length,0);
+  await p.getByRole('link',{name:'アップデート',exact:true}).click();assert.equal(await p.locator('.news-row').count(),news.entries.filter(e=>e.category==='update').length);
   await p.screenshot({path:path.join(out,'news-list.png')});await p.locator('.news-row').first().click();await p.screenshot({path:path.join(out,'article.png')});
   await p.locator('.site-bgm').click();await p.waitForFunction(()=>document.querySelector('.site-bgm').textContent==='BGM ON');assert.ok(requests.some(u=>u.includes('bgm_select')));
   await p.waitForFunction(()=>JSON.parse(sessionStorage.getItem('sc_site_audio_v1')).position>.5);
@@ -37,7 +37,7 @@ const out=path.join(__dirname,'output/site-audio-news');fs.mkdirSync(out,{recurs
   for(const width of [320,390,768,900,1100]){await m.setViewportSize({width,height:844});assert.ok(await m.locator('.site-bgm').isVisible());assert.ok(await m.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));const rects=await m.locator('.site-header__logo,.site-bgm,.site-header__play,.nav-toggle').evaluateAll(els=>els.filter(e=>e.getClientRects().length).map(e=>{const r=e.getBoundingClientRect();return {x:r.x,right:r.right};}).sort((a,b)=>a.x-b.x));for(let i=1;i<rects.length;i++)assert.ok(rects[i].x>=rects[i-1].right-1,'header controls must not overlap');}
   await m.setViewportSize({width:390,height:844});await m.goto(base+'/news');await m.screenshot({path:path.join(out,'mobile-news.png'),fullPage:true});assert.ok(await m.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   const noStorage=await browser.newPage();await noStorage.addInitScript(()=>{Storage.prototype.getItem=()=>{throw Error('denied');};Storage.prototype.setItem=()=>{throw Error('denied');};});watch(noStorage);await noStorage.goto(base);await noStorage.locator('[data-audio="off"]').click();assert.equal(await noStorage.locator('.site-audio-gate').count(),0);
-  const noJS=await browser.newPage({javaScriptEnabled:false});await noJS.goto(base+'/news');assert.equal(await noJS.locator('.news-row').count(),4);await noJS.locator('.news-row').first().click();assert.match(noJS.url(),/start-guide$/);
+  const noJS=await browser.newPage({javaScriptEnabled:false});await noJS.goto(base+'/news');assert.equal(await noJS.locator('.news-row').count(),news.entries.length);await noJS.locator('.news-row').first().click();assert.equal(noJS.url(),base+'/news/'+news.entries[0].slug);
   for(const route of ['/play','/phone','/start']){const html=await (await fetch(base+route)).text();assert.ok(!html.includes('/site/site-audio.js'));}
   assert.deepEqual(errors,[]);console.log('SITE AUDIO / NEWS: HTTP, real BGM, controls, lifecycle, denial, mobile and no-JS checks passed');
  }finally{await browser.close();await new Promise(resolve=>G.server.close(resolve));}

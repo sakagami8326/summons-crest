@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>いただいた声をもとに、操作性とリザルト演出を改善しました | SUMMONS CODE</title>
+  <meta name="description" content="カード選択中の所持G、サイコロの案内、手札の重なり、BOT倍速、領地強化の選び直し、リザルトBGMを改善しました。">
+  <meta name="theme-color" content="#0b0d18">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="SUMMONS CODE">
+  <meta property="og:url" content="https://summonscode.jp/news/2026-09-17-player-feedback">
+  <meta property="og:title" content="いただいた声をもとに、操作性とリザルト演出を改善しました | SUMMONS CODE">
+  <meta property="og:description" content="カード選択中の所持G、サイコロの案内、手札の重なり、BOT倍速、領地強化の選び直し、リザルトBGMを改善しました。">
+  <meta property="og:image" content="https://summonscode.jp/assets/site/og-summons-code-v2.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="SUMMONS CODE — 火と水の召喚士とクリーチャーたち">
+  <meta name="twitter:image" content="https://summonscode.jp/assets/site/og-summons-code-v2.jpg">
+  <meta name="twitter:image:alt" content="SUMMONS CODE — 火と水の召喚士とクリーチャーたち">
+  <meta property="article:published_time" content="2026-09-17T00:00:00+09:00">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://summonscode.jp/news/2026-09-17-player-feedback">
+  <link rel="icon" href="/assets/site/spark-star.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/site/design-system.css?v=154">
+  <link rel="stylesheet" href="/site/site-pages.css?v=154-2">
+  <link rel="stylesheet" href="/site/news.css?v=3">
+  <link rel="stylesheet" href="/site/site-header.css?v=154-3">
+  <script src="/analytics.js"></script>
+  <script src="/site/site-pages.js?v=154-2" defer></script>
+  <link rel="stylesheet" href="/site/site-audio.css?v=1">
+  <script src="/site/site-audio.js?v=1" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#news-content">記事本文へ移動</a>
+  <header class="site-header is-scrolled" data-header>
+    <a class="site-header__logo" href="/" aria-label="SUMMONS CODE ホーム"><img src="/assets/summons-code-white.svg" alt="SUMMONS CODE" width="1415" height="744"></a>
+    <nav class="site-nav" id="site-nav" aria-label="メインメニュー" data-nav>
+      <a href="/#concept">CONCEPT</a><a href="/#how-to-play">HOW TO PLAY</a><a href="/#game-system">GAME SYSTEM</a><a href="/cards">CARDS</a><a href="/rules">RULES</a><a href="/#summoners">SUMMONERS</a><a href="/#feedback">FEEDBACK</a>
+      <div class="site-nav__socials" role="group" aria-label="SUMMONS CODE公式SNS"><a class="site-social-link site-social-link--x" href="https://x.com/gamitestman" target="_blank" rel="me noopener noreferrer" aria-label="開発者のXアカウント @gamitestman を開く"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.657l-5.214-6.817-5.967 6.817H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z"/></svg></a><a class="site-social-link site-social-link--youtube" href="https://www.youtube.com/@SUMMONSCODE" target="_blank" rel="noopener noreferrer" aria-label="SUMMONS CODE公式YouTubeチャンネルを開く"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="4.2"/><path class="youtube-play" d="m10 8.7 5.4 3.3-5.4 3.3V8.7Z"/></svg></a></div>
+    </nav>
+    <div class="site-header__socials" role="group" aria-label="SUMMONS CODE公式SNS"><a class="site-social-link site-social-link--x" href="https://x.com/gamitestman" target="_blank" rel="me noopener noreferrer" aria-label="開発者のXアカウント @gamitestman を開く"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.657l-5.214-6.817-5.967 6.817H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z"/></svg></a><a class="site-social-link site-social-link--youtube" href="https://www.youtube.com/@SUMMONSCODE" target="_blank" rel="noopener noreferrer" aria-label="SUMMONS CODE公式YouTubeチャンネルを開く"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="4.2"/><path class="youtube-play" d="m10 8.7 5.4 3.3-5.4 3.3V8.7Z"/></svg></a></div>
+    <a class="site-header__play play-cta play-cta--header" href="/play" data-game-cta="news-header"><span>無料でプレイ</span><span class="play-cta__arrow" aria-hidden="true">→</span></a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="メニューを開く" data-nav-toggle><span></span><span></span></button>
+  </header>
+
+  <main class="sub-main">
+    <article class="news-article" aria-labelledby="page-title">
+      <header class="sub-hero news-hero">
+        <div class="sub-shell news-shell">
+          <nav class="news-breadcrumb" aria-label="パンくず"><a href="/">ホーム</a><span aria-hidden="true">／</span><a href="/news">更新情報</a></nav>
+          <p class="sub-kicker">NEWS</p>
+          <p class="news-meta"><time datetime="2026-09-17">2026.09.17</time><span class="news-category news-category--update">アップデート</span></p>
+          <h1 id="page-title">いただいた声をもとに、操作性とリザルト演出を改善しました</h1>
+        </div>
+      </header>
+      <div class="sub-shell news-shell news-content" id="news-content" tabindex="-1">
+<p class="news-intro">SUMMONS CODEを遊んでくださり、ありがとうございます。いただいたご意見をもとに、スマホの操作性と試合終了後の演出を改善しました。</p>
+<p>今回は「どんな声をいただいたか」と「どう変えたか」を、6つの項目に分けてご紹介します。ご意見は内容を要約して掲載しています。</p><p class="news-image-note">掲載画像は動作確認用の対戦画面です。手札の比較は、同じ画面サイズ・カード枚数で撮影しています。</p>
+
+<section aria-labelledby="feedback-gold">
+<h2 id="feedback-gold">1. カードを選ぶときに、所持Gを確認できるように</h2>
+<div class="news-fix"><h3>いただいた声</h3><p>ターンの最初に手札へ加えるカードを選ぶとき、スマホで所持Gを見たい。</p></div>
+<p><strong>カード選択画面の上部に「所持G」を表示しました。</strong>カードを選びながら、現在使えるGを確認できます。城・門などでカードを獲得する選択画面にも表示しています。</p>
+<p>カードに書かれた使用コストが所持Gを超えていても、そのカードを獲得することはできます。</p>
+<figure class="news-shot"><figcaption>変更後：カードを選びながら、右上で所持Gを確認できます。</figcaption><a href="/assets/site/news/20260917/draw-gold.png" target="_blank" rel="noopener" aria-label="カード選択画面の右上に所持G：45 Gを表示（原寸画像を開く）"><img src="/assets/site/news/20260917/draw-gold.png" alt="カード選択画面の右上に所持G：45 Gを表示" width="667" height="375" loading="lazy" decoding="async"></a></figure>
+</section>
+
+<section aria-labelledby="feedback-dice">
+<h2 id="feedback-dice">2. 次にサイコロを振ることが、ひと目で分かるように</h2>
+<div class="news-fix"><h3>いただいた声</h3><p>カードが並んだ画面で、最初に何をすればいいか分からなかった。サイコロや指示をもっと目立たせてほしい。</p></div>
+<p><strong>「サイコロを振れ」の案内を、大きな文字と濃い背景で強調しました。</strong>サイコロには「タップして振る」のラベルを添え、光と小さな上下の動きで押す場所を示しています。</p>
+<p>自分が操作できるタイミングで案内が出ます。サイコロを振る前にスペルや必殺技を使う操作は、これまでどおりです。</p>
+</section>
+
+<section aria-labelledby="feedback-hand">
+<h2 id="feedback-hand">3. 手札を少し重ねて、横スクロールを減らす</h2>
+<div class="news-fix"><h3>いただいた声</h3><p>手札を見るために何度も横へスクロールするのが面倒。多少重なってもいいので、一覧性を上げてほしい。</p></div>
+<p><strong>手札が収まらないときは、カード幅の最大10％まで重ねて表示するようにしました。</strong>少ない枚数なら重ねず、カードの大きさを保ちながら、横スクロールする量を減らしています。</p>
+<p>収まりきらない場合は引き続き横スクロールできます。タップで詳細を開く操作と、長押しで並べ替える操作も使えます。</p>
+<p class="news-image-note">スマホ横画面（667 × 375）の比較です。画像をタップすると原寸で開けます。</p><h3 class="news-compare-title">4枚の手札</h3><div class="news-compare"><figure class="news-shot"><figcaption>変更前</figcaption><a href="/assets/site/news/20260917/before-667-4.png" target="_blank" rel="noopener" aria-label="変更前の4枚の手札。右側のカードを見るには横スクロールが必要（原寸画像を開く）"><img src="/assets/site/news/20260917/before-667-4.png" alt="変更前の4枚の手札。右側のカードを見るには横スクロールが必要" width="667" height="375" loading="lazy" decoding="async"></a></figure><figure class="news-shot"><figcaption>変更後：4枚をスクロールなしで表示</figcaption><a href="/assets/site/news/20260917/after-667-4.png" target="_blank" rel="noopener" aria-label="変更後の4枚の手札。カードサイズを保ち、重なりを最大10％に調整（原寸画像を開く）"><img src="/assets/site/news/20260917/after-667-4.png" alt="変更後の4枚の手札。カードサイズを保ち、重なりを最大10％に調整" width="667" height="375" loading="lazy" decoding="async"></a></figure></div><h3 class="news-compare-title">7枚の手札</h3><div class="news-compare"><figure class="news-shot"><figcaption>変更前</figcaption><a href="/assets/site/news/20260917/before-667-7.png" target="_blank" rel="noopener" aria-label="変更前の7枚の手札。右側のカードを見るには横スクロールが必要（原寸画像を開く）"><img src="/assets/site/news/20260917/before-667-7.png" alt="変更前の7枚の手札。右側のカードを見るには横スクロールが必要" width="667" height="375" loading="lazy" decoding="async"></a></figure><figure class="news-shot"><figcaption>変更後：最大10％重ねてスクロール量を削減</figcaption><a href="/assets/site/news/20260917/after-667-7.png" target="_blank" rel="noopener" aria-label="変更後の7枚の手札。カードサイズを保ち、重なりを最大10％に調整（原寸画像を開く）"><img src="/assets/site/news/20260917/after-667-7.png" alt="変更後の7枚の手札。カードサイズを保ち、重なりを最大10％に調整" width="667" height="375" loading="lazy" decoding="async"></a></figure></div>
+</section>
+
+<section aria-labelledby="feedback-speed">
+<h2 id="feedback-speed">4. BOT戦の2倍速を見つけやすく</h2>
+<div class="news-fix"><h3>いただいた声</h3><p>BOT戦に2倍速モードがあることを、もっと分かりやすくしてほしい。</p></div>
+<p><strong>BOT戦の盤面上部に「BOT演出 1×／2×」の切り替えを常設しました。</strong>設定画面を開かずに、現在の速度を確認して変更できます。</p>
+<p>短くなるのはBOTの移動・戦闘などの演出です。自分が考えたり操作したりする時間が短くなるわけではありません。</p>
+<figure class="news-shot"><figcaption>変更後：盤面の右上から、BOT演出を1倍／2倍に切り替えられます。</figcaption><a href="/assets/site/news/20260917/bot-speed.png" target="_blank" rel="noopener" aria-label="盤面右上に常設したBOT演出の1倍・2倍ボタン（原寸画像を開く）"><img src="/assets/site/news/20260917/bot-speed.png" alt="盤面右上に常設したBOT演出の1倍・2倍ボタン" width="1280" height="720" loading="lazy" decoding="async"></a></figure>
+</section>
+
+<section aria-labelledby="feedback-upgrade">
+<h2 id="feedback-upgrade">5. 強化する領地を、途中で選び直せるように</h2>
+<div class="news-fix"><h3>いただいた声</h3><p>一度領地を選ぶと、強化するか、強化そのものをやめるかしか選べない。別の領地を選び直したい。</p></div>
+<p><strong>強化レベルを選ぶ画面に「別の領地を選ぶ」を追加しました。</strong>Gを使わず、手番を終えることなく、候補の一覧へ戻れます。</p>
+<p>強化を行わずに進めたい場合は「今回は強化しない」を選べます。選び直しとパスを、別の操作として分かりやすくしました。</p>
+<figure class="news-shot"><figcaption>変更後：「別の領地を選ぶ」と「今回は強化しない」を分けました。</figcaption><a href="/assets/site/news/20260917/upgrade-reselect.png" target="_blank" rel="noopener" aria-label="領地強化画面に追加した別の領地を選ぶボタンと今回は強化しないボタン（原寸画像を開く）"><img src="/assets/site/news/20260917/upgrade-reselect.png" alt="領地強化画面に追加した別の領地を選ぶボタンと今回は強化しないボタン" width="667" height="375" loading="lazy" decoding="async"></a></figure>
+</section>
+
+<section aria-labelledby="feedback-result">
+<h2 id="feedback-result">6. 試合終了後にも、音楽を楽しめるように</h2>
+<div class="news-fix"><h3>いただいた声</h3><p>ゲームが終わったあと、無音になって寂しい。4位だったからだろうか？</p></div>
+<p>これまでは順位に関係なく、試合終了時にBGMが止まっていました。<strong>今回、全順位共通のリザルトBGMを追加しました。</strong>試合の振り返りや結果を見ながら、音楽を楽しめます。</p>
+</section>
+
+<section class="news-thanks" aria-labelledby="feedback-thanks"><h2 id="feedback-thanks">ご意見をありがとうございました</h2>
+<p>「何をすればいいか迷った」「この操作が少し面倒」といった声が、改善の手がかりになりました。今回のアップデートが、次の一戦を遊びやすくする助けになればうれしいです。</p>
+<p>遊んでいて気になった点や、アップデート後の感想も、ぜひお寄せください。</p><a class="news-feedback-link" href="/#feedback">フィードバックを送る →</a></section>
+<nav class="news-back" aria-label="記事ナビゲーション"><a href="/news">← お知らせ一覧に戻る</a></nav>
+      </div>
+    </article>
+  </main>
+
+  <footer class="sub-footer"><img src="/assets/summons-code-gold.svg" alt="SUMMONS CODE" width="1415" height="744" loading="lazy"><nav aria-label="フッターメニュー"><a href="/">HOME</a><a href="/cards">CARDS</a><a href="/rules">RULES</a><a href="/#feedback">FEEDBACK</a><a href="/play" data-game-cta="news-footer">GAME START</a></nav><small>© 2026 SUMMONS CODE</small></footer>
+</body>
+</html>
