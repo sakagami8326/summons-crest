@@ -3,7 +3,8 @@ const fs=require('fs'),path=require('path'),assert=require('assert/strict'),{exe
 const {chromium}=require('playwright');
 const {loadGame,game}=require('./feedback_ui_test');const G=loadGame();
 const OUT=path.join(__dirname,'output/feedback-ui');fs.mkdirSync(OUT,{recursive:true});
-const baseline=execFileSync('git',['show','HEAD:public/phone.html'],{cwd:__dirname,encoding:'utf8',maxBuffer:4e6});
+// Keep comparison captures tied to the version before this release, even after committing it.
+const baseline=execFileSync('git',['show','0e5a19df5847f0519ea3d730cfc6262696245e4b:public/phone.html'],{cwd:__dirname,encoding:'utf8',maxBuffer:4e6});
 (async()=>{
  await new Promise(r=>G.server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+G.server.address().port;
  const browser=await chromium.launch({channel:'chrome',headless:true,args:['--autoplay-policy=no-user-gesture-required']});
