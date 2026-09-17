@@ -15,7 +15,7 @@ const G = new Function('require', '__dirname', 'process', 'console', 'setInterva
 let pass = 0;
 const ok = (value, name) => { if (!value) throw new Error('FAIL: ' + name); pass++; };
 
-ok(G.VERSION === '1.59' && pkg.version === '1.59.0', 'release version is v1.59');
+ok(G.VERSION === '1.61' && pkg.version === '1.61.0', 'release version is v1.61');
 ok(/\.dkCard\s*\{[\s\S]*?width:calc\(\(100% - 2dvh\) \/ 3\)/.test(css),
   'deck and choice cards use container-based three columns');
 ok(/\.gCard\s*\{[\s\S]*?width:calc\(\(100% - 3\.2dvh\) \/ 3\)/.test(css),
@@ -54,9 +54,9 @@ ok(/onclick="pickOvChoose\('\$\{e\.pickId\}'\)"/.test(phone), 'selection lists r
 
 const baseCreatures = Object.entries(G.CREATURES).filter(([id]) => !id.endsWith('_f'));
 const evolvedForms = baseCreatures.filter(([, card]) => card.evo).length;
-ok(baseCreatures.length + evolvedForms === 81, 'all 81 creature forms are covered by the common card renderer');
-ok(Object.keys(G.SPELLS).length === 24 && Object.keys(G.SUPPORTS).length === 5,
-  'all 24 spells and 5 weapons are covered by the common card renderer');
+ok(baseCreatures.length + evolvedForms === 83, 'all 83 creature forms are covered by the common card renderer');
+ok(Object.keys(G.SPELLS).length === 25 && Object.keys(G.SUPPORTS).length === 5,
+  'all 25 spells and 5 weapons are covered by the common card renderer');
 
 const focusCards = ['beruf','beruf_f','samurai_saga','marlow','mist_jelly','mist_jelly_f','night_jelly_f'];
 for (const id of focusCards) ok(G.CREATURES[id], `${id} remains in the overflow regression set`);

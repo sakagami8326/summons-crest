@@ -56,6 +56,9 @@
 .game-card__effect { display: -webkit-box; overflow: hidden; margin: 0; color: #172536; font: 700 clamp(.55rem, 3.7cqw, .78rem)/1.35 var(--sc-font-body); text-align: center; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; }
 .game-card--spell .game-card__art { inset: 0; width: 100%; height: 71%; }
 .game-card--spell .game-card__art img { width: 100%; height: 100%; object-fit: cover; }
+.game-card--evolve { background:#16112d; }
+.game-card--evolve .game-card__background { visibility:hidden; }
+.game-card--evolve .game-card__art { inset:-1.5% auto auto 3%; width:94%; height:94%; }
 .game-card--spell .game-card__info { padding-top: 7%; }
 .game-card--spell .game-card__effect { -webkit-line-clamp: 5; line-clamp: 5; }
 .game-card--weapon .game-card__background { filter: saturate(.92); }

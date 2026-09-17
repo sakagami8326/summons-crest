@@ -9,7 +9,7 @@ const fs = require('fs');
 // ===== サーバー(in-process) =====
 let ssrc = fs.readFileSync('server.js', 'utf8').replace(/server\.listen\([\s\S]*?\}\);\s*$/, '');
 const S = new Function('require', '__dirname', 'process', 'console', 'setInterval',
-  ssrc + ';return {makeRoom,startSelect,handleChoose,resolveUltSequence,publicState,isSelectionReady,startGame,SPELLS,doRoll,CHARS,CHAR_DECKS,ULTS};')(
+  ssrc + ';return {makeRoom,startSelect,handleChoose,resolveUltSequence,continuePostBattle,publicState,isSelectionReady,startGame,SPELLS,doRoll,CHARS,CHAR_DECKS,ULTS};')(
   require, __dirname, process, { log: () => {}, error: console.error }, () => 0);
 
 // ===== リーア仮実装 =====
@@ -266,6 +266,44 @@ function affordance(pid2, st) {
   const m = st.players.find(q => q.id === pid2);
   if (m && (m.hand || []).some(c => P.cardOption(c))) return 'card-tap';
   return null;
+}
+
+// Hand evolution must expose both target cards and a non-spending cancel action.
+{
+  const r=S.makeRoom();r.players=[{id:'e1',name:'甲',charId:'grease'},{id:'e2',name:'乙',charId:'adel'}];
+  S.startGame(r);r.pending={};r.turn=0;r.turnTransition=null;
+  const p=r.players[0];p.hand=['sp_evolve','nome','nome'];p.gold=500;p.spellCast=false;
+  r.pending[p.id]={type:'roll',options:[{id:'sp:sp_evolve'}]};
+  S.handleChoose(r,p.id,'sp:sp_evolve');
+  P.setPid(p.id);P.setRoom(r.code);P.setState(S.publicState(r,p.id));P.setRolling(false);
+  skew+=9000;clearDom();P.render();flushTimers();P.render();
+  const rendered=Object.values(els).map(el=>el.innerHTML||'').join('');
+  if(!rendered.includes('ev:1')||!rendered.includes('ev:2')||els.deckOv.dataset.pick!=='ev:cancel'||
+      els.deckClose.style.display==='none')
+    throw new Error('進化スペル: 各カードとキャンセルの操作が描画されない');
+  S.handleChoose(r,p.id,'ev:cancel');
+  if(p.gold!==500||p.spellCast)throw new Error('進化スペル: キャンセルで消費された');
+  P.setState(S.publicState(r,p.id));P.render();
+  if(els.deckOv.dataset.pick)throw new Error('進化スペル: キャンセル後に選択画面が残る');
+  console.log('進化スペル選択UI ✓');
+}
+
+// Both players use the same hand picker after a frontline victory, including defense.
+{
+  const r=S.makeRoom();r.players=[{id:'j1',name:'甲',charId:'grease'},{id:'j2',name:'乙',charId:'adel'}];
+  S.startGame(r);r.pending={};r.turn=0;r.turnTransition=null;
+  const p=r.players[1];p.hand=['nome','jaki_f'];p.gold=500;
+  r.owners[21]={player:p.id,level:1,creature:'jaki',dmg:20};
+  r.battleAfter={winner:p.id,attacker:r.players[0].id,defender:p.id,tile:21,invasionWon:false,mermaidDone:true,recoveryDone:true};
+  S.continuePostBattle(r);
+  P.setPid(p.id);P.setRoom(r.code);P.setState(S.publicState(r,p.id));P.setRolling(false);
+  skew+=9000;clearDom();P.render();flushTimers();P.render();
+  if(!els.deckScroll.innerHTML.includes('fl:0')||!els.deckScroll.innerHTML.includes('fl:1')||
+     !els.deckScroll.innerHTML.includes('召喚 90G')||els.deckOv.dataset.pick!=='fl:cancel')
+    throw new Error('戦線交代: 防衛者のカード選択・費用・キャンセルが描画されない');
+  S.handleChoose(r,p.id,'fl:cancel');P.setState(S.publicState(r,p.id));P.render();
+  if(els.deckOv.dataset.pick)throw new Error('戦線交代: 報酬ドラフト後に選択画面が残る');
+  console.log('戦線交代の防衛者UI ✓');
 }
 
 // ===== 結合シミュレーション =====

@@ -532,6 +532,8 @@
   #spellCard::before { content:""; position:absolute; z-index:12; inset:1.5%; border:2px solid #d6b65b;
       border-radius:2vh; box-shadow:inset 0 0 0 3px rgba(52,22,78,.9),inset 0 0 0 5px rgba(214,182,91,.72); }
   #spellCard .spBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-3; }
+  #spellCard .spBgFitted { inset:-1.5% auto auto 3%; width:94%; height:94%; }
+  #spellCard:has(.spBgFitted) { background:#16112d; }
   #spellCard .spFallback { position:absolute; z-index:2; top:14%; left:15%; width:70%; height:46%; object-fit:contain;
       filter:drop-shadow(0 8px 18px rgba(0,0,0,.65)); }
   #spellCard .spHead { position:absolute; z-index:8; top:3.1%; left:4.7%; right:4.7%; height:9.5%;
@@ -3722,6 +3724,7 @@ async function playEvolvePresentation(tile, owner) {
 }
 
 const DEDICATED_SPELL_ART = {
+  sp_evolve:'/assets/cards/spell-evolve-art-v8.webp',
   sp_gold:'/assets/cards/spell-gold-art-v1.webp',
   sp_weaken:'/assets/cards/spell-weaken-art-v1.webp',
   sp_gale:'/assets/cards/spell-double-roll-art-v1.webp',
@@ -3749,9 +3752,9 @@ function spellCardHTML(sid) {
   const sp = state.catalog.SPELLS[sid] || { name:sid, cost:0, desc:'' };
   const dedicated = dedicatedSpellAsset(sid);
   const bg = dedicated || '/assets/cards/bg-spell-v1.webp';
-  const fallback = dedicated ? '' : `<img class="spFallback" src="/assets/c_${sid}.png" onerror="this.style.display='none'">`;
+  const fallback = dedicated || sid === 'sp_evolve' ? '' : `<img class="spFallback" src="/assets/c_${sid}.png" onerror="this.style.display='none'">`;
   const nameSize = sp.name.length <= 6 ? '6.2vh' : sp.name.length <= 8 ? '5.1vh' : '4.2vh';
-  return `<img class="spBg" src="${bg}">${fallback}<div class="spHead"><div class="spName" style="font-size:${nameSize}">${sp.name}</div></div>
+  return `<img class="spBg${sid === 'sp_evolve' ? ' spBgFitted' : ''}" src="${bg}">${fallback}<div class="spHead"><div class="spName" style="font-size:${nameSize}">${sp.name}</div></div>
     <div class="scCost"><img class="frame" src="/assets/cards/cost-frame.svg"><img class="coin" src="/assets/cards/cost-coin.svg"><b>${sp.cost || 0}G</b></div>
     <div class="scBrush"></div><div class="spInfo"><h3>【呪文効果】</h3><p>${sp.desc}</p></div>
     ${sp.exileAfterUse ? '<div class="cardExileTag">廃棄</div>' : ''}`;
@@ -4614,7 +4617,7 @@ function render() {
   syncSelectedMap();
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.59';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.61';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -4986,6 +4989,15 @@ function render() {
         fxAt(ev.tile, 'fxRing', '#56D7FF');
         await showBannerAsync('深淵標を刻印', `土地${ev.tile}の通行料 +${ev.bonus}G`, 2100);
       }, { actorId:ev.player, id:presentationId('abyss-mark', ev.at), kind:'abyss-mark' });
+    }
+    else if (state.lastEvent.type === 'frontline_swap') {
+      const ev = { ...state.lastEvent };
+      queueFx(2, async () => {
+        if (renderModeActive === 'phaser')
+          await PW.play({ type:'spell-fx', spell:'sp_swap', tiles:[ev.tile], caster:ev.player, cid:ev.from, timeoutMs:3000 });
+        else fxAt(ev.tile, 'fxRing', '#F2D062');
+        await showBannerAsync('戦線交代', `${state.catalog.CREATURES[ev.from].name} → ${state.catalog.CREATURES[ev.creature].name}（${ev.cost}G）`, 2100);
+      }, { actorId:ev.player, id:presentationId('frontline-swap', ev.at), kind:'frontline-swap' });
     }
     else if (state.lastEvent.type === 'bankrupt') {
       const bp = player(state.lastEvent.player);

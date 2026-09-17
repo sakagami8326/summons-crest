@@ -19,7 +19,7 @@ module.exports = function createStandardBot(A) {
   const cautious = a => .7*average(a) + .3*Math.min(...a);
   const handledPending = new Set(('abyss_mark curse_target daitekkan_recover direction draft forge forget gate market '
     +'marlow_dest marlow_src mermaid_heal move_a move_b overflow pick_creature pick_draw quake_target roll route_choice '
-    +'samurai_elem select_char select_wait sell spell_target step_a step_b support swap_land swap_pick tile toxy_target '
+    +'samurai_elem select_char select_wait sell spell_target spell_evolve frontline_swap step_a step_b support swap_land swap_pick tile toxy_target '
     +'ult_lia ult_mio ult_nerasio_elem ult_nerasio_land ult_resolve ult_villa_recover upgrade upgrade_lv gaust_exile fatal_exile').split(' '));
 
   function view(raw, me, pending) {
@@ -263,6 +263,10 @@ module.exports = function createStandardBot(A) {
     };
     if(sid==='sp_gold') add(Math.max(1,p.lap)*100);
     else if(sid==='sp_insight') add(Math.min(2,Math.max(0,7-p.hand.length+1))*50);
+    else if(sid==='sp_evolve') {
+      p.hand.forEach((id,i)=>{if(C[id]?.evo && C[id+'_f'])
+        add((C[id].evoSt-C[id].st+C[id].evoHp-C[id].hp)*3+30,{i});});
+    }
     else if(sid==='sp_fatal_reward') {
       const cheapest=Math.min(...p.hand.filter(id=>id!==sid).map(id=>cardValue(r,p,id)));
       add(35+(p.charId==='villa'?45:0)-Math.max(0,cheapest)*.5);
@@ -407,6 +411,17 @@ module.exports = function createStandardBot(A) {
           if(by('g_draft'))add('g_draft',inventory(p).filter(id=>C[id]).length<5?65:25,'未公開候補を見ず補充需要を評価');
         }
       }
+    } else if(pd.type==='frontline_swap') {
+      const old=r.owners[pd.tile], before=positionValue(r,p);
+      if(old?.player===p.id)for(const o of opts.filter(o=>/^fl:\d+$/.test(o.id))) {
+        const cid=p.hand[+o.id.slice(3)], cost=C[cid]?.cost;
+        if(!C[cid]||cid!==o.card||!afford(r,p,cost))continue;
+        const n=clone(r);n.owners[pd.tile]={player:p.id,level:old.level,creature:cid};
+        const score=positionValue(n,p)-before+(cardValue(r,p,old.creature)-cardValue(r,p,cid))*.5-cost*.35;
+        add(o.id,score,'防衛力の改善と手札に戻す戦力・召喚費を比較',{cost});
+      }
+    } else if(pd.type==='spell_evolve') {
+      for(const v of spellPlans(r,p,'sp_evolve'))add('ev:'+v.i,v.score,v.reason,{cost:v.cost});
     } else if(pd.type==='market') {
       const visit=r.shopVisit;
       if(visit?.player===p.id&&visit.items.filter(x=>x.sold&&x.card).length<2)for(const o of opts.filter(o=>o.id.startsWith('buy:'))){

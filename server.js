@@ -10,7 +10,7 @@ const crypto = require('crypto');
 const SITE_NEWS = require('./site-news');
 const START_DEVICE = require('./public/assets/start-guide/device');
 
-const VERSION = '1.59';
+const VERSION = '1.61';
 const MAPS = require('./public/map-definitions');
 const mapOf = r => MAPS[r.mapId || 'starting_corridor'];
 const tilesOf = r => mapOf(r).tiles;
@@ -32,8 +32,8 @@ const CHAR_DECKS = {
   linnei: ['orphe', 'orphe', 'orphe', 'nome', 'nome', 'cleo',
            'sp_gold', 'sp_insight', 'sp_swap',
            'shield', 'shield', 'jinx'],
-  grease: ['nome', 'nome', 'nome', 'orphe', 'orphe', 'cleo',
-           'sp_gold', 'sp_insight', 'sp_swap',
+  grease: ['nome', 'nome', 'nome', 'jaki', 'jaki', 'cleo',
+           'sp_gold', 'sp_insight', 'sp_evolve',
            'shield', 'shield', 'jinx'],
   mio:    ['gaston', 'gaston', 'gaston', 'gecko', 'gecko', 'cleo',
            'sp_gold', 'sp_insight', 'sp_step',
@@ -160,6 +160,9 @@ const CREATURES = {
   valk:    { name: 'ヴァルク', evo: 'アヌビス・レガ', elem: 'earth', st: 30, hp: 40, cost: 120,
              evoSt: 50, evoHp: 60,
              fx: '【守護ビット】戦闘時、自分の土領地1つにつきDF+5（最大+25）', rarity: 'R' },
+  jaki:    { name: 'ジャキ', evo: 'アシュラカン', elem: 'earth', st: 45, hp: 30, cost: 90,
+             evoSt: 60, evoHp: 60,
+             fx: '【戦線交代】戦闘勝利時、召喚コストを払い手札のクリーチャーと交代できる', rarity: 'R' },
 };
 const ITEMS = {}; // v0.34: 呪いアイテムは廃止(スペル「衰弱の呪文」に移行)
 const SPELLS = {
@@ -196,6 +199,8 @@ const SPELLS = {
                desc: '自分の領地2つのクリーチャーを入れ替える(負傷も一緒に移動)' },
   sp_insight:{ name: 'ダブルドロー', rarity: 'N', cost: 40,
                desc: 'カードを2枚引く' },
+  sp_evolve: { name: 'エヴォルヴ', rarity: 'R', cost: 150,
+               desc: '手札の進化前クリーチャー1枚を選び、進化させる' },
   sp_fatal_reward:{ name: 'フェイタルリワード', rarity: 'N', cost: 80,
                desc: 'カードを1枚引き、その後手札1枚を廃棄する' },
   sp_swap:   { name: 'チェンジ', rarity: 'R', cost: 30,
@@ -228,7 +233,7 @@ const CHARS = {
   linnei: { name: 'リンネイ', color: '#378ADD', elem: 'water',
             style: '経済・通行料', deckNote: 'オルフェ2+黄金2 ─ 資金と収入を伸ばす' },
   grease: { name: 'グリース', color: '#C69A32', elem: 'earth',
-            style: '防衛・領地育成', deckNote: 'ノーム2+シールド2+加護 ─ 守って育てる' },
+            style: '攻守交代・領地育成', deckNote: 'ノーム3+ジャキ2 ─ 戦線交代で攻めと守りを切り替える' },
   mio:    { name: 'ミオ',     color: '#4FA69C', elem: 'wind',
             style: '移動・機動侵略', deckNote: 'ガストン2+疾風2 ─ 動き回って仕掛ける' },
   lia:    { name: 'リーア',   color: '#E6868F', elem: 'fire',
@@ -254,7 +259,7 @@ for (const [cid, c] of Object.entries({ ...CREATURES }))
   if (c.evo) CREATURES[cid + '_f'] = { name: c.evo, elem: c.elem, st: c.evoSt, hp: c.evoHp,
     cost: c.cost, fx: c.evoFx || c.fx, rarity: c.rarity, forged: true };
 
-const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral','mermaid','bunnyhop','strauk','samurai_saga','marlow','shuterio','gaust','alter','toxy','kamadoma','swordgear','komao','mist_jelly','night_jelly','wakatama','emeri','valk'];
+const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral','mermaid','bunnyhop','strauk','samurai_saga','marlow','shuterio','gaust','alter','toxy','kamadoma','swordgear','komao','mist_jelly','night_jelly','wakatama','emeri','valk','jaki'];
 // アートが存在するクリーチャーID(assetsのc_*.pngを起動時に走査 ─ v0.82)。
 // クライアントはcatalog.artIds経由で受け取る。手書きリストの二重管理はしない
 // (新クリーチャーはIDとファイル名を一致させて置くだけで盤面・カード・戦闘に反映される)
@@ -265,6 +270,7 @@ const ART_IDS = (() => {
   } catch (e) { return []; }
 })();
 const PUBLIC_SPELL_ART = {
+  sp_evolve: '/assets/cards/spell-evolve-art-v8.webp',
   sp_gold: '/assets/cards/spell-gold-art-v1.webp',
   sp_weaken: '/assets/cards/spell-weaken-art-v1.webp',
   sp_gale: '/assets/cards/spell-double-roll-art-v1.webp',
@@ -573,7 +579,7 @@ const CREATURE_EFFECT_CONTEXT = Object.freeze({
   palecoral:'turn', bunnyhop:'spell', strauk:'battle', samurai_saga:'battle', marlow:'land',
   shuterio:'battle', gaust:'placement', alter:'battle', toxy:'exile', kamadoma:'other',
   swordgear:'battle', komao:'other', mermaid:'battle', mist_jelly:'other', night_jelly:'toll',
-  wakatama:'other', emeri:'battle', valk:'battle',
+  wakatama:'other', emeri:'battle', valk:'battle', jaki:'battle',
 });
 function terrainBreakdown(r, tile, attackerCreature = null) {
   const o = r.owners[tile];
@@ -693,6 +699,7 @@ function creatureEffectUi(r, creatureId, tile, role, context = 'battle', result 
       if (!result) return conditional('ソード系ウェポン選択時');
       return result.selfSupport && ['weapon','gweapon'].includes(result.selfSupport.cardId)
         ? active('ソード系ウェポンに適用') : inactive('対象ウェポンなし');
+    case 'jaki':
     case 'mermaid': {
       if (!result) return conditional('戦闘勝利時');
       const won = role === 'attacker' ? !!result.win : !result.win;
@@ -788,11 +795,11 @@ function askMandatoryHandExile(r, p, type, prompt, extra = {}) {
 }
 function resumeAfterPlacement(r, p, pend) {
   if (pend.after === 'swap') return askRoll(r, p);
-  if (pend.after === 'battle') return continuePostBattle(r);
+  if (pend.after === 'battle' || pend.after === 'frontline') return continuePostBattle(r);
   return endTurn(r);
 }
 function onCreatureSummoned(r, p, creatureId, reason, tile) {
-  if (!['summon', 'swap', 'battle'].includes(reason)) return false;
+  if (!['summon', 'swap', 'battle', 'frontline'].includes(reason)) return false;
   if (baseId(creatureId) === 'komao' && Number.isInteger(tile)) {
     const before = tileElem(r, tile);
     if (tilesOf(r)[tile]?.e === 'earth') delete r.elemOv[tile];
@@ -1285,6 +1292,7 @@ function askRoll(r, p) {
   for (const sid of p.spellCast ? [] : [...new Set(p.hand.filter(c => SPELLS[c]))]) {
     const spellCost = effectiveSpellCost(r, p, sid);
     if (spellCost > p.gold) continue;
+    if (sid === 'sp_evolve' && !p.hand.some(canEvolveHandCard)) continue;
     if (sid === 'sp_weaken' &&
         !r.owners.some(o => o && o.player !== p.id)) continue;
     if (sid === 'sp_quake' &&
@@ -1979,6 +1987,23 @@ function askGate(r, p) {
   opts.push({ id: 'pass', label: '何もしない' });
   ask(r, p.id, 'gate', '変化の門 ─ 恩恵を選べ', opts);
 }
+function canEvolveHandCard(id) {
+  return !!(CREATURES[id]?.evo && CREATURES[id + '_f']);
+}
+function evolveHandCard(p, index) {
+  if (!Number.isInteger(index) || !canEvolveHandCard(p.hand[index])) return false;
+  p.hand[index] += '_f';
+  return true;
+}
+function askSpellEvolve(r, p) {
+  const opts = p.hand.flatMap((id, i) => canEvolveHandCard(id) ? [{
+    id: 'ev:' + i, card: id,
+    label: `${CREATURES[id].name} → ${CREATURES[id].evo}(AT${CREATURES[id].evoSt}/HP${CREATURES[id].evoHp})`,
+  }] : []);
+  if (!opts.length) return askRoll(r, p);
+  opts.push({ id: 'ev:cancel', label: 'やめる' });
+  return ask(r, p.id, 'spell_evolve', `エヴォルヴ ─ 進化させるクリーチャーを選べ(−${effectiveSpellCost(r, p, 'sp_evolve')}G)`, opts);
+}
 function askForge(r, p) {
   const opts = [];
   p.hand.forEach((c, i) => {
@@ -2405,6 +2430,18 @@ function continuePostBattle(r) {
       }
     }
   }
+  const placed = r.owners[state.tile];
+  if (!state.frontlineDone && placed?.player === winner.id && baseId(placed.creature) === 'jaki') {
+    state.frontlineDone = true;
+    const opts = winner.hand.flatMap((card, i) => CREATURES[card] && CREATURES[card].cost <= winner.gold
+      ? [{ id: 'fl:' + i, card, cost: CREATURES[card].cost, label: `${cardName(card)}(−${CREATURES[card].cost}G)` }] : []);
+    if (opts.length) {
+      opts.push({ id: 'fl:cancel', label: '交代しない' });
+      ask(r, winner.id, 'frontline_swap', '【戦線交代】手札から配置するクリーチャーを選ぶ（召喚コストが必要）', opts);
+      Object.assign(r.pending[winner.id], { tile: state.tile, source: placed.creature });
+      return;
+    }
+  }
   r.battleAfter = null;
   r.effectResume = null;
   log(r, `戦${state.invasionWon ? '勝' : '果'}の報酬 ─ ${winner.name}は3枚のカードから1枚を選ぶ`);
@@ -2438,6 +2475,32 @@ function handleChoose(r, playerId, optionId) {
       log(r, `【瘴気連鎖】${p.name}の瘴気が${target.name}の手札「${cardName(card)}」を捨てさせた`);
     }
     return processEffectQueue(r);
+  }
+
+  if (pend.type === 'frontline_swap') {
+    const state = r.battleAfter, o = r.owners[pend.tile];
+    if (optionId === 'fl:cancel') return continuePostBattle(r);
+    const i = Number(optionId.slice(3)), selected = pend.options.find(x => x.id === optionId);
+    const card = p.hand[i], info = CREATURES[card];
+    if (!state || state.winner !== p.id || state.tile !== pend.tile || !state.frontlineDone || p.bankrupt ||
+        !o || o.player !== p.id || o.creature !== pend.source || baseId(o.creature) !== 'jaki' ||
+        !Number.isInteger(i) || card !== selected?.card || !info || info.cost > p.gold) return continuePostBattle(r);
+    const returned = o.creature;
+    p.hand.splice(i, 1);
+    p.hand.push(returned);
+    p.gold -= info.cost;
+    // Land level/element remain; creature-specific damage and buffs leave with the old creature.
+    r.owners[pend.tile] = { player: p.id, level: o.level, creature: card };
+    reconcileAbyssMarks(r);
+    markMatchCause(r, 'placement', { actor:p.id, tile:pend.tile, amount:info.cost });
+    r.lastEvent = { type:'frontline_swap', player:p.id, tile:pend.tile, from:returned, creature:card, cost:info.cost, at:stamp(r) };
+    log(r, `【戦線交代】${p.name}の${cardName(returned)}が手札へ戻り、${cardName(card)}を配置した(−${info.cost}G)`);
+    if (baseId(card) === 'fugorm') {
+      gainToDeck(r, p, ['weapon'], 'fugorm');
+      log(r, `【鍛冶】${p.name}はウェポン「ソード」を山札に得た`);
+    }
+    if (onCreatureSummoned(r, p, card, 'frontline', pend.tile)) return;
+    return continuePostBattle(r);
   }
 
   if (pend.type === 'daitekkan_recover') {
@@ -2653,7 +2716,8 @@ function handleChoose(r, playerId, optionId) {
   if (pend.type === 'roll' && optionId.startsWith('sp:')) {
     const sid = optionId.slice(3);
     const spellCost = effectiveSpellCost(r, p, sid);
-    if (!p.hand.includes(sid) || spellCost > p.gold) return askRoll(r, p);
+    if (p.spellCast || !p.hand.includes(sid) || spellCost > p.gold) return askRoll(r, p);
+    if (sid === 'sp_evolve') return askSpellEvolve(r, p);
     const castLog = () => {
       p.hand.splice(p.hand.indexOf(sid), 1);
       if (EXILE_SPELLS.has(sid)) { exileCard(r, p, sid, 'spell'); }
@@ -3106,13 +3170,31 @@ function handleChoose(r, playerId, optionId) {
     return endTurn(r);
   }
 
+  if (pend.type === 'spell_evolve') {
+    if (optionId === 'ev:cancel') return askRoll(r, p);
+    const sid = 'sp_evolve', i = Number(optionId.slice(3));
+    const selected = pend.options.find(o => o.id === optionId);
+    const cost = effectiveSpellCost(r, p, sid);
+    // Revalidate the exact selected card before charging or removing anything.
+    if (p.spellCast || !p.hand.includes(sid) || p.gold < cost ||
+        !selected?.card || p.hand[i] !== selected.card || !evolveHandCard(p, i)) return askRoll(r, p);
+    p.hand.splice(p.hand.indexOf(sid), 1);
+    p.discard.push(sid);
+    p.gold -= cost;
+    p.spellCast = true;
+    onSpellCast(r, p, sid);
+    r.lastEvent = { type: 'spell', player: p.id, name: SPELLS[sid].name, desc: SPELLS[sid].desc, at: stamp(r) };
+    log(r, `📜 ${p.name}が「${SPELLS[sid].name}」で手札のクリーチャー1枚を進化させた(−${cost}G)`);
+    spellFx(r, sid, [], p.id);
+    return askRoll(r, p);
+  }
+
   if (pend.type === 'forge') {
     if (optionId === 'back') return askGate(r, p);
     const i = +optionId.slice(3);
     const c = p.hand[i];
-    if (!CREATURES[c] || !CREATURES[c].evo || p.gold < RULES.forgeCost) return askGate(r, p);
+    if (p.gold < RULES.forgeCost || !evolveHandCard(p, i)) return askGate(r, p);
     p.gold -= RULES.forgeCost;
-    p.hand[i] = c + '_f';
     log(r, `⚒ 【鍛錬】${p.name}の${CREATURES[c].name}が${CREATURES[c].evo}に進化した!`);
     return endTurn(r);
   }
@@ -3465,6 +3547,7 @@ function botCardNeedScore(r, p, id) {
     const shift = ELEM_OF_SPELL[id];
     if (id === 'sp_gold') value = Math.min(180, Math.max(1, p.lap || 1) * 100);
     else if (id === 'sp_insight') value = creatures.length >= 3 ? 90 : 35;
+    else if (id === 'sp_evolve') value = creatures.some(canEvolveHandCard) ? 85 : 0;
     else if (id === 'sp_bedrock_uplift') value = wounded || p.charId === 'adel' && ownLand ? 100 : 20;
     else if (shift) value = ownLand && shift === CHARS[p.charId]?.elem ? 100 : 10;
     else if (['sp_move', 'sp_step', 'sp_swap', 'sp_ward'].includes(id)) value = ownLand ? 85 : 0;
@@ -3623,7 +3706,7 @@ function publicState(r, viewerId) {
             resume: r.draft ? r.draft.resume : null }]
         : v.type === 'pick_draw' && k !== viewerId
           ? [k, { type: v.type, prompt: v.prompt, options: [], until: v.until }]  // 候補カードは本人だけに見せる
-          : ['gaust_exile', 'fatal_exile', 'ult_villa_recover', 'daitekkan_recover'].includes(v.type) && k !== viewerId
+          : ['gaust_exile', 'fatal_exile', 'ult_villa_recover', 'daitekkan_recover', 'spell_evolve', 'frontline_swap'].includes(v.type) && k !== viewerId
             ? [k, { type: v.type, prompt: v.prompt, options: [], selectedCount: (v.selected || []).length }]
           : v.type === 'support' && k !== viewerId
             ? [k, { type: v.type, prompt: 'ウェポンを選択中', options: [] }]

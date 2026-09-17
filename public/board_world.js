@@ -365,7 +365,7 @@ const PW = (() => {
     // 術者中心のスペル(黄金・疾風・風向転換・血染めの刃・ひらめき)と
     // 自前でtiles配列を処理するスペル(バリア)以外は対象マス必須
     const needTile = !['sp_gold', 'sp_gale', 'sp_wind_shift', 'sp_bloodstained_blade',
-                       'sp_insight', 'sp_ward'].includes(sid);
+                       'sp_insight', 'sp_evolve', 'sp_ward'].includes(sid);
     if (needTile && !hasTile) return;
     const { x, y } = hasTile ? proj(GEO[i][0], GEO[i][1]) : { x: from.x, y: from.y };
     if (sid === 'ult_adel') {
@@ -520,6 +520,11 @@ const PW = (() => {
           g.lineStyle(2, 0xE05050, a * 0.8);
           g.beginPath(); g.moveTo(from.x - L * 0.7, from.y - 4 - L * 0.5); g.lineTo(from.x + L * 0.7, from.y - 4 + L * 0.5); g.strokePath(); },
         onComplete: () => { g.destroy(); res(); } }));
+    } else if (sid === 'sp_evolve') {
+      // 手札の内容は公開せず、術者の位置で進化の光を見せる。
+      pulseAt(from.x, from.y, 0xF2D062, 550);
+      elemBurst(from.x, from.y - 6, 0xF2D062, 9, true, 341);
+      await wait(650);
     } else if (sid === 'sp_insight') {
       // ひらめき(§7.3): 白金の閃き(カード裏の飛翔はDOM側 ─ 中身はTVに出さない)
       pulseAt(from.x, from.y, 0xEDE6F8, 550);

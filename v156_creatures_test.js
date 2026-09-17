@@ -24,7 +24,7 @@ function game() {
   return r;
 }
 
-eq(G.VERSION, '1.59', 'server version');
+eq(G.VERSION, '1.61', 'server version');
 eq([G.CREATURES.wakatama.name, G.CREATURES.wakatama.evo, G.CREATURES.wakatama.elem,
   G.CREATURES.wakatama.rarity, G.CREATURES.wakatama.cost, G.CREATURES.wakatama.st,
   G.CREATURES.wakatama.hp, G.CREATURES.wakatama.evoSt, G.CREATURES.wakatama.evoHp],
@@ -41,11 +41,11 @@ eq([G.CREATURES.wakatama_f.name, G.CREATURES.emeri_f.name, G.CREATURES.valk_f.na
   ['ガマワカメ','エスメラルダ','アヌビス・レガ'], 'evolved entries');
 
 const deck = G.makeDeck(), shop = G.shopRandomPool();
-eq([G.MARKET_POOL.length, deck.length], [39,144], 'market and common deck totals');
+eq([G.MARKET_POOL.length, deck.length], [40,148], 'market and common deck totals');
 for (const id of ['wakatama','emeri','valk']) {
   eq([count(deck,id), count(shop,id), count(deck,id + '_f')], [2,2,0], `${id} copy rules`);
 }
-eq(G.publicCardCatalog().counts, { total:73, creatures:44, evolutions:37, spells:24, weapons:5 }, 'catalog counts');
+eq(G.publicCardCatalog().counts, { total:75, creatures:45, evolutions:38, spells:25, weapons:5 }, 'catalog counts');
 
 // Earth bonuses count owned land by its current effective element, never by the placed creature element.
 {
@@ -136,9 +136,9 @@ const cardsPage = fs.readFileSync(path.join(__dirname, 'public/site/cards.html')
 const rulesPage = fs.readFileSync(path.join(__dirname, 'public/site/rules.html'), 'utf8');
 const manual = fs.readFileSync(path.join(__dirname, 'docs/manual.md'), 'utf8');
 const spec = fs.readFileSync(path.join(__dirname, 'docs/spec_rules.md'), 'utf8');
-ok(cardsPage.includes('data-total>73') && cardsPage.includes('data-evolutions>37'), 'cards page fallback counts updated');
+ok(cardsPage.includes('data-total>75') && cardsPage.includes('data-evolutions>38'), 'cards page fallback counts updated');
 ok(rulesPage.includes('土領地に水属性クリーチャーがいても1つ') && rulesPage.includes('回復と「恵みの水脈」'), 'public rules explain corrected mechanics');
-ok(manual.includes('カード一覧(クリーチャー44種)') && manual.includes('v1.56 回復報酬・土領地連動クリーチャー'), 'manual updated');
-ok(spec.includes('共通山札144枚') && spec.includes('配置クリーチャーの属性は参照しない'), 'spec updated');
+ok(manual.includes('カード一覧(クリーチャー45種)') && manual.includes('v1.56 回復報酬・土領地連動クリーチャー'), 'manual updated');
+ok(spec.includes('共通山札148枚') && spec.includes('配置クリーチャーの属性は参照しない'), 'spec updated');
 
 console.log(`v1.56 creature tests passed: ${pass}`);

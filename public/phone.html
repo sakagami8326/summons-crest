@@ -815,6 +815,8 @@
       --card-art-height:69%; --card-boundary-top:61.8%; --card-cost-top:62.8%; --card-info-top:70.8%;
       background:#24143f; color:var(--cardInk); isolation:isolate; container-type:inline-size; overflow:hidden; }
   .spellCard .spArt { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-3; }
+  .spellCard .spArtFitted { inset:-1.5% auto auto 3%; width:94%; height:94%; }
+  .spellCard:has(.spArtFitted) { background:#16112d; }
   .spellCard .spFallback { position:absolute; z-index:1; top:13%; left:13%; width:74%; height:48%; display:grid; place-items:center; }
   .spellCard .spFallback .art,.spellCard .spFallback .glyph { width:100%; height:100% !important; display:grid; place-items:center; margin:0; }
   .spellCard .spFallback img { width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 5px 12px rgba(0,0,0,.55)); }
@@ -1138,8 +1140,9 @@ const supportArt = cid => SUPPORT_ART[cid]
 const SPELL_ART = new Set(['sp_gold','sp_weaken','sp_gale','sp_quake','sp_volcanic_core','sp_abyssal_pearl',
   'sp_earth_mother_stone','sp_sky_crystal','sp_flame_vortex','sp_bloodstained_blade',
   'sp_bedrock_uplift','sp_wind_shift','sp_ward','sp_step','sp_move','sp_insight','sp_swap',
-  'sp_fatal_reward','sp_dice_1','sp_dice_2','sp_dice_3','sp_dice_4','sp_dice_5','sp_dice_6']);
+  'sp_evolve','sp_fatal_reward','sp_dice_1','sp_dice_2','sp_dice_3','sp_dice_4','sp_dice_5','sp_dice_6']);
 const DEDICATED_SPELL_ART = {
+  sp_evolve:'/assets/cards/spell-evolve-art-v8.webp',
   sp_gold:'/assets/cards/spell-gold-art-v1.webp',
   sp_weaken:'/assets/cards/spell-weaken-art-v1.webp',
   sp_gale:'/assets/cards/spell-double-roll-art-v1.webp',
@@ -1835,7 +1838,7 @@ function creatureFaceBody(cid, cr, evolved) {
 function spellFaceBody(cid, spl) {
   const dedicated = dedicatedSpellAsset(cid);
   const art = dedicated
-    ? `<img class="spArt" src="${dedicated}" alt="">`
+    ? `<img class="spArt${cid === 'sp_evolve' ? ' spArtFitted' : ''}" src="${dedicated}" alt="">`
     : `<img class="spArt" src="/assets/cards/bg-spell-v1.webp" alt=""><div class="spFallback">${spellArt(cid, '100%')}</div>`;
   return `${art}<div class="spHeader"><div class="spName" data-card-name>${spl.name}</div></div>
     <div class="ccCost"><img class="ccCostFrame" src="/assets/cards/cost-frame.svg" alt=""><img class="ccCoin" src="/assets/cards/cost-coin.svg" alt=""><span class="ccCostValue">${spl.cost || 0}G</span></div>
@@ -2295,7 +2298,7 @@ function selectableKind() {
   if (p.type === 'pick_creature') return 'creature';
   if (p.type === 'support') return 'support';
   if (p.type === 'roll') return 'spell';
-  if (p.type === 'forge' || p.type === 'gate') return 'creature-hint';
+  if (p.type === 'forge' || p.type === 'spell_evolve' || p.type === 'frontline_swap' || p.type === 'gate') return 'creature-hint';
   return 'none';
 }
 // カードを暗くするかの判定(cardHTMLとクラス更新の両方で共用)
@@ -2652,14 +2655,14 @@ function taskPrompt(p) {
     support:'ウェポンを選べ', upgrade:'強化する領地を選べ', upgrade_lv:'強化レベルを選べ',
     draft:'獲得するカードを選べ', market:'商品を選べ', gate:'門の恩恵を選べ', forge:'進化させるクリーチャーを選べ',
     forget:'廃棄するカードを選べ', overflow:'捨てるカードを選べ', sell:'売却する領地を選べ',
-    swap_pick:'配置するクリーチャーを選べ',
+    swap_pick:'配置するクリーチャーを選べ', spell_evolve:'進化させるクリーチャーを選べ',
     curse_target:'呪いをかける領地を選べ', quake_target:'地割れを起こす領地を選べ',
     spell_target:'対象の領地を選べ', move_a:'移動するクリーチャーを選べ', move_b:'入れ替える相手を選べ',
     swap_land:'交代する領地を選べ', step_a:'移動するクリーチャーを選べ', step_b:'移動先を選べ',
     marlow_src:'移動するマーローを選べ', marlow_dest:'移動先を選べ',
     gaust_exile:'廃棄するカードを選べ', fatal_exile:'廃棄するカードを選べ',
     ult_villa_recover:'回収するカードを選べ', daitekkan_recover:'回収するウェポンを選べ',
-    mermaid_heal:'回復する味方を選べ',
+    mermaid_heal:'回復する味方を選べ', frontline_swap:'戦線交代 ─ 配置するクリーチャーを選べ',
     abyss_mark:'深淵標を置く領地を選べ',
     toxy_target:'対象のプレイヤーを選べ', ult_nerasio_elem:'変更後の属性を選べ',
     ult_mio:'対象の領地を選べ', ult_lia:'炎の渦を起こす領地を選べ', ult_nerasio_land:'再構成する領地を選べ',
@@ -2883,7 +2886,7 @@ function render() {
   $('msg').textContent = p ? taskPrompt(p) : waitingTaskPrompt();
 
   const pnow = pend();
-  if (!pnow || !['forget', 'overflow', 'forge', 'swap_pick'].includes(pnow.type)) closePickOv();
+  if (!pnow || !['forget', 'overflow', 'forge', 'spell_evolve', 'frontline_swap', 'swap_pick'].includes(pnow.type)) closePickOv();
   if (m.bankrupt) {
     $('msg').textContent = '破産 ─ 観戦中';
     A.innerHTML = '';
@@ -2995,6 +2998,13 @@ function render() {
     $('diceDock').innerHTML = `<div style="font-size:max(2dvh,13px);color:var(--gold-soft)">${state.lastDice ? state.lastDice.value + ' が出た' : ''}</div>`;
     A.innerHTML = '';
     showActionOverlay(p.prompt, p.options.map(o => ({ id:o.id, label:iconize(o.label), desc:'進む方向を決定します' })), { key:`direction|${p.prompt}` });
+  } else if (p.type === 'frontline_swap') {
+    $('msg').textContent = taskPrompt(p);
+    A.innerHTML = '';
+    buildPickOv('【戦線交代】配置するカードをタップ（召喚コストを支払う）', [
+      { name: '交代できるクリーチャー', entries: p.options.filter(o => /^fl:\d+$/.test(o.id))
+        .map(o => ({ card:o.card, pickId:o.id, zone:`召喚 ${o.cost}G` })) },
+    ], 'fl:cancel');
   } else if (p.type === 'swap_pick') {
     // 交代: 配置するクリーチャーをカードタップで選ぶ(直接タップの設計思想)
     $('msg').textContent = taskPrompt(p);
@@ -3003,15 +3013,15 @@ function render() {
       { name: '手札のクリーチャー', entries: p.options.filter(o => o.id.startsWith('sp2:') && o.id !== 'sp2:cancel')
         .map(o => ({ card: o.id.slice(4), pickId: o.id })) },
     ], 'sp2:cancel');
-  } else if (p.type === 'forge') {
+  } else if (p.type === 'forge' || p.type === 'spell_evolve') {
     // 鍛錬: 進化させるクリーチャーをカードタップで選ぶ
     $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';
     buildPickOv(iconize(p.prompt).replace(/選べ/, 'タップ'), [
-      { name: '進化できるクリーチャー', entries: p.options.filter(o => o.id.startsWith('fg:'))
+      { name: '進化できるクリーチャー', entries: p.options.filter(o => /^(fg|ev):\d+$/.test(o.id))
         .map(o => { const c = m.hand[+o.id.slice(3)]; const cr2 = C.CREATURES[c] || {};
           return { card: c, pickId: o.id, zone: `→ ${cr2.evo || '進化'}` }; }) },
-    ], 'back');
+    ], p.type === 'spell_evolve' ? 'ev:cancel' : 'back');
   } else if (p.type === 'gate') {
     // 門: 全画面オーバーレイで選ぶ(押し込み配置だとボタンが見切れるため)
     $('msg').textContent = taskPrompt(p);

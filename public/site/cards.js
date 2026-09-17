@@ -63,7 +63,7 @@
         </div><p class="game-card__effect">${effect}</p></div></div>`;
     }
     if (card.kind === 'spell') {
-      return `<div class="game-card game-card--spell">
+      return `<div class="game-card game-card--spell${card.id === 'sp_evolve' ? ' game-card--evolve' : ''}">
         <img class="game-card__background" src="/assets/cards/bg-spell-v1.webp" alt="" loading="lazy" decoding="async" width="1024" height="1536">
         <div class="game-card__header"><strong class="game-card__name">${name}</strong></div>
         <div class="game-card__art">${artHtml}</div><span class="game-card__cost">${card.cost}G</span>
