@@ -4622,9 +4622,10 @@ async function playBattle(b) {
   // 2E plan§9: 戦闘終了後の盤面演出。オーバーレイを閉じてからマスへズームし、
   // 命中余韻(侵略)/反動+残光(防衛)を中央下メッセージと同時に再生する
   if (renderModeActive === 'phaser') {
-    const msg = b.win
+    let msg = b.win
       ? `<b style="color:#F2D062">侵略成功</b> ─ ${atk.name}が${def.name}の土地を奪取!`
       : `<b style="color:#8FE08A">防衛成功</b> ─ ${def.name}の${cname(b.defCreature, dLv)}が耐え抜いた(残HP${b.remainHp})`;
+    if (b.evolutionPrayer) msg += `<br><b style="color:#F2D062">進化の祈り +${b.evolutionPrayer.gold}G</b>（配置${b.evolutionPrayer.providers.length}体分）`;
     const closeupDone = tileCloseup(b.tile, msg);
     const resultFxDone = PW.play({ type:b.win ? 'invade-fx' : 'defend-fx', tile:b.tile,
       element:C.CREATURES[b.win ? b.atkCreature : b.defCreature].elem,
@@ -4634,6 +4635,7 @@ async function playBattle(b) {
     await showBannerAsync(b.win ? '侵略成功!' : sic('up') + ' 防衛成功!',
       b.win ? atk.name + 'が' + def.name + 'の土地を奪取!'
             : def.name + 'が耐え抜いた(残HP' + b.remainHp + ')');
+    if (b.evolutionPrayer) await showBannerAsync('進化の祈り', `+${b.evolutionPrayer.gold}G（配置${b.evolutionPrayer.providers.length}体分）`);
   }
   } finally {
     // ハイブリッド戦闘の後始末(§11.4: 一時オブジェクト・Tweenを残さない。stopは冪等)

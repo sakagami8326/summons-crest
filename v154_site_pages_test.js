@@ -141,10 +141,10 @@ const waitFor = async (url, attempts = 60) => {
     const catalogResponse = await fetch(`${base}/api/catalog`);
     const catalog = await catalogResponse.json();
     ok(catalog.version === '1.62', 'catalog identifies current release');
-    ok(catalog.counts.total === 75 && catalog.cards.length === 75, 'catalog contains all 75 base card types');
-    ok(catalog.counts.creatures === 45 && catalog.counts.spells === 25 && catalog.counts.weapons === 5, 'catalog category counts are 45/25/5');
-    ok(catalog.counts.evolutions === 38, 'catalog contains all 38 evolution pairs');
-    ok(new Set(catalog.cards.map(card => card.id)).size === 75, 'catalog IDs are unique');
+    ok(catalog.counts.total === 76 && catalog.cards.length === 76, 'catalog contains all 76 base card types');
+    ok(catalog.counts.creatures === 46 && catalog.counts.spells === 25 && catalog.counts.weapons === 5, 'catalog category counts are 46/25/5');
+    ok(catalog.counts.evolutions === 39, 'catalog contains all 39 evolution pairs');
+    ok(new Set(catalog.cards.map(card => card.id)).size === 76, 'catalog IDs are unique');
     ok(catalog.cards.every(card => ['id','kind','name','element','rarity','cost','at','hp','effect','imageId','artPath','evolution'].every(key => key in card)), 'catalog exposes the complete public card shape');
     ok(catalog.cards.every(card => !['hand','deck','owner','player','supports'].some(key => key in card)), 'catalog excludes game-private state');
     ok(catalog.cards.filter(card => card.kind === 'creature').every(card => card.artPath && exists(`public${card.artPath}`)), 'all creature art references resolve');

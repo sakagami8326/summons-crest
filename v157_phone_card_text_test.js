@@ -54,7 +54,7 @@ ok(/onclick="pickOvChoose\('\$\{e\.pickId\}'\)"/.test(phone), 'selection lists r
 
 const baseCreatures = Object.entries(G.CREATURES).filter(([id]) => !id.endsWith('_f'));
 const evolvedForms = baseCreatures.filter(([, card]) => card.evo).length;
-ok(baseCreatures.length + evolvedForms === 83, 'all 83 creature forms are covered by the common card renderer');
+ok(baseCreatures.length + evolvedForms === 85, 'all 85 creature forms are covered by the common card renderer');
 ok(Object.keys(G.SPELLS).length === 25 && Object.keys(G.SUPPORTS).length === 5,
   'all 25 spells and 5 weapons are covered by the common card renderer');
 

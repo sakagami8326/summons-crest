@@ -160,6 +160,10 @@ const CREATURES = {
   valk:    { name: 'ヴァルク', evo: 'アヌビス・レガ', elem: 'earth', st: 30, hp: 40, cost: 120,
              evoSt: 50, evoHp: 60,
              fx: '【守護ビット】戦闘時、自分の土領地1つにつきDF+5（最大+25）', rarity: 'R' },
+  evol:    { name: 'エヴォル', evo: 'アセンシア', elem: null, st: 20, hp: 40, cost: 120,
+             evoSt: 40, evoHp: 70,
+             fx: '【進化の祈り】配置中、進化済みの味方が戦闘に勝つたび100Gを得る（重複）',
+             evoFx: '【進化の祈り】配置中、進化済みの味方が戦闘に勝つたび300Gを得る（重複）', rarity: 'R' },
   jaki:    { name: 'ジャキ', evo: 'アシュラカン', elem: 'earth', st: 45, hp: 30, cost: 90,
              evoSt: 60, evoHp: 60,
              fx: '【戦線交代】戦闘勝利時、召喚コストを払い手札のクリーチャーと交代できる', rarity: 'R' },
@@ -259,7 +263,7 @@ for (const [cid, c] of Object.entries({ ...CREATURES }))
   if (c.evo) CREATURES[cid + '_f'] = { name: c.evo, elem: c.elem, st: c.evoSt, hp: c.evoHp,
     cost: c.cost, fx: c.evoFx || c.fx, rarity: c.rarity, forged: true };
 
-const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral','mermaid','bunnyhop','strauk','samurai_saga','marlow','shuterio','gaust','alter','toxy','kamadoma','swordgear','komao','mist_jelly','night_jelly','wakatama','emeri','valk','jaki'];
+const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral','mermaid','bunnyhop','strauk','samurai_saga','marlow','shuterio','gaust','alter','toxy','kamadoma','swordgear','komao','mist_jelly','night_jelly','wakatama','emeri','valk','jaki','evol'];
 // アートが存在するクリーチャーID(assetsのc_*.pngを起動時に走査 ─ v0.82)。
 // クライアントはcatalog.artIds経由で受け取る。手書きリストの二重管理はしない
 // (新クリーチャーはIDとファイル名を一致させて置くだけで盤面・カード・戦闘に反映される)
@@ -518,6 +522,22 @@ function earthLandBattleBonus(r, playerId) {
   const lands = chainCount(r, playerId, 'earth');
   return { lands, counted:Math.min(5, lands), bonus:Math.min(5, lands) * 5 };
 }
+// Snapshot before combat: arrivals after a victory cannot retroactively grant income.
+function evolutionPrayerProviders(r) {
+  return r.owners.flatMap((o, tile) => o && baseId(o.creature) === 'evol'
+    ? [{ player:o.player, tile, creature:isEvolved(o) ? 'evol_f' : 'evol', gold:isEvolved(o) ? 300 : 100 }] : []);
+}
+function grantEvolutionPrayer(r, b, winner, evolved) {
+  if (!evolved) return null;
+  const providers = (b.evolutionPrayerProviders || []).filter(p => p.player === winner.id);
+  const gold = providers.reduce((sum, p) => sum + p.gold, 0);
+  if (!gold) return null;
+  const beforeGold = winner.gold;
+  winner.gold += gold;
+  const reward = { player:winner.id, gold, beforeGold, afterGold:winner.gold, providers };
+  log(r, `【進化の祈り】${winner.name}は進化済みクリーチャーの勝利で${gold}Gを獲得!（配置${providers.length}体分）`);
+  return reward;
+}
 function recordHeal(r, p, source, targets, extra = {}) {
   const actual = (targets || []).filter(t => t && Number(t.amount) > 0)
     .map(t => Object.assign({}, t, { amount: Number(t.amount) }));
@@ -579,7 +599,7 @@ const CREATURE_EFFECT_CONTEXT = Object.freeze({
   palecoral:'turn', bunnyhop:'spell', strauk:'battle', samurai_saga:'battle', marlow:'land',
   shuterio:'battle', gaust:'placement', alter:'battle', toxy:'exile', kamadoma:'other',
   swordgear:'battle', komao:'other', mermaid:'battle', mist_jelly:'other', night_jelly:'toll',
-  wakatama:'other', emeri:'battle', valk:'battle', jaki:'battle',
+  wakatama:'other', emeri:'battle', valk:'battle', jaki:'battle', evol:'other',
 });
 function terrainBreakdown(r, tile, attackerCreature = null) {
   const o = r.owners[tile];
@@ -621,6 +641,7 @@ function creatureEffectUi(r, creatureId, tile, role, context = 'battle', result 
   const conditional = reason => effectUi('conditional', reason, text);
   if (!kind) return conditional('表示条件未登録');
   if (kind === 'none') return null;
+  if (bid === 'evol') return conditional(`配置中、進化済みの味方が勝利すると+${evolved ? 300 : 100}G（重複）`);
   if (kind !== 'battle') {
     if (context === 'land_stop' && kind === 'toll') return active('通行料に適用');
     const reasons = { toll:'通行料効果', placement:'召喚・配置時のみ', spell:'スペル対象時のみ',
@@ -2071,7 +2092,7 @@ function startBattle(r, attacker, tileIdx) {
     .map(c => ({ id: 'atk:' + c, card: c, cost: 0,
       label: `${CREATURES[c].name}(AT${CREATURES[c].st})で攻める` }));
   r.battle = { tile: tileIdx, attacker: attacker.id, defender: r.owners[tileIdx].player,
-               atkCreature: null, supports: {}, startedAt: stamp(r) };
+               atkCreature: null, supports: {}, startedAt: stamp(r), evolutionPrayerProviders:evolutionPrayerProviders(r) };
   ask(r, attacker.id, 'pick_creature', '侵略! 手札からクリーチャーを選べ', opts);
 }
 function creatureSupportEnabled(creatureId) {
@@ -2291,6 +2312,8 @@ function calculateBattle(r, b = r.battle) {
 
 function resolveBattle(r) {
   const { b, atk, def, o, tile, ac, dc, defEvolved, notes, aSup, dSup, aEff, dEff, mvSrc, corridor, carried, atkEvolved, atkWeaponMastery, defWeaponMastery, atkSoul, defSoul, atkEarthChain, defEarthChain, atkEarthLand, defEarthLand, atkEarthAtBonus, defEarthAtBonus, atkEarthDfBonus, defEarthDfBonus, aBase, dBase, atkDmg, effHp, defDF, dealt, atkEffHp, atkDF, defSt, counterSt, counterDealt, atkSurvived, atkShadeDF, hitsDone, preempt, terrain, terrainUi, curse, win, iceWard, atkCarried } = calculateBattle(r);
+  // Older saved battles have no snapshot; capture before any resolution changes.
+  b.evolutionPrayerProviders ||= evolutionPrayerProviders(r);
   markMatchCause(r, 'invasion', { actor: atk.id, target: def.id, tile: b.tile });
   // ウェポンは勝敗問わず消費
   for (const [pid, sc] of Object.entries(b.supports)) consumeBattleSupport(r, pid, sc);
@@ -2414,6 +2437,11 @@ function resolveBattle(r) {
   // v0.74: 戦勝報酬は共通山札から3枚ドラフト(勝者=攻守どちらでも)。
   // ドラフト完了後にsettleAll→endTurnへ続く(進行を直列化し、r.draftの競合を防ぐ)
   const bWinner = win ? atk : def;
+  const prayer = grantEvolutionPrayer(r, b, bWinner, win ? atkEvolved : defEvolved);
+  if (prayer) {
+    r.lastBattle.evolutionPrayer = prayer;
+    r.lastBattle.notes.push(`【進化の祈り】${bWinner.name} +${prayer.gold}G（配置${prayer.providers.length}体分）`);
+  }
   r.battleAfter = { winner: bWinner.id, attacker: atk.id, defender: def.id, tile: b.tile,
     invasionWon: !!win, mermaidDone: false, recoveryDone: false };
   if (win && onCreatureSummoned(r, atk, b.atkCreature, 'battle', b.tile)) {
@@ -3043,7 +3071,7 @@ function handleChoose(r, playerId, optionId) {
       // 既存の保存対象フラグで復帰先を保持し、endTurnで一度だけ消費する。
       p.bonusRollPending = true;
       r.battle = { tile: j, attacker: p.id, defender: dest.player,
-                   atkCreature: src.creature, moveFrom: i, supports: {}, startedAt: stamp(r) };
+                   atkCreature: src.creature, moveFrom: i, supports: {}, startedAt: stamp(r), evolutionPrayerProviders:evolutionPrayerProviders(r) };
       return askSupports(r);
     }
     p.stepI = null;
@@ -3526,6 +3554,7 @@ function botCardScore(r, p, id) {
   if (id === 'sp_fatal_reward') score += p.charId === 'villa' ? 34 : 10;
   if (baseId(id) === 'alter') score += Math.min(60, (p.exile || []).length * 6);
   if (baseId(id) === 'gaust' && p.charId === 'villa') score += 24;
+  if (baseId(id) === 'evol') score += (p.charId === 'grease' ? 30 : 0) + Math.min(36, r.owners.filter(o => o && o.player === p.id && isEvolved(o)).length * 12);
   if (baseId(id) === 'wakatama') score += (p.charId === 'adel' ? 30 : 0) + (CHARS[p.charId]?.elem === 'water' ? 12 : 0);
   if (baseId(id) === 'emeri' || baseId(id) === 'valk') score += earthLandBattleBonus(r, p.id).bonus * 1.5;
   if (SUPPORTS[id]) score += (c.st || 0) + (c.hp || 0) + (c.jinx ? 35 : 0);

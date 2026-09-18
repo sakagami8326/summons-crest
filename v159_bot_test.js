@@ -22,7 +22,8 @@ Math.random=random;Date.now=()=>1800000000000;
 try {
  // Differential fixture is frozen before the extraction, not another call to the new calculator.
  const base=game();base.p.gold=base.enemy.gold=3000;
- const forms=Object.keys(G.CREATURES), opponents=['gaston','pakawata','avalanche','ludi','mimic','valk_f','beruf_f'];
+ // Evol's new victory income is covered by v162_evol_test; the frozen resolver predates it.
+ const forms=Object.keys(G.CREATURES).filter(id=>!['evol','evol_f'].includes(id)), opponents=['gaston','pakawata','avalanche','ludi','mimic','valk_f','beruf_f'];
  for(const [cid,defender] of forms.flatMap(c=>opponents.flatMap(d=>[[c,d],[d,c]])))for(const level of [1,3]) {
    const r=copy(base.r),p=r.players[0],enemy=r.players[1];
    p.hand=[cid,'weapon','gshield'];enemy.hand=[defender,'shield','jinx'];
