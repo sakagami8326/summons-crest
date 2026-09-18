@@ -1597,7 +1597,7 @@ const QR = (() => {
 <script src="/battle_world.js"></script>
 <script src="/ult_fx_world.js"></script>
 <script src="/evolution-charge-audio.js?v=1"></script>
-<script src="/evolution-fx.js?v=1"></script>
+<script src="/evolution-fx.js?v=2"></script>
 <script>
 const $ = id => document.getElementById(id);
 const botPresentationActive = actorId => !!(state && state.botMode && state.presentationSpeed === 2 &&
@@ -3719,17 +3719,17 @@ async function playEvolvePresentation(tile, owner) {
   const bid=owner.creature.replace(/_f$/, ''),base=state.catalog.CREATURES[bid];
   if(!base?.evo)return;
   cutBusy++;
-  bannerUntil=Math.max(bannerUntil,Date.now()+presentationMs(7300));
+  bannerUntil=Math.max(bannerUntil,Date.now()+presentationMs(8200));
   let cameraToken=null;
   try {
     hideLogo(true);initAudio();maskEvolutionTile(tile,true);
     cameraToken=beginPresentationZoom(tile,'evolution',owner.player);
-    await wait(700);
+    await wait(900);
     if(cameraOwner?.token!==cameraToken)return;
     const anchor=()=>{
       const p=proj(GEO[tile][0],GEO[tile][1]),lift=((owner.level||1)-1)*7;
       if(renderModeActive==='phaser'){
-        const v=PW.worldToViewport(p.x,p.y-lift),right=PW.worldToViewport(p.x+80,p.y-lift);
+        const v=PW.worldToViewport(p.x,p.y-lift+6),right=PW.worldToViewport(p.x+80,p.y-lift+6);
         return {...v,width:Math.abs(right.x-v.x)};
       }
       const el=document.querySelector(`[data-evolution-tile="${tile}"]`),r=el?.getBoundingClientRect();
