@@ -20,7 +20,7 @@ module.exports = function createStandardBot(A) {
   const handledPending = new Set(('abyss_mark curse_target daitekkan_recover direction draft forge forget gate market '
     +'marlow_dest marlow_src mermaid_heal move_a move_b overflow pick_creature pick_draw quake_target roll route_choice '
     +'samurai_elem select_char select_wait sell spell_target spell_evolve frontline_swap step_a step_b support swap_land swap_pick tile toxy_target '
-    +'ult_lia ult_mio ult_nerasio_elem ult_nerasio_land ult_resolve ult_villa_recover upgrade upgrade_lv gaust_exile fatal_exile').split(' '));
+    +'ult_grease ult_lia ult_mio ult_nerasio_elem ult_nerasio_land ult_resolve ult_villa_recover upgrade upgrade_lv gaust_exile fatal_exile').split(' '));
 
   function view(raw, me, pending) {
     const r = {};
@@ -319,7 +319,17 @@ module.exports = function createStandardBot(A) {
       return {...choices[0],score:choices[0].value-baseline()-50,priority:choices[0].value>=99900?2:0,reason:'瞬間移動の到着利益'};
     }
     if(p.charId==='linnei')return {score:p.gold>=botCashReserve(r,p)+100 && (inventory(p).filter(id=>C[id]).length<5||inventory(p).filter(id=>W[id]).length<2)?40:-1,reason:'半額市場の予算と補充需要'};
-    if(p.charId==='grease')return {score:r.barrier[p.id]?-1:exposure(r,p)-60,reason:'次の手番までの領地保護'};
+    if(p.charId==='grease') {
+      const gain = id => C[id]?.evo && C[id+'_f']
+        ? Math.max(0,cardValue(r,p,id+'_f')-cardValue(r,p,id)) +
+          Math.max(0,C[id+'_f'].st-C[id].st) + Math.max(0,C[id+'_f'].hp-C[id].hp) : 0;
+      const hand=p.hand.map((id,i)=>({id:'gh:'+i,value:gain(id)})).filter(x=>x.value>0).sort((a,b)=>b.value-a.value)[0];
+      const land=own.filter(i=>tilesOf(r)[i].t==='land'&&r.owners[i].level<RULES.evoLevel)
+        .map(i=>({id:'gl:'+i,value:gain(r.owners[i].creature)})).filter(x=>x.value>0).sort((a,b)=>b.value-a.value)[0];
+      const picks=[hand,land].filter(Boolean);
+      return {targets:picks.map(x=>x.id),score:picks.length?picks.reduce((n,x)=>n+x.value,0)-35:-Infinity,
+        reason:'手札と領地の進化による戦力向上'};
+    }
     if(p.charId==='adel')return {score:own.reduce((n,i)=>n+healValue(r,p,i,20,!r.owners[i].iceWard),0)-60,reason:'実回復と防衛DFの改善'};
     if(p.charId==='lia') {
       const targets=enemyLands(r,p).map(tile=>({tile,value:damageValue(r,p,tile,10,false,true)}))
@@ -456,6 +466,11 @@ module.exports = function createStandardBot(A) {
       for(const o of opts.filter(o=>!cancelled(o.id))){const tile=numberTile(o),v=plans.find(x=>pd.type==='marlow_src'?x.a===tile:x.a===pd.source&&x.b===tile);if(v)add(o.id,v.score,'移動元と移動先を一組で評価');}
     } else if(pd.type==='ult_mio') {
       for(const o of opts.filter(o=>!cancelled(o.id))){const v=teleportValue(r,p,numberTile(o));add(o.id,v,'瞬間移動の実到着利益',{priority:v>=99900?2:0});}
+    } else if(pd.type==='ult_grease') {
+      const plan=ultimatePlan(r,p),selected=pd.selected||[];
+      for(const o of opts) if(plan.targets.includes(o.id)&&!selected.includes(o.id))
+        add(o.id,100,'手札・領地それぞれの進化対象');
+      if(opts.some(o=>o.id==='gu:confirm'))add('gu:confirm',1,'選択した進化を確定');
     } else if(['ult_lia','ult_nerasio_land','ult_nerasio_elem'].includes(pd.type)) {
       const plan=ultimatePlan(r,p);
       if(pd.type==='ult_nerasio_elem')for(const o of opts.filter(o=>!cancelled(o.id))){const elem=o.id.slice(3),n=clone(r);(pd.selected||[]).forEach(i=>n.elemOv[i]=elem);add(o.id,positionValue(n,p)-positionValue(r,p),'選んだ領地の属性組み合わせ');}

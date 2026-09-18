@@ -10,7 +10,7 @@ const crypto = require('crypto');
 const SITE_NEWS = require('./site-news');
 const START_DEVICE = require('./public/assets/start-guide/device');
 
-const VERSION = '1.61';
+const VERSION = '1.62';
 const MAPS = require('./public/map-definitions');
 const mapOf = r => MAPS[r.mapId || 'starting_corridor'];
 const tilesOf = r => mapOf(r).tiles;
@@ -233,7 +233,7 @@ const CHARS = {
   linnei: { name: 'リンネイ', color: '#378ADD', elem: 'water',
             style: '経済・通行料', deckNote: 'オルフェ2+黄金2 ─ 資金と収入を伸ばす' },
   grease: { name: 'グリース', color: '#C69A32', elem: 'earth',
-            style: '攻守交代・領地育成', deckNote: 'ノーム3+ジャキ2 ─ 戦線交代で攻めと守りを切り替える' },
+            style: '進化・戦線交代', deckNote: '進化で力を引き出し、戦線交代で攻めと守りを切り替える' },
   mio:    { name: 'ミオ',     color: '#4FA69C', elem: 'wind',
             style: '移動・機動侵略', deckNote: 'ガストン2+疾風2 ─ 動き回って仕掛ける' },
   lia:    { name: 'リーア',   color: '#E6868F', elem: 'fire',
@@ -248,7 +248,7 @@ const CHARS = {
 const ULTS = {
   redani: { name: '烈火の進軍', desc: 'サイコロを3個振って移動する' },
   linnei: { name: '水鏡の大商談', desc: '現在のマスでショップを開き、全品半額で買い物' },
-  grease: { name: '大地の大結界', desc: '次の自分の手番まで、すべての自分の領地が侵略されなくなる' },
+  grease: { name: '進化の胎動', desc: '手札と自分の領地から未進化クリーチャーを各1体まで選び、進化させる', art: '/assets/ult_grease-evolution-v1.webp' },
   mio:    { name: '追い風の導き', desc: '好きなマスへ移動して止まる' },
   lia:    { name: '紅蓮の方程式', desc: '敵領地を最大3か所選び、炎の渦を発生させる' },
   adel:   { name: '氷晶の勅令', desc: '自分の全クリーチャーを20回復し、次の防衛戦闘でDF+10' },
@@ -1158,6 +1158,36 @@ function ask(r, playerId, type, prompt, options) {
   if (r.phase === 'playing' && playerId === cur(r)?.id && r.turnReadyAt > Date.now())
     r.pending[playerId].availableAt = r.turnReadyAt;
 }
+// Private target snapshots prevent a stale hand index or changed land from evolving another card.
+function greaseUltOptions(r, p) {
+  const options = p.hand.flatMap((card, i) => canEvolveHandCard(card)
+    ? [{ id: 'gh:' + i, card, zone: 'hand', index: i, label: cardName(card) }] : []);
+  r.owners.forEach((o, i) => {
+    if (o && o.player === p.id && tilesOf(r)[i]?.t === 'land' &&
+        o.level < RULES.evoLevel && canEvolveHandCard(o.creature))
+      options.push({ id: 'gl:' + i, card: o.creature, zone: 'land', tile: i,
+        label: `土地${i} ${cardName(o.creature)}` });
+  });
+  return options;
+}
+function validGreaseTargets(r, p, targets) {
+  const candidates = greaseUltOptions(r, p), zones = new Set();
+  return (targets || []).filter(t => {
+    const valid = candidates.some(o => o.id === t.id && o.card === t.card && o.zone === t.zone);
+    if (!valid || zones.has(t.zone)) return false;
+    zones.add(t.zone); return true;
+  });
+}
+function askGreaseUlt(r, p, targets = []) {
+  const options = greaseUltOptions(r, p);
+  if (p.ultUsed || !options.length) return askRoll(r, p);
+  targets = validGreaseTargets(r, p, targets);
+  if (targets.length) options.push({ id: 'gu:confirm', label: '進化を確定' });
+  options.push({ id: 'gu:cancel', label: 'やめる' });
+  ask(r, p.id, 'ult_grease', '【進化の胎動】手札・領地から各1体まで選ぶ（片方だけでも可）', options);
+  r.pending[p.id].targets = targets;
+  r.pending[p.id].selected = targets.map(t => t.id);
+}
 const ULT_CUTIN_MS = 5000;
 function clearUltTimer(r) {
   if (r.ultTimer) clearTimeout(r.ultTimer);
@@ -1208,10 +1238,19 @@ function resolveUltSequence(r) {
     return askMarket(r, p);
   }
   if (seq.charId === 'grease') {
-    r.barrier[p.id] = true;
-    for (const [ti] of Object.entries(r.curses))
-      if (r.owners[ti] && r.owners[ti].player === p.id) delete r.curses[ti];
-    log(r, `🛡 ${p.name}の全領地に大結界が張られた(次の手番まで侵略不可)`);
+    const targets = validGreaseTargets(r, p, d.targets), lands = [];
+    let handCount = 0;
+    for (const t of targets) {
+      if (t.zone === 'hand') { evolveHandCard(p, t.index); handCount++; }
+      else {
+        const o = r.owners[t.tile];
+        o.creature = t.card + '_f'; // Keep level, damage, terrain, and existing statuses.
+        lands.push({ tile: t.tile, owner: { ...o } });
+      }
+    }
+    reconcileAbyssMarks(r);
+    spellFx(r, 'ult_grease', lands.map(t => t.tile), p.id, { targets: lands, handCount });
+    log(r, `✨ ${p.name}の進化の胎動：手札${handCount}体・領地${lands.length}体が進化した`);
   } else if (seq.charId === 'adel') {
     const targets = [];
     for (const i of d.targets || []) {
@@ -1277,7 +1316,9 @@ function resolveUltSequence(r) {
 }
 function askRoll(r, p) {
   const opts = [{ id: 'roll', label: '🎲 サイコロを振る' }];
-  const ultAvailable = p.charId === 'lia'
+  const ultAvailable = p.charId === 'grease'
+    ? greaseUltOptions(r, p).length > 0
+    : p.charId === 'lia'
     ? r.owners.some(o => o && o.player !== p.id)
     : p.charId === 'adel'
       ? r.owners.some(o => o && o.player === p.id)
@@ -2654,10 +2695,25 @@ function handleChoose(r, playerId, optionId) {
     if (p.charId === 'linnei') {
       return beginUltSequence(r, p);
     }
-    if (p.charId === 'grease') return beginUltSequence(r, p);
+    if (p.charId === 'grease') return askGreaseUlt(r, p);
     if (p.charId === 'villa' && (p.exile || []).length)
       return beginUltSequence(r, p, { steps: p.exile.length });
     return askRoll(r, p);
+  }
+  if (pend.type === 'ult_grease') {
+    if (p.ultUsed || optionId === 'gu:cancel') return askRoll(r, p);
+    let targets = validGreaseTargets(r, p, pend.targets);
+    if (optionId === 'gu:confirm') {
+      if (!targets.length) return askGreaseUlt(r, p);
+      return beginUltSequence(r, p, { targets });
+    }
+    const target = pend.options.find(o => o.id === optionId);
+    if (target && validGreaseTargets(r, p, [target]).length) {
+      const selected = targets.some(t => t.id === target.id);
+      targets = targets.filter(t => t.zone !== target.zone);
+      if (!selected) targets.push(target);
+    }
+    return askGreaseUlt(r, p, targets);
   }
   if (pend.type === 'ult_mio') {
     if (optionId === 'mt:cancel') return askRoll(r, p);
@@ -3706,7 +3762,7 @@ function publicState(r, viewerId) {
             resume: r.draft ? r.draft.resume : null }]
         : v.type === 'pick_draw' && k !== viewerId
           ? [k, { type: v.type, prompt: v.prompt, options: [], until: v.until }]  // 候補カードは本人だけに見せる
-          : ['gaust_exile', 'fatal_exile', 'ult_villa_recover', 'daitekkan_recover', 'spell_evolve', 'frontline_swap'].includes(v.type) && k !== viewerId
+          : ['gaust_exile', 'fatal_exile', 'ult_villa_recover', 'daitekkan_recover', 'spell_evolve', 'frontline_swap', 'ult_grease'].includes(v.type) && k !== viewerId
             ? [k, { type: v.type, prompt: v.prompt, options: [], selectedCount: (v.selected || []).length }]
           : v.type === 'support' && k !== viewerId
             ? [k, { type: v.type, prompt: 'ウェポンを選択中', options: [] }]

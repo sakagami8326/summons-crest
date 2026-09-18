@@ -17,7 +17,10 @@ function roomFor(charId) {
 }
 {
   const {r,p}=roomFor('grease');
+  p.hand=['nome'];
   G.handleChoose(r,p.id,'ult');
+  G.handleChoose(r,p.id,'gh:0');
+  G.handleChoose(r,p.id,'gu:confirm');
   ok(p.ultUsed && r.ultSequence && !r.ultSequence.resolved,'activation creates unresolved sequence');
   eq(r.pending[p.id].type,'ult_resolve','input is locked during cut-in');
   ok(!r.barrier[p.id],'effect is not applied before cut-in ends');
@@ -26,7 +29,7 @@ function roomFor(charId) {
   ok(pub && !('data' in pub),'private resolution payload is not public');
   ok(G.serializeRoom(r).room.ultSequence.id===r.ultSequence.id,'sequence is saved');
   G.resolveUltSequence(r);
-  ok(r.barrier[p.id] && !r.ultSequence,'effect resolves once after cut-in');
+  ok(p.hand[0]==='nome_f' && !r.barrier[p.id] && !r.ultSequence,'evolution resolves once after cut-in');
 }
 {
   const {r,p}=roomFor('adel');

@@ -40,7 +40,7 @@ for (const text of ['ムーブ', 'サーベイ', 'ザシャック', 'シュテ�
 ok(newsHtml.includes('href="/#feedback"') && newsHtml.includes('href="/news"'), 'article links to feedback and news');
 ok(!/src="[^"]*(cards|rules)\.js/.test(newsHtml), 'article avoids unrelated page scripts');
 
-ok(/const VERSION = '1\.61'/.test(serverSource) && require('./package.json').version === '1.61.0', 'v1.54 site pages remain covered by v1.61');
+ok(/const VERSION = '1\.62'/.test(serverSource) && require('./package.json').version === '1.62.0', 'v1.54 site pages remain covered by v1.62');
 ok(/if \(p === '\/cards'\).*site\/cards\.html/.test(serverSource), '/cards is a formal route');
 ok(/if \(p === '\/rules'\).*site\/rules\.html/.test(serverSource), '/rules is a formal route');
 ok(/p === '\/api\/catalog' && req\.method === 'GET'/.test(serverSource), 'read-only catalog endpoint exists');
@@ -140,7 +140,7 @@ const waitFor = async (url, attempts = 60) => {
     await waitFor(`${base}/api/catalog`);
     const catalogResponse = await fetch(`${base}/api/catalog`);
     const catalog = await catalogResponse.json();
-    ok(catalog.version === '1.61', 'catalog identifies current release');
+    ok(catalog.version === '1.62', 'catalog identifies current release');
     ok(catalog.counts.total === 75 && catalog.cards.length === 75, 'catalog contains all 75 base card types');
     ok(catalog.counts.creatures === 45 && catalog.counts.spells === 25 && catalog.counts.weapons === 5, 'catalog category counts are 45/25/5');
     ok(catalog.counts.evolutions === 38, 'catalog contains all 38 evolution pairs');

@@ -885,6 +885,8 @@
   #ultCut.on #ultInfo { animation:ultInfo var(--ult-info-duration,2.9s) var(--ult-info-delay,1.45s) ease both; }
   @keyframes ultInfo { 0%{opacity:0;transform:translate(-50%,24px)} 12%,88%{opacity:1;transform:translate(-50%,0)} 100%{opacity:0} }
   #ultSub { font-size:2.1vh; letter-spacing:.25em; color:#f2d062; } #ultDesc { margin-top:.7vh; font-size:2.8vh; letter-spacing:.08em; }
+  #ultCut.evolution #ultInfo { left:26%; width:42vw; padding:1.5vh 1.5vw; bottom:5.5vh; }
+  #ultCut.evolution #ultDesc { font-size:2.5vh; line-height:1.6; }
   .dRow { display:flex; gap:2.5vh; }
 
   #summonCut.on #scText { animation:scText var(--summon-text-duration,.45s) ease var(--summon-text-delay,.32s) backwards; }
@@ -2009,7 +2011,8 @@ async function playUlt(u) {
   hideLogo(true);
   initAudio();
   $('bflash').classList.add('go');
-  $('ultArt').src = '/assets/ult_' + u.charId + '.webp';
+  $('ultArt').src = (state.catalog.ULTS[u.charId] || {}).art || '/assets/ult_' + u.charId + '.webp';
+  $('ultCut').classList.toggle('evolution', u.charId === 'grease');
   $('ultSub').innerHTML = sic('ult') + ' ' + player(u.player).name + ' ─ 1ゲームに1回';
   $('ultDesc').textContent = (state.catalog.ULTS[u.charId] || {}).desc || '';
   const art = $('ultArt');
@@ -4102,6 +4105,17 @@ function battleCreatureHTML(cid, level, reveal) {
   return `<div class="battleCreatureCard${reveal ? ' reveal' : ''}">${summonCardHTML(cid, evolved)}</div>`;
 }
 async function playInternalAbilityFx(sf) {
+  if (sf.spell === 'ult_grease') {
+    for (const target of sf.targets || []) await playEvolvePresentation(target.tile, target.owner);
+    if (sf.handCount) {
+      const caster = player(sf.caster);
+      fxAt(caster.pos, 'fxRing', '#F2D062');
+      // Hand identity remains private on the shared display.
+      queueBanner('進化の胎動', caster.name + 'の手札のクリーチャーが進化', 2200, 2,
+        { actorId:sf.caster, id:presentationId('hand-evolution', sf.at) });
+    }
+    return;
+  }
   if (renderModeActive === 'phaser') {
     await PW.play({ type:'spell-fx', spell:sf.spell, tiles:sf.tiles || [], caster:sf.caster,
       cid:sf.cid, elem:sf.elem, battle:sf.battle, n:sf.n, timeoutMs:3000 });
@@ -4617,7 +4631,7 @@ function render() {
   syncSelectedMap();
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.61';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.62';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
