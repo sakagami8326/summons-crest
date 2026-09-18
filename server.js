@@ -4207,7 +4207,7 @@ const server = http.createServer(async (req, res) => {
   if (p.startsWith('/site/')) return serveFile(res, p.slice(1));
   // v0.66: 共有タイミング定数・Phaserワールド描画・同梱ライブラリ
   if (p === '/map-definitions.js' || p === '/map-ui.js' || p === '/map-ui.css' || p === '/analytics.js' || p === '/game_timing.js' || p === '/board_world.js' || p === '/battle_world.js' || p === '/ult_fx_world.js' ||
-      p === '/fx_manifest.js' || p === '/result-graph-audio.js' || p.startsWith('/vendor/'))
+      p === '/fx_manifest.js' || p === '/result-graph-audio.js' || p === '/evolution-fx.js' || p === '/evolution-charge-audio.js' || p.startsWith('/vendor/'))
     return serveFile(res, p.slice(1));
   if (p === '/api/fixture') {
     // v0.66: 描画パリティ確認用の固定state(ルームは登録しない・開発用)

@@ -10,6 +10,11 @@ const PW = (() => {
   let pendingState = null, pendingLayout = null;   // Scene準備前に届いたstateの保留(最新1件)
   let boardKey = '', boardGen = 0;
   let boardObjs = [];                               // 現行世代の表示オブジェクト
+  const evolutionHidden = new Set();
+  function setEvolutionHidden(tile, hidden) {
+    if(hidden)evolutionHidden.add(tile);else evolutionHidden.delete(tile);
+    const spr=creatureSprites[tile];if(spr?.scene)spr.setVisible(!hidden);
+  }
   const creatureSprites = {};                       // タイル番号 → クリーチャースプライト(2C演出用)
   let tileTexKeys = [];                             // 現行世代のタイルテクスチャ
   const pawns = {};                                 // id → { spr, sh, tex, x, y, tw }
@@ -1019,6 +1024,7 @@ const PW = (() => {
           if (!scene.textures.exists(texKey)) return;
           const img = scene.add.image(x, y - lift + 6, texKey).setOrigin(0.5, 1).setDepth(d);
           img.setScale(80 / img.width);
+          img.setVisible(!evolutionHidden.has(i));
           creatureSprites[i] = img;   // 2C演出(出現ポップ・発光・反動)の対象
           boardObjs.push(img);
         });
@@ -1389,7 +1395,7 @@ const PW = (() => {
     for (let k = 0; k < frames; k++) { pumpT += 16.7; game.loop.step(pumpT); }
   }
   return { init, syncBoard, syncPawns, setCamera, resetCamera, cameraState, setPresentationSpeed,
-           worldToViewport, pawnViewport, fx, resize,
+           worldToViewport, pawnViewport, fx, resize, setEvolutionHidden,
            snapshot, debugCounts, pump, isReady: () => ready, hasFailed: () => failed,
            setHighlights,   // 強化候補ハイライト(発注書v0.75 §6)
            // Phase 2A: 演出基盤
