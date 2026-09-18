@@ -43,9 +43,31 @@
     return {set,stop,params};
   }
   class EvolutionChargeAudio {
-    constructor(){this.context=null;this.voice=null;}
+    constructor(){this.context=null;this.voice=null;this.impactBuffer=null;this.impactLoading=null;this.impactSource=null;}
     async unlock(){const A=window.AudioContext||window.webkitAudioContext;if(!A)return false;
-      this.context ||= new A();if(this.context.state==='suspended')await this.context.resume();return this.context.state==='running';}
+      this.context ||= new A();this.loadImpact();
+      if(this.context.state==='suspended')await this.context.resume();return this.context.state==='running';}
+    loadImpact(){
+      if(this.impactBuffer||this.impactLoading||!this.context)return;
+      this.impactLoading=fetch('/assets/se_evolve.mp3').then(r=>{if(!r.ok)throw new Error('Evolution sound unavailable');return r.arrayBuffer();})
+        .then(b=>this.context.decodeAudioData(b)).then(b=>{this.impactBuffer=b;})
+        .catch(()=>{}).finally(()=>{this.impactLoading=null;});
+    }
+    playImpact(){
+      if(!this.impactBuffer||this.context?.state!=='running')return false;
+      this.stopImpact();
+      const source=this.context.createBufferSource(),gain=this.context.createGain();
+      source.buffer=this.impactBuffer;gain.gain.setValueAtTime(0,this.context.currentTime);
+      gain.gain.linearRampToValueAtTime(.9,this.context.currentTime+.008);
+      source.connect(gain);gain.connect(this.context.destination);
+      source.onended=()=>{source.disconnect();gain.disconnect();if(this.impactSource===source)this.impactSource=null;};
+      this.impactSource=source;
+      // Skip the near-silent lead-in so the attack coincides with the evolution flash.
+      source.start(this.context.currentTime,.18);
+      return true;
+    }
+    stopImpact(){if(this.impactSource){this.impactSource.stop();this.impactSource=null;}}
+    stopAll(){this.stop();this.stopImpact();}
     update(t,duration,enabled){if(!enabled||t>=duration||!this.context||this.context.state!=='running'){this.stop();return;}
       this.voice ||= makeVoice(this.context,this.context.destination);this.voice.set(t/duration);}
     stop(){if(this.voice){this.voice.stop();this.voice=null;}}

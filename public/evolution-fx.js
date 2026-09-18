@@ -40,7 +40,7 @@ function drawCreature(t){
     return new Promise(resolve=>{
       let raf=0,timer=0,done=false,impactPlayed=false;
       const reduced=matchMedia('(prefers-reduced-motion:reduce)').matches,speed=options.speed===2?2:1,prelude=reduced?0:.45,duration=reduced?1.2:prelude+5.8,start=performance.now();
-      finish=()=>{if(done)return;done=true;cancelAnimationFrame(raf);clearTimeout(timer);charge.stop();canvas.remove();document.removeEventListener('visibilitychange',hidden);if(active===finish)active=null;resolve(true);};
+      finish=()=>{if(done)return;done=true;cancelAnimationFrame(raf);clearTimeout(timer);charge.stopAll();canvas.remove();document.removeEventListener('visibilitychange',hidden);if(active===finish)active=null;resolve(true);};
       active=finish;
       const hidden=()=>{if(document.hidden)finish()};document.addEventListener('visibilitychange',hidden);
       function frame(now){
@@ -85,7 +85,10 @@ function drawCreature(t){
             }
           }
           charge.update(effectTime,2.4,!reduced&&t>=prelude&&!!options.soundEnabled?.());
-          if(!impactPlayed&&(reduced||effectTime>=2.4)){impactPlayed=true;options.onImpact?.();}
+          if(!impactPlayed&&(reduced||effectTime>=2.4)){
+            impactPlayed=true;
+            if(options.soundEnabled?.()&&!charge.playImpact())options.onImpact?.();
+          }
           if(t>=duration)finish();else raf=requestAnimationFrame(frame);
         }catch(e){console.warn('Evolution presentation fallback',e);finish();}
       }
@@ -93,5 +96,5 @@ function drawCreature(t){
       timer=setTimeout(finish,duration*1000/speed+1200);raf=requestAnimationFrame(frame);
     });
   }
-  window.SummonsEvolution={play,cancel:()=>active?.(),stopAudio:()=>charge.stop(),unlockAudio:()=>charge.unlock().catch(()=>false)};
+  window.SummonsEvolution={play,cancel:()=>active?.(),stopAudio:()=>charge.stopAll(),unlockAudio:()=>charge.unlock().catch(()=>false)};
 })();
