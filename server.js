@@ -4212,6 +4212,7 @@ const server = http.createServer(async (req, res) => {
   const p = url.pathname;
   if (p === '/') return serveFile(res, 'site/index.html');
   if (p === '/news') return serveFile(res, 'site/news-index.html', url.searchParams.get('category'));
+  if (p === '/news/2026-09-20-mio-update') return serveFile(res, 'site/news-2026-09-20-mio-update.html');
   if (p === '/news/2026-09-17-player-feedback') return serveFile(res, 'site/news-2026-09-17-player-feedback.html');
   if (p === '/news/2026-09-10-start-guide') return serveFile(res, 'site/news-2026-09-10-start-guide.html');
   if (p === '/news/2026-08-31-feedback') return serveFile(res, 'site/news-2026-08-31-feedback.html');
