@@ -37,8 +37,14 @@ try {
    if(level===3)r.battle.moveFrom=2;
    const before=JSON.stringify(r), q=G.calculateBattle(r);
    eq(JSON.stringify(r),before,'calculator has no side effects');
-   const old=copy(r),next=copy(r);seed=10;G.referenceBattle(old);seed=10;G.resolveBattle(next);
-   eq(next,old,`full combat unchanged: ${cid}/${defender}/Lv${level}`);
+   const old=copy(r),next=copy(r);
+   // Move now retains land evolution. Give the frozen resolver the corresponding
+   // evolved card, while the new calculator must resolve the original source itself.
+   if(level===3 && G.CREATURES[cid].evo)old.battle.atkCreature=cid+'_f';
+   seed=10;G.referenceBattle(old);seed=10;G.resolveBattle(next);
+   // The frozen resolver predates result-only counters; compare all combat state.
+   const combatOnly=r=>{const c=copy(r);if(c.lastBattle)delete c.lastBattle.externalModifiers;c.players.forEach(p=>{delete p.cardsCollected;delete p.tollCollected;});return c;};
+   eq(combatOnly(next),combatOnly(old),`full combat unchanged: ${cid}/${defender}/Lv${level}`);
    for(const [a,b] of [['atkDmg','st'],['effHp','hp'],['defDF','df'],['dealt','dealt'],['win','win'],['atkSurvived','atkSurvived'],['counterDealt','counterDealt']])eq(q[a],next.lastBattle[b],'prediction matches actual '+b);
  }
  {
@@ -91,10 +97,10 @@ try {
    eq(decide(game(),null).id,null,'empty pending is safe');
  }
  {
-   const g=game('twin_gate_cavern');g.p.gold=7950;g.p.pos=20;g.p.previousTile=21;g.p.gatesVisited=[12,22];g.p.hand=['sp_dice_3'];
+   const g=game('twin_gate_cavern');g.p.gold=7850;g.p.pos=20;g.p.previousTile=21;g.p.gatesVisited=[12,22];g.p.hand=['sp_dice_3'];
    const pending=pd('roll',['roll','sp:sp_dice_3']);
    eq(decide(g,pending).id,'sp:sp_dice_3','fixed die secures an affordable winning castle');
-   g.p.gold=7910;
+   g.p.gold=7810; // Fixed castle income increased by 100G; retain the spell-fee boundary.
    ok(!decide(g,pending).candidates.find(x=>x.id==='sp:sp_dice_3').priority,'subtract spell fee before predicting victory');
  }
  for(const map of Object.keys(G.MAPS))for(const steps of [1,3,6,18,58]) {

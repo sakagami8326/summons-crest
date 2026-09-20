@@ -1298,7 +1298,8 @@
   @keyframes healRewardIn { from{opacity:0;transform:scale(.97)} to{opacity:1;transform:scale(1)} }
   @media (prefers-reduced-motion:reduce) { #healRewardCutin.on { animation:none; } }
 </style>
-</head>
+<link rel="stylesheet" href="/wind-supply-ui.css"><script defer src="/wind-supply-ui.js"></script>
+<link rel="stylesheet" href="/result-review.css"><script src="/game-cards.js"></script><script src="/result-review.js"></script><link rel="stylesheet" href="/battle-external.css"></head>
 <body>
   <img id="logoImg" src="/assets/summons-code-gold.svg" alt="SUMMONS CODE">
   <div id="connBar" style="display:none; position:fixed; top:0; left:50%; transform:translateX(-50%);
@@ -1890,18 +1891,19 @@ function matchResultTick(now) {
   resultGraphAudio?.update(p.progress, !p.paused && p.hold<=0 && !bgmMuted && !document.hidden);
   matchResultTimer=requestAnimationFrame(matchResultTick);
 }
+let resultReviewScreen=null;
 function showMatchResult(result, complete=false) {
   if(!result) return;
   resultGraphAudio?.reset();
-  clearTimeout(matchResultStartTimer); cancelAnimationFrame(matchResultTimer); $('winOv').classList.remove('on');
-  matchResultOpenId=result.id; $('matchResultOv').classList.add('on'); $('mrHistory').classList.add('on'); $('mrSummary').classList.remove('on');
-  renderMatchResultGraph(result); renderMatchRanks(result,complete); renderMatchSummary(result);
-  $('mrPlayBtn').disabled=complete; $('mrSpeedBtn').disabled=complete; $('mrNextBtn').textContent=complete?'次へ':'スキップ';
-  $('mrPlayBtn').textContent='一時停止'; $('mrSpeedBtn').textContent='×2';
-  matchResultPlayback={result,progress:complete?1:0,eventIndex:0,hold:0,speed:1,paused:false,finished:complete,last:performance.now()};
-  if(complete) { requestAnimationFrame(()=>finishMatchResultPlayback(result,false)); return; }
-  if(matchMedia('(prefers-reduced-motion: reduce)').matches) { finishMatchResultPlayback(result,true); return; }
-  matchResultTimer=requestAnimationFrame(matchResultTick);
+  clearTimeout(matchResultStartTimer);cancelAnimationFrame(matchResultTimer);
+  resultReviewScreen?.destroy();
+  matchResultPlayback={result,finished:true};
+  matchResultOpenId=result.id;
+  $('winOv').classList.remove('on');$('matchResultOv').classList.add('on');
+  resultReviewScreen=mountResultReview({result,state,
+    onComplete:()=>notifyMatchResultComplete(result),
+    onClose:()=>location.reload()
+  });
 }
 function openMatchSummary() { if(!matchResultPlayback)return; $('mrHistory').classList.remove('on'); $('mrSummary').classList.add('on'); }
 $('mrPlayBtn').onclick=()=>{ const p=matchResultPlayback;if(!p||p.finished)return;p.paused=!p.paused;p.last=performance.now();if(p.paused)resultGraphAudio?.stop();$('mrPlayBtn').textContent=p.paused?'再開':'一時停止'; };
@@ -1966,7 +1968,7 @@ function showCastleBreakdown(ev) {
     panel.innerHTML = `<div class="castleTitle">城への帰還ボーナス</div>
       <div class="castleLine"><span>周回ボーナス</span><b>${ev.completedLaps ?? Math.max(1, Math.round((ev.baseBonus || ev.gold || 100) / (ev.bonusPerLap || 100)))}周 × ${ev.bonusPerLap || 100}G = +${ev.baseBonus ?? ev.gold ?? 100}G</b></div>
       <div class="castleLine"><span>領地総価値</span><b>${ev.landValue ?? 0}G</b></div>
-      <div class="castleLine"><span>領地ボーナス</span><b>${ev.landValue ?? 0}G × ${Math.round((ev.landRate ?? .2) * 100)}% = +${ev.landBonus ?? 0}G</b></div>
+      <div class="castleLine"><span>領地ボーナス</span><b>${ev.landFixedBonus ? `${ev.landFixedBonus}G ＋ ` : ''}${ev.landValue ?? 0}G × ${Math.round((ev.landRate ?? .2) * 100)}% = +${ev.landBonus ?? 0}G</b></div>
       <div class="castleLine total"><span>今回の獲得合計</span><b>+${ev.total ?? ((ev.gold || 0) + (ev.landBonus || 0))}G</b></div>
       <div class="castleHeal"><b>帰還の癒し（負傷-10）</b><br>${heals || '回復対象なし'}</div>`;
   }
@@ -4178,20 +4180,20 @@ function attackMeterHTML(baseAt, at) {
     <div class="attackBase" style="width:${basePct}%"></div><div class="attackBonus" style="width:${bonusPct}%"></div></div></div>`;
 }
 
-function previewStatsHTML(pid, cid, level, damage, side) {
+function previewStatsHTML(pid, cid, level, damage, side, atBonus = 0, values = null) {
   const pl = player(pid), bid = cid ? cid.replace(/_f$/, '') : null;
   const c = bid ? state.catalog.CREATURES[bid] : null;
   if (!c) return `<div class="bsOwner">${pl ? pl.name : ''}</div><div class="bsCreature">選択待ち</div>
     <div class="bsValues"><span>${statLabel('at')}—</span><span>${statLabel('hp')}—</span><span>${statLabel('df')}—</span></div>`;
   const evolved = /_f$/.test(cid) || (level >= (state.evoLevel || 3) && !!c.evo);
-  const at = evolved && c.evoSt != null ? c.evoSt : c.st;
+  const at = values?.at ?? ((evolved && c.evoSt != null ? c.evoSt : c.st) + atBonus);
   const hp0 = evolved && c.evoHp != null ? c.evoHp : c.hp;
   const name = evolved && c.evo ? c.evo : c.name;
-  const curHp = Math.max(1,hp0-(damage||0));
+  const curHp = values?.hp ?? Math.max(1,hp0-(damage||0));
   return `<div class="bsOwner">${pl.name}</div><div class="bsCreature">${name}</div>
     ${attackMeterHTML(at, at)}
-    <div class="bsValues"><span>${statLabel('at')}<b data-stat="at">${at}</b></span><span>${statLabel('hp')}<b data-stat="hp">${Math.max(1,hp0-(damage||0))}</b></span><span>${statLabel('df')}<b data-stat="df">―</b></span></div>
-    ${durabilityHTML(curHp, 0)}`;
+    <div class="bsValues"><span>${statLabel('at')}<b data-stat="at">${at}</b></span><span>${statLabel('hp')}<b data-stat="hp">${curHp}</b></span><span>${statLabel('df')}<b data-stat="df">${values?.df ?? '―'}</b></span></div>
+    ${durabilityHTML(curHp, values?.df || 0)}`;
 }
 
 function renderBattleSummoners(attackerId, defenderId) {
@@ -4206,9 +4208,29 @@ function renderBattleSummoners(attackerId, defenderId) {
   put('bDefSummoner', defenderId, 'DEFENDER');
 }
 
+function renderBattleExternalModifiers(b) {
+  mountExistingGameCards(state);
+  for (const [side, id] of [['attacker','bAtk'], ['defender','bDef']]) {
+    const host = $(id).closest('.battleFighter');
+    let rack = host.querySelector('.battleExternalRack');
+    if (!rack) { rack = document.createElement('div'); rack.className = 'battleExternalRack'; host.append(rack); }
+    const effects = b.externalModifiers?.[side] || [];
+    const key = JSON.stringify(effects);
+    if (rack.dataset.key === key) continue;
+    rack.dataset.key = key;
+    rack.innerHTML = effects.map((e, i) => {
+      const name = e.cardId ? (state.catalog.CREATURES[e.cardId] || state.catalog.SPELLS[e.cardId])?.name : state.catalog.ULTS[e.charId]?.name;
+      const art = e.cardId ? `<review-game-card card-id="${e.cardId}"></review-game-card>`
+        : `<img src="/assets/full_${e.charId}.png" alt="">`;
+      return `<div class="battleExternalBonus ${e.charId ? 'ultimate' : ''}" style="--delay:${i * .35}s" aria-label="${name} ${e.stat.toUpperCase()} +${e.amount}" title="${name}"><div class="battleExternalArt">${art}<i></i></div><div class="battleExternalValue">${e.stat === 'at' ? '<img src="/assets/cards/stat-at-icon.svg" alt="AT">' : '<span>DF</span>'}<b>+${e.amount}</b></div></div>`;
+    }).join('');
+  }
+}
+
 function renderBattlePreview(bp) {
   if (!bp || battlePlayingKey) return;
   renderBattleSummoners(bp.attacker, bp.defender);
+  renderBattleExternalModifiers(bp);
   const isNew = activeBattleKey !== bp.key;
   if (isNew) {
     activeBattleKey = bp.key;
@@ -4227,7 +4249,7 @@ function renderBattlePreview(bp) {
   const atkReveal = !!bp.atkCreature && activeBattleAttacker !== bp.atkCreature;
   if (isNew || atkReveal) {
     $('bAtk').innerHTML = battleCreatureHTML(bp.atkCreature, 1, atkReveal);
-    $('bAtkStats').innerHTML = previewStatsHTML(bp.attacker, bp.atkCreature, 1, 0, 'atk');
+    $('bAtkStats').innerHTML = previewStatsHTML(bp.attacker, bp.atkCreature, 1, 0, 'atk', (bp.externalModifiers?.attacker || []).filter(e => e.stat === 'at').reduce((n, e) => n + e.amount, 0));
     $('bAtkDetail').innerHTML = battleDetailHTML(bp.attacker, bp.atkCreature, 1, [], null, bp.effectStates && bp.effectStates.attacker);
     activeBattleAttacker = bp.atkCreature;
   }
@@ -4235,6 +4257,10 @@ function renderBattlePreview(bp) {
     $('bDef').innerHTML = battleCreatureHTML(bp.defCreature, bp.defLevel || 1, false);
     $('bDefStats').innerHTML = previewStatsHTML(bp.defender, bp.defCreature, bp.defLevel || 1, bp.defDamage || 0, 'def');
     $('bDefDetail').innerHTML = battleDetailHTML(bp.defender, bp.defCreature, bp.defLevel || 1, [], null, bp.effectStates && bp.effectStates.defender);
+  }
+  if (bp.previewStats) {
+    $('bAtkStats').innerHTML = previewStatsHTML(bp.attacker, bp.atkCreature, 1, 0, 'atk', 0, bp.previewStats.attacker);
+    $('bDefStats').innerHTML = previewStatsHTML(bp.defender, bp.defCreature, bp.defLevel || 1, bp.defDamage || 0, 'def', 0, bp.previewStats.defender);
   }
   updateBattleCompare();
   $('bAtkSupport').innerHTML = supportBackHTML(bp.supportReady.attacker ? '選択済み' : '選択中…');
@@ -4427,6 +4453,7 @@ async function playBattle(b) {
   const C = state.catalog;
   const atk = player(b.attacker), def = player(b.defender);
   renderBattleSummoners(b.attacker, b.defender);
+  renderBattleExternalModifiers(b);
   const atkElem = C.CREATURES[b.atkCreature.replace(/_f$/, '')].elem || 'neutral';
   const defElem = C.CREATURES[b.defCreature.replace(/_f$/, '')].elem || 'neutral';
   const dLv = b.defLevel || (state.owners[b.tile] ? state.owners[b.tile].level : 1);
@@ -4658,7 +4685,7 @@ function render() {
   syncSelectedMap();
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.62';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.63';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   if (state.phase === 'lobby') {
@@ -4929,8 +4956,8 @@ function render() {
     const dKey = de ? de[0] + '|' + (de[1].aura || '') : '';
     if (dKey !== prev.draftKey) {
       prev.draftKey = dKey;
-      if (de && (de[1].aura === 'L'))
-        queueBanner('伝説級の気配…!', player(de[0]).name + 'のドラフトに何かが眠っている', 3800, 3,
+      if (de && (de[1].aura === 'UR'))
+        queueBanner('レアカードを引いた', player(de[0]).name, 3800, 3,
           { actorId:de[0], id:presentationId('draft-aura', state.stateRev, de[0]) });
     }
   }
@@ -5274,6 +5301,7 @@ function render() {
     const battle = Object.assign({}, state.lastBattle);
     queueMajorPresentation(battle.at, 'battle', battle.attacker, () => playBattle(battle));
   }
+  window.WindSupplyUI?.board(state, { queue:queueFx, room:code, token:boardToken, current:()=>state });
   // 勝利演出(発注書v0.75 §9 ─ M7): 全景→勝者領地の盤面順発光→光の収束→城ズーム→光柱→カットイン
   if (state.phase === 'ended' && state.winner) {
     const resultReady = !!state.matchResult;
@@ -5321,6 +5349,7 @@ function render() {
     resultGraphAudio?.stop();
     cancelAnimationFrame(matchResultTimer); matchResultPlayback = null;
     $('winOv').classList.remove('on'); $('matchResultOv').classList.remove('on');
+    resultReviewScreen?.destroy();resultReviewScreen=null;
     prev.winPlayed = null; matchResultOpenId = '';
   }
   scheduleTurnTransitionCompletion();

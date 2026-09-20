@@ -68,6 +68,60 @@ for (const mapId of ['starting_corridor','twin_gate_cavern']) {
     }
   }
 }
+// A land-evolved mover keeps its actual form in public battle data and on lower-level land.
+for (const mapId of ['starting_corridor','twin_gate_cavern']) {
+  for (const form of ['land','forged','base','no-evolution']) {
+    for (const outcome of ['empty','win','lose','cancel']) {
+      for (const save of [false,true]) {
+        let r=setup(mapId), a=r.players[0], d=r.players[1];const aid=a.id;
+        const cid=form==='forged'?'magado_f':form==='no-evolution'?'bedebero':'magado';
+        const evolved=form==='land'||form==='forged';
+        const expected=evolved?'magado_f':cid;
+        a.hand=['sp_step','shield'];d.hand=['shield'];
+        r.owners[1]={player:a.id,creature:cid,level:form==='land'||form==='no-evolution'?3:1,dmg:7,shade:2};
+        if(!['empty','cancel'].includes(outcome)){
+          r.owners[2]={player:d.id,creature:outcome==='win'?'cleo':'bedebero',level:1,dmg:outcome==='win'?20:0};
+          r.elemOv[2]='earth';
+        }
+        const label=`${mapId} ${form} ${outcome} save=${save}`;
+        G.askRoll(r,a);G.handleChoose(r,a.id,'sp:sp_step');G.handleChoose(r,a.id,'st:1');
+        if(save){r=restored(r);a=r.players.find(p=>p.id===aid);d=r.players.find(p=>p.id!==aid);}
+        G.handleChoose(r,a.id,outcome==='cancel'?'sd:cancel':'sd:2');
+        if(r.battle){
+          if(save){r=restored(r);a=r.players.find(p=>p.id===aid);d=r.players.find(p=>p.id!==aid);}
+          ok(G.publicState(r,null).battlePreview.atkCreature===expected,`${label}: evolved battle preview ID`);
+          G.handleChoose(r,a.id,outcome==='lose'?'sup:s:shield':'sup:none');G.handleChoose(r,d.id,outcome==='lose'?'sup:s:shield':'sup:none');
+          ok(r.lastBattle.atkCreature===expected,`${label}: evolved battle result ID`);
+          ok(r.lastBattle.st===G.CREATURES[expected].st,`${label}: actual form AT`);
+          ok(r.lastBattle.atkPreHp===G.CREATURES[expected].hp-7,`${label}: actual form HP and carried damage`);
+          ok(r.lastBattle.win===(outcome==='win'),`${label}: expected outcome`);
+        }
+        if(outcome==='empty'||outcome==='win'){
+          ok(r.owners[2]?.creature===expected,`${label}: form persists after move`);
+          ok(r.owners[2]?.level===1,`${label}: destination land level unchanged`);
+          ok(r.owners[2]?.dmg===7&&r.owners[2]?.shade===2,`${label}: damage and status carried`);
+          ok(r.owners[1]===null,`${label}: source vacated`);
+          const saved=restored(r);ok(saved.owners[2]?.creature===expected,`${label}: placed form persists through save`);
+        }else{
+          ok(r.owners[1]?.creature===cid,`${label}: failed or cancelled move leaves original form`);
+        }
+        G.rooms.delete(r.code);
+      }
+    }
+  }
+}
+// An older save may already contain a base ID while its moving source is land-evolved.
+{
+  let r=setup('starting_corridor');let a=r.players[0],d=r.players[1];const aid=a.id;
+  a.hand=['sp_step'];r.owners[1]={player:a.id,creature:'magado',level:3,dmg:5};
+  r.owners[2]={player:d.id,creature:'cleo',level:1};
+  G.askRoll(r,a);G.handleChoose(r,a.id,'sp:sp_step');G.handleChoose(r,a.id,'st:1');G.handleChoose(r,a.id,'sd:2');
+  r.battle.atkCreature='magado';r=restored(r);a=r.players.find(p=>p.id===aid);d=r.players.find(p=>p.id!==aid);
+  ok(G.publicState(r,null).battlePreview.atkCreature==='magado_f','old saved Move battle preview retains evolved form');
+  G.handleChoose(r,a.id,'sup:none');G.handleChoose(r,d.id,'sup:none');
+  ok(r.lastBattle.atkCreature==='magado_f'&&r.owners[2].creature==='magado_f','old saved battle result and placement retain evolved form');
+  G.rooms.delete(r.code);
+}
 // Additional placement/heal/recovery prompts and forced liquidation must all resume the pre-roll turn.
 for (const creature of ['mermaid','night_jelly','samurai_saga','kamadoma_f','nome']) {
   const r = setup('starting_corridor'), a = r.players[0], d = r.players[1];

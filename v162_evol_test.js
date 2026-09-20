@@ -24,7 +24,7 @@ eq([c.name,c.evo,c.elem,c.rarity,c.cost,c.st,c.hp,c.evoSt,c.evoHp],['エヴォ�
 eq([e.cost,e.st,e.hp,e.elem],[120,40,70,null],'evolved summon stats');
 ok(c.fx.includes('100G')&&e.fx.includes('300G')&&e.fx.includes('重複'),'ability text');
 for(const pool of [G.makeDeck(),G.shopRandomPool()])eq([pool.filter(x=>x==='evol').length,pool.includes('evol_f')],[2,false],'R two base copies');
-eq(G.makeDeck().length,150,'deck total');eq(G.publicCardCatalog().counts,{total:76,creatures:46,evolutions:39,spells:25,weapons:5},'catalog counts');
+eq(G.makeDeck().length,152,'deck total');eq(G.publicCardCatalog().counts,{total:77,creatures:47,evolutions:40,spells:25,weapons:5},'catalog counts');
 ok(!Object.values(G.CHAR_DECKS).some(deck=>deck.includes('evol')),'starter decks unchanged');
 for(const defense of [false,true])for(const [providers,total] of [[['evol'],100],[['evol_f'],300],[['evol','evol_f'],400],[['evol_f','evol_f'],600],[['evol','evol','evol_f'],500]]){
  const g=game({defense,providers,creature:defense?'nome_f':'gecko_f'}),reward=finish(g);

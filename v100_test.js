@@ -53,9 +53,9 @@ const lia = G.CHAR_DECKS.lia, adel = G.CHAR_DECKS.adel;
 ok(lia.length === 12 && adel.length === 12, 'Lia/Adele decks contain 12 cards');
 eq(['grayble','trooper','gecko','sp_gold','sp_insight','sp_flame_vortex','weapon','jinx'].map(x => count(lia, x)),
   [3,2,1,1,1,1,2,1], 'Lia starter composition');
-eq(['survey','palecoral','orphe','sp_gold','sp_insight','sp_abyssal_pearl','shield','jinx'].map(x => count(adel, x)),
-  [3,2,1,1,1,1,2,1], 'Adele starter composition');
-ok(!lia.includes('cleo') && !adel.includes('cleo'), 'Cleo is absent from both new decks');
+eq(['survey','palecoral','mermaid','orphe','cleo','sp_gold','sp_insight','sp_abyssal_pearl','shield','jinx'].map(x => count(adel, x)),
+  [2,1,1,1,1,1,1,1,2,1], 'Adele starter composition');
+ok(!lia.includes('cleo') && adel.includes('cleo'), 'Cleo replaces one Survey only in Adele deck');
 ok(G.CHARS.adel.selectable !== false && !G.CHARS.adel.upcoming, 'Adele is fully selectable');
 
 // Market contains only three copies of each base form.

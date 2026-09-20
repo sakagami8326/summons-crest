@@ -51,7 +51,7 @@ for(const tile of [3,8,26,30]){
  eq([p.gold,p.shrineVisits,r.pending[p.id].type],[1100,1,'draft'],'shrine arrival still gives gold and draft '+tile);
 }
 for(const tile of [14,20]){
- const r=game(),p=r.players[0];G.cavernTeleport(r,p,tile);
+ const r=game(),p=r.players[0];p.hand=['gecko'];G.cavernTeleport(r,p,tile);
  eq([p.gold,p.shrineVisits,r.pending[p.id].type],[1000,0,'tile'],'former shrine is summonable land '+tile);
  ok(r.pending[p.id].options.some(o=>o.id.startsWith('summon:')),'new land allows summon');
  r.owners[tile]={player:p.id,creature:'gaston',level:2,dmg:5};
@@ -76,7 +76,7 @@ for(const short of [false,true]){
  const r=game(),p=r.players[0];move(r,short?20:28,18);
  eq(p.pos,24,'A reached');choose(r,'route:'+(short?28:25));
  eq(p.pos,10,'B reached');eq(r.movement.remaining,7,'seven steps home');choose(r,'route:11');
- eq([p.pos,p.lap,p.gold],[17,2,1300],'lap and payouts');eq(p.gatesVisited,[],'gates reset');eq(r.pending[p.id].type,'draft','castle draft');
+ eq([p.pos,p.lap,p.gold],[17,2,1400],'lap and payouts including fixed 100G');eq(p.gatesVisited,[],'gates reset');eq(r.pending[p.id].type,'draft','castle draft');
  choose(r,'skip');eq(r.movement,null,'exact castle ends move');
 }
 {
@@ -133,7 +133,7 @@ for(const short of [false,true]){
 {
  const r=game(),p=r.players[0];move(r,40,18);choose(r,'route:28');choose(r,'route:11');
  eq(r.movement.remaining,20,'two-lap move pauses first castle');choose(r,'skip');choose(r,'route:28');choose(r,'route:11');
- eq([p.lap,p.gold],[3,1700],'two laps and per-lap gates');choose(r,'skip');eq(r.movement,null,'two-lap move completes');
+ eq([p.lap,p.gold],[3,1900],'two laps and per-lap gates plus fixed 100G each lap');choose(r,'skip');eq(r.movement,null,'two-lap move completes');
 }
 {
  const r=game(),p=r.players[0];p.pos=16;p.previousTile=15;p.gatesVisited=[12,22];

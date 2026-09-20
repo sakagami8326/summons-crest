@@ -25,7 +25,7 @@ ok(Number(G.VERSION) >= 1.29, 'server version is v1.29 or newer');
 eq([G.CREATURES.komao.name, G.CREATURES.komao.evo, G.CREATURES.komao.elem,
   G.CREATURES.komao.rarity, G.CREATURES.komao.cost, G.CREATURES.komao.st,
   G.CREATURES.komao.hp, G.CREATURES.komao.evoSt, G.CREATURES.komao.evoHp],
-  ['コマオー', 'シシガルム', 'earth', 'N', 70, 30, 30, 30, 50], 'Komao catalog');
+  ['コマオー', 'シシガルム', 'earth', 'N', 90, 20, 30, 30, 50], 'Komao catalog');
 
 const market = G.makeDeck();
 eq([count(market, 'komao'), count(market, 'komao_f')], [3, 0], 'N market has three base copies only');

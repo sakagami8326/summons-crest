@@ -5,7 +5,7 @@ module.exports = function createStandardBot(A) {
   const { CREATURES:C, SPELLS:S, SUPPORTS:W, CHARS, RULES, ELEM_OF_SPELL,
     baseId, mapOf, tilesOf, tileElem, isCavern, cavernNeighbors, cavernRouteProjection,
     botCashReserve, botPurchaseScore, botCardScore, botCardNeedScore, botLandingScore, botRouteDistance,
-    botWalkEndpoints, calculateBattle, creatureMaxHp, terrainBreakdown, chainCount,
+    botWalkEndpoints, calculateBattle, creatureMaxHp, terrainBreakdown, chainCount, castleLandBonus,
     landValue, tollOf, points, upCostRange, effectiveSpellCost, stepSources, stepDests,
     marlowSources, marlowDests, abyssMarkBonusFor, creatureSupportEnabled } = A;
   const clone = x => structuredClone(x);
@@ -17,14 +17,14 @@ module.exports = function createStandardBot(A) {
   const numberTile = o => Number.isInteger(o.tile) ? o.tile : /^\w+:\d+$/.test(o.id) ? +o.id.split(':')[1] : null;
   const average = a => a.reduce((n,x) => n+x,0) / Math.max(1,a.length);
   const cautious = a => .7*average(a) + .3*Math.min(...a);
-  const handledPending = new Set(('abyss_mark curse_target daitekkan_recover direction draft forge forget gate market '
+  const handledPending = new Set(('creature_effect abyss_mark curse_target daitekkan_recover direction draft forge forget gate market '
     +'marlow_dest marlow_src mermaid_heal move_a move_b overflow pick_creature pick_draw quake_target roll route_choice '
     +'samurai_elem select_char select_wait sell spell_target spell_evolve frontline_swap step_a step_b support swap_land swap_pick tile toxy_target '
     +'ult_grease ult_lia ult_mio ult_nerasio_elem ult_nerasio_land ult_resolve ult_villa_recover upgrade upgrade_lv gaust_exile fatal_exile').split(' '));
 
   function view(raw, me, pending) {
     const r = {};
-    for (const key of ['mapId','phase','turn','round','owners','elemOv','tileFx','curses','barrier','titles','duel','dirPend'])
+    for (const key of ['mapId','phase','turn','turnEpoch','round','owners','elemOv','tileFx','curses','barrier','titles','duel','dirPend'])
       if (raw[key] !== undefined) r[key] = clone(raw[key]);
     r.players = raw.players.map(src => {
       const p = {};
@@ -38,13 +38,13 @@ module.exports = function createStandardBot(A) {
         p[zone] = self ? (src[zone] || []).slice() : Array(p[zone+'Count']).fill(null);
         if (self && zone === 'deck') p[zone].sort();
       }
-      if (self) for (const key of ['spellCast','fixedDice','pendSpell','stepI','swapI','moveA'])
+      if (self) for (const key of ['spellCast','fixedDice','pendSpell','stepI','swapI','moveA','windSupplyEpoch'])
         if (src[key] !== undefined) p[key] = clone(src[key]);
       return p;
     });
     if (raw.battle) {
       r.battle = {};
-      for (const key of ['tile','attacker','defender','atkCreature','moveFrom','corridor','atkCarry','atkShade'])
+      for (const key of ['tile','attacker','defender','atkCreature','moveFrom','corridor','atkCarry','atkShade','mioUlt'])
         if (raw.battle[key] !== undefined) r.battle[key] = clone(raw.battle[key]);
       r.battle.supports = {}; // Even a submitted enemy choice is still secret.
     }
@@ -163,11 +163,15 @@ module.exports = function createStandardBot(A) {
     const gift=grant?Math.max(0,cardValue(r,p,grant))*.3:base==='gaust'?20+(p.charId==='villa'?20:0):0;
     return positionValue(next,p)-positionValue(r,p)-cost-lossValue(r,p,cid)*.2+gift;
   }
+  function windDrawValue(r,p,movers) {
+    if(p.windSupplyEpoch === (r.turnEpoch||0) || !(p.deck.length+p.discard.length)) return 0;
+    return ownLands(r,p).some(i=>baseId(r.owners[i].creature)==='poponga'&&movers.some(j=>j!==i)) ? 28 : 0;
+  }
   function moveScore(r,p,src,dst,marlow=false) {
     const o=r.owners[src]; if(!o) return -Infinity;
     if(r.owners[dst]) return invasion(r,p,dst,[o.creature],{moveFrom:src})?.score??-Infinity;
     const next=clone(r);next.owners[dst]={...o,level:marlow?o.level:1};next.owners[src]=null;
-    return positionValue(next,p)-positionValue(r,p);
+    return positionValue(next,p)-positionValue(r,p)+windDrawValue(r,p,[src]);
   }
   const landingCache=new WeakMap();
   function landing(r,p,tile) {
@@ -191,7 +195,7 @@ module.exports = function createStandardBot(A) {
         if(!cave||mask===full)lap++;
         if(mask===full){
           const recovered=cave||!landAdded?ownLands(r,p).reduce((n,i)=>n+Math.min(10,Math.max(0,(r.owners[i].dmg||0)-returns*10)),0):0;
-          goldGain+=(lap-1)*RULES.castleBonusPerLap + (cave||!landAdded?Math.round(lands*.2):0) + (provider?recovered:0);
+          goldGain+=(lap-1)*RULES.castleBonusPerLap + (cave||!landAdded?castleLandBonus(lands):0) + (provider?recovered:0);
           // Legacy long moves award healing and a draft only once, even across several laps.
           returns=cave?returns+1:1;landAdded=true;mask=0;won=cave&&points(r,p)+goldGain>=A.ASSET_GOAL;
         }
@@ -243,13 +247,13 @@ module.exports = function createStandardBot(A) {
     const map=mapOf(r);
     if(isCavern(r)&&tile===map.castle&&map.gates.every(i=>(p.gatesVisited||[]).includes(i))) {
       const lands=ownLands(r,p).reduce((n,i)=>n+landValue(r,i),0);
-      const bonus=(p.lap||1)*RULES.castleBonusPerLap+Math.round(lands*.2);
+      const bonus=(p.lap||1)*RULES.castleBonusPerLap+castleLandBonus(lands);
       if(points(r,p)+bonus>=A.ASSET_GOAL)return 100000;
       return bonus+80;
     }
     if(isCavern(r)&&map.gates.includes(tile)&&!(p.gatesVisited||[]).includes(tile))return 180;
     if(r.owners[tile]&&r.owners[tile].player!==p.id) {
-      return Math.max(-tollOf(r,tile)*1.25,invasion(r,p,tile)?.score??-Infinity);
+      return Math.max(-tollOf(r,tile)*1.25,invasion(r,p,tile,p.hand.filter(id=>C[id]),{mioUlt:true})?.score??-Infinity);
     }
     return botLandingScore(r,p,tile);
   }
@@ -299,7 +303,7 @@ module.exports = function createStandardBot(A) {
       for(const a of own)for(const b of own.filter(i=>i>a)){
         const n=clone(r),oa=n.owners[a],ob=n.owners[b];
         for(const key of ['creature','dmg','abyssMarkTarget']) [oa[key],ob[key]]=[ob[key],oa[key]];
-        add(positionValue(n,p)-before,{a,b});
+        add(positionValue(n,p)-before+windDrawValue(r,p,[a,b]),{a,b});
       }
     } else if(sid==='sp_swap') {
       const before=positionValue(r,p);
@@ -397,9 +401,9 @@ module.exports = function createStandardBot(A) {
     } else if(pd.type==='tile') {
       for(const o of opts.filter(o=>o.id.startsWith('summon:')))add(o.id,placement(r,p,p.pos,o.id.slice(7)),'配置後の領地価値・召喚費・手札戦力',{cost:C[o.id.slice(7)].cost,cards:1});
       if(by('toll'))add('toll',-tollOf(r,p.pos)*1.25,'支払いでカードを温存');
-      if(by('invade')){const trial=invasion(r,p,p.pos);if(trial)add('invade',trial.score,trial.reason);}
+      if(by('invade')){const trial=invasion(r,p,p.pos,p.hand.filter(id=>C[id]),{mioUlt:!!pd.mioUlt});if(trial)add('invade',trial.score,trial.reason);}
     } else if(pd.type==='pick_creature') {
-      for(const o of opts){const cid=bestCard(o),trial=invasion(r,p,r.battle.tile,[cid],r.battle.moveFrom!==undefined?{moveFrom:r.battle.moveFrom}:{});if(trial)add(o.id,trial.score,trial.reason,{cost:trial.fee});}
+      for(const o of opts){const cid=bestCard(o),trial=invasion(r,p,r.battle.tile,[cid],{moveFrom:r.battle.moveFrom,mioUlt:!!r.battle.mioUlt});if(trial)add(o.id,trial.score,trial.reason,{cost:trial.fee});}
     } else if(pd.type==='support') {
       // Replace the neutral cancellation score: support:none has its own combat result.
       result.length=0;

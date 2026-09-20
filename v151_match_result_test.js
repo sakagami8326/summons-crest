@@ -55,7 +55,7 @@ ok(result.turningPoints.some(tp => tp.kind === 'invasion' && tp.lands.length ===
   'merged invasion survives final selection');
 ok(result.turningPoints.every(tp => tp.title && tp.detail), 'turning points include display copy');
 
-// 終了前には非公開、終了後だけ公開。手札・デッキ・ウェポンは含めない。
+// 終了前には非公開、終了後は最終デッキを含む。
 const live = G.makeFixtureRoom();
 G.initMatchAnalytics(live);
 ok(!Object.prototype.hasOwnProperty.call(G.publicState(live, null), 'matchResult') ||
@@ -63,9 +63,7 @@ ok(!Object.prototype.hasOwnProperty.call(G.publicState(live, null), 'matchResult
 const endedPublic = G.publicState(r, null);
 ok(endedPublic.matchResult?.id === result.id && endedPublic.resultReview?.id === result.id,
   'ended public state exposes result and synchronized review id');
-const resultJson = JSON.stringify(result);
-ok(!/"hand"|"deck"|"support"|"weapon"/.test(resultJson),
-  'result payload contains no private card or weapon data');
+ok(result.rankings.every(p=>Array.isArray(p.finalDeck)), 'ended result includes final inventories');
 ok(Math.abs((r.resultReview.unlockAt - result.endedAt) - 45000) < 30,
   'phone fallback unlock is scheduled for 45 seconds');
 
@@ -96,21 +94,14 @@ const restoredLegacy = G.restoreRoom(legacy).room;
 ok(restoredLegacy.matchResult === null && restoredLegacy.resultReview === null,
   'legacy save falls back without synthetic history');
 
-// テレビ・スマホの必須UIと操作、軽減モーション、完了通知を静的検査する。
-ok(/id="mrGraph"/.test(board) && /requestAnimationFrame\(matchResultTick\)/.test(board) &&
-   /showMatchCallout/.test(board), 'TV has animated SVG graph and turning-point callouts');
-ok(/id="mrPlayBtn"/.test(board) && /id="mrSpeedBtn"/.test(board) && /id="mrNextBtn"/.test(board) &&
-   /id="mrReplayBtn"/.test(board), 'TV has pause, x2, skip, and replay controls');
-ok(/sort\(\(a,b\)=>\+b\.dataset\.rank-\+a\.dataset\.rank\)/.test(board) && /i\*400/.test(board),
-  'rankings reveal from fourth to first at 0.4 second intervals');
-ok(/prefers-reduced-motion: reduce/.test(board) && /finishMatchResultPlayback\(result,true\)/.test(board),
-  'reduced motion skips straight to completed result');
-ok(/result_presentation_complete/.test(board) && /result_presentation_complete/.test(serverText),
-  'board and server share the idempotent result completion action');
-ok(/テレビで試合を振り返っています/.test(phone) && /テレビを見よう/.test(phone),
-  'phone hides results behind the shared TV review');
-ok(/myResultCard/.test(phone) && /turningPoints/.test(phone) && /slice\(0,3\)/.test(phone),
-  'phone renders personal breakdown and up to three related turning points');
+// Current result UI replaces the old graph while retaining stored historical analytics.
+const review = read('public/result-review.js'),reviewCSS=read('public/result-review.css');
+ok(board.includes('mountResultReview') && review.includes('rvStandingList'), 'TV mounts standings first');
+ok(review.includes('最多バトル勝利') && review.includes('最多カード獲得') && review.includes('最多通行料'), 'TV shows three highlights');
+ok(review.includes('finalDeck') && review.includes('review-game-card'), 'final deck reuses normal game cards');
+ok(review.includes('prefers-reduced-motion: reduce'), 'reduced motion disables automatic highlight playback');
+ok(board.includes('result_presentation_complete') && review.includes('onComplete()'), 'result completion remains synchronized');
+ok(phone.includes('ハイライトが終わると'), 'phone waiting message follows highlights');
 
 function checkInlineScripts(html, label) {
   let count = 0;

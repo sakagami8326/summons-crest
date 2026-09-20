@@ -1,0 +1,16 @@
+const fs=require('fs'),assert=require('assert/strict');
+const source=fs.readFileSync('server.js','utf8').replace(/server\.listen\([\s\S]*?\}\);\s*$/,'');
+const G=new Function('require','__dirname','setInterval','setTimeout',source+`;return {makeFixtureRoom,publicBattle,battleExternalModifiers,resolveBattle,serializeRoom,restoreRoom};`)(require,__dirname,()=>0,()=>0);
+const r=G.makeFixtureRoom();r.owners.fill(null);r.tileFx={};r.curses={};r.pending={};r.owners[1]={player:'fx1',creature:'nome',level:1};r.elemOv[1]='fire';
+const b=r.battle={tile:1,attacker:'fx0',defender:'fx1',atkCreature:'gecko',supports:{},startedAt:1};r.players[0].hand=['gecko','weapon'];
+assert.deepEqual(G.battleExternalModifiers(r,b),{attacker:[],defender:[]},'own creature abilities have no external mini-card');
+r.players[0].blade=true;b.mioUlt=true;r.tileFx[1]={vortex:true,vortexSource:{charId:'lia'},uplift:true};r.owners[1].iceWard=true;
+r.owners[2]={player:'fx1',creature:'qbaby',level:1};r.owners[3]={player:'fx1',creature:'qbaby_f',level:1};
+const sources=G.battleExternalModifiers(r,b);assert.equal(sources.attacker.reduce((n,x)=>n+x.amount,0),40);assert.equal(sources.defender.length,3);assert.equal(sources.defender[2].amount,20);assert.equal(sources.defender[2].cardId,'qbaby_f');assert.equal(sources.attacker[2].charId,'lia');
+const preview=G.publicBattle(r);assert.equal(preview.previewStats.attacker.at,80);assert.equal(preview.previewStats.defender.df,40);
+b.supports={fx0:{kind:'support',cardId:'gweapon'},fx1:{kind:'support',cardId:'jinx'}};
+assert.deepEqual(G.publicBattle(r).previewStats,preview.previewStats,'secret weapons never leak through stat preview');assert.deepEqual(G.publicBattle(r).externalModifiers,sources);
+r.owners[1].creature='qbaby_f';assert.equal(G.battleExternalModifiers(r,b).defender.length,2,'self ability wins equal provider tie without duplicate');r.owners[1].creature='qbaby';assert.equal(G.battleExternalModifiers(r,b).defender[2].amount,20,'stronger remote provider shown once');r.owners[1].creature='nome';
+b.supports={fx0:{kind:'support',cardId:'weapon'},fx1:{kind:'none'}};G.resolveBattle(r);assert.deepEqual(r.lastBattle.externalModifiers,sources,'snapshot preserved after one-shot effects consumed');assert(!r.tileFx[1].vortex);assert(!r.tileFx[1].vortexSource);
+const restored=G.restoreRoom(G.serializeRoom(r));assert(!restored.error,restored.error);assert.deepEqual(restored.room.lastBattle.externalModifiers,sources);
+console.log('PASS external battle UI: self/weapon exclusions, public previews, provider max, source identity, secret support, snapshot and restore');

@@ -1,0 +1,13 @@
+/* External sources only; own abilities and weapons stay with their own cards. */
+.battleFighter{position:relative}
+.battleExternalRack{position:absolute;bottom:calc(100% + 2.8vh);left:-3vh;display:flex;align-items:flex-end;gap:1.4vh;z-index:12;pointer-events:none}
+.battleExternalBonus{position:relative;--glow:#ffb157;--rim:#f5ce85;animation:externalGlow 1.8s ease-in-out infinite;animation-delay:var(--delay)}
+.battleExternalBonus.ultimate{--glow:#b1dfff;--rim:#d1ecff}
+.battleExternalArt{position:relative;width:7.5vh;height:11.75vh;border:2px solid var(--rim);border-radius:5px;overflow:hidden;background:#142234;transform:rotate(-8deg)}
+.battleExternalArt>img{width:100%;height:100%;object-fit:contain}
+.battleExternalArt i{position:absolute;inset:-60%;background:linear-gradient(110deg,transparent 43%,#fff9 50%,transparent 57%);transform:translateX(-100%);animation:externalSweep 3.6s ease-in-out infinite;animation-delay:var(--delay)}
+.battleExternalValue{position:relative;z-index:2;margin:-1.1vh -.7vh 0 .2vh;display:flex;align-items:center;justify-content:center;gap:.3vh;color:#fff0b5;background:#111929;border:1px solid var(--rim);border-radius:6px;white-space:nowrap;padding:.3vh .65vh;text-shadow:0 2px 4px #000}
+.battleExternalValue img{width:2vh;height:2vh}.battleExternalValue span{font:bold 1.6vh Georgia}.battleExternalValue b{font:bold 2.7vh/1.1 Georgia}
+@keyframes externalGlow{0%,100%{filter:drop-shadow(0 0 3px var(--glow))}50%{filter:drop-shadow(0 0 10px var(--glow)) drop-shadow(0 0 4px var(--glow))}}
+@keyframes externalSweep{0%,45%{transform:translateX(-100%);opacity:0}52%{opacity:.9}72%,100%{transform:translateX(100%);opacity:0}}
+@media(prefers-reduced-motion:reduce){.battleExternalBonus,.battleExternalArt i{animation:none}.battleExternalBonus{filter:drop-shadow(0 0 6px var(--glow))}.battleExternalArt i{display:none}}

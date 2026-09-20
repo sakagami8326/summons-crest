@@ -77,11 +77,10 @@ ok(/handInteractionContextKey\(state\) !== handInteractionContextKey\(next\)/.te
   /handInventoryKey/.test(phone) && /s\.phase/.test(phone),
   'phase and local hand changes cancel an active gesture');
 for (const overlay of ['deckOv','drawModal','mapOv','resultOv','shopDetail','galZoom','galleryOv','cardZoom',
-  'charDetail','charSel','ultConfirm','actionOv','gateOv','draftOv','shopScene']) {
+  'charDetail','charSel','ultConfirm','actionOv','gateOv']) {
   ok(phone.includes(`openBlockingOverlay('${overlay}')`), `${overlay} cancels hand gestures before opening`);
 }
-ok(/openBlockingOverlay\(pov\)/.test(phone) && /openBlockingOverlay\(ov\)/.test(phone),
-  'pick and deck selection overlays also use the common transition guard');
+ok(phone.includes('cancelGesture:()=>cancelHandGesture()') && fs.readFileSync('public/phone-card-picker.js','utf8').includes('this.api.cancelGesture()'), 'shared card selections cancel an active hand gesture');
 ok(/visibilitychange[\s\S]*document\.hidden\) cancelHandGesture/.test(phone) &&
   /addEventListener\('blur',[\s\S]*cancelHandGesture/.test(phone) &&
   /addEventListener\('pagehide',[\s\S]*cancelHandGesture/.test(phone) &&

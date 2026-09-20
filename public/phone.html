@@ -940,7 +940,8 @@
   .tdStat { font-family:sans-serif; font-size:max(2dvh, 13px); font-variant-numeric:tabular-nums; }
   .tdStat b { color:#F09B7B; font-weight:600; } .tdStat i { color:#8FD8A8; font-style:normal; }
 </style>
-</head>
+<link rel="stylesheet" href="/wind-supply-ui.css"><script defer src="/wind-supply-ui.js"></script>
+<link rel="stylesheet" href="/rare-draw.css"></head>
 <body>
   <div id="connBar" style="display:none; position:fixed; top:0; left:50%; transform:translateX(-50%);
     z-index:98; background:#5A1512; color:#F5B0A5; font-size:1.8dvh; letter-spacing:2px;
@@ -952,7 +953,7 @@
     <img src="/assets/summons-code-gold.svg" alt="SUMMONS CODE">
     <div id="roomPreset" role="status" aria-live="polite"></div>
     <input id="codeIn" placeholder="ルームコード" maxlength="4" autocapitalize="characters">
-    <input id="nameIn" placeholder="なまえ" maxlength="8">
+    <input id="nameIn" placeholder="なまえ（8文字まで）" aria-label="プレイヤー名（8文字まで）" maxlength="8">
     <button id="joinBtn">参加する</button>
     <div id="err"></div>
     <p class="joinSetupHint" id="joinSetupHint">盤面側のQR、またはルームコードが必要です。</p>
@@ -1005,7 +1006,7 @@
       <button class="abtn ghost" id="shopCancel">戻る</button><button class="abtn" id="shopBuy">購入する</button>
     </div></div></div></div>
   <div id="phoneUlt"><img id="phoneUltArt"><div id="ultFxHost"></div><div id="phoneUltSlash"></div><div id="phoneUltFlash"></div><div id="phoneUltInfo"><div id="phoneUltWho"></div><div id="phoneUltDesc"></div></div></div>
-  <div id="deckOv"><h2>デッキ確認</h2><div id="deckScroll"></div>
+  <div id="deckOv" role="dialog" aria-modal="true" aria-label="現在のデッキ"><h2>デッキ確認</h2><div id="deckScroll"></div>
     <button class="abtn ghost" id="deckClose">閉じる</button></div>
   <div id="resultOv"><div id="resultTitle"></div><div id="resList"></div>
     <button class="abtn" id="resultBtn" style="margin-top:1.4dvh">タイトルへ戻る</button></div>
@@ -1064,6 +1065,9 @@
 <script src="/game_timing.js"></script>
 <script src="/vendor/phaser.min.js"></script>
 <script src="/ult_fx_world.js"></script>
+<link rel="stylesheet" href="/phone-card-picker.css">
+<link rel="stylesheet" href="/phone-deck.css">
+<script src="/phone-card-picker.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const REMOVE_CARD_HTML = '<div class="face removeCard"><div class="removeTitle">カードを削除</div><img src="/assets/cards/shop-remove-v2.webp" alt="カード削除"></div>';
@@ -1357,38 +1361,65 @@ function dkSection(title, cards) {
   return `<div class="dkSec">${title}(${cards.length}枚)</div><div class="dkGrid">` +
     Object.entries(cnt).map(([c, n]) => dkCard(c, n)).join('') + '</div>';
 }
-function buildDeckOv() {
-  const m = me();
-  $('deckScroll').innerHTML =
-    dkSection('手札', m.hand || []) +
-    dkSection('山札(順不同)', m.deckList || []) +
-    dkSection('捨て札', m.discardList || []) +
-    dkSection('廃棄', m.exileList || []);
+function layoutDeckOverview() {
+  if (!$('deckOv').classList.contains('on')) return;
+  $('deckOv').querySelectorAll('.overviewCard').forEach(b => {
+    b.querySelector('.miniCanvas').style.transform = 'scale(' + b.clientWidth / 300 + ')';
+  });
 }
-$('deckBtn').onclick = () => { if (!state) return; delete $('deckOv').dataset.pick; buildDeckOv(); openBlockingOverlay('deckOv'); };
-$('deckClose').onclick = () => {
-  const ov = $('deckOv');
-  if (ov.dataset.pick) { choose(ov.dataset.pick); delete ov.dataset.pick; }
-  ov.classList.remove('on');
-};
+// Active inventory and exiled cards stay separate so counts do not imply exiled cards can be drawn.
+function buildDeckOv() {
+const C=state.catalog,m=me(),cards=m.inventoryList||[...(m.hand||[]),...(m.deckList||[]),...(m.discardList||[])],counts=new Map();cards.forEach(c=>counts.set(c,(counts.get(c)||0)+1));
+const elemOrder=['fire','water','earth','wind','neutral'],elemNames=['火','水','土','風','無'];
+const totals={creature:0,spell:0,weapon:0,exile:(m.exileList||[]).length},elements=Object.fromEntries(elemOrder.map(e=>[e,0]));
+for(const c of cards){if(C.CREATURES[c]){totals.creature++;elements[C.CREATURES[c].elem||'neutral']++;}else if(C.SPELLS[c])totals.spell++;else totals.weapon++;}
+const rank=c=>C.CREATURES[c]?elemOrder.indexOf(C.CREATURES[c].elem||'neutral'):C.SPELLS[c]?5:6;
+const entries=[...counts].sort((a,b)=>rank(a[0])-rank(b[0])||a[0].localeCompare(b[0])).flatMap(([c,n])=>Array(n).fill(c));
+const el=$('deckOv');
+const key=JSON.stringify([m.id,m.charId,entries,m.exileList||[]]);
+if(el.dataset.inventory===key)return;
+el.dataset.inventory=key;
+const scrollTop=el.querySelector('.overviewScroll')?.scrollTop||0;
+el.innerHTML=`<h2 hidden>デッキ確認</h2><header class="overviewHeader"><div class="summonerCrop"><img src="/assets/hud_${m.charId}.png" alt="${C.CHARS[m.charId].name}"><span>${C.CHARS[m.charId].name}</span></div><div class="elementCounts">${elemOrder.map((e,i)=>`<div class="elementCount ${elements[e]?'':'empty'}" title="${elemNames[i]}属性 ${elements[e]}枚"><svg viewBox="-34 -36 68 72" class="${e}" aria-label="${elemNames[i]}属性">${e==='neutral'?'<path d="M0 -26 21 0 0 26 -21 0Z" fill="none" stroke="currentColor" stroke-width="6"/><path d="M0 -10 8 0 0 10 -8 0Z" fill="currentColor"/>':ELEM_MINI[e]}</svg><b>${elements[e]}</b></div>`).join('')}</div><div class="kindCounts">${[['creature','クリーチャー'],['spell','スペル'],['weapon','ウェポン'],['exile','廃棄']].map(([k,n])=>`<div><b>${totals[k]}</b><span>${n}</span></div>`).join('')}</div><button class="overviewClose" id="deckClose" aria-label="デッキを閉じる"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header><div class="overviewScroll" id="deckScroll"><div class="overviewGrid">${entries.map(c=>`<button class="overviewCard" data-card="${c}" aria-label="${dkInfo(c).nm}"><div class="miniCanvas">${bigCardHTML(c)}</div></button>`).join('')}</div>${(m.exileList||[]).length?`<section class="overviewExile" aria-label="廃棄カード"><h3>廃棄 <span>${totals.exile}</span></h3><div class="overviewGrid">${m.exileList.map(c=>`<button class="overviewCard" data-card="${c}" aria-label="${dkInfo(c).nm}（廃棄）"><div class="miniCanvas">${bigCardHTML(c)}</div></button>`).join('')}</div></section>`:''}</div>`;
+
+el.querySelector('.overviewScroll').scrollTop=scrollTop;
+el.querySelector('.overviewClose').onclick=()=>el.classList.remove('on');
+el.querySelectorAll('[data-card]').forEach(b=>b.onclick=()=>openCardZoom(b.dataset.card, true));
+fitCreatureNames(el);
+layoutDeckOverview();
+}
+$('deckBtn').onclick = () => { if (!state || !me()) return; delete $('deckOv').dataset.pick; buildDeckOv(); openBlockingOverlay('deckOv'); afterUiPaint(layoutDeckOverview); };
+if (typeof ResizeObserver !== 'undefined') new ResizeObserver(layoutDeckOverview).observe($('deckOv'));
 // ピックモード: 所持カード全体を見せつつ、選べるカードだけ点灯させる全画面UI
+let sharedCardPicker = null;
+function getCardPicker() {
+  if (!sharedCardPicker) sharedCardPicker = new PhoneCardPicker({
+    state:()=>state, player:()=>me(), pending:()=>pend(), cancelGesture:()=>cancelHandGesture(),
+    card:(c,i,e)=>e.html ? '<div class="card"><div class="flip">'+e.html+'</div></div>' : cardHTML(c,i),
+    bigCard:(c,e)=>e.html || bigCardHTML(c), name:c=>dkInfo(c).nm,
+    decoration:c=>pend()?.type==='draft'?rareDrawDecoration(c):'',
+    effect:c=>{const C=state.catalog,cr=C.CREATURES[c],sp=C.SPELLS[c],su=C.SUPPORTS[c];return cr?cr.fx||'効果なし':sp?sp.desc:su?su.fx||supportDescription(su):'';},
+    fit:fitCreatureNames, choose:id=>choose(id),
+    preview:entry=>{if(pend()?.type==='market')fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room,type:'shop_preview',playerId:pid,slotId:entry?.slotId || null})}).catch(()=>{});}
+  });
+  return sharedCardPicker;
+}
 function buildPickOv(title, sections, cancelId) {
-  const ov = $('deckOv');
-  ov.dataset.pick = cancelId || '';
-  ov.querySelector('h2').textContent = title;
-  $('deckScroll').innerHTML = sections.map(sec => {
-    if (!sec.entries.length) return '';
-    const total = sec.entries.reduce((a, e) => a + (e.n || 1), 0);
-    return `<div class="dkSec">${sec.name}(${total}枚)</div><div class="dkGrid">` +
-      sec.entries.map(e =>
-        `<div class="dkCard ${e.pickId ? 'pick' : 'dis'} ${e.selected ? 'picked' : ''}" ${e.pickId ? `onclick="pickOvChoose('${e.pickId}')"` : ''}>
-          ${bigCardHTML(e.card)}${e.n > 1 ? `<div class="dkN">×${e.n}</div>` : ''}
-          ${e.zone ? `<div class="dkZoneTag">${e.zone}</div>` : ''}</div>`).join('') + '</div>';
-  }).join('');
-  afterUiPaint(() => fitCreatureNames($('deckScroll')));
-  $('deckClose').textContent = cancelId ? 'やめる' : '';
-  $('deckClose').style.display = cancelId ? '' : 'none';
-  openBlockingOverlay(ov);
+  const p=pend(), type=p.type;
+  const names={frontline_swap:'戦線交代',overflow:'手札上限',swap_pick:'チェンジ',spell_evolve:'エヴォルヴ',forge:'鍛錬',gaust_exile:'魂の選別',fatal_exile:'フェイタルリワード',ult_grease:'進化の胎動',ult_villa_recover:'墓守の協奏曲',daitekkan_recover:'再鍛造',forget:'忘却'};
+  const action={frontline_swap:'交代する',swap_pick:'交代する',spell_evolve:'進化させる',forge:'進化させる',overflow:'捨てる',gaust_exile:'廃棄する',fatal_exile:'廃棄する',forget:'廃棄する',daitekkan_recover:'回収する',ult_grease:'選択する',ult_villa_recover:'選択する'};
+  const paid=['frontline_swap','swap_pick','spell_evolve','forge','forget'].includes(type);
+  const multi=type==='ult_grease' || type==='ult_villa_recover';
+  const confirmId=multi?p.options.find(o=>/^(gu|vr):confirm$/.test(o.id))?.id:null;
+  const entries=sections.map(sec=>({...sec,entries:sec.entries.map(e=>{
+    const option=p.options.find(o=>o.id===e.pickId);
+    return {...e, cost:e.pickId && paid?(option?.cost ?? p.cost ?? state.catalog.CREATURES[e.card]?.cost):undefined,
+      location:option?.zone==='land'?'土地 '+option.tile:null};
+  })}));
+  $('deckOv').classList.remove('on');
+  getCardPicker().show({title:names[type] || title,sections:entries,cancelId,action:action[type] || '選択する',danger:['overflow','gaust_exile','fatal_exile','forget'].includes(type),showGold:paid,
+    count:type==='overflow'?me().hand.length+' → 7':multi?(p.selected||[]).length+' / '+(type==='ult_grease'?2:3):null,
+    confirmId,confirmLabel:type==='ult_grease'?'進化を確定':'回収する'});
 }
 function pickOvChoose(id) {
   const ov = $('deckOv');
@@ -1544,6 +1575,10 @@ function showGainToast(n) {
   clearTimeout(gainT);
   gainT = setTimeout(() => el.classList.remove('on'), 2000);
 }
+function rareDrawDecoration(cid) {
+  const c=state?.catalog?.CREATURES[cid]||state?.catalog?.SPELLS[cid];
+  return c?.rarity==='UR'?'<span class="urShine" aria-hidden="true"></span><span class="urStar s1" aria-hidden="true">✦</span><span class="urStar s2" aria-hidden="true">✦</span>':'';
+}
 function revealHeading(reason) {
   if (reason === 'draw') return 'ドロー';
   if (reason === 'ult_villa') return '廃棄から回収';
@@ -1553,7 +1588,7 @@ function enqueueCardReveal(cards, reason = 'gain') {
   if (!state || !Array.isArray(cards)) return;
   const C = state.catalog || {}, known = c => !!((C.CREATURES && C.CREATURES[c]) ||
     (C.SPELLS && C.SPELLS[c]) || (C.SUPPORTS && C.SUPPORTS[c]));
-  cards.filter(known).forEach(card => revealQueue.push({ card, title:revealHeading(reason) }));
+  cards.filter(known).forEach(card => revealQueue.push({ card, title:revealHeading(reason), reason }));
   if (!revealCurrent) showNextReveal();
 }
 function showNextReveal() {
@@ -1565,7 +1600,8 @@ function showNextReveal() {
     return;
   }
   $('drawTitle').textContent = revealCurrent.title;
-  $('drawCard').innerHTML = `<div class="dcOne">${bigCardHTML(revealCurrent.card)}</div>`;
+  const shine=revealCurrent.reason==='draft'?rareDrawDecoration(revealCurrent.card):'';
+  $('drawCard').innerHTML = `<div class="dcOne${shine?' rarity-UR':''}">${bigCardHTML(revealCurrent.card)}${shine}</div>`;
   openBlockingOverlay('drawModal');
   afterUiPaint(() => fitCreatureNames($('drawCard')));
   revealT = setTimeout(advanceReveal, 1800);
@@ -1722,7 +1758,7 @@ function renderResult() {
     $('resultBtn').style.display = unlocked ? '' : 'none';
     if (!unlocked) {
       $('resultTitle').textContent = 'MATCH REVIEW';
-      $('resList').innerHTML = `<div class="resultWaiting"><b>テレビを見よう</b><p>テレビで試合を振り返っています。<br>試合の軌跡が終わると、あなたの結果を表示します。</p><div class="waitDots">● ● ●</div></div>`;
+      $('resList').innerHTML = `<div class="resultWaiting"><b>テレビを見よう</b><p>テレビで試合を振り返っています。<br>ハイライトが終わると、あなたの結果を表示します。</p><div class="waitDots">● ● ●</div></div>`;
       resultUnlockT = setTimeout(render, Math.max(120, Number(review.unlockAt||0)-now+40));
       openBlockingOverlay('resultOv');
       return;
@@ -1890,6 +1926,7 @@ function fitCardText(root) {
     face.classList.remove('cardFit1','cardFit2','cardTextOverflow');
     face.dataset.cardFit = 'base';
     face.dataset.textOverflow = 'false';
+    if (face.closest('#uxPicker,#uxPickDialog')) return;
     if (!cardTextOverflows(face)) return;
     face.classList.add('cardFit1');
     face.dataset.cardFit = 'compact';
@@ -2059,7 +2096,7 @@ function cardActionLabel(c) {
 }
 function refreshCardZoomAction() {
   if (!zoomCardId || !state) return;
-  const optionId = cardOption(zoomCardId), btn = $('cardZoomAction');
+  const optionId = $('cardZoom').dataset.readOnly === 'true' ? null : cardOption(zoomCardId), btn = $('cardZoomAction');
   const p = pend(), opt = optionId && p && p.options.find(o => o.id === optionId);
   const cost = opt && Number(opt.cost) > 0 ? Number(opt.cost) : 0;
   btn.innerHTML = `<span class="cardActionText">${cardActionLabel(zoomCardId)}</span>${cost ? `<span class="cardActionCost">−${cost}G</span>` : ''}`;
@@ -2067,7 +2104,8 @@ function refreshCardZoomAction() {
   btn.dataset.option = optionId || '';
   $('cardZoomReason').textContent = cardActionSubmitting ? '送信中…' : optionId ? 'ボタンをタップするとすぐに使用します' : '現在の手順では使用できません';
 }
-function openCardZoom(c) {
+function openCardZoom(c, readOnly = false) {
+  $('cardZoom').dataset.readOnly = String(readOnly);
   cancelHandGesture();
   zoomCardId = c;
   $('cardZoomCard').innerHTML = bigCardHTML(c);
@@ -2094,7 +2132,7 @@ $('cardZoomClose').onclick = () => $('cardZoom').classList.remove('on');
 $('cardZoomAction').onclick = async e => {
   e.stopPropagation();
   const optionId = e.currentTarget.dataset.option;
-  if (!optionId || !zoomCardId || cardActionSubmitting) return;
+  if ($('cardZoom').dataset.readOnly === 'true' || !optionId || !zoomCardId || cardActionSubmitting) return;
   cardActionSubmitting = true;
   refreshCardZoomAction();
   try {
@@ -2518,7 +2556,7 @@ function layoutHand() {
 if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => afterUiPaint(layoutHand)).observe($('hand'));
 window.addEventListener('resize', () => { cancelHandGesture(); afterUiPaint(layoutHand); });
 function renderHand() {
-  const serverHand = me().hand.slice(), serverKey = handInventoryKey(serverHand);
+  const serverHand = window.WindSupplyUI ? WindSupplyUI.hand(state, pid, me().hand) : me().hand.slice(), serverKey = handInventoryKey(serverHand);
   if (serverKey !== handServerKey && handGesture) cancelHandGesture({ rerender:false });
   handServerKey = serverKey;
   // Remote turns, logs and other players' prompts refresh over SSE frequently.
@@ -2653,7 +2691,7 @@ function taskPrompt(p) {
   if (!p) return '';
   const ids = (p.options || []).map(o => o.id);
   const fixed = {
-    select_char:'召喚士を選べ', select_wait:'全員の決定を待て', pick_draw:'獲得するカードを選べ',
+    creature_effect:'風の補給 ─ カードを追加しています', select_char:'召喚士を選べ', select_wait:'全員の決定を待て', pick_draw:'獲得するカードを選べ',
     roll:'サイコロを振れ', direction:'進行方向を選べ', pick_creature:'侵略するクリーチャーを選べ',
     support:'ウェポンを選べ', upgrade:'強化する領地を選べ', upgrade_lv:'強化レベルを選べ',
     draft:'獲得するカードを選べ', market:'商品を選べ', gate:'門の恩恵を選べ', forge:'進化させるクリーチャーを選べ',
@@ -2727,6 +2765,9 @@ function render() {
   document.body.dataset.mapId = SummonsMapUI.get(state).id;
   if (state.lastUlt && state.lastUlt.at !== phoneUltAt) playPhoneUlt(state.lastUlt);
   const m = me(), C = state.catalog, p = pend();
+  sharedCardPicker?.sync();
+  if ($('deckOv').classList.contains('on')) buildDeckOv();
+  window.WindSupplyUI?.phone(state, { playerId:pid, room, current:()=>state, card:bigCardHTML, renderHand, layoutHand, fit:fitCreatureNames, cancelGesture:cancelHandGesture });
   $('msg').textContent = p ? taskPrompt(p) : waitingTaskPrompt();
   const lobbyWaiting = state.phase === 'lobby';
   $('lobbyWait').classList.toggle('on', lobbyWaiting);
@@ -2905,28 +2946,9 @@ function render() {
     A.innerHTML = '<div class="waitDots">● ● ●</div>';
     selected = null;
   } else if (p.type === 'pick_draw') {
-    // v0.61 選択ドロー: 2枚を横並びで大きく表示、カードタップで即決定
-    $('msg').textContent = taskPrompt(p);
-    A.innerHTML = '';
-    const pkey = p.options.map(o => o.id + ':' + o.card).join(',');
-    const pov = $('pickOv');
-    if (pov.dataset.k !== pkey) {
-      pov.dataset.k = pkey;
-      pdLock = false;
-      $('pickRow').style.gap = p.options.length >= 3 ? '3.5vw' : '6vw';  // 祠は3枚(v0.72)
-    $('pickRow').innerHTML = p.options.map(o =>
-        `<div class="draftCard" data-pd="${o.id}" onclick="pdChoose('${o.id}')">${bigCardHTML(o.card)}</div>`
-      ).join('');
-      afterUiPaint(() => fitCreatureNames($('pickRow')));
-      document.querySelectorAll('#pickRow .draftCard').forEach((el, i) => {
-        const o = p.options[i];
-        if (o) armLongPress(el, () => openCardZoom(o.card));  // 長押しで拡大は選択中も使える
-      });
-    }
-    $('pickHint').textContent = `選ばなかった${p.options.length - 1}枚は捨て札へ(制限時間はありません)`;
-    openBlockingOverlay(pov);
-    renderHand();
-    return;
+    $('msg').textContent=taskPrompt(p); A.innerHTML=''; $('pickOv').classList.remove('on');
+    getCardPicker().show({title:'カードを選ぶ',center:true,sections:[{name:'候補',entries:p.options.map(o=>({card:o.card,pickId:o.id}))}],action:'手札に加える'});
+    renderHand(); return;
   } else if (p.type === 'roll') {
     const hasSp = p.options.some(o => o.id.startsWith('sp:'));
     const ultIc = sic('ult', '2.4dvh') + ' ';
@@ -2967,8 +2989,6 @@ function render() {
         entries:p.options.filter(o => o.zone === zone).map(o => ({ card:o.card, pickId:o.id,
           selected:picked.has(o.id), zone:(zone === 'land' ? `土地${o.tile} · ` : '') +
             (picked.has(o.id) ? '選択済み' : 'タップして選択') })) })), 'gu:cancel');
-    if (p.options.some(o => o.id === 'gu:confirm'))
-      $('deckScroll').innerHTML += `<button class="abtn" style="display:block;margin:2dvh auto 4dvh" onclick="pickOvChoose('gu:confirm')">${picked.size}体の進化を確定</button>`;
   } else if (p.type === 'ult_villa_recover') {
     $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';
@@ -2978,7 +2998,6 @@ function render() {
       { name:'廃棄', entries:cardOpts.map(o => ({ card:o.card, pickId:o.id,
           selected:picked.has(+o.id.slice(3)), zone:picked.has(+o.id.slice(3)) ? '選択済み' : 'タップして選択' })) },
     ], null);
-    $('deckScroll').innerHTML += '<button class="abtn" style="display:block;margin:2dvh auto 4dvh" onclick="pickOvChoose(\'vr:confirm\')">決定</button>';
   } else if (p.type === 'daitekkan_recover') {
     $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';
@@ -3057,27 +3076,10 @@ function render() {
     $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';
   } else if (p.type === 'draft') {
-    $('msg').textContent = taskPrompt(p);
-    A.innerHTML = '';
-    $('shopScene').classList.remove('on');
-    openBlockingOverlay('draftOv');
-    const dk = p.options.map(o => o.id).join(',');
-    if ($('draftRow').dataset.k === dk) { renderHand(); return; }
-    $('draftRow').dataset.k = dk;
-    $('draftRow').innerHTML = p.options.filter(o => o.id.startsWith('take:')).map(o => {
-      const cid = o.id.slice(5);
-      return `<div class="draftCard" data-o="${o.id}">${bigCardHTML(cid)}</div>`;
-    }).join('');
-    afterUiPaint(() => fitCreatureNames($('draftRow')));
-    $('draftFoot').innerHTML = p.options.some(o => o.id === 'skip')
-      ? `<button class="abtn ghost" id="draftSkipBtn">カードを加えない</button>` : '';
-    document.querySelectorAll('.draftCard').forEach(el =>
-      el.onclick = () => { choose(el.dataset.o); $('draftOv').classList.remove('on'); });
-    const sk = $('draftSkipBtn');
-    if (sk) sk.onclick = () => { choose('skip'); $('draftOv').classList.remove('on'); };
-    renderHand();
-    return;
+    $('msg').textContent=taskPrompt(p); A.innerHTML=''; $('draftOv').classList.remove('on');
+    getCardPicker().show({title:'カード獲得',center:true,sections:[{name:'候補',entries:p.options.filter(o=>o.id.startsWith('take:')).map(o=>({card:o.id.slice(5),pickId:o.id}))}],action:'獲得する',cancelId:p.options.some(o=>o.id==='skip')?'skip':null,cancelLabel:'カードを加えない'});
   } else if (p.type === 'market' && !inShopHand) {
+    sharedCardPicker?.hide();
     $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';
     openBlockingOverlay('shopScene');

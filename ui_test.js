@@ -215,17 +215,26 @@ const FakeDate = new Proxy(Date, {
   get: (t, k) => k === 'now' ? (() => Date.now() + skew) : t[k],
   construct: (t, args) => args.length ? new t(...args) : new t(Date.now() + skew),
 });
+let pickerConfig=null, pickerContext=null;
+// This DOM-light integration harness checks the adapter contract. The real shared
+// selector's geometry, confirmation and network interactions are browser-tested.
+class FakePhoneCardPicker {
+ hide(){pickerConfig=null;}
+ constructor(api){this.api=api;}
+ show(config){pickerConfig=config;pickerContext=this.api.pending();}
+ sync(){if(pickerContext!==this.api.pending())pickerConfig=null;}
+}
 let P;
 try {
   P = new Function('window', 'document', 'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval',
-    'EventSource', 'Audio', 'fetch', 'localStorage', 'sessionStorage', 'location', 'navigator', 'history', 'screen', 'console', 'Date',
+    'EventSource', 'Audio', 'fetch', 'localStorage', 'sessionStorage', 'location', 'navigator', 'history', 'screen', 'console', 'Date', 'PhoneCardPicker',
     sandboxSrc)(
     win, doc,
     (fn, ms) => { timers.push({ fn, ms: ms || 0, id: timerId }); return timerId++; },
     () => timerId++, id => { const i = timers.findIndex(t => t.id === id); if (i >= 0) timers.splice(i, 1); }, noop,
     FakeES, FakeAudio, () => Promise.resolve({ json: () => Promise.resolve({}) }),
     store, store, { search: '', href: '' }, { userAgent: 'test', clipboard: {} }, { replaceState: noop }, { orientation: {} },
-    { log: noop, warn: noop, error: (...a) => { throw new Error('console.error: ' + a.join(' ')); } }, FakeDate);
+    { log: noop, warn: noop, error: (...a) => { throw new Error('console.error: ' + a.join(' ')); } }, FakeDate, FakePhoneCardPicker);
 } catch (e) {
   console.error('スクリプト初期化で例外(スタブ不足の可能性):', e.message);
   process.exit(1);
@@ -248,9 +257,10 @@ function clearDom() {
   qsaCalls.clear();
 }
 function affordance(pid2, st) {
+  if(pickerConfig){const options=st.pending[pid2]?.options || [];const ids=[pickerConfig.cancelId,pickerConfig.confirmId,...pickerConfig.sections.flatMap(s=>s.entries.map(e=>e.pickId))];if(ids.some(id=>options.some(o=>o.id===id)))return 'shared-card-picker';}
   // 1) インラインonclick(choose等)がどこかに描画されたか
   for (const [id, el] of Object.entries(els)) {
-    if (/choose\(|submitAction\(|mmTap\(|pickOvChoose\(|showUltConfirm\(/.test(el.innerHTML || '')) return 'inline:' + id;
+    if (/choose\(|submitAction\(|submitMapChoice\(|mmTap\(|pickOvChoose\(|showUltConfirm\(/.test(el.innerHTML || '')) return 'inline:' + id;
   }
   // 2) querySelectorAllで後付けバインドを試み、かつ対象classが実際に描画されているか
   for (const sel of qsaCalls) {
@@ -277,14 +287,12 @@ function affordance(pid2, st) {
   S.handleChoose(r,p.id,'sp:sp_evolve');
   P.setPid(p.id);P.setRoom(r.code);P.setState(S.publicState(r,p.id));P.setRolling(false);
   skew+=9000;clearDom();P.render();flushTimers();P.render();
-  const rendered=Object.values(els).map(el=>el.innerHTML||'').join('');
-  if(!rendered.includes('ev:1')||!rendered.includes('ev:2')||els.deckOv.dataset.pick!=='ev:cancel'||
-      els.deckClose.style.display==='none')
-    throw new Error('進化スペル: 各カードとキャンセルの操作が描画されない');
+  const ids=pickerConfig?.sections.flatMap(s=>s.entries.map(e=>e.pickId)) || [];
+  if(!ids.includes('ev:1')||!ids.includes('ev:2')||pickerConfig.cancelId!=='ev:cancel')throw new Error('進化スペル: カードとキャンセルが選択UIへ渡されない');
   S.handleChoose(r,p.id,'ev:cancel');
   if(p.gold!==500||p.spellCast)throw new Error('進化スペル: キャンセルで消費された');
   P.setState(S.publicState(r,p.id));P.render();
-  if(els.deckOv.dataset.pick)throw new Error('進化スペル: キャンセル後に選択画面が残る');
+  if(pickerConfig)throw new Error('進化スペル: キャンセル後に選択画面が残る');
   console.log('進化スペル選択UI ✓');
 }
 
@@ -298,11 +306,10 @@ function affordance(pid2, st) {
   S.continuePostBattle(r);
   P.setPid(p.id);P.setRoom(r.code);P.setState(S.publicState(r,p.id));P.setRolling(false);
   skew+=9000;clearDom();P.render();flushTimers();P.render();
-  if(!els.deckScroll.innerHTML.includes('fl:0')||!els.deckScroll.innerHTML.includes('fl:1')||
-     !els.deckScroll.innerHTML.includes('召喚 90G')||els.deckOv.dataset.pick!=='fl:cancel')
-    throw new Error('戦線交代: 防衛者のカード選択・費用・キャンセルが描画されない');
+  const entries=pickerConfig?.sections.flatMap(s=>s.entries) || [];
+  if(!entries.some(e=>e.pickId==='fl:0')||!entries.some(e=>e.pickId==='fl:1'&&e.cost===90)||pickerConfig.cancelId!=='fl:cancel')throw new Error('戦線交代: カード・費用・キャンセルが選択UIへ渡されない');
   S.handleChoose(r,p.id,'fl:cancel');P.setState(S.publicState(r,p.id));P.render();
-  if(els.deckOv.dataset.pick)throw new Error('戦線交代: 報酬ドラフト後に選択画面が残る');
+  if(pickerConfig?.title==='戦線交代')throw new Error('戦線交代: 報酬ドラフト後に選択画面が残る');
   console.log('戦線交代の防衛者UI ✓');
 }
 

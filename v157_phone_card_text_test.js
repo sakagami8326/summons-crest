@@ -15,7 +15,7 @@ const G = new Function('require', '__dirname', 'process', 'console', 'setInterva
 let pass = 0;
 const ok = (value, name) => { if (!value) throw new Error('FAIL: ' + name); pass++; };
 
-ok(G.VERSION === '1.62' && pkg.version === '1.62.0', 'release version is v1.62');
+ok(G.VERSION === '1.63' && pkg.version === '1.63.0', 'release version is v1.63');
 ok(/\.dkCard\s*\{[\s\S]*?width:calc\(\(100% - 2dvh\) \/ 3\)/.test(css),
   'deck and choice cards use container-based three columns');
 ok(/\.gCard\s*\{[\s\S]*?width:calc\(\(100% - 3\.2dvh\) \/ 3\)/.test(css),
@@ -47,18 +47,18 @@ ok(/function cardZoomDetailHTML\(c\)/.test(phone) &&
 ok(/\.galAbilityText\s*\{[^}]*font-size:max\(2\.65dvh,15px\)/.test(css), 'full detail keeps readable text');
 
 ok(/revealT = setTimeout\(advanceReveal, 1800\)/.test(phone), 'direct draw remains 1.8 seconds');
-ok(/onclick="pdChoose\('\$\{o\.id\}'\)"/.test(phone) &&
-  /el\.onclick = \(\) => \{ choose\(el\.dataset\.o\)/.test(phone), 'draw and draft remain tap-to-select');
-ok(/armLongPress\(el, \(\) => openCardZoom\(o\.card\)\)/.test(phone), 'pick draw retains long-press detail');
-ok(/onclick="pickOvChoose\('\$\{e\.pickId\}'\)"/.test(phone), 'selection lists retain immediate card choice');
+const picker=fs.readFileSync(path.join(__dirname,'public/phone-card-picker.js'),'utf8');
+ok(phone.includes("title:'カードを選ぶ'") && phone.includes("title:'カード獲得'"), 'draw and draft route through shared selector');
+ok(picker.includes('this.open(e)') && picker.includes('await this.api.choose(id)'), 'selection opens detail before explicit confirmation');
+ok(phone.includes("face.closest('#uxPicker,#uxPickDialog')"), 'shared selection keeps fixed hand geometry');
 
 const baseCreatures = Object.entries(G.CREATURES).filter(([id]) => !id.endsWith('_f'));
 const evolvedForms = baseCreatures.filter(([, card]) => card.evo).length;
-ok(baseCreatures.length + evolvedForms === 85, 'all 85 creature forms are covered by the common card renderer');
+ok(baseCreatures.length + evolvedForms === 87, 'all 87 creature forms are covered by the common card renderer');
 ok(Object.keys(G.SPELLS).length === 25 && Object.keys(G.SUPPORTS).length === 5,
   'all 25 spells and 5 weapons are covered by the common card renderer');
 
-const focusCards = ['beruf','beruf_f','samurai_saga','marlow','mist_jelly','mist_jelly_f','night_jelly_f'];
+const focusCards = ['beruf','beruf_f','samurai_saga','marlow','mist_jelly','mist_jelly_f','night_jelly_f','poponga','poponga_f'];
 for (const id of focusCards) ok(G.CREATURES[id], `${id} remains in the overflow regression set`);
 for (const id of ['sp_weaken','sp_step','sp_swap']) ok(G.SPELLS[id], `${id} remains in the overflow regression set`);
 

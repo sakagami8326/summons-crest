@@ -26,7 +26,7 @@ const sitePagesCss = read('public/site/site-pages.css');
 const siteHeaderCss = read('public/site/site-header.css');
 const newsRoute = '/news/2026-09-08-bug-fixes';
 const newsHtml = read('public/site/news-bug-fixes-20260908.html');
-ok(home.includes('href="' + newsRoute + '"'), 'homepage links to the bug fix article');
+ok(require('./site-news').render(read('public/site/news-index.html')).includes('href="' + newsRoute + '"'), 'news archive retains the older bug fix article');
 const latestNews = require('./site-news').entries.slice(0,3);
 ok(latestNews.every((entry,i) => home.includes('/news/'+entry.slug) && (!i || (entry.date <= latestNews[i-1].date && home.indexOf('/news/'+latestNews[i-1].slug) < home.indexOf('/news/'+entry.slug)))), 'homepage shows latest news in descending date order');
 ok(newsHtml.includes('<link rel="canonical" href="https://summonscode.jp' + newsRoute + '">'), 'article has its own canonical URL');
@@ -40,7 +40,7 @@ for (const text of ['ムーブ', 'サーベイ', 'ザシャック', 'シュテ�
 ok(newsHtml.includes('href="/#feedback"') && newsHtml.includes('href="/news"'), 'article links to feedback and news');
 ok(!/src="[^"]*(cards|rules)\.js/.test(newsHtml), 'article avoids unrelated page scripts');
 
-ok(/const VERSION = '1\.62'/.test(serverSource) && require('./package.json').version === '1.62.0', 'v1.54 site pages remain covered by v1.62');
+ok(/const VERSION = '1\.63'/.test(serverSource) && require('./package.json').version === '1.63.0', 'v1.54 site pages remain covered by v1.63');
 ok(/if \(p === '\/cards'\).*site\/cards\.html/.test(serverSource), '/cards is a formal route');
 ok(/if \(p === '\/rules'\).*site\/rules\.html/.test(serverSource), '/rules is a formal route');
 ok(/p === '\/api\/catalog' && req\.method === 'GET'/.test(serverSource), 'read-only catalog endpoint exists');
@@ -140,11 +140,11 @@ const waitFor = async (url, attempts = 60) => {
     await waitFor(`${base}/api/catalog`);
     const catalogResponse = await fetch(`${base}/api/catalog`);
     const catalog = await catalogResponse.json();
-    ok(catalog.version === '1.62', 'catalog identifies current release');
-    ok(catalog.counts.total === 76 && catalog.cards.length === 76, 'catalog contains all 76 base card types');
-    ok(catalog.counts.creatures === 46 && catalog.counts.spells === 25 && catalog.counts.weapons === 5, 'catalog category counts are 46/25/5');
-    ok(catalog.counts.evolutions === 39, 'catalog contains all 39 evolution pairs');
-    ok(new Set(catalog.cards.map(card => card.id)).size === 76, 'catalog IDs are unique');
+    ok(catalog.version === '1.63', 'catalog identifies current release');
+    ok(catalog.counts.total === 77 && catalog.cards.length === 77, 'catalog contains all 77 base card types');
+    ok(catalog.counts.creatures === 47 && catalog.counts.spells === 25 && catalog.counts.weapons === 5, 'catalog category counts are 47/25/5');
+    ok(catalog.counts.evolutions === 40, 'catalog contains all 40 evolution pairs');
+    ok(new Set(catalog.cards.map(card => card.id)).size === 77, 'catalog IDs are unique');
     ok(catalog.cards.every(card => ['id','kind','name','element','rarity','cost','at','hp','effect','imageId','artPath','evolution'].every(key => key in card)), 'catalog exposes the complete public card shape');
     ok(catalog.cards.every(card => !['hand','deck','owner','player','supports'].some(key => key in card)), 'catalog excludes game-private state');
     ok(catalog.cards.filter(card => card.kind === 'creature').every(card => card.artPath && exists(`public${card.artPath}`)), 'all creature art references resolve');
