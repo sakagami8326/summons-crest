@@ -14,5 +14,20 @@ const save=G.serializeRoom(inv);assert.equal(G.validateSave(save),null);const re
 const counted=G.serializeRoom(r);counted.room.code="CT01";assert.equal(G.validateSave(counted),null);const restoredCounts=G.restoreRoom(counted).room.players.find(x=>x.id===p.id);assert.equal(restoredCounts.cardsCollected,4);assert.equal(restoredCounts.tollCollected,420);
 const bad=structuredClone(save);bad.room.matchResult.rankings[0].finalDeck=['made-up-card'];assert.ok(G.validateSave(bad));const badCount=structuredClone(save);badCount.room.players[0].cardsCollected=-1;assert.ok(G.validateSave(badCount));
 const legacy=structuredClone(save);legacy.room.players.forEach(x=>{delete x.cardsCollected;delete x.tollCollected;});delete legacy.room.matchResult;delete legacy.room.resultReview;const old=G.restoreRoom(legacy).room;G.gainToDeck(old,old.players[0],['gecko']);assert.equal(old.players[0].cardsCollected,null,'legacy totals stay unknown rather than misleading partial totals');
+// Returning to the castle wins even when another player owns more assets.
+for(let winnerIndex=0;winnerIndex<4;winnerIndex++){
+ const match=G.makeFixtureRoom();match.owners.fill(null);match.titles={};
+ match.players.forEach((player,index)=>{player.gold=[9500,8200,9000,9000][index];});
+ match.phase='ended';match.winner=match.players[winnerIndex].id;G.initMatchAnalytics(match);
+ const ranked=G.buildMatchResult(match).rankings;
+ assert.equal(ranked[0].id,match.winner,'declared winner is always first');
+ assert.deepEqual(ranked.slice(1).map(row=>row.id),match.players.filter(player=>player.id!==match.winner).sort((a,b)=>b.gold-a.gold).map(player=>player.id));
+ assert.deepEqual(ranked.map(row=>row.rank),[1,2,3,4]);
+ const saved=G.serializeRoom(match);saved.room.code='RK0'+winnerIndex;
+ // Previously saved results used asset order; restoring must fix the ranks without changing snapshots.
+ saved.room.matchResult.rankings.sort((a,b)=>b.assets.total-a.assets.total).forEach((row,index)=>row.rank=index+1);
+ const loaded=G.restoreRoom(saved);assert.equal(loaded.error,undefined);
+ assert.deepEqual(loaded.room.matchResult.rankings,ranked,'saved ranks corrected, assets and decks preserved');
+}
 const catalog=G.publicCardCatalog();assert.ok(!JSON.stringify(catalog).includes('"rarity":"L"'));
 console.log('Result review: new acquisitions, draw exclusion, toll-only totals, inventory zones, evolution, privacy, snapshots, save/restore, legacy and UR presentation passed.');

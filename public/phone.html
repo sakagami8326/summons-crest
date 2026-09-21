@@ -1777,7 +1777,7 @@ function renderResult() {
     }
   }
   $('resultBtn').style.display = '';
-  const ps = [...state.players].sort((a, b) => b.points - a.points || b.gold - a.gold);
+  const ps = [...state.players].sort((a, b) => Number(b.id === state.winner) - Number(a.id === state.winner) || b.points - a.points || b.gold - a.gold);
   $('resultTitle').textContent = state.winner === pid ? 'VICTORY' : 'ゲーム終了';
   $('resList').innerHTML = ps.map((q, i) => `
     <div class="resRow ${q.id === state.winner ? 'win' : ''} ${q.id === pid ? 'mine' : ''}" style="--cc:${q.color}">

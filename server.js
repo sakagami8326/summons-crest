@@ -1149,19 +1149,24 @@ function finalDeckSnapshot(r, p) {
   }
   return cards.slice();
 }
+function rankMatchPlayers(players, winner) {
+  return players.slice().sort((x, y) =>
+    Number(y.id === winner) - Number(x.id === winner) ||
+    y.assets.total - x.assets.total || y.assets.gold - x.assets.gold)
+    .map((p, i) => ({ ...p, rank: i + 1 }));
+}
 function buildMatchResult(r) {
   captureMatchFrame(r, true);
   const a = r.matchAnalytics;
   if (!a) return null;
-  const rankings = r.players.map(p => {
+  const rankings = rankMatchPlayers(r.players.map(p => {
     const assets = matchAssetBreakdown(r, p);
     return { id: p.id, name: p.name, charId: p.charId, color: p.color, isBot: !!p.isBot, assets,
       landCount: r.owners.filter(o => o && o.player === p.id).length,
       battleWins: p.battleWins || 0, shrineVisits: p.shrineVisits || 0, bankrupt: !!p.bankrupt,
       cardsCollected: p.cardsCollected ?? null, tollCollected: p.tollCollected ?? null,
       finalDeck: finalDeckSnapshot(r, p) };
-  }).sort((x, y) => y.assets.total - x.assets.total || y.assets.gold - x.assets.gold)
-    .map((p, i) => Object.assign(p, { rank: i + 1 }));
+  }), r.winner);
   const typeCount = {};
   const selected = a.candidates.slice().filter(c => c.baseImpact >= 300)
     .sort((x, y) => y.score - x.score).filter(c => {
@@ -4216,6 +4221,8 @@ function restoreRoom(save) {
   if (!Number.isInteger(room.stateRev)) room.stateRev = room.saveRev || 0;
   if (room.matchAnalytics == null) room.matchAnalytics = null;
   if (room.matchResult == null) room.matchResult = null;
+  if (room.matchResult) room.matchResult.rankings = rankMatchPlayers(
+    room.matchResult.rankings, room.matchResult.winner || room.winner);
   if (room.resultReview == null) room.resultReview = null;
   reconcileAbyssMarks(room);
   if (room.turnTransition) {

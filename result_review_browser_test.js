@@ -5,11 +5,26 @@ const G=new Function('require','__dirname','setInterval','console',source+`;retu
  let browser;try{
  const r=G.makeFixtureRoom();r.code='RV01';r.lastBattle=null;r.lastEvent=null;r.lastUlt=null;r.pending={};r.players.forEach((p,i)=>{p.name=['レダーニ','リンネイ','グリース','ミオ'][i];p.cardsCollected=0;p.tollCollected=0;p.battleWins=[6,3,4,8][i];G.gainToDeck(r,p,Array.from({length:[8,9,12,10][i]},(_,j)=>['gecko','weapon','sp_gold','poponga'][j%4]));});G.payToll(r,r.players[1],r.players[0],4200);G.initMatchAnalytics(r);r.phase='ended';r.winner=r.players[0].id;G.buildMatchResult(r);r.resultReview.unlockAt=Date.now()+120000;G.rooms.set(r.code,r);
  const rare=G.makeFixtureRoom();rare.code='UR01';rare.phase='playing';rare.winner=null;rare.matchResult=null;rare.resultReview=null;rare.pending={};rare.lastBattle=null;rare.lastEvent=null;rare.lastUlt=null;rare.turn=0;rare.deck=['samurai_saga','gecko','sp_gold'];G.startDraft(rare,rare.players[0],'castle');G.rooms.set(rare.code,rare);
+ // The winner has fewer assets than another player; both screens must still award first place to the winner.
+ r.players[2].gold=20000;G.buildMatchResult(r);r.resultReview.unlockAt=Date.now()+120000;
+ assert(r.matchResult.rankings[0].assets.total<r.matchResult.rankings[1].assets.total);
  await new Promise(resolve=>G.server.listen(0,'127.0.0.1',resolve));const base='http://127.0.0.1:'+G.server.address().port;
  browser=await chromium.launch({channel:'chrome',headless:true});const page=await browser.newPage({viewport:{width:1440,height:900},reducedMotion:'reduce'}),errors=[];const watch=p=>{p.on('pageerror',e=>errors.push(e.message));p.on('response',res=>{if(res.status()>=400)errors.push(res.status()+' '+res.url())});};watch(page);
  await page.goto(base+'/play?guide=done');await page.evaluate(({code,token,winner,base})=>{prev.winPlayed=winner;document.getElementById('titleOv').classList.remove('on');enterRoom(code,base+'/phone?room='+code,token);},{code:r.code,token:r.boardToken,winner:r.winner,base});await page.waitForFunction(()=>state?.matchResult?.id);await page.evaluate(()=>showMatchResult(state.matchResult));await page.waitForSelector('#rvPodium.on');
  const phone=await browser.newPage({viewport:{width:844,height:390}});watch(phone);await phone.goto(base+'/phone?fixture=result&waiting=1&guide=done');await phone.waitForFunction(()=>state?.matchResult);await phone.evaluate(code=>{room=code;pid='fx0';state=null;connect();},r.code);await phone.waitForFunction(()=>state?.code==='RV01');assert.equal(await phone.locator('.resultWaiting').count(),1);
  await page.locator('#rvToHistory').click();assert.equal(await page.locator('.awardCopy h3').innerText(),'最多バトル勝利');assert.match(await page.locator('.awardValue').innerText(),/8/);await page.locator('#awardNext').click();assert.match(await page.locator('.awardValue').innerText(),/12/);await page.locator('#awardNext').click();assert.match(await page.locator('.awardValue').innerText(),/4,200/);await page.locator('#awardNext').click();await page.waitForTimeout(300);assert.ok(r.resultReview.completedAt,'server received completion');await phone.waitForFunction(()=>!!state?.resultReview?.completedAt);assert.equal(await phone.locator('.resultWaiting').count(),0);
+ assert.equal(await page.locator('.rvStanding').first().getAttribute('data-player'),r.winner);
+ assert.equal(await page.locator('.rvStanding.champion').getAttribute('data-player'),r.winner);
+ assert.deepEqual(await page.locator('.rvStanding').evaluateAll(rows=>rows.map(row=>row.dataset.player)),r.matchResult.rankings.map(row=>row.id));
+ assert.equal(await phone.locator('#resultTitle').innerText(),'VICTORY');
+ assert.equal(await phone.locator('.myResultRank').innerText(),'1位');
+ await phone.evaluate(()=>{pid='fx2';render();});
+ assert.equal(await phone.locator('#resultTitle').innerText(),'YOUR RESULT');
+ assert.equal(await phone.locator('.myResultRank').innerText(),'2位');
+ const fallback=await phone.evaluate(()=>{const result=state.matchResult,review=state.resultReview;state.matchResult=null;state.resultReview=null;render();const first=document.querySelector('#resList .resRow');const data={winner:first.classList.contains('win'),rank:first.querySelector('.resRank').textContent};state.matchResult=result;state.resultReview=review;pid='fx0';render();return data;});
+ assert.deepEqual(fallback,{winner:true,rank:'1位'});
+ await page.evaluate(()=>resultReviewScreen.showPodium());await page.screenshot({path:'output/rarity-result-preview/winner-first-ranking.png'});await page.evaluate(()=>resultReviewScreen.showDecks());
+ console.log('PASS winner first despite lower assets on board, phone and legacy fallback');
  for(const row of r.matchResult.rankings){await page.locator('#deck-tab-'+row.id).click();assert.equal(await page.locator('.reviewDeckCard').count(),Math.min(24,row.finalDeck.length));}
  await page.locator('.reviewDeckCard').first().click();await page.waitForSelector('.reviewCardDialog[open]');await page.keyboard.press('Escape');await page.setViewportSize({width:1280,height:720});await page.screenshot({path:'output/rarity-result-preview/implemented-deck-720.png'});
  // Cover every summoner, including characters absent from the default four-player fixture.
