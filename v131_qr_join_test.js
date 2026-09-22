@@ -44,12 +44,11 @@ ok((source.match(/phoneUrl:\s*phoneUrlForRoom\(/g) || []).length === 3,
 ok(!/phoneUrl:\s*`\$\{base\}\/phone`/.test(source),
   'generic phone URLs are no longer returned by room APIs');
 
-ok(/QRを読み取り、名前を入力して参加/.test(board) &&
-   /直接開く場合はルームコードを入力/.test(board),
-  'TV lobby explains QR-first and manual fallback entry');
+ok(/スマホのカメラで参加/.test(board) && /カメラで読む/.test(board) && /名前を入力/.test(board) && /ルーム番号/.test(board),
+  'TV ticket explains scan and name entry visually and retains the manual room number');
 ok(/QR\.svg\(phoneUrl, 5\)/.test(board) && /QR\.svg\(phoneUrlG, 4\)/.test(board),
   'lobby and options QR codes both consume the server-provided room URL');
-ok(/class="bigcode" id="bigcode"/.test(board), 'manual four-character code remains on TV');
+ok(/class="roomCode" id="bigcode"/.test(board), 'manual four-character code remains on TV');
 
 ok(/id="roomPreset"[^>]*role="status"/.test(phone) &&
    /#join\.qr-room #codeIn\s*\{\s*display:none/.test(phone),

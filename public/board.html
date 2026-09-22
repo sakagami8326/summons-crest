@@ -1389,14 +1389,10 @@
   </div>
 
   <div class="overlay on" id="lobby">
-    <p class="hint">QRを読み取り、名前を入力して参加　<span style="opacity:.72">直接開く場合はルームコードを入力</span><br><b id="phoneUrl">…</b></p>
-    <div class="bigcode" id="bigcode">----</div>
-    <div id="qrBox" style="margin-top:4px"></div>
-    <div class="joined" id="joined"></div>
-    <p class="lobbySetupHint" id="lobbySetupHint"></p>
-    <button class="gbtn" id="startBtn" disabled>キャラ選択を開始</button>
-    <button class="startGuideButton" id="lobbyGuide" data-start-guide>始め方を見る</button>
-    <button class="gbtn" id="lobbyCancel" style="background:transparent; color:var(--gold-soft); border:1px solid var(--gold); font-size:14px; padding:9px 24px;">タイトルへ戻る(ルームを閉じる)</button>
+<div class="scene"><header class="masthead"><span id="lt-modeLabel" class="modeLabel">通常対戦</span><span class="mapName">双門の洞窟</span><button class="exit" id="lobbyCancel" aria-label="タイトルへ戻る（ルームを閉じる）"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header>
+<main class="main"><section class="ticket" aria-label="参加チケット"><header class="ticketHead"><img class="ticketLogo" src="/assets/summons-code.svg" alt="SUMMONS CODE"><span class="ticketWordmark">SUMMONS CODE</span></header><div class="ticketBody"><div class="scanBlock"><div class="scanLabel">スマホのカメラで参加</div><div class="qrFrame"><div id="qrBox" role="img" aria-label="スマホ参加用QRコード"></div></div><span class="scanCaption">QRを読み取る</span></div><div class="roomBlock"><span class="eyebrow">ルーム番号</span><strong class="roomCode" id="bigcode">----</strong><div class="perforation"></div><div class="scanGuide" aria-label="カメラでQRを読み取り、名前を入力する"><svg viewBox="0 0 330 150" role="img" aria-label="画面のQRをスマホで読み取り、名前を入力する図"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><rect x="10" y="25" width="77" height="59" rx="4"/><path d="M36 84v13m-14 0h50"/><g stroke-width="4"><path d="M24 37h15v15H24zM52 37h15v15H52zM24 61h15v12H24zM52 61h7v12m8-12v6"/></g><path d="M101 60h26m-8-8 8 8-8 8"/><path fill="#d4bb83" stroke="none" d="M131 141l-8-27 5-27q4-11 10-3l-2 20 5 6 28-19q13-4 15 8l-4 26-10 16z"/><rect fill="#141227" x="137" y="15" width="57" height="103" rx="8"/><rect fill="#f1e8d0" x="143" y="27" width="45" height="76" rx="2"/><path stroke="#efd98f" d="M157 21h17m-17 88h17"/><path d="M148 42v-9h9m17 0h9v9m0 29v9h-9m-17 0h-9v-9"/><path d="M153 44h9v9h-9zM169 44h9v9h-9zM153 60h9v9h-9zM169 60h9v9"/><path d="M204 60h26m-8-8 8 8-8 8"/><rect fill="#141227" x="244" y="15" width="57" height="103" rx="8"/><rect fill="#f1e8d0" x="250" y="27" width="45" height="76" rx="2"/><path stroke="#efd98f" d="M262 21h20m-20 88h20"/><circle cx="272" cy="44" r="7"/><path d="M260 60q12-12 24 0m-26 12h30"/><rect fill="#c9a227" stroke="none" x="258" y="83" width="29" height="10" rx="2"/><path d="M312 23l5-7m-3 15h10"/></g></svg><div class="guideLabels"><span>カメラで読む</span><span>名前を入力</span></div></div></div></div><footer class="ticketFoot"><button id="lobbyGuide" class="ticketHelp" data-start-guide>始め方を見る</button><span class="ticketMark">SC / 01</span></footer></section>
+<aside class="summoner" aria-label="召喚士の紹介"><div class="summonerTop"><span>召喚士紹介</span><div class="tipControls"><button id="lt-prev" aria-label="前の召喚士">‹</button><button id="lt-next" aria-label="次の召喚士">›</button></div></div><div class="tipArt"><div class="orbit"></div><span class="ghostName" aria-hidden="true">MIO</span><img id="lt-summonerArt" src="/assets/full_mio.png" alt="ミオ"></div><div class="tipCopy" aria-live="off"><span class="tipStyle">移動・機動侵略</span><div class="summonerIdentity"><span id="lt-elementLogo" role="img" aria-label="風属性"></span><h1 id="lt-summonerName">ミオ</h1></div><p id="lt-tip">移動侵略で、相手の領地に切り込む。</p></div><div class="tipTrack"><div id="lt-progress"></div></div><div id="lt-dots" class="dots"></div></aside></main>
+<footer class="lobbyFooter"><div class="players"><span class="playersLabel">参加者 <b id="lt-count">0 / 4</b></span><div id="lt-slots" class="slots"></div></div><button id="startBtn" class="start" disabled>キャラ選択へ <span>→</span></button></footer></div><span id="phoneUrl" hidden></span><span id="joined" hidden></span><span id="lobbySetupHint" class="lobbySr" aria-live="polite"></span>
   </div>
 
   <div class="overlay summonerSelect" id="selectOv">
@@ -1590,6 +1586,8 @@ const QR = (() => {
 <link rel="stylesheet" href="/map-ui.css?v=159-3">
 <script src="/map-definitions.js?v=159-3"></script>
 <script src="/map-ui.js?v=158"></script>
+<link rel="stylesheet" href="/assets/lobby-ticket/lobby-ticket.css?v=2">
+<script src="/assets/lobby-ticket/lobby-ticket.js?v=2"></script>
 <script src="/game_timing.js"></script>
 <script src="/result-graph-audio.js?v=2"></script>
 <script src="/fx_manifest.js"></script>
@@ -4688,17 +4686,7 @@ function render() {
   $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.63';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
-  if (state.phase === 'lobby') {
-    $('joined').innerHTML = `<strong>${SummonsMapUI.get(state).name}</strong> ` + state.players.map(p => `<span>${p.name}${p.isBot ? ' <b>BOT</b>' : ''}</span>`).join('');
-    $('startBtn').disabled = state.botMode
-      ? state.players.filter(p => !p.isBot).length !== 1
-      : state.players.length < 2;
-    $('startBtn').textContent = state.botMode ? 'BOT戦のキャラ選択を開始' : 'キャラ選択を開始';
-    const humans = state.players.filter(p => !p.isBot).length;
-    $('lobbySetupHint').textContent = state.botMode
-      ? `スマホから ${humans} / 1 人参加中。1人参加するとキャラ選択を開始できます。`
-      : `${humans} / 4 人参加中。2人以上そろったら、盤面側でキャラ選択を開始してください。`;
-  }
+  SummonsLobbyTicket.update(state, code);
   // キャラ選択
   $('selectOv').classList.toggle('on',
     (state.phase === 'select' || (gameEntryRunning && !gameEntrySelectionGone)) && !duelPlaying);
