@@ -1,0 +1,17 @@
+.about-main { padding: calc(var(--page-header-height) + 3rem) 0 5rem; min-height: 70vh; }
+.about-shell { width: min(48rem, calc(100% - 3rem)); margin-inline: auto; }
+.about-home { display: inline-block; color: #d5c79f; font-size: .875rem; text-underline-offset: .25em; }
+.about-heading { margin: 2.5rem 0 3rem; }
+.about-heading h1 { font-size: clamp(1.9rem, 5vw, 2.8rem); line-height: 1.5; font-weight: 600; color: #f5edd7; margin: 0 0 1.3rem; }
+.about-heading>p:last-child { font-size: 1rem; line-height: 1.9; color: #e0d6bf; }
+.about-shell h2 { margin: 0 0 1.25rem; color: #efd98f; font-size: 1.125rem; font-weight: 600; }
+.about-scope { margin: 0; border-top: 1px solid #efd98f33; }
+.about-scope>div { display: grid; grid-template-columns: 7rem 1fr; gap: 1.5rem; padding: 1.5rem 0; border-bottom: 1px solid #efd98f26; }
+.about-scope dt { font-size: 1rem; color: #f5edd7; font-weight: 600; }
+.about-scope dd { margin: 0; font-size: .9375rem; line-height: 1.9; color: #d6cfbc; }
+.about-shell a:focus-visible { outline: 2px solid #efd98f; outline-offset: 4px; }
+@media(max-width: 36rem) {
+  .about-main { padding-top: calc(var(--page-header-height) + 2rem); padding-bottom: 3rem; }
+  .about-heading { margin-block: 2rem; }
+  .about-scope>div { grid-template-columns: 1fr; gap: .5rem; padding-block: 1.2rem; }
+}

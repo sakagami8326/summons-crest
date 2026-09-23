@@ -1299,7 +1299,9 @@
   @media (prefers-reduced-motion:reduce) { #healRewardCutin.on { animation:none; } }
 </style>
 <link rel="stylesheet" href="/wind-supply-ui.css"><script defer src="/wind-supply-ui.js"></script>
-<link rel="stylesheet" href="/result-review.css"><script src="/game-cards.js"></script><script src="/result-review.js"></script><link rel="stylesheet" href="/battle-external.css"></head>
+<link rel="stylesheet" href="/result-review.css"><script src="/game-cards.js"></script><script src="/result-review.js"></script><link rel="stylesheet" href="/battle-external.css"><link rel="stylesheet" href="/hud-rank.css?v=1">
+<script src="/hud-rank.js?v=1"></script>
+</head>
 <body>
   <img id="logoImg" src="/assets/summons-code-gold.svg" alt="SUMMONS CODE">
   <div id="connBar" style="display:none; position:fixed; top:0; left:50%; transform:translateX(-50%);
@@ -2940,6 +2942,13 @@ let lastBoardSafeKey = '';
 function fitWorld() {
   const hud = $('hud');
   const showHud = state && (state.phase === 'playing' || state.phase === 'ended') && hud && hud.children.length;
+  if(showHud){
+    const titles = $('titleBonusPanel');
+    const contentHeight = titles ? titles.offsetTop + titles.offsetHeight : 412;
+    const utility = $('leftUtility');
+    const reserve = (utility?.getBoundingClientRect().height || 100) + 38;
+    hud.style.setProperty('transform', `scale(${Math.min(innerWidth <= 1450 ? 1 : 1.1, Math.max(.55, (innerHeight - reserve) / contentHeight))})`, 'important');
+  }
   const hudRect = showHud ? hud.getBoundingClientRect() : null;
   const hudBottom = showHud
     ? Array.from(hud.children).reduce((bottom, child) => {
@@ -3847,6 +3856,10 @@ function titleBonusCardHTML(rule) {
 function renderHUD() {
   const hud = $('hud');
   const ranked = state.players.slice().sort((a, b) => b.points - a.points || b.gold - a.gold);
+  const rankBefore = SummonsHudRank.capture(hud);
+  const layout = new Map(); let hudTop = 0;
+  ranked.forEach(p => { const near = !p.bankrupt && p.points >= (state.reachAt || state.target - 1); const height = near ? 126 : 96; layout.set(p.id, { top:hudTop, height, near }); hudTop += height + 7; });
+  hud.querySelectorAll('.plate').forEach(el => { if(!state.players.some(p => el.id === 'plate-' + p.id)) el.remove(); });
   hud.style.setProperty('--hud-player-count', state.players.length);
   state.players.forEach(p => {
     let el = $('plate-' + p.id);
@@ -3856,7 +3869,11 @@ function renderHUD() {
       hud.appendChild(el);
     }
     const rank = ranked.indexOf(p);
-    el.style.top = (rank * 103) + 'px';
+    const position = layout.get(p.id);
+    el.style.top = position.top + 'px';
+    el.style.setProperty('height', position.height + 'px', 'important');
+    el.dataset.rank = rank + 1;
+    el.classList.toggle('rkReady', position.near && p.points >= state.target);
     const pe = p.charId && state.catalog.CHARS[p.charId] ? state.catalog.CHARS[p.charId].elem : 'neutral';
     el.style.setProperty('--hud-bg', `url('/assets/cards/bg-${pe || 'neutral'}.webp')`);
     el.style.setProperty('--hud-color', RUNE[pe] || '#C9A227');
@@ -3866,7 +3883,7 @@ function renderHUD() {
       ${p.charId ? `<div class="hudPortrait"><img class="hudBust hudBust-${p.charId}" src="/assets/hud_${p.charId}.png?v=1275"
         onerror="this.onerror=null;this.src='/assets/f_${p.charId}.png';this.classList.add('fallback')"></div>` : ''}
       <div class="row1">
-        <div class="rankBadge ${rank < 3 ? 'rank' + (rank+1) : ''}">${rank + 1}</div>
+        <div class="rankBadge" data-rank="${rank+1}" aria-label="${rank+1}位">${SummonsHudRank.crown(rank+1,el.id)}</div>
         <div class="pname">${p.name}${p.isBot ? ' <small style="color:#F2D062">BOT</small>' : ''}${crowns}</div>
         <div class="pts">${p.points}<small>G/${state.target}</small></div>
       </div>
@@ -3875,12 +3892,13 @@ function renderHUD() {
         <span class="ic"><img src="/assets/ic_hand.png">${p.handCount}</span>
         <span class="ic" title="山札/捨て札">${sic('draft')}${p.deckCount ?? 0}<small style="opacity:.65">/${p.discardCount ?? 0}</small></span>
         ${SummonsMapUI.get(state).branching ? SummonsMapUI.gates(state,p) : `<span class="ic sealIc ${p.seal ? 'has' : ''}" title="門の刻印">刻</span>`}
-        ${p.points >= (state.reachAt || state.target - 1) ? '<span class="reach">ラストスパート</span>' : ''}</div>
+        </div>
       <div class="row3">${['fire','water','earth','wind'].map(e => {
         const n = state.owners.filter((o, i) => o && o.player === p.id && state.tiles[i].e === e).length;
         return `<span class="ebadge ${n ? '' : 'zero'}" style="--ec:${RUNE[e]}">
           <svg width="17" height="17" viewBox="-34 -36 68 72">${ELEM[e]}</svg>${n}</span>`;
-      }).join('')}</div>`;
+      }).join('')}</div>
+      ${position.near ? `<div class="rkGoalNotice"><img src="/assets/struct_castle.png" alt=""><span>${state.target}G稼いで城へ向かえ</span></div>` : ''}<span class="rkShine" aria-hidden="true"></span>`;
     el.classList.toggle('turn', state.phase === 'playing' && visualTurnId === p.id);
   });
   let titlePanel = $('titleBonusPanel');
@@ -3889,6 +3907,8 @@ function renderHUD() {
     titlePanel.id = 'titleBonusPanel';
     hud.appendChild(titlePanel);
   }
+  titlePanel.style.top = (hudTop + 8) + 'px';
+  SummonsHudRank.animate(hud, rankBefore);
   titlePanel.innerHTML = [
     { key:'conqueror', field:'battleWins', min:3, unit:'勝', name:'覇者ボーナス', caption:'戦闘勝利', icon:'ic_conqueror.png' },
     { key:'pilgrim', field:'shrineVisits', min:4, unit:'回', name:'大巡礼者ボーナス', caption:'祠参拝', icon:'ic_pilgrim.png' },

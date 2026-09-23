@@ -27,3 +27,10 @@
 #deckOv .overviewExile{margin-top:18px;border-top:1px solid #c4ad6455;padding-top:10px}
 #deckOv .overviewExile h3{margin:0 0 12px;color:#c9b68a;font-size:12px;letter-spacing:.12em;font-weight:400}
 #deckOv .overviewExile h3 span{margin-left:8px;font:700 16px Georgia}
+#deckOv .overviewLoadingHead{display:flex;justify-content:flex-end;padding:18px 12px;min-height:70px}
+#deckOv .overviewNotice{display:flex;align-items:center;justify-content:center;gap:14px;flex:1;font-size:14px;color:#f4eace}
+#deckOv .overviewNotice.update{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);padding:10px 16px;background:#101923f2;border:1px solid #cbb16a80;border-radius:8px;white-space:nowrap;z-index:2}
+#deckOv .overviewNotice button{font:inherit;color:#f4eace;background:#233d48;border:1px solid #cbb16a80;border-radius:5px;padding:8px 14px;cursor:pointer}
+#deckOv .overviewSpinner{width:28px;height:28px;border:2px solid #cbb16a40;border-top-color:#eeddac;border-radius:50%;animation:deckLoading 900ms linear infinite}
+@keyframes deckLoading{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){#deckOv .overviewSpinner{animation:none}}

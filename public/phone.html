@@ -1177,29 +1177,79 @@ const spellArt = (c, h) => SPELL_ART.has(c)
   : `<div class="glyph"${h ? ` style="height:${h}"` : ''}>${sic('spell', '9dvh')}</div>`;
 
 let es = null, lastMsgAt = 0, serverClockOffset = 0;
+let phoneSyncGeneration = 0, phoneRefresh = null;
+function phoneSyncContext() { return { room, pid, generation:phoneSyncGeneration }; }
+function currentPhoneContext(ctx) { return ctx.room === room && ctx.pid === pid && ctx.generation === phoneSyncGeneration; }
+function validPhoneSnapshot(next, ctx) {
+  const player = next?.players?.find(q => q.id === ctx.pid), C = next?.catalog;
+  const known = c => typeof c === 'string' && !!(C?.CREATURES?.[c] || C?.SPELLS?.[c] || C?.SUPPORTS?.[c]);
+  return next?.code === ctx.room && typeof next.stateInstanceId === 'string' && next.stateInstanceId.length > 0 &&
+    Number.isSafeInteger(next.stateRev) && next.stateRev >= 0 && player &&
+    Array.isArray(player.inventoryList) && player.inventoryList.every(known) &&
+    Array.isArray(player.exileList) && player.exileList.every(known);
+}
+function applyPhoneSnapshot(next, ctx, { authoritative=false, reconnecting=false } = {}) {
+  if (!currentPhoneContext(ctx)) return false;
+  if (!validPhoneSnapshot(next, ctx)) throw Error('状態を取得できませんでした');
+  const changedInstance = state && (state.code !== next.code || state.stateInstanceId !== next.stateInstanceId ||
+    !Array.isArray(state.players?.find(q => q.id === ctx.pid)?.inventoryList));
+  if (changedInstance && !authoritative) {
+    refreshPhoneState().catch(() => {});
+    return false;
+  }
+  if (!changedInstance && state && next.stateRev <= (state.stateRev || 0)) return false;
+  if (handGesture && handInteractionContextKey(state) !== handInteractionContextKey(next)) cancelHandGesture({ rerender:false });
+  if (changedInstance) {
+    delete $('deckOv').dataset.inventory;
+    handListKey = ''; handServerKey = ''; lastPendKey = '';
+    clearTimeout(revealT); revealQueue = []; revealCurrent = null;
+    $('drawModal').classList.remove('on');
+    lastGainSeen = next.lastGain?.at || 0; lastDrawSeen = next.lastDraw?.at || 0;
+    phoneUltAt = next.lastUlt?.at || 0; lastDiceAt = next.lastDice?.at || 0;
+  }
+  if (reconnecting && next.mapId === 'twin_gate_cavern' && next.phase === 'playing') {
+    phoneUltAt = next.lastUlt?.at || 0; lastDiceAt = next.lastDice?.at || 0;
+  }
+  state = next;
+  serverClockOffset = (state.serverNow || Date.now()) - Date.now();
+  syncHasArt(); render();
+  if (changedInstance) connect();
+  return true;
+}
+function refreshPhoneState() {
+  const ctx = phoneSyncContext();
+  if (!ctx.room || !ctx.pid) return Promise.reject(Error('参加者を確認できません'));
+  if (phoneRefresh && currentPhoneContext(phoneRefresh.ctx)) return phoneRefresh.promise;
+  phoneRefresh?.controller.abort();
+  const controller = new AbortController(), request = { ctx, controller };
+  const timer = setTimeout(() => controller.abort(), 8000);
+  request.promise = (async () => {
+    const response = await fetch('/api/state?room=' + encodeURIComponent(ctx.room) + '&me=' + encodeURIComponent(ctx.pid), { cache:'no-store', signal:controller.signal });
+    if (!response.ok) throw Error('状態を取得できませんでした');
+    const next = await response.json();
+    if (!currentPhoneContext(ctx)) throw Error('接続が更新されました');
+    applyPhoneSnapshot(next, ctx, { authoritative:true });
+    return state;
+  })().finally(() => { clearTimeout(timer); if (phoneRefresh === request) phoneRefresh = null; });
+  phoneRefresh = request;
+  return request.promise;
+}
 function connect() {
   if (es) es.close();
+  phoneSyncGeneration++;
+  const ctx = phoneSyncContext();
   let reconnecting=true;
   es = new EventSource('/api/events?room=' + room + '&me=' + pid);
   es.onmessage = e => {
+    if (!currentPhoneContext(ctx)) return;
     lastMsgAt = Date.now();
     $('connBar').style.display = 'none';
-    const next = JSON.parse(e.data);
-    if (state && next.stateRev != null && next.stateRev <= (state.stateRev || 0)) return;
-    if (handGesture && handInteractionContextKey(state) !== handInteractionContextKey(next)) {
-      cancelHandGesture({ rerender:false });
-    }
-    if(reconnecting&&next.mapId==='twin_gate_cavern'&&next.phase==='playing'){
-      phoneUltAt=next.lastUlt?.at||0;
-      lastDiceAt=next.lastDice?.at||0;
-    }
+    try { applyPhoneSnapshot(JSON.parse(e.data), ctx, { reconnecting }); }
+    catch (error) { if (deckIsOpen()) setDeckFailure(); }
     reconnecting=false;
-    state = next;
-    serverClockOffset = (state.serverNow || Date.now()) - Date.now();
-    syncHasArt();
-    render();
   };
-  es.onerror = () => { reconnecting=true; $('connBar').style.display = 'block'; };
+  es.onopen = () => { if (currentPhoneContext(ctx) && deckIsOpen()) refreshDeckOverview(); };
+  es.onerror = () => { if (currentPhoneContext(ctx)) { reconnecting=true; $('connBar').style.display = 'block'; } };
 }
 function enterGame() {
   $('join').style.display = 'none';
@@ -1210,7 +1260,10 @@ function enterGame() {
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) cancelHandGesture({ rerender:false });
   if (!document.hidden && room && Date.now() - lastMsgAt > 8000) connect();
+  if (document.hidden) stopDeckPolling();
+  else if (deckIsOpen()) refreshDeckOverview();
 });
+window.addEventListener('online', () => { if (deckIsOpen() && !document.hidden) refreshDeckOverview(); });
 $('joinBtn').onclick = async () => {
   $('err').textContent = '';
   const r = await fetch('/api/join', { method:'POST', body: JSON.stringify({
@@ -1361,6 +1414,52 @@ function dkSection(title, cards) {
   return `<div class="dkSec">${title}(${cards.length}枚)</div><div class="dkGrid">` +
     Object.entries(cnt).map(([c, n]) => dkCard(c, n)).join('') + '</div>';
 }
+let deckReady = false, deckViewEpoch = 0, deckPollTimer = null;
+function deckIsOpen() { return $('deckOv').classList.contains('on'); }
+function stopDeckPolling() { clearTimeout(deckPollTimer); deckPollTimer = null; }
+function scheduleDeckPolling() {
+  stopDeckPolling();
+  if (deckIsOpen() && !document.hidden) deckPollTimer = setTimeout(refreshDeckOverview, 5000);
+}
+function closeDeckOverview() {
+  deckViewEpoch++; deckReady = false; stopDeckPolling();
+  phoneRefresh?.controller.abort(); phoneRefresh = null;
+  $('deckOv').classList.remove('on');
+}
+function deckCloseButton() {
+  return '<button class="overviewClose" id="deckClose" aria-label="デッキを閉じる"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button>';
+}
+function deckLoadingShell() {
+  const el = $('deckOv');
+  delete el.dataset.inventory;
+  el.innerHTML = '<header class="overviewLoadingHead">' + deckCloseButton() + '</header><div class="overviewNotice" role="status"><span class="overviewSpinner" aria-label="読み込み中"></span></div>';
+  $('deckClose').onclick = closeDeckOverview;
+}
+function setDeckFailure() {
+  if (!deckIsOpen()) return;
+  const el = $('deckOv');
+  let notice = el.querySelector('.overviewNotice');
+  if (!notice) { notice = document.createElement('div'); notice.className = 'overviewNotice update'; el.append(notice); }
+  notice.setAttribute('role', 'status');
+  notice.replaceChildren();
+  const text = document.createElement('span'); text.textContent = deckReady ? '更新できませんでした' : '取得できませんでした';
+  const retry = document.createElement('button'); retry.textContent = '再取得'; retry.onclick = refreshDeckOverview;
+  notice.append(text, retry);
+}
+async function refreshDeckOverview() {
+  if (!deckIsOpen() || document.hidden) return;
+  const epoch = deckViewEpoch;
+  stopDeckPolling();
+  try {
+    await refreshPhoneState();
+    if (epoch !== deckViewEpoch || !deckIsOpen()) return;
+    const wasReady = deckReady;
+    deckReady = true;
+    try { buildDeckOv(); } catch (error) { deckReady = wasReady; throw error; }
+    $('deckOv').querySelector('.overviewNotice')?.remove();
+  } catch (error) { if (epoch === deckViewEpoch) setDeckFailure(); }
+  finally { if (epoch === deckViewEpoch) scheduleDeckPolling(); }
+}
 function layoutDeckOverview() {
   if (!$('deckOv').classList.contains('on')) return;
   $('deckOv').querySelectorAll('.overviewCard').forEach(b => {
@@ -1369,7 +1468,9 @@ function layoutDeckOverview() {
 }
 // Active inventory and exiled cards stay separate so counts do not imply exiled cards can be drawn.
 function buildDeckOv() {
-const C=state.catalog,m=me(),cards=m.inventoryList||[...(m.hand||[]),...(m.deckList||[]),...(m.discardList||[])],counts=new Map();cards.forEach(c=>counts.set(c,(counts.get(c)||0)+1));
+if (!deckReady) return;
+if (!validPhoneSnapshot(state, phoneSyncContext())) throw Error('所持カード情報がありません');
+const C=state.catalog,m=me(),cards=m.inventoryList,counts=new Map();cards.forEach(c=>counts.set(c,(counts.get(c)||0)+1));
 const elemOrder=['fire','water','earth','wind','neutral'],elemNames=['火','水','土','風','無'];
 const totals={creature:0,spell:0,weapon:0,exile:(m.exileList||[]).length},elements=Object.fromEntries(elemOrder.map(e=>[e,0]));
 for(const c of cards){if(C.CREATURES[c]){totals.creature++;elements[C.CREATURES[c].elem||'neutral']++;}else if(C.SPELLS[c])totals.spell++;else totals.weapon++;}
@@ -1378,17 +1479,23 @@ const entries=[...counts].sort((a,b)=>rank(a[0])-rank(b[0])||a[0].localeCompare(
 const el=$('deckOv');
 const key=JSON.stringify([m.id,m.charId,entries,m.exileList||[]]);
 if(el.dataset.inventory===key)return;
-el.dataset.inventory=key;
 const scrollTop=el.querySelector('.overviewScroll')?.scrollTop||0;
 el.innerHTML=`<h2 hidden>デッキ確認</h2><header class="overviewHeader"><div class="summonerCrop"><img src="/assets/hud_${m.charId}.png" alt="${C.CHARS[m.charId].name}"><span>${C.CHARS[m.charId].name}</span></div><div class="elementCounts">${elemOrder.map((e,i)=>`<div class="elementCount ${elements[e]?'':'empty'}" title="${elemNames[i]}属性 ${elements[e]}枚"><svg viewBox="-34 -36 68 72" class="${e}" aria-label="${elemNames[i]}属性">${e==='neutral'?'<path d="M0 -26 21 0 0 26 -21 0Z" fill="none" stroke="currentColor" stroke-width="6"/><path d="M0 -10 8 0 0 10 -8 0Z" fill="currentColor"/>':ELEM_MINI[e]}</svg><b>${elements[e]}</b></div>`).join('')}</div><div class="kindCounts">${[['creature','クリーチャー'],['spell','スペル'],['weapon','ウェポン'],['exile','廃棄']].map(([k,n])=>`<div><b>${totals[k]}</b><span>${n}</span></div>`).join('')}</div><button class="overviewClose" id="deckClose" aria-label="デッキを閉じる"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header><div class="overviewScroll" id="deckScroll"><div class="overviewGrid">${entries.map(c=>`<button class="overviewCard" data-card="${c}" aria-label="${dkInfo(c).nm}"><div class="miniCanvas">${bigCardHTML(c)}</div></button>`).join('')}</div>${(m.exileList||[]).length?`<section class="overviewExile" aria-label="廃棄カード"><h3>廃棄 <span>${totals.exile}</span></h3><div class="overviewGrid">${m.exileList.map(c=>`<button class="overviewCard" data-card="${c}" aria-label="${dkInfo(c).nm}（廃棄）"><div class="miniCanvas">${bigCardHTML(c)}</div></button>`).join('')}</div></section>`:''}</div>`;
 
 el.querySelector('.overviewScroll').scrollTop=scrollTop;
-el.querySelector('.overviewClose').onclick=()=>el.classList.remove('on');
+el.querySelector('.overviewClose').onclick=closeDeckOverview;
 el.querySelectorAll('[data-card]').forEach(b=>b.onclick=()=>openCardZoom(b.dataset.card, true));
 fitCreatureNames(el);
 layoutDeckOverview();
+el.dataset.inventory=key;
 }
-$('deckBtn').onclick = () => { if (!state || !me()) return; delete $('deckOv').dataset.pick; buildDeckOv(); openBlockingOverlay('deckOv'); afterUiPaint(layoutDeckOverview); };
+$('deckBtn').onclick = () => {
+  if (!state || !me()) return;
+  phoneRefresh?.controller.abort(); phoneRefresh = null;
+  deckViewEpoch++; deckReady = false; delete $('deckOv').dataset.pick;
+  deckLoadingShell(); openBlockingOverlay('deckOv'); refreshDeckOverview();
+};
+new MutationObserver(() => { if (!deckIsOpen()) { stopDeckPolling(); deckReady = false; deckViewEpoch++; } }).observe($('deckOv'), { attributes:true, attributeFilter:['class'] });
 if (typeof ResizeObserver !== 'undefined') new ResizeObserver(layoutDeckOverview).observe($('deckOv'));
 // ピックモード: 所持カード全体を見せつつ、選べるカードだけ点灯させる全画面UI
 let sharedCardPicker = null;
@@ -1792,23 +1899,31 @@ $('resultBtn').onclick = () => { localStorage.removeItem('sc_session'); location
 const choose = async optionId => {
   const p = pend();
   if (!p) return;
+  const ctx = phoneSyncContext(), controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
   const actionId = `${pid}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+  try {
   const res = await fetch('/api/action', {
-    method:'POST', headers:{ 'Content-Type':'application/json' },
+    method:'POST', signal:controller.signal, headers:{ 'Content-Type':'application/json' },
     body: JSON.stringify({ room, type:'choose', playerId:pid, optionId,
       turnEpoch:p.turnEpoch, promptId:p.promptId, actionId })
   });
-  if (res.status === 409) {
+  if (res.ok || res.status === 409) {
     const out = await res.json();
-    if (out.state && (!state || out.state.stateRev >= (state.stateRev || 0))) {
-      if (handGesture && handInteractionContextKey(state) !== handInteractionContextKey(out.state)) {
-        cancelHandGesture({ rerender:false });
-      }
-      state = out.state;
-      render();
-    }
+    if (out.state) applyPhoneSnapshot(out.state, ctx);
+  } else if (res.status >= 500) {
+    throw Error('通信できませんでした。もう一度お試しください');
   }
   return res;
+  } catch (error) {
+    if (currentPhoneContext(ctx)) {
+      try {
+        await refreshPhoneState();
+        if (pend()?.promptId !== p.promptId || pend()?.turnEpoch !== p.turnEpoch) return { ok:true, reconciled:true };
+      } catch (refreshError) { if (deckIsOpen()) setDeckFailure(); }
+    }
+    throw Error('通信できませんでした。もう一度お試しください');
+  } finally { clearTimeout(timeout); }
 };
 let shopBuying = false;
 function openShopDetail(slotId) {
@@ -2766,7 +2881,9 @@ function render() {
   if (state.lastUlt && state.lastUlt.at !== phoneUltAt) playPhoneUlt(state.lastUlt);
   const m = me(), C = state.catalog, p = pend();
   sharedCardPicker?.sync();
-  if ($('deckOv').classList.contains('on')) buildDeckOv();
+  if (deckIsOpen() && deckReady) {
+    try { buildDeckOv(); $('deckOv').querySelector('.overviewNotice')?.remove(); } catch (error) { setDeckFailure(); }
+  }
   window.WindSupplyUI?.phone(state, { playerId:pid, room, current:()=>state, card:bigCardHTML, renderHand, layoutHand, fit:fitCreatureNames, cancelGesture:cancelHandGesture });
   $('msg').textContent = p ? taskPrompt(p) : waitingTaskPrompt();
   const lobbyWaiting = state.phase === 'lobby';

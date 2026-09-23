@@ -71,7 +71,8 @@ if (!fs.existsSync('public/assets/cards/support-disarm-v1.webp') ||
 const knownIds = new Set([...html.matchAll(/id="([^"]+)"/g)].map(m => m[1]));
 // v0.66: 共有タイミング定数(外部スクリプト)をインラインscriptの前に連結して実行する
 const timingSrc = fs.readFileSync('public/game_timing.js', 'utf8');
-const scripts = 'const SummonsMaps = ' + JSON.stringify(require('./public/map-definitions')) + ';\n' +
+// DOM lifecycle is exercised in deck_sync_browser_test; this stub covers game choices.
+const scripts = 'class MutationObserver { observe() {} disconnect() {} }\nconst SummonsMaps = ' + JSON.stringify(require('./public/map-definitions')) + ';\n' +
   fs.readFileSync('public/map-ui.js','utf8') + '\nconst SummonsMapUI=window.SummonsMapUI;\n' + timingSrc + '\n' +
   [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n');
 

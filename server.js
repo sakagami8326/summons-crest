@@ -499,7 +499,7 @@ function makeRoom(mode = 'normal', mapId = 'starting_corridor') {
     movement: null, routePreview: null,
     botMode: mode === 'bot', botTimer: null, botActionSeq: 0, presentationSpeed: 1,
     boardSeen: false, turnTransition: null, turnTransitionTimer: null,
-    turnEpoch: 0, promptSeq: 0, stateRev: 0, processedActions: [],
+    turnEpoch: 0, promptSeq: 0, stateRev: 0, stateInstanceId: crypto.randomBytes(16).toString('hex'), processedActions: [],
     owners: MAPS[mapId].tiles.map(() => null),        // { player, level, creature }
     deck, market: deck.splice(0, 5), shopVisit: null,
     turn: 0, round: 1, log: [],
@@ -1140,8 +1140,10 @@ function turningPointCopy(r, c) {
   return { title: titles[c.kind] || titles.economy, detail: parts.join('／') || '総資産が大きく変化',
     badge: c.leaderChanged ? '首位交代' : '' };
 }
-function finalDeckSnapshot(r, p) {
+function ownedCardSnapshot(r, p) {
   const cards = ['deck', 'hand', 'discard', 'resolving', 'pickCards'].flatMap(zone => p[zone] || []);
+  // Legacy corridor battles hold the attacker outside hand/land until resolved.
+  if (r.battle?.corridor && r.battle.attacker === p.id && r.battle.atkCreature) cards.push(r.battle.atkCreature);
   for (const o of r.owners) {
     if (!o || o.player !== p.id) continue;
     const evolvedId = baseId(o.creature) + '_f';
@@ -1149,6 +1151,7 @@ function finalDeckSnapshot(r, p) {
   }
   return cards.slice();
 }
+function finalDeckSnapshot(r, p) { return ownedCardSnapshot(r, p); }
 function rankMatchPlayers(players, winner) {
   return players.slice().sort((x, y) =>
     Number(y.id === winner) - Number(x.id === winner) ||
@@ -3951,7 +3954,7 @@ function publicState(r, viewerId) {
     ver: VERSION, code: r.code, mapId: r.mapId || 'starting_corridor', mapName:mapOf(r).name,
     routePreview:r.routePreview || null,
     phase: r.phase, evoLevel: RULES.evoLevel, turn: r.turn, round: r.round, target: ASSET_GOAL, reachAt: ASSET_REACH,
-    stateRev: r.stateRev || 0, turnEpoch: r.turnEpoch || 0, serverNow: Date.now(),
+    stateRev: r.stateRev || 0, stateInstanceId: r.stateInstanceId, turnEpoch: r.turnEpoch || 0, serverNow: Date.now(),
     presentationSpeed: r.presentationSpeed === 2 ? 2 : 1,
     botMode: !!r.botMode,
     selectionReady: isSelectionReady(r),
@@ -4005,7 +4008,7 @@ function publicState(r, viewerId) {
       battleWins: p.battleWins || 0, shrineVisits: p.shrineVisits || 0, ultUsed: !!p.ultUsed,
       hand: p.id === viewerId ? (p.hand || []) : [],
       deckList: p.id === viewerId ? [...(p.deck || [])].sort() : undefined,
-      inventoryList: p.id === viewerId ? finalDeckSnapshot(r, p).sort() : undefined,
+      inventoryList: p.id === viewerId ? ownedCardSnapshot(r, p).sort() : undefined,
       discardList: p.id === viewerId ? [...(p.discard || [])].sort() : undefined,
       exileList: p.id === viewerId ? [...(p.exile || [])].sort() : undefined,
       handCount: (p.hand || []).length,
@@ -4051,6 +4054,7 @@ const ROOM_PERSIST_KEYS = new Set([                                            /
   'lastBarrierHit', 'lastSpellFx', 'botMode', 'presentationSpeed', 'turnEpoch', 'promptSeq', 'stateRev', 'turnTransition',
   'matchAnalytics', 'matchResult', 'resultReview', 'mapId', 'movement', 'windSupply',
 ]);
+ROOM_RUNTIME_KEYS.add('stateInstanceId');
 function serializeRoom(r) {
   reconcileAbyssMarks(r);
   const room = {};
@@ -4207,7 +4211,7 @@ function restoreRoom(save) {
   const existing = rooms.get(d.code);
   if (existing && existing.boardToken !== d.boardToken)
     return { error: `ルーム${d.code}は使用中のため復元できません(既存のルームを閉じてから再試行してください)`, status: 409 };
-  const room = Object.assign(d, { clients: new Set(), lastActivity: Date.now(), botTimer: null, botActionSeq: 0,
+  const room = Object.assign(d, { stateInstanceId: crypto.randomBytes(16).toString('hex'), clients: new Set(), lastActivity: Date.now(), botTimer: null, botActionSeq: 0,
     ultTimer: null, processedActions: [], turnTransitionTimer: null, boardSeen: true });
   if (room.botMode == null) room.botMode = false;
   room.mapId=room.mapId || 'starting_corridor';
@@ -4437,7 +4441,7 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const p = url.pathname;
   if(p === '/game-cards.js'){res.writeHead(200,{'Content-Type':'text/javascript; charset=utf-8','Cache-Control':'no-cache'});return res.end(gameCardSource);}
-  if(['/result-review.js','/result-review.css','/rare-draw.css','/battle-external.css','/phone-card-picker.js','/phone-card-picker.css','/phone-deck.css'].includes(p))return serveFile(res,p.slice(1));
+  if(['/result-review.js','/result-review.css','/rare-draw.css','/battle-external.css','/phone-card-picker.js','/phone-card-picker.css','/phone-deck.css','/hud-rank.js','/hud-rank.css'].includes(p))return serveFile(res,p.slice(1));
   if (p === '/') return serveFile(res, 'site/index.html');
   if (p === '/news') return serveFile(res, 'site/news-index.html', url.searchParams.get('category'));
   if (p === '/news/2026-09-20-mio-update') return serveFile(res, 'site/news-2026-09-20-mio-update.html');
@@ -4447,6 +4451,7 @@ const server = http.createServer(async (req, res) => {
   if (p === '/news/2026-08-31-release') return serveFile(res, 'site/news-2026-08-31-release.html');
   if (p === '/cards') return serveFile(res, 'site/cards.html');
   if (p === '/rules') return serveFile(res, 'site/rules.html');
+  if (p === '/about') return serveFile(res, 'site/about.html');
   if (p === '/news/2026-09-08-bug-fixes') return serveFile(res, 'site/news-bug-fixes-20260908.html');
   if (p === '/start') return serveFile(res, 'start.html');
   if (p === '/play') {
@@ -4678,7 +4683,16 @@ const server = http.createServer(async (req, res) => {
       }
     }
     broadcast(r);
-    return json(res, { ok: true });
+    // The phone's SSE connection can lag behind an otherwise successful choice.
+    // Return only this actor's private snapshot, after the broadcast revision advances.
+    return json(res, b.type === 'choose' ? { ok: true, state: publicState(r, b.playerId) } : { ok: true });
+  }
+  if (p === '/api/state' && req.method === 'GET') {
+    const r = rooms.get((url.searchParams.get('room') || '').toUpperCase());
+    if (!r) return json(res, { error: 'ルームが見つかりません' }, 404);
+    const viewer = pById(r, url.searchParams.get('me'));
+    if (!viewer || viewer.isBot) return json(res, { error: '参加者を確認できません' }, 403);
+    return json(res, publicState(r, viewer.id));
   }
   if (p === '/api/events') {
     const r = rooms.get((url.searchParams.get('room') || '').toUpperCase());

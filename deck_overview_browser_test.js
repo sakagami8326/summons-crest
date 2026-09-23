@@ -1,6 +1,6 @@
 const fs=require('fs'),path=require('path'),assert=require('node:assert/strict'),{chromium}=require('playwright');
 const root=__dirname,src=fs.readFileSync(path.join(root,'server.js'),'utf8').replace(/server\.listen\([\s\S]*?\}\);\s*$/,'');
-const G=new Function('require','__dirname','setInterval',src+';return {server,makeFixtureRoom,publicState,CHARS};')(require,root,()=>0);
+const G=new Function('require','__dirname','setInterval',src+';return {server,rooms,makeFixtureRoom,publicState,CHARS};')(require,root,()=>0);
 (async()=>{let browser;try{
 await new Promise(r=>G.server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+G.server.address().port;
 browser=await chromium.launch({channel:'chrome',headless:true});fs.mkdirSync('output/deck-overview-integration',{recursive:true});
@@ -8,7 +8,7 @@ const errors=[];
 for(const width of [844,667]){
 const page=await browser.newPage({viewport:{width,height:390},isMobile:true,hasTouch:true});page.on('pageerror',e=>errors.push(e.message));
 await page.goto(base+'/phone?guide=done');
-const r=G.makeFixtureRoom(),p=r.players[0];r.lastEvent=r.lastBattle=r.lastUlt=r.lastGain=r.lastDraw=null;r.pending={};r.owners.fill(null);p.resolving=[];p.pickCards=[];p.charId='grease';p.hand=['nome','nome','jaki_f','sp_gold','weapon'];p.deck=Array(18).fill('shield');p.discard=['nome','sp_evolve'];p.exile=['sp_quake','jinx'];
+const r=G.makeFixtureRoom(),p=r.players[0];r.code='DECK';G.rooms.set(r.code,r);r.lastEvent=r.lastBattle=r.lastUlt=r.lastGain=r.lastDraw=null;r.pending={};r.owners.fill(null);p.resolving=[];p.pickCards=[];p.charId='grease';p.hand=['nome','nome','jaki_f','sp_gold','weapon'];p.deck=Array(18).fill('shield');p.discard=['nome','sp_evolve'];p.exile=['sp_quake','jinx'];
 await page.evaluate(s=>{room='DECK';pid='fx0';state=s;$('join').style.display='none';['hdr','msg','action','handWrap'].forEach(id => document.getElementById(id).style.display = '');document.body.classList.add('ingame');syncHasArt();render();},G.publicState(r,p.id));
 await page.locator('#deckBtn').tap();await page.waitForSelector('#deckOv.on .overviewCard');await page.waitForTimeout(300);
 assert.equal(await page.locator('#deckOv .overviewCard').count(),27);assert.equal(await page.locator('#deckOv [data-card="nome"]').count(),3);assert.equal(await page.locator('#deckOv .copyCount').count(),0);assert.equal(await page.locator('.overviewExile .overviewCard').count(),2);
@@ -31,7 +31,7 @@ assert.equal(G.publicState(r,r.players[1].id).players.find(x=>x.id===p.id).inven
 p.discard.push(...p.pickCards,...p.resolving);p.pickCards=[];p.resolving=[];
 await page.evaluate(s=>{state=s;render();},G.publicState(r,p.id));assert.equal(await page.locator('#deckOv .overviewCard').count(),before);
 await page.locator('#deckClose').tap();assert(await page.locator('#deckOv').isHidden());await page.evaluate(()=>openCardZoom('sp_gold'));assert.equal(await page.locator('#cardZoom').getAttribute('data-read-only'),'false');assert(await page.locator('#cardZoomAction').isVisible());await page.locator('#cardZoomClose').tap();
-await page.locator('#deckBtn').tap();for(const char of Object.keys(G.CHARS).filter(id=>fs.existsSync(path.join(root,'public/assets/hud_'+id+'.png')))){p.charId=char;await page.evaluate(s=>{state=s;render();},G.publicState(r,p.id));await page.locator('#deckOv .summonerCrop img').evaluate(img=>img.decode());}
+await page.locator('#deckBtn').tap();await page.waitForSelector('#deckOv .overviewGrid');for(const char of Object.keys(G.CHARS).filter(id=>fs.existsSync(path.join(root,'public/assets/hud_'+id+'.png')))){p.charId=char;await page.evaluate(s=>{state=s;render();},G.publicState(r,p.id));await page.locator('#deckOv .summonerCrop img').evaluate(img=>img.decode());}
 p.hand=[];p.deck=[];p.discard=[];p.exile=[];await page.evaluate(s=>{state=s;render();},G.publicState(r,p.id));assert.equal(await page.locator('#deckOv .overviewCard').count(),0);assert.deepEqual(await page.locator('#deckOv .kindCounts b').allTextContents(),['0','0','0','0']);await page.locator('#deckClose').tap();await page.close();console.log('PASS deck overview',width,'duplicates, exile, evolved detail, refresh, close, hand action, portraits, empty');
 }
 assert.deepEqual(errors,[]);

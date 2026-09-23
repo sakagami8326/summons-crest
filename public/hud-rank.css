@@ -1,0 +1,18 @@
+#hud .plate{transition:none!important}
+#hud .rankBadge{position:relative;width:38px;height:22px;border-radius:0;background:none;box-shadow:none;overflow:visible}
+.rkCrown{position:absolute;width:46px;height:40px;left:-4px;top:-12px;filter:drop-shadow(0 2px 2px #0009)}
+#hud .rankBadge b{position:relative;z-index:1;display:inline-flex;align-items:baseline;font-family:'Arial Black',Arial,sans-serif!important;font-size:22px;line-height:1;font-weight:900;font-style:italic;letter-spacing:-.08em;color:#fff5d9;-webkit-text-stroke:1px #241b17;paint-order:stroke fill;text-shadow:0 2px 0 #18100b,1px 1px 2px #000,-1px 1px 2px #000}
+#hud .rankBadge small{font-family:inherit!important;font-size:13px;letter-spacing:-.06em;margin-left:0}
+#hud .rkShine{pointer-events:none;position:absolute;inset:0;z-index:9;background:linear-gradient(110deg,transparent 25%,#fff6cf99 48%,transparent 70%);transform:translateX(-140%)}
+
+#hud .rankBadge{position:absolute;left:-43px;top:0}
+#hud .hudPortrait{top:0;bottom:auto}
+.rkGoalNotice{position:absolute;left:12px;right:12px;bottom:0;height:31px;border-top:1px solid #d9be7755;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:0 7px;color:#e8d69f;background:linear-gradient(90deg,transparent,#c9a2270d);box-sizing:border-box;pointer-events:none}
+.rkGoalNotice img{width:28px;height:28px;object-fit:contain;flex-shrink:0}
+.rkGoalNotice span{font-size:14px;line-height:1;font-weight:700;letter-spacing:.025em;white-space:nowrap;text-shadow:0 1px 3px #000}
+.rkReady .rkGoalNotice{color:#fff0ba;background:linear-gradient(90deg,#d9b75c08,#d9b75c30);border-top-color:#e8cb81bb;animation:rkNoticeBreathe 2.8s ease-in-out infinite}
+.rkReady .rkGoalNotice img{filter:drop-shadow(0 0 4px #f1ca64aa)}
+@keyframes rkNoticeBreathe{0%,100%{box-shadow:inset 0 0 9px #efd98f08}50%{box-shadow:inset 0 0 16px #efd98f33}}
+@media(prefers-reduced-motion:reduce){.rkReady .rkGoalNotice{animation:none!important}}
+
+@media(prefers-reduced-motion:reduce){#hud .rkShine{display:none}}

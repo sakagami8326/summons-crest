@@ -92,7 +92,7 @@ ok(/makeTurnAura/.test(world) && /'TURN'/.test(world) && /it\.active/.test(world
 ok(/--board-safe-left/.test(board) && /--board-safe-top/.test(board) && /--board-safe-right/.test(board) &&
   /hudRect\.right/.test(board) && /utilityRect\.right/.test(board) && /const safeRight = showHud \? 8 : 0/.test(board) && /PW\.resize/.test(board),
   'board safe area follows only the left information rail and refreshes Phaser');
-ok(/rank \* 103/.test(board) && /transform:scale\(1\.1\)/.test(board) &&
+ok(/hudTop \+= height \+ 7/.test(board) && /contentHeight/.test(board) && /transform:scale\(1\.1\)/.test(board) &&
   /@media \(max-width:1400px\), \(max-height:800px\)[\s\S]*?transform:scale\(1\)/.test(board) &&
   /logs\.slice\(-4\)/.test(board) && /id="leftUtility"/.test(board),
   'compact TV layout puts the latest four log entries and controls in the bottom-left rail');
