@@ -5,7 +5,7 @@ window.PhoneCardPicker = class {
     const close = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>';
     this.host = document.createElement('section'); this.host.id = 'uxPicker'; this.host.hidden = true;
     this.host.setAttribute('aria-label', 'カード選択');
-    this.host.innerHTML = `<header class="uxPickerHead"><div class="uxTitle"><img src="/assets/ic_hand.png" alt=""><h2 id="uxTitle"></h2><span id="uxCount"></span></div><div class="uxHeadRight"><span id="uxGold"></span><button id="uxClose" aria-label="やめる">${close}</button></div></header><nav id="uxZones" aria-label="カードの置き場"></nav><div class="uxRailWrap"><div id="uxRail"></div></div><footer class="uxPickerFoot"><button id="uxLeft" aria-label="左へ">‹</button><div id="uxRailProgress"><i></i></div><button id="uxRight" aria-label="右へ">›</button><button id="uxBatch"></button></footer><div id="uxPickError" role="alert"></div>`;
+    this.host.innerHTML = `<header class="uxPickerHead"><div class="uxTitle"><img src="/assets/ic_hand.png" alt=""><h2 id="uxTitle"></h2><span id="uxCount"></span></div><div class="uxHeadRight"><span id="uxGold"></span><button id="uxBrowseHand" hidden></button><button id="uxClose" aria-label="やめる">${close}</button></div></header><nav id="uxZones" aria-label="カードの置き場"></nav><div class="uxRailWrap"><div id="uxRail"></div></div><footer class="uxPickerFoot"><button id="uxLeft" aria-label="左へ">‹</button><div id="uxRailProgress"><i></i></div><button id="uxRight" aria-label="右へ">›</button><button id="uxBatch"></button><button id="uxSkipDraw" hidden>手札に加えない</button></footer><div id="uxPickError" role="alert"></div>`;
     document.body.append(this.host);
     this.dialog = document.createElement('dialog'); this.dialog.id = 'uxPickDialog';
     this.dialog.setAttribute('aria-labelledby', 'uxPickName');
@@ -13,7 +13,24 @@ window.PhoneCardPicker = class {
     document.body.append(this.dialog);
     this.$ = id => document.getElementById(id);
     this.rail = this.$('uxRail');
-    this.$('uxClose').onclick = () => this.submit(this.config.cancelId);
+    const swap = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h15m-4-4 4 4-4 4M20 17H5m4-4-4 4 4 4"/></svg>';
+    this.$('uxBrowseHand').innerHTML=swap+'<span>手札を確認する</span>';
+    this.returnDraw=document.createElement('button'); this.returnDraw.id='uxReturnDraw';
+    this.returnDraw.innerHTML=swap+'<span>カード選択に戻る</span>'; this.returnDraw.hidden=true;
+    this.$('uxBrowseHand').onclick=()=>this.setHandView(true);
+    this.returnDraw.onclick=()=>this.setHandView(false);
+    this.$('uxSkipDraw').onclick=()=>this.requestCancel();
+    this.cancelDialog = document.createElement('dialog'); this.cancelDialog.id = 'uxCancelDialog';
+    this.cancelDialog.setAttribute('aria-labelledby','uxCancelTitle');
+    this.cancelDialog.innerHTML = `<button class="uxDialogClose" aria-label="戻る">${close}</button><h2 id="uxCancelTitle">カードを獲得せずに進みますか？</h2><div class="uxCancelActions"><button id="uxCancelBack" autofocus>選び直す</button><button id="uxCancelSubmit">獲得せず進む</button></div><p id="uxCancelError" role="alert"></p>`;
+    document.body.append(this.cancelDialog);
+    const cancelBack = () => { if (!this.busy) this.cancelDialog.close(); };
+    this.$('uxCancelBack').onclick = cancelBack;
+    this.cancelDialog.querySelector('.uxDialogClose').onclick = cancelBack;
+    this.cancelDialog.addEventListener('cancel', e => { if (this.busy) e.preventDefault(); });
+    this.cancelDialog.onclick = e => { if (e.target === this.cancelDialog) cancelBack(); };
+    this.$('uxCancelSubmit').onclick = () => this.submit(this.cancelChoice);
+    this.$('uxClose').onclick = () => this.requestCancel();
     this.$('uxBatch').onclick = () => this.submit(this.config.confirmId);
     this.$('uxConfirm').onclick = () => this.submit(this.chosen?.pickId);
     const back = () => { if (!this.busy) { this.dialog.close(); this.api.preview?.(null); } };
@@ -34,26 +51,59 @@ window.PhoneCardPicker = class {
   }
   context() {
     const p = this.api.pending(), s = this.api.state();
-    return p ? JSON.stringify([s?.phase,s?.turn,p.type,p.turnEpoch,p.promptId]) : '';
+    return p ? JSON.stringify([this.api.identity?.(),s?.stateInstanceId,s?.phase,s?.turn,p.type,p.turnEpoch,p.promptId]) : '';
   }
   sync() {
     if (!this.host.hidden && this.contextKey !== this.context()) this.hide();
   }
-  hide() { this.host.hidden=true; this.dialog.close(); this.signature=''; this.chosen=null; }
+  hide() { this.setHandView(false); this.setDrawMode(false); this.host.hidden=true; this.dialog.close(); this.cancelDialog.close(); this.signature=''; this.chosen=null; }
+  setDrawMode(active) {
+    this.host.classList.toggle('isRandomDraw',active);
+    document.body.classList.toggle('randomDrawActive',active);
+    this.$('uxBrowseHand').hidden=!active;
+    this.$('uxSkipDraw').hidden=!active || !this.config?.cancelId;
+    if(active) {
+      if(this.returnDraw.parentNode!==document.body)document.body.append(this.returnDraw);
+    } else { this.returnDraw.remove(); this.handView=false; }
+    this.applyHandView();
+  }
+  applyHandView() {
+    const active=this.host.classList.contains('isRandomDraw'), viewing=active && !!this.handView;
+    this.host.classList.toggle('isHandView',viewing); this.host.inert=viewing;
+    document.body.classList.toggle('randomDrawHandView',viewing);
+    this.returnDraw.hidden=!viewing;
+    this.$('uxBrowseHand').setAttribute('aria-expanded',String(viewing));
+    this.api.handAccess?.(active && !viewing);
+  }
+  setHandView(viewing) {
+    if(viewing && (this.busy || this.contextKey!==this.context() || !this.config?.drawOverlay))return;
+    this.api.cancelGesture(); this.handView=viewing; this.applyHandView();
+    if(!viewing)this.api.closeHandDetail?.();
+    if(viewing)this.returnDraw.focus({preventScroll:true});
+    else if(!this.host.hidden && this.config?.drawOverlay)this.$('uxBrowseHand').focus({preventScroll:true});
+  }
+  requestCancel() {
+    if(this.busy || this.contextKey!==this.context() || !this.config.cancelId)return;
+    if(!this.config.confirmCancel)return this.submit(this.config.cancelId);
+    this.cancelChoice=this.config.cancelId;
+    this.$('uxCancelError').textContent='';
+    if(!this.cancelDialog.open)this.cancelDialog.showModal();
+  }
   show(config) {
     const context = this.context();
     const signature = JSON.stringify([context,config,this.api.player().gold,this.api.player().hand]);
     this.config = config;
+    this.setDrawMode(!!config.drawOverlay);
     if (!this.host.hidden && signature === this.signature) return;
-    const changed = this.lastType !== this.api.pending()?.type;
+    const changed = this.lastType !== this.api.pending()?.type || (['draft','pick_draw'].includes(this.api.pending()?.type) && this.contextKey !== context);
     this.lastType = this.api.pending()?.type;
     this.signature=signature; this.contextKey=context;
-    if (changed) this.zone=0;
+    if (changed) { this.zone=0; this.setHandView(false); }
     this.zone=Math.min(this.zone,Math.max(0,config.sections.length-1));
-    this.chosen=null; this.dialog.close(); this.api.cancelGesture();
+    this.chosen=null; this.dialog.close(); this.cancelDialog.close(); this.api.cancelGesture();
     this.host.hidden=false;
     this.$('uxTitle').textContent=config.title;
-    this.$('uxClose').hidden=!config.cancelId;
+    this.$('uxClose').hidden=!config.cancelId || !!config.drawOverlay;
     this.$('uxClose').setAttribute('aria-label',config.cancelLabel || 'やめる');
     this.$('uxGold').innerHTML=config.showGold ? `<img src="/assets/ic_gold.png" alt="G"> ${Number(this.api.player().gold).toLocaleString('ja-JP')}` : '';
     this.$('uxBatch').hidden=!config.confirmId;
@@ -68,12 +118,12 @@ window.PhoneCardPicker = class {
     this.$('uxZones').replaceChildren();
     if(sections.length>1) sections.forEach((s,i)=>{
       const button=document.createElement('button');button.textContent=`${s.name} ${s.entries.reduce((n,e)=>n+(e.n||1),0)}`;
-      button.setAttribute('aria-pressed',i===this.zone);button.onclick=()=>{this.zone=i;this.paint();};this.$('uxZones').append(button);
+      button.setAttribute('aria-pressed',i===this.zone);button.onclick=()=>{if(this.busy)return;this.zone=i;this.paint();};this.$('uxZones').append(button);
     });
     this.rail.innerHTML=sec.entries.map((e,i)=>this.api.card(e.card,i,e)).join('') || '<div class="uxEmpty">0枚</div>';
     this.rail.querySelectorAll(':scope > .card').forEach((el,i)=>{
       const e=sec.entries[i], disabled=e.disabled || e.cost > this.api.player().gold;
-      const decoration=this.api.decoration?.(e.card);
+      const decoration=e.pickId ? this.api.decoration?.(e.card) : '';
       if(decoration){el.classList.add('rarity-UR');el.insertAdjacentHTML('beforeend',decoration);}
       el.classList.toggle('uxUnaffordable',!!disabled);el.classList.toggle('uxSelected',!!e.selected);
       el.setAttribute('role','button');el.tabIndex=0;
@@ -104,21 +154,27 @@ window.PhoneCardPicker = class {
     this.api.preview?.(entry);
   }
   async submit(id) {
-    if(!id||this.busy||this.contextKey!==this.context())return;
+    if(!id||this.handView||this.busy||this.contextKey!==this.context())return;
     const p=this.api.pending();
     if(!p?.options.some(o=>o.id===id))return;
     if(this.chosen?.pickId===id && (this.chosen.disabled || this.chosen.cost>this.api.player().gold))return;
     this.busy=true;this.$('uxConfirm').disabled=true;this.$('uxBatch').disabled=true;this.$('uxClose').disabled=true;
     this.$('uxPickError').textContent='';
+    this.$('uxCancelError').textContent='';
+    this.$('uxCancelSubmit').disabled=true; this.$('uxCancelBack').disabled=true;
+    this.cancelDialog.querySelector('.uxDialogClose').disabled=true;
     try {
       const result=await this.api.choose(id);
       if(result && !result.ok && result.status!==409)throw Error('通信できませんでした。もう一度お試しください');
-      this.dialog.close();this.chosen=null;
+      this.dialog.close();this.cancelDialog.close();this.chosen=null;
     } catch(e) {
       this.$('uxPickError').textContent=e.message;
+      this.$('uxCancelError').textContent=e.message;
       // Keep retry feedback visible even while the modal is open.
       this.$('uxPickEffect').textContent=e.message;
     } finally {
+      this.$('uxCancelSubmit').disabled=false; this.$('uxCancelBack').disabled=false;
+      this.cancelDialog.querySelector('.uxDialogClose').disabled=false;
       this.busy=false;this.$('uxConfirm').disabled=false;this.$('uxBatch').disabled=false;this.$('uxClose').disabled=false;
     }
   }

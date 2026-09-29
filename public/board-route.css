@@ -1,0 +1,33 @@
+/* Approved route view. Route rims are drawn by PW beneath units and buildings. */
+#gdLayer{position:fixed;inset:0;z-index:310;pointer-events:none;color:#ecdfbc;font-family:serif}
+#gdLayer[hidden]{display:none}
+.gdMapMarks{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.gdFrame{background:#090b0deb;border:1px solid #a9925544;box-shadow:0 10px 40px #0005;position:absolute}
+.gdCorner{position:absolute;width:38px;height:30px;pointer-events:none}
+.gdCorner:before,.gdCorner:after{content:'';position:absolute;background:linear-gradient(90deg,#e1c27a,transparent);left:0;top:0}
+.gdCorner:before{width:100%;height:1px}.gdCorner:after{height:100%;width:1px;background:linear-gradient(#e1c27a,transparent)}
+.gdCorner.tl{left:13px;top:13px}.gdCorner.tr{right:13px;top:13px;transform:scaleX(-1)}
+.gdCorner.bl{left:13px;bottom:13px;transform:scaleY(-1)}.gdCorner.br{right:13px;bottom:13px;transform:scale(-1)}
+.gdBar{right:30px;bottom:28px;width:min(520px,calc(100vw - 288px));min-height:104px;box-sizing:border-box;display:flex;align-items:center;padding:16px 20px 16px 112px;gap:14px;background:#070a0de0;border-color:#948259}
+.gdBar:before{content:'';position:absolute;inset:7px;border:1px solid #cfb57445;pointer-events:none}
+.gdBar small{font-size:13px;color:#bfb293}.gdBar h2{font-size:22px;font-weight:500;margin:6px 0 0;white-space:nowrap}
+.routeActor{position:absolute;left:12px;bottom:8px;width:84px;height:126px;overflow:hidden}
+.routeActor>div{position:absolute;inset:40px 0 0;background:var(--route-bg) center/cover;clip-path:polygon(12% 0,100% 0,88% 100%,0 100%)}
+.routeActor img{position:relative;width:100%;height:100%;object-fit:cover;object-position:top;filter:drop-shadow(3px 4px 4px #0008)}
+.routeHeading{min-width:0}.routeHeading small{white-space:nowrap}
+.gdRemaining{display:flex;align-items:baseline;align-self:flex-start;gap:5px;margin-left:auto;white-space:nowrap}
+.gdRemaining strong{font-size:40px;line-height:1.1;font-weight:500;color:#efd997;font-variant-numeric:tabular-nums}
+.gdRemaining em{font-size:19px;font-style:normal;margin-left:6px}
+.gdPhone{position:absolute;right:20px;bottom:12px;display:flex;align-items:center;gap:9px;font-size:12px;margin-left:8px;white-space:nowrap}
+.gdPhone>i{display:block;width:12px;height:19px;border:1px solid #e0c987;position:relative}
+.gdPhone>i:after{content:'';position:absolute;bottom:3px;left:3px;width:4px;height:1px;background:#e0c987}
+.gdRouteLine,.gdChosen,.gdRouteTip{fill:none;stroke:#d7f3ff;stroke-width:3;stroke-linecap:butt;filter:drop-shadow(0 2px 3px rgb(0 8 18 / 38%))}
+.gdRouteTip{stroke-linejoin:miter}
+.gdRouteLine,.gdChosen{stroke-dasharray:12 12;stroke-dashoffset:var(--dash-phase,0px);animation:routeDashForward 2s linear infinite}
+.gdBranch{transition:opacity .24s}.gdBranch.dim{opacity:.23}
+.gdBranch circle{fill:#111b20;stroke:#d7f3ff;stroke-width:1.5;filter:drop-shadow(0 0 4px #d7f3ff44)}
+.gdBranch text{fill:#d7f3ff;font:700 23px Georgia}.gdBranch.selected circle{fill:#17303d}
+@keyframes routeDashForward{from{stroke-dashoffset:var(--dash-phase,0px)}to{stroke-dashoffset:calc(var(--dash-phase,0px) - 24px)}}
+@media(max-width:1200px){.gdBar{right:22px;width:min(520px,calc(100vw - 288px))}.routeHeading small{font-size:12px}}
+@media(max-width:800px){.gdBar{width:min(460px,calc(100vw - 40px));right:20px}.gdBar h2{font-size:21px}}
+@media(prefers-reduced-motion:reduce){#gdLayer *{animation:none!important;transition:none!important}}

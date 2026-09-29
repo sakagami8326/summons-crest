@@ -33,14 +33,14 @@ const phoneUA='Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKi
     await f.getByRole('heading',{name:'盤面側でルームを作る'}).waitFor();
     await f.locator('[data-action="next"]').click();
     await f.getByRole('heading',{name:'スマホでQRを読み取り、参加する'}).waitFor();
-    await f.locator('.step-nav [data-action="finish"]').click();await p.locator('dialog').waitFor({state:'detached'});
+    await f.locator('.step-nav [data-action="finish"]').click();await p.locator('dialog.sc-guide-dialog').waitFor({state:'detached'});
     assert.equal(await p.evaluate(()=>localStorage.getItem('sc_start_guide_v1')),'done');
     assert.equal(await p.evaluate(()=>document.activeElement.id),'titleCreate');
-    await p.reload();assert.equal(await p.locator('dialog').count(),0);
+    await p.reload();assert.equal(await p.locator('dialog.sc-guide-dialog').count(),0);
     await p.locator('#titleGuide').click();f=p.frameLocator('iframe');await f.getByRole('heading',{name:'遊ぶ環境を選ぶ'}).waitFor();
     await f.locator('[data-action="method-pc"]').focus();await p.keyboard.press('ArrowRight');
     assert.notEqual(await f.locator('[data-action="method-pc"]').evaluate(el=>el===document.activeElement),true);
-    await p.keyboard.press('Escape');await p.locator('dialog').waitFor({state:'detached'});
+    await p.keyboard.press('Escape');await p.locator('dialog.sc-guide-dialog').waitFor({state:'detached'});
     assert.equal(await p.evaluate(()=>document.activeElement.id),'titleGuide');
     await p.screenshot({path:path.join(out,'title.png')});
     const mobileCtx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,userAgent:phoneUA});
@@ -71,14 +71,14 @@ const phoneUA='Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKi
     const tablet=await browser.newContext({viewport:{width:1024,height:768},hasTouch:true,userAgent:'Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605 Safari'});
     const t=await tablet.newPage();watch(t);await t.goto(base+'/play');await t.getByRole('heading',{name:'このタブレットをどう使いますか？'}).waitFor();
     await t.locator('[data-action="role-board"]').click();await t.locator('header [data-action="finish"]').click();await t.waitForURL(/screen=board/);
-    await t.goto(base+'/play');await t.waitForURL(/screen=board/);assert.equal(await t.locator('dialog').count(),0);
+    await t.goto(base+'/play');await t.waitForURL(/screen=board/);assert.equal(await t.locator('dialog.sc-guide-dialog').count(),0);
     await t.locator('#titleGuide').click();const tf=t.frameLocator('iframe');await tf.locator('[data-action="role"]').click();await tf.locator('[data-action="role-phone"]').click();await t.waitForURL('**/phone');
     await t.locator('#joinGuide').click();await t.frameLocator('iframe').locator('[data-action="role"]').click();await t.frameLocator('iframe').locator('[data-action="role-board"]').click();await t.waitForURL(/screen=board/);
     const ipad=await browser.newContext({viewport:{width:1024,height:768},hasTouch:true,userAgent:'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/18 Safari/605.1.15'});
     await ipad.addInitScript(()=>{Object.defineProperty(navigator,'maxTouchPoints',{get:()=>5});Object.defineProperty(navigator,'platform',{get:()=> 'MacIntel'});});
     const ip=await ipad.newPage();watch(ip);await ip.goto(base+'/play');await ip.getByRole('heading',{name:'このタブレットをどう使いますか？'}).waitFor();
     const noStorage=await browser.newContext();await noStorage.addInitScript(()=>{Storage.prototype.setItem=function(){throw new Error('blocked');};Storage.prototype.getItem=function(){throw new Error('blocked');};});
-    const n=await noStorage.newPage();watch(n);await n.goto(base+'/start?method=pc');await n.locator('header [data-action="finish"]').click();await n.waitForURL('**/play');assert.equal(await n.locator('dialog').count(),0);
+    const n=await noStorage.newPage();watch(n);await n.goto(base+'/start?method=pc');await n.locator('header [data-action="finish"]').click();await n.waitForURL('**/play');assert.equal(await n.locator('dialog.sc-guide-dialog').count(),0);
     for(const ua of ['Mozilla/5.0 (Linux; Android 9; AFTMM) Silk/130 Mobile Safari','Mozilla/5.0 (Linux; Android 12; Chromecast) Chrome/130 Mobile Safari']){
       const c=await browser.newContext({viewport:{width:1280,height:720},userAgent:ua});const tv=await c.newPage();watch(tv);await tv.goto(base+'/play');await tv.frameLocator('iframe').getByRole('heading',{name:'遊ぶ環境を選ぶ'}).waitFor();assert.equal(new URL(tv.url()).pathname,'/play');await c.close();
     }
@@ -88,16 +88,16 @@ const phoneUA='Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKi
       const code=await p.locator('#bigcode').innerText();const phones=[];
       for(let i=0;i<(bot?1:2);i++){
         const c=await browser.newContext({viewport:{width:844,height:390},isMobile:true,hasTouch:true,userAgent:phoneUA}),q=await c.newPage();watch(q);phones.push(q);
-        await q.goto(base+(i===1?'/phone':'/phone?room='+code));await q.locator('#joinBtn').waitFor();assert.equal(await q.locator('dialog').count(),0);
+        await q.goto(base+(i===1?'/phone':'/phone?room='+code));await q.locator('#joinBtn').waitFor();assert.equal(await q.locator('dialog.sc-guide-dialog').count(),0);
         if(i===1){await q.locator('#codeIn').fill(code);}else{assert.ok(await q.locator('#codeIn').isHidden());}
         await q.setViewportSize({width:390,height:844});assert.ok(await q.locator('#rotate').isHidden());await q.setViewportSize({width:844,height:390});
         await q.locator('#nameIn').fill('案内'+i);await q.locator('#joinBtn').click();await q.waitForFunction(()=>!!pid);
       }
       await p.locator('#startBtn').click();
-      for(let i=0;i<phones.length;i++) {const q=phones[i];await q.locator('#csRow [data-id="'+(i?'adel':'redani')+'"]').click();await q.locator('#charChoose').click();}
+      for(let i=0;i<phones.length;i++) {const q=phones[i];await q.locator('#phoneSummoners [data-id="'+(i?'adel':'redani')+'"]').click();await q.locator('#phoneSummoners .chooseSummoner').click();}
       await p.locator('#selectionStartBtn').click();await p.waitForFunction(()=>state?.phase==='playing');
       const q=phones[0],pid=await q.evaluate(()=>window.localStorage.getItem('sc_session'));
-      await q.reload();await q.waitForFunction(()=>!!pid);assert.equal(await q.evaluate(()=>window.localStorage.getItem('sc_session')),pid);assert.equal(await q.locator('dialog').count(),0);
+      await q.reload();await q.waitForFunction(()=>!!pid);assert.equal(await q.evaluate(()=>window.localStorage.getItem('sc_session')),pid);assert.equal(await q.locator('dialog.sc-guide-dialog').count(),0);
       const another=await post('/api/create',{});await q.goto(base+'/phone?room='+another.code);assert.ok(await q.locator('#join').isVisible());assert.equal(await q.locator('#codeIn').inputValue(),another.code);
       await post('/api/close',{room:another.code,token:another.boardToken});await q.reload();await q.locator('#codeIn').waitFor({state:'visible'});assert.match(await q.locator('#err').innerText(),/見つかりません/);
       await q.goto(base+'/phone?room=oops!');assert.match(await q.locator('#err').innerText(),/正しくありません/);

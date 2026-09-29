@@ -11,9 +11,18 @@ const PW = (() => {
   let boardKey = '', boardGen = 0;
   let boardObjs = [];                               // 現行世代の表示オブジェクト
   const evolutionHidden = new Set();
+  const placementHidden = new Set(), placementObjects = {};
+  function setPlacementHidden(tile, hidden) {
+    if(hidden)placementHidden.add(tile);else placementHidden.delete(tile);
+    for(const ob of placementObjects[tile]||[])if(ob?.scene)ob.setVisible(!hidden && (ob!==creatureSprites[tile] || !evolutionHidden.has(tile)));
+  }
+  function placementObject(tile,ob) {
+    (placementObjects[tile] ||= []).push(ob);
+    ob.setVisible(!placementHidden.has(tile));return ob;
+  }
   function setEvolutionHidden(tile, hidden) {
     if(hidden)evolutionHidden.add(tile);else evolutionHidden.delete(tile);
-    const spr=creatureSprites[tile];if(spr?.scene)spr.setVisible(!hidden);
+    const spr=creatureSprites[tile];if(spr?.scene)spr.setVisible(!hidden&&!placementHidden.has(tile));
   }
   const creatureSprites = {};                       // タイル番号 → クリーチャースプライト(2C演出用)
   let tileTexKeys = [];                             // 現行世代のタイルテクスチャ
@@ -1015,7 +1024,7 @@ const PW = (() => {
       const evo = bid !== o.creature || (o.level >= (st.evoLevel || 3) && st.catalog.CREATURES[bid].evo);
       const d = 101 + sum(i);
       makers.push(() => {
-        boardObjs.push(scene.add.image(x, y - lift, 'pwShadow').setOrigin(0.5, 0.5).setDisplaySize(64, 20).setDepth(100 + sum(i)));
+        boardObjs.push(placementObject(i,scene.add.image(x, y - lift, 'pwShadow').setOrigin(0.5, 0.5).setDisplaySize(64, 20).setDepth(100 + sum(i))));
       });
       if (HAS_ART.has(bid)) {
         const texKey = 'pwCre_' + (evo ? 'e_' : 'c_') + bid;
@@ -1024,7 +1033,7 @@ const PW = (() => {
           if (!scene.textures.exists(texKey)) return;
           const img = scene.add.image(x, y - lift + 6, texKey).setOrigin(0.5, 1).setDepth(d);
           img.setScale(80 / img.width);
-          img.setVisible(!evolutionHidden.has(i));
+          placementObject(i,img);img.setVisible(!evolutionHidden.has(i)&&!placementHidden.has(i));
           creatureSprites[i] = img;   // 2C演出(出現ポップ・発光・反動)の対象
           boardObjs.push(img);
         });
@@ -1033,12 +1042,12 @@ const PW = (() => {
         const c = st.catalog.CREATURES[o.creature];
         const colHex = ({ fire: 0xFF7A45, water: 0x56A8E8, earth: 0xD9B64F, wind: 0x5BE0D0 })[c.elem] || 0x6E7288;
         makers.push(() => {
-          const g = scene.add.graphics().setDepth(d);
+          const g = placementObject(i,scene.add.graphics().setDepth(d));
           g.fillStyle(colHex, 1); g.fillCircle(x, y - lift + 6 - 32, 32);
           g.lineStyle(3, 0x2C2A4A, 1); g.strokeCircle(x, y - lift + 6 - 32, 32);
           boardObjs.push(g);
-          boardObjs.push(scene.add.text(x, y - lift + 6 - 32, c.name.slice(0, 4),
-            { fontFamily: '"Yu Mincho", "Hiragino Mincho ProN", serif', fontSize: '15px', color: '#F6EFDD' }).setOrigin(0.5, 0.5).setDepth(d));
+          boardObjs.push(placementObject(i,scene.add.text(x, y - lift + 6 - 32, c.name.slice(0, 4),
+            { fontFamily: '"Yu Mincho", "Hiragino Mincho ProN", serif', fontSize: '15px', color: '#F6EFDD' }).setOrigin(0.5, 0.5).setDepth(d)));
         });
       }
     }
@@ -1063,6 +1072,7 @@ const PW = (() => {
       boardObjs.forEach(ob => { try { ob.destroy(); } catch (e) {} });
       boardObjs = [];
       Object.keys(creatureSprites).forEach(k => delete creatureSprites[k]);
+      Object.keys(placementObjects).forEach(k => delete placementObjects[k]);
       tileTexKeys.forEach(k => { if (scene.textures.exists(k)) scene.textures.remove(k); });
       tileTexKeys = newTileTex;
       makers.forEach(fn => { try { fn(); } catch (e) {} });
@@ -1250,6 +1260,51 @@ const PW = (() => {
     }
   }
 
+  // Persistent inspection glow: below creatures/pawns, separate from upgrade highlights.
+  let inspectionGlow=null,inspectionGlowTween=null,inspectionGlowKey='';
+  function setInspectionGlow(tile=null,level=1,opts={}) {
+    const key=tile==null?'':tile+':'+level;
+    if(key===inspectionGlowKey&&(!key||inspectionGlow?.scene))return;
+    inspectionGlowTween?.remove();inspectionGlowTween=null;inspectionGlow?.destroy();inspectionGlow=null;inspectionGlowKey='';
+    if(tile==null||!ready||!GEO[tile])return;
+    const texture='inspection-soft-glow';
+    if(!scene.textures.exists(texture)){
+      const canvas=document.createElement('canvas');canvas.width=DW+64;canvas.height=DH+64;
+      const c=canvas.getContext('2d'),x=canvas.width/2,y=canvas.height/2;
+      for(const [blur,width,alpha]of [[12,6,.6],[6,4,.6],[2,2,.65]]){
+        c.save();c.strokeStyle='rgba(255,239,186,'+alpha+')';c.shadowColor='#ffe4a0';c.shadowBlur=blur;c.lineWidth=width;c.lineJoin='round';
+        c.beginPath();c.moveTo(x,y-DH/2);c.lineTo(x+DW/2,y);c.lineTo(x,y+DH/2);c.lineTo(x-DW/2,y);c.closePath();c.stroke();c.restore();
+      }
+      scene.textures.addCanvas(texture,canvas);
+    }
+    const {x,y}=proj(GEO[tile][0],GEO[tile][1]);inspectionGlowKey=key;
+    inspectionGlow=scene.add.image(x,y-(level-1)*7,texture).setDepth(97).setName('inspection-glow').setAlpha(0);
+    inspectionGlowTween=scene.tweens.add({targets:inspectionGlow,alpha:1,duration:opts.duration||900,ease:'Sine.easeInOut'});
+  }
+
+  // Route rims share the tile plane and stay beneath creatures, pawns and buildings.
+  let routeGlowKey='',routeGlows=[],routeGlowTweens=[];
+  function setRouteDestinations(list=[]) {
+    const reduced=matchMedia('(prefers-reduced-motion:reduce)').matches;
+    const key=list.length?JSON.stringify([displayedMapId,list,reduced]):'';
+    if(key===routeGlowKey && (!key||routeGlows.every(g=>g.scene)))return;
+    routeGlowTweens.forEach(t=>t.remove());routeGlows.forEach(g=>g.destroy());
+    routeGlowTweens=[];routeGlows=[];routeGlowKey='';
+    if(!ready||!list.length)return;
+    routeGlowKey=key;
+    for(const d of list){
+      if(!GEO[d.tile])continue;
+      const w=proj(GEO[d.tile][0],GEO[d.tile][1]),lift=Math.max(0,(d.level||1)-1)*7;
+      const g=scene.add.graphics({x:w.x,y:w.y-lift}).setDepth(97).setName('route-destination-glow').setAlpha(reduced?.85:.4);
+      g.destinationTile=d.tile;
+      for(const [width,alpha,spread]of [[32,.055,8],[24,.09,6],[16,.14,4],[9,.3,2],[4,.9,0],[1.5,1,0]]){
+        g.lineStyle(width,0xd7f3ff,alpha);g.beginPath();g.moveTo(0,-DH/2-spread);g.lineTo(DW/2+spread,0);g.lineTo(0,DH/2+spread);g.lineTo(-DW/2-spread,0);g.closePath();g.strokePath();
+      }
+      routeGlows.push(g);
+      if(!reduced)routeGlowTweens.push(scene.tweens.add({targets:g,alpha:1,duration:850,ease:'Sine.easeInOut',yoyo:true,repeat:-1}));
+    }
+  }
+
   // ===== カメラ(setZoom契約: null=全景 / タイル番号=1.5倍ズーム) =====
   // 全景: マス中心のバウンズ+はみ出し余白(クリーチャー上方・バッジ・タイル厚み)が
   // 1280x905のCanvasに収まるズームを算出(既定は1相当。端が切れる盤面だけ僅かに縮む)
@@ -1285,9 +1340,10 @@ const PW = (() => {
     const cam = scene.cameras.main;
     resetCameraEffects(cam);
     const duration = GAME_TIMING.scaled(o.duration == null ? 850 : o.duration, speed);
+    const ease=o.ease||'Cubic.easeOut';
     if (target === 'fit') {
-      cam.pan(fitCx, fitCy, duration, 'Cubic.easeOut');
-      cam.zoomTo(fitZoom, duration, 'Cubic.easeOut');
+      cam.pan(fitCx, fitCy, duration, ease);
+      cam.zoomTo(fitZoom, duration, ease);
     } else {
       const { x, y } = proj(GEO[ti][0], GEO[ti][1]);
       cam.pan(x, y + 24, duration, 'Cubic.easeOut');   // マスを画面中央やや上(DOM版の46%相当)に
@@ -1297,6 +1353,8 @@ const PW = (() => {
   }
   function resetCamera() {
     if (!ready || !scene) return;
+    setInspectionGlow(null);
+    setRouteDestinations([]);
     const cam = scene.cameras.main;
     resetCameraEffects(cam);
     camTarget = 'fit';
@@ -1321,6 +1379,14 @@ const PW = (() => {
     const wv = cam.worldView;
     const r = game.canvas.getBoundingClientRect();
     return { x: r.left + (wx - wv.x) / wv.width * r.width, y: r.top + (wy - wv.y) / wv.height * r.height };
+  }
+  // Camera-matrix projection for the new direction overlay (Phaser 4 worldView
+  // can differ from the rendered transform while the fit camera settles).
+  function overlayPoint(wx, wy) {
+    if (!ready || !game || !game.canvas) return { x:-9999, y:-9999 };
+    const c=scene.cameras.main, r=game.canvas.getBoundingClientRect();
+    const p=c.matrix.transformPoint(wx-c.scrollX,wy-c.scrollY);
+    return {x:r.left+p.x*r.width/1280,y:r.top+p.y*r.height/905};
   }
   function pawnViewport(pid) {
     const P = pawns[pid];
@@ -1379,7 +1445,8 @@ const PW = (() => {
   function debugCounts() {
     if (!ready) return null;
     return { children: scene.children.length, pawns: Object.keys(pawns).length,
-             boardObjs: boardObjs.length, zoom: scene.cameras.main.zoom };
+             boardObjs: boardObjs.length, zoom: scene.cameras.main.zoom,
+             hiddenPlacements:[...placementHidden],visibleCreatures:Object.fromEntries(Object.entries(creatureSprites).map(([i,s])=>[i,!!s.visible])) };
   }
   function resize() {
     if (!ready || !game || !game.scale) return;
@@ -1395,9 +1462,9 @@ const PW = (() => {
     for (let k = 0; k < frames; k++) { pumpT += 16.7; game.loop.step(pumpT); }
   }
   return { init, syncBoard, syncPawns, setCamera, resetCamera, cameraState, setPresentationSpeed,
-           worldToViewport, pawnViewport, fx, resize, setEvolutionHidden,
+           worldToViewport, overlayPoint, pawnViewport, fx, resize, setEvolutionHidden, setPlacementHidden,
            snapshot, debugCounts, pump, isReady: () => ready, hasFailed: () => failed,
-           setHighlights,   // 強化候補ハイライト(発注書v0.75 §6)
+           setHighlights,setInspectionGlow,setRouteDestinations,
            // Phase 2A: 演出基盤
             play, shake, fxDebug,
            _debugScene: () => scene };  // 診断用(製品コードからは使用しない)

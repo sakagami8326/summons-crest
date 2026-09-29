@@ -24,7 +24,7 @@ function game() {
   return r;
 }
 
-eq(G.VERSION, '1.63', 'server version');
+eq(G.VERSION, '1.64', 'server version');
 eq([G.CREATURES.wakatama.name, G.CREATURES.wakatama.evo, G.CREATURES.wakatama.elem,
   G.CREATURES.wakatama.rarity, G.CREATURES.wakatama.cost, G.CREATURES.wakatama.st,
   G.CREATURES.wakatama.hp, G.CREATURES.wakatama.evoSt, G.CREATURES.wakatama.evoHp],
@@ -41,7 +41,7 @@ eq([G.CREATURES.wakatama_f.name, G.CREATURES.emeri_f.name, G.CREATURES.valk_f.na
   ['ガマワカメ','エスメラルダ','アヌビス・レガ'], 'evolved entries');
 
 const deck = G.makeDeck(), shop = G.shopRandomPool();
-eq([G.MARKET_POOL.length, deck.length], [42,152], 'market and common deck totals');
+eq([G.MARKET_POOL.length, deck.length], [42,158], 'market and common deck totals');
 for (const id of ['wakatama','emeri','valk']) {
   eq([count(deck,id), count(shop,id), count(deck,id + '_f')], [2,2,0], `${id} copy rules`);
 }
@@ -129,9 +129,9 @@ for (const rel of ['public/assets/cards/c_wakatama.webp','public/assets/cards/e_
 }
 
 const board = fs.readFileSync(path.join(__dirname, 'public/board.html'), 'utf8');
-ok(board.includes('id="healRewardCutin"') && board.includes('function playHealReward') &&
-  board.includes("presentationId('heal-reward'") && board.includes('回復した<strong>${reward.healed}HP</strong>分'),
-  'TV queues a full-card healing reward presentation');
+ok(board.includes('function playHealReward') &&
+  board.includes("presentationId('heal-reward'") && board.includes("BoardEffects.present('heal'"),
+  'TV queues the shared actor healing reward presentation');
 const cardsPage = fs.readFileSync(path.join(__dirname, 'public/site/cards.html'), 'utf8');
 const rulesPage = fs.readFileSync(path.join(__dirname, 'public/site/rules.html'), 'utf8');
 const manual = fs.readFileSync(path.join(__dirname, 'docs/manual.md'), 'utf8');
@@ -139,6 +139,6 @@ const spec = fs.readFileSync(path.join(__dirname, 'docs/spec_rules.md'), 'utf8')
 ok(cardsPage.includes('data-total>77') && cardsPage.includes('data-evolutions>40'), 'cards page fallback counts updated');
 ok(rulesPage.includes('土領地に水属性クリーチャーがいても1つ') && rulesPage.includes('回復と「恵みの水脈」'), 'public rules explain corrected mechanics');
 ok(manual.includes('カード一覧(クリーチャー47種)') && manual.includes('v1.56 回復報酬・土領地連動クリーチャー'), 'manual updated');
-ok(spec.includes('共通山札152枚') && spec.includes('配置クリーチャーの属性は参照しない'), 'spec updated');
+ok(spec.includes('共通山札158枚') && spec.includes('配置クリーチャーの属性は参照しない'), 'spec updated');
 
 console.log(`v1.56 creature tests passed: ${pass}`);

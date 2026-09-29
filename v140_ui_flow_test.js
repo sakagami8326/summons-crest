@@ -65,7 +65,7 @@ ok(!/document\.body\.appendChild\(g\.el\)/.test(phone) && /filter\(card => card 
   'dragged card stays in the hand so pointer capture is preserved');
 ok(/Math\.abs\(dx\) > 14/.test(phone) && /Math\.abs\(dy\) > 14/.test(phone),
   'minor finger movement remains a tap');
-ok(/handClickSuppressUntil/.test(phone) && /el\.onclick = e => \{[\s\S]*openCardZoom\(el\.dataset\.c\)/.test(phone),
+ok(/handClickSuppressUntil/.test(phone) && /el\.onclick = e => \{[\s\S]*openCardZoom\(el\.dataset\.c,\['draft','pick_draw'\]\.includes\(pend\(\)\?\.type\)\)/.test(phone),
   'native tap click opens details while drag and scroll releases suppress accidental clicks');
 ok(/originalOrder:handDisplay\.slice\(\)/.test(phone) && /originalScroll:hand\.scrollLeft/.test(phone),
   'hand gesture snapshots order and scroll position before dragging');
@@ -77,9 +77,11 @@ ok(/handInteractionContextKey\(state\) !== handInteractionContextKey\(next\)/.te
   /handInventoryKey/.test(phone) && /s\.phase/.test(phone),
   'phase and local hand changes cancel an active gesture');
 for (const overlay of ['deckOv','drawModal','mapOv','resultOv','shopDetail','galZoom','galleryOv','cardZoom',
-  'charDetail','charSel','ultConfirm','actionOv','gateOv']) {
+  'ultConfirm','actionOv','gateOv']) {
   ok(phone.includes(`openBlockingOverlay('${overlay}')`), `${overlay} cancels hand gestures before opening`);
 }
+ok(phone.includes("PhoneSummonerSelection.create") && phone.includes('onOpen:()=>cancelHandGesture()'),
+  'shared summoner selection cancels hand gestures before opening');
 ok(phone.includes('cancelGesture:()=>cancelHandGesture()') && fs.readFileSync('public/phone-card-picker.js','utf8').includes('this.api.cancelGesture()'), 'shared card selections cancel an active hand gesture');
 ok(/visibilitychange[\s\S]*document\.hidden\) cancelHandGesture/.test(phone) &&
   /addEventListener\('blur',[\s\S]*cancelHandGesture/.test(phone) &&

@@ -1,0 +1,90 @@
+#nextUltSplash{position:fixed;inset:0;z-index:180;display:none;align-items:center;justify-content:center;background:#070b1299;pointer-events:none}
+#nextUltSplash.on{display:flex}#nextUltSplash img{width:min(1080px,90vw);box-shadow:0 0 60px #efd99e3b;animation:nextUltStrike 1s ease-out both}
+@keyframes nextUltStrike{0%{opacity:0;transform:translateX(22%) scale(1.07);clip-path:inset(0 0 0 100%)}22%,72%{opacity:1;transform:none;clip-path:inset(0)}100%{opacity:0;transform:translateX(-4%);clip-path:inset(0)}}
+#boardNotice[data-scene=next] .effectHeading{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+#boardNotice[data-scene=next] .effectHeading h2{display:flex;align-items:center;justify-content:center;gap:12px}
+#boardNotice .nextEyebrow{font-size:13px;letter-spacing:.18em;color:#b5a886}
+#boardNotice .nextBody{position:relative;min-height:245px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+#boardNotice .nextBody img{object-fit:contain}
+#boardNotice .nextBrief{font-size:24px;margin:0;color:#e8dcb9;text-align:center;line-height:1.5}
+#boardNotice .nextBrief strong{font-size:36px;font-weight:500;color:#f1d38f}
+#boardNotice .nextSub{font-size:15px;color:#bdb498}
+#boardNotice .nextStatLine{display:flex;align-items:center;justify-content:center;gap:25px;color:#ead5a1}
+#boardNotice .nextStatLine small{font-size:16px;color:#bdb498}
+#boardNotice .nextStatLine b{font-size:20px;font-weight:500;white-space:nowrap}
+#boardNotice .nextStatLine strong{font-size:32px;font-weight:500}
+#boardNotice .nextArrow{width:35px;min-width:35px;height:1px;background:#c7ae6d;position:relative;display:inline-block}
+#boardNotice .nextArrow:after{content:'';position:absolute;right:0;top:-4px;width:8px;height:8px;border-top:1px solid #c7ae6d;border-right:1px solid #c7ae6d;transform:rotate(45deg)}
+#boardNotice .nextElement{display:inline-grid;place-items:center;width:40px;height:45px;flex-shrink:0}
+#boardNotice .nextElement svg{width:100%;height:100%}
+#boardNotice .ultMetrics{display:flex;justify-content:space-evenly;width:100%;gap:20px}
+#boardNotice .nextStat{display:grid;justify-items:center;gap:12px;flex:1;min-width:0}
+#boardNotice .nextStat img{width:65px;height:65px}
+#boardNotice .statLand{display:block;width:48px;height:48px;margin:8px;transform:rotate(45deg);border:2px solid #d9bc78;background:url('/assets/cards/bg-earth.webp') center/cover;box-shadow:5px 5px 0 #524527}
+#boardNotice .statShield{display:block;width:60px;height:65px;background:linear-gradient(135deg,#f5dfa6,#ac883e);clip-path:polygon(0 0,100% 0,100% 60%,85% 82%,50% 100%,15% 82%,0 60%);position:relative}
+#boardNotice .statShield:after{content:'';position:absolute;inset:5px;background:#161e28;clip-path:inherit}
+#boardNotice .nextStat small{font-size:16px;color:#c4bda9;text-align:center}
+#boardNotice .nextStat strong{font-size:38px;font-weight:500;white-space:nowrap;color:#f1d38f;line-height:1.2}
+#boardNotice .nextStat em{font-size:16px}
+#boardNotice .ultEvolution{margin:0;color:#f4d791;font-size:52px;font-weight:600;line-height:1.2;letter-spacing:.12em}
+#boardNotice .ultHeal{font-size:23px;color:#dfeecb}
+#boardNotice .ultHeal b{font-size:44px;font-weight:500}
+#boardNotice .ultVilla .nextStat small{font-size:27px;color:#f4d791;font-weight:600}
+#boardNotice .ultVilla .nextStat strong{font-size:28px;color:#e8dcb9}
+#boardNotice .ultVilla .nextStat em{font-style:normal;font-size:19px}
+#boardNotice .liaTargetCount{display:inline-block;font-size:25px;font-weight:600;line-height:1;margin:0 4px;color:#f4d791;vertical-align:baseline}
+@media(max-width:1300px){#boardNotice .ultEvolution{font-size:44px}#boardNotice .ultHeal{font-size:18px}#boardNotice .ultHeal b{font-size:36px}#boardNotice .ultVilla .nextStat small{font-size:23px}#boardNotice .ultVilla .nextStat em{font-size:16px}}
+#boardNotice .diceTriplet{display:flex;justify-content:center;gap:18px}
+#boardNotice .diceTriplet img{width:80px;height:80px}
+#boardNotice .ultFacility{width:170px;height:145px}
+#boardNotice .ultMove{display:flex;align-items:center;gap:32px;height:140px}
+#boardNotice .ultMove>img{width:100px;height:145px}
+#boardNotice .ultTiles{display:flex;gap:27px;align-items:center;justify-content:center;min-height:105px}
+#boardNotice .ultElements{display:flex;gap:22px}
+#boardNotice .chainLand{display:grid;place-items:center;width:64px;height:64px;transform:rotate(45deg);border:1px solid #bca36c;background:#223136 var(--land-bg) center/cover;box-shadow:4px 4px 0 #060d0e;position:relative}
+#boardNotice .chainLand .nextElement{transform:rotate(-45deg);width:38px;height:42px;filter:drop-shadow(0 2px 2px #000)}
+#boardNotice .chainValues{display:flex;align-items:center;gap:34px;line-height:1;font-variant-numeric:tabular-nums}
+#boardNotice .chainValues>span:first-child{font-size:50px;color:#979488}
+#boardNotice .chainValues>strong{font-size:94px;font-weight:500;color:#f5dc9e;min-width:1.3ch;text-align:center}
+#boardNotice .chainLands{display:flex;justify-content:center;align-items:center;gap:23px;min-height:95px}
+#boardNotice .chainLands .chainLand{width:44px;height:44px}
+#boardNotice .chainLands .nextElement{width:27px;height:31px}
+#boardNotice .chainSlot.new .chainLand{animation:nextLink .65s calc(1.15s + var(--i)*.13s) both}
+#boardNotice .chainSlot.lost{opacity:.18;filter:grayscale(1);animation:nextUnlink .7s 1.1s both}
+#boardNotice .chainMore{font-size:24px;font-weight:500;color:#c9bf9e}
+#boardNotice .chainMultiplier{display:flex;gap:15px;align-items:center;border-top:1px solid #aa976733;padding-top:15px;font-size:24px;color:#aaa38e;width:100%;justify-content:center}
+#boardNotice .chainMultiplier small{font-size:14px;margin-right:5px}
+#boardNotice .chainMultiplier b{font-size:29px;color:#f1d38f;font-weight:500}
+#boardNotice .decreased .chainValues>strong,#boardNotice .decreased .chainMultiplier b{color:#dba28b}
+#boardNotice .rareBody{min-height:270px;isolation:isolate}
+#boardNotice .rareHand{position:relative;width:250px;height:230px;display:grid;place-items:center;z-index:1}
+#boardNotice .rareHand>img{width:244px;height:244px;filter:none;animation:none;opacity:1}
+#boardNotice .rareHalo{position:absolute;z-index:0;width:244px;height:244px;filter:blur(10px);opacity:0;transform:scale(1.1);animation:nextRainbow 1.35s 1s both}
+#boardNotice .rareHalo>i{display:block;width:100%;height:100%;background:linear-gradient(115deg,#6bdfff 5%,#b89aff 30%,#ffa5be 52%,#ffe296 72%,#82f4cf 95%);mask:url('/assets/ui/rare-hand-hd.png') center/contain no-repeat}
+#boardNotice .rareGleam{position:absolute;right:1px;top:30px;width:34px;height:34px;background:#f8e7ae;clip-path:polygon(50% 0,58% 40%,100% 50%,58% 58%,50% 100%,42% 58%,0 50%,42% 40%);opacity:0;animation:nextGlint .85s 1.5s both}
+@keyframes nextRainbow{0%,100%{opacity:0}24%{opacity:.9}52%{opacity:.5}78%{opacity:.16}}
+@keyframes nextGlint{0%,100%{opacity:0;scale:.3}35%{opacity:1;scale:1}}
+@keyframes nextLink{0%{opacity:.1;filter:brightness(.5)}55%{opacity:1;filter:brightness(2) drop-shadow(0 0 8px #f6de9e)}100%{opacity:1;filter:none}}
+@keyframes nextUnlink{from{opacity:1;filter:none}to{opacity:.18;filter:grayscale(1)}}
+#boardNotice .liaTargets{text-align:center}
+#boardNotice .liaTargets>small{font-size:13px;color:#bcb39b}
+#boardNotice .liaTargets .ultTiles{min-height:100px}
+#boardNotice .liaSequence{display:flex;align-items:center;justify-content:center;gap:0;width:100%;margin-top:8px}
+#boardNotice .liaSequence>div{display:grid;justify-items:center;gap:12px;flex:1}
+#boardNotice .liaSequence small{font-size:16px;color:#e0d4b9;white-space:nowrap}
+#boardNotice .liaSequence b{font-size:24px;font-weight:500;white-space:nowrap;line-height:1.2}
+#boardNotice .liaSequence strong{font-size:53px;font-weight:500}
+#boardNotice .liaDamage b{color:#edae97}
+#boardNotice .liaAttack b{color:#f2d38c}
+#boardNotice .liaAttack{border-left:1px solid #c7ae6d40}
+@media(max-width:1300px){#boardNotice .liaSequence{gap:0}#boardNotice .liaSequence strong{font-size:43px}#boardNotice .liaSequence small{font-size:14px}}
+@media(max-width:1300px){#boardNotice .nextBrief{font-size:21px}#boardNotice .nextBrief strong{font-size:30px}#boardNotice .nextStat strong{font-size:32px}#boardNotice .nextStatLine{gap:14px}#boardNotice .nextStatLine b{font-size:17px}#boardNotice .nextStatLine strong{font-size:27px}#boardNotice .chainLands{gap:20px}#boardNotice .chainLands .chainLand{width:35px;height:35px}#boardNotice .chainLands .nextElement{width:23px;height:26px}}
+@media(prefers-reduced-motion:reduce){#nextUltSplash img,#boardNotice[data-scene=next] *{animation:none!important}#nextUltSplash.on img{opacity:1}#boardNotice .rareHalo,#boardNotice .rareSpark,#boardNotice .rareGleam{display:none}}
+#boardNotice .ultRedani{display:flex;align-items:center;justify-content:center;gap:28px}
+#boardNotice .ultAxe{display:grid;justify-items:center;gap:5px}
+#boardNotice .ultAxe>img{width:145px;height:140px;object-fit:contain}
+#boardNotice .ultAxe>span{font-size:19px;color:#e5d4ae}
+#boardNotice .ultAxe b{font-size:36px;color:#f2d58f}
+#boardNotice .ultAxe small{font-size:13px;color:#c9ba9b}
+#boardNotice .ultRedani .diceTriplet{gap:8px}
+#boardNotice .ultRedani .diceTriplet img{width:60px;height:60px}

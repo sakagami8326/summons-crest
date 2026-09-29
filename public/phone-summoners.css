@@ -1,0 +1,163 @@
+#phoneSummoners#phoneSummoners .ultimateLimit{margin-left:auto;display:inline-flex;align-items:center;gap:9px;flex:none;padding:0 2px 0 10px;border:0;background:none;font-size:10px;line-height:1;color:#d8c596;letter-spacing:.04em;white-space:nowrap}
+#phoneSummoners#phoneSummoners .limitCaption{font-size:10px;color:#c4b79a;letter-spacing:.12em}
+#phoneSummoners#phoneSummoners .limitCount{display:inline-flex;align-items:baseline;gap:2px;color:#efd49b}
+#phoneSummoners#phoneSummoners .ultimateLimit b{font:italic 700 32px/.9 Georgia,serif;color:#ffdfa0;text-shadow:0 0 14px #dfa94a40}
+#phoneSummoners#phoneSummoners .limitCount>span{font-size:12px}
+#phoneSummoners#phoneSummoners .ultimateInfo p b{color:#ffe1a0;font-weight:700;margin:0 2px}
+#phoneSummoners#phoneSummoners .summonerArrow{background:transparent;min-width:54px}
+#phoneSummoners#phoneSummoners .summonerArrow .ornateArrow{width:54px;height:72px;max-width:100%}
+#phoneSummoners#phoneSummoners .backList .ornateArrow{width:25px;height:32px;max-width:none;flex:none}
+#phoneSummoners#phoneSummoners .backList{min-width:98px;min-height:46px;padding:5px 18px 5px 10px;gap:8px}
+#phoneSummoners#phoneSummoners .backList .ornateArrow{filter:drop-shadow(0 1px 3px #0008)}
+#phoneSummoners#phoneSummoners .backList .arrowBlade,#phoneSummoners#phoneSummoners .backList .arrowStar{fill:#fff}
+#phoneSummoners#phoneSummoners .backList .arrowGleam{stroke:#fff}
+#phoneSummoners#phoneSummoners .portrait{width:min(100%,80dvh);height:auto;left:50%;transform:translateX(-50%);mask-image:linear-gradient(to right,#000 0%,#000 86%,rgba(0,0,0,.93) 89%,rgba(0,0,0,.68) 93%,rgba(0,0,0,.28) 97%,transparent 100%),linear-gradient(#000 85%,transparent 100%);mask-composite:intersect;-webkit-mask-image:linear-gradient(to right,#000 0%,#000 86%,rgba(0,0,0,.93) 89%,rgba(0,0,0,.68) 93%,rgba(0,0,0,.28) 97%,transparent 100%),linear-gradient(#000 85%,transparent 100%);-webkit-mask-composite:source-in}
+#phoneSummoners#phoneSummoners .ornateArrow{width:39px;height:52px;max-width:90%;overflow:visible;stroke:none;filter:drop-shadow(0 0 2px #ea9d3eaa) drop-shadow(0 0 7px #e89a3438);transition:filter .2s,scale .2s}
+#phoneSummoners#phoneSummoners .arrowBlade{fill:#e7b65c;stroke:none}
+#phoneSummoners#phoneSummoners .innerBlade{fill:#ffdfa0}
+#phoneSummoners#phoneSummoners .arrowStar{fill:#fff0b4;stroke:none}
+#phoneSummoners#phoneSummoners .arrowGleam{fill:none;stroke:#fff4c9;stroke-width:1;stroke-linecap:round}
+#phoneSummoners#phoneSummoners .summonerArrow:hover .ornateArrow{filter:drop-shadow(0 0 3px #ffcb72) drop-shadow(0 0 9px #e89a3460);scale:1.08}
+#phoneSummoners#phoneSummoners .summonerArrow:active .ornateArrow{scale:.94}
+#phoneSummoners#phoneSummoners header{height:auto;min-height:0;padding:0;background:transparent;position:static;box-shadow:none;border-radius:0}
+#phoneSummoners#phoneSummoners .listHeader{height:17dvh}
+#phoneSummoners#phoneSummoners .elementIcon{display:inline-block;flex-shrink:0}
+#phoneSummoners#phoneSummoners .starter>header{flex:none;height:18px}
+#phoneSummoners#phoneSummoners .detailHeading{min-height:36px;flex:none}
+#phoneSummoners#phoneSummoners{position:fixed;inset:0;z-index:100;color:#f7ecd3;font-family:Marudeco,'Yu Mincho',serif;background:radial-gradient(ellipse at 30% 0,#29434466,transparent 65%),#0c1119;overflow:hidden}
+#phoneSummoners#phoneSummoners *{box-sizing:border-box}
+#phoneSummoners#phoneSummoners button{font:inherit;cursor:pointer;color:inherit;touch-action:manipulation}
+#phoneSummoners#phoneSummoners button:focus-visible{outline:2px solid #fff1b6;outline-offset:3px}
+#phoneSummoners#phoneSummoners h1,#phoneSummoners#phoneSummoners h2,#phoneSummoners#phoneSummoners p{margin:0}
+#phoneSummoners#phoneSummoners svg{fill:none;stroke:currentColor;stroke-width:1.3}
+#phoneSummoners#phoneSummoners .elementIcon{width:28px;height:28px;object-fit:contain}
+#phoneSummoners .summonerList{height:100%;position:relative;padding:0 3vw 0 11vw}
+#phoneSummoners .listHeader{height:17dvh;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #c9b47845;margin-bottom:4dvh}
+#phoneSummoners .listHeader h1{font-size:clamp(20px,3vw,34px);letter-spacing:.12em}
+#phoneSummoners .previewTag{font:10px Georgia;letter-spacing:.25em;color:#c9bc99}
+#phoneSummoners .elementFilters{position:absolute;left:2.5vw;top:19dvh;display:flex;flex-direction:column;gap:2dvh}
+#phoneSummoners .elementFilters button{display:grid;place-items:center;width:6vw;max-width:65px;height:12dvh;max-height:58px;padding:9px;border:1px solid transparent;background:transparent;border-radius:0;color:#dac389;transition:background .2s,box-shadow .2s}
+#phoneSummoners .elementFilters button>svg{width:30px;height:30px}
+#phoneSummoners .elementFilters button[aria-pressed=true]{background:#c7ae6019;border-color:#d4bb7170;box-shadow:inset 0 0 22px #b7974020,0 0 18px #cfb46a12}
+#phoneSummoners .elementFilters button:hover{background:#ffffff0b}
+#phoneSummoners .rosterScroll{height:79dvh;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#ae9561 #ffffff05;padding:2dvh 1vw 6dvh 0}
+#phoneSummoners .roster{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5dvh 1.6vw}
+#phoneSummoners .summonerTile{height:57dvh;max-height:380px;position:relative;background:transparent;border:0;padding:0;isolation:isolate;animation:rosterEnter .65s both;animation-delay:calc(var(--order)*45ms)}
+#phoneSummoners .tileBackdrop{position:absolute;inset:8% 0 0;background:linear-gradient(0deg,#071016 0%,#07101630 65%),var(--element-bg) center/cover;border:1px solid #c9b47880;clip-path:polygon(0 6%,9% 0,100% 0,100% 94%,91% 100%,0 100%)}
+#phoneSummoners .tileBackdrop:after{content:'';position:absolute;inset:5px;border:1px solid #e9d49a38}
+#phoneSummoners .tileCrest{position:absolute;width:65%;height:55%;top:12%;right:0;opacity:.19}
+#phoneSummoners .tileArt{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 0;filter:drop-shadow(-6px 3px 0 #030c15aa);mask-image:linear-gradient(#000 78%,transparent 98%);transition:transform .25s}
+#phoneSummoners .summonerTile:hover .tileArt{transform:translateY(-4px) scale(1.04)}
+#phoneSummoners .tileName{position:absolute;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:4px;padding:5dvh 2px 2.5dvh;background:linear-gradient(transparent,#090e19ed 40%);font-size:clamp(13px,1.8vw,22px);text-shadow:0 2px 4px #000}
+#phoneSummoners .tileName .elementIcon{width:20px!important;height:22px!important}
+#phoneSummoners .scrollCue{position:absolute;bottom:0;left:54%;font-size:24px;pointer-events:none;color:#d8c491}
+#phoneSummoners .summonerDetail{position:absolute;inset:0;overflow:hidden;isolation:isolate;background:#0b1018}
+#phoneSummoners .detailBackground{position:absolute;inset:0;background:linear-gradient(90deg,transparent 0%,#0c121940 37%,#0c1219f0 62%,#0c1219 100%),var(--element-bg) left center/55% auto;opacity:.8}
+#phoneSummoners .detailBackground:after{content:'';position:absolute;inset:0;background:linear-gradient(0deg,#0b101b 0%,transparent 45%)}
+#phoneSummoners .detailCrest{position:absolute;left:6%;top:9%;height:73%;width:34%;opacity:.19;filter:brightness(1.6)}
+#phoneSummoners .portraitStage{position:absolute;left:4%;bottom:0;width:43%;height:96%;overflow:visible;pointer-events:none}
+#phoneSummoners .portrait{width:100%;height:125%;position:absolute;top:0;left:0;object-fit:contain;object-position:center top;filter:drop-shadow(-20px 5px 0 #030713dc);mask-image:linear-gradient(#000 85%,transparent 100%)}
+#phoneSummoners .backList{position:absolute;top:3dvh;left:2.5vw;display:flex;align-items:center;gap:5px;z-index:5;background:#0b111cb8;border:1px solid #dac5895e;border-radius:0;padding:4px 13px 4px 6px;font-size:14px!important}
+#phoneSummoners .backList svg{width:30px;height:25px}
+#phoneSummoners .summonerArrow{position:absolute;z-index:5;top:45%;width:6vw;height:18dvh;padding:0;display:grid;place-items:center;background:linear-gradient(90deg,#0006,transparent);border:0;border-radius:0;color:#ecd899!important}
+#phoneSummoners .summonerArrow svg{width:90%;max-width:65px;filter:drop-shadow(0 2px 4px #000)}
+#phoneSummoners .previous{left:0}
+#phoneSummoners .next{right:0;transform:rotate(180deg)}
+#phoneSummoners .summonerInfo{position:absolute;left:47%;right:7%;top:5dvh;bottom:4dvh;display:flex;flex-direction:column;gap:2dvh}
+#phoneSummoners .detailHeading{display:flex;align-items:center;gap:10px}
+#phoneSummoners .detailHeading h1{font-size:clamp(24px,3.5vw,40px);letter-spacing:.09em;line-height:1.1}
+#phoneSummoners .detailHeading .elementIcon{width:35px!important;height:35px!important}
+#phoneSummoners .index{margin-left:auto;font:20px Georgia;color:#d1bf94}
+#phoneSummoners .index small{font-size:11px;opacity:.5}
+#phoneSummoners .concept{font-size:clamp(12px,1.7vw,19px);letter-spacing:.08em;color:var(--accent)}
+#phoneSummoners .ultimateInfo{padding:2dvh 0;border-top:1px solid #d9c48b42;border-bottom:1px solid #d9c48b42}
+#phoneSummoners .ultimateInfo h2{display:flex;align-items:center;gap:6px;font-size:clamp(14px,1.8vw,22px);color:#eed796}
+#phoneSummoners .ultimateInfo h2 svg{width:20px;height:20px}
+#phoneSummoners .ultimateInfo h2 small{margin-left:auto;font:10px sans-serif;color:#b5ae99;white-space:nowrap}
+#phoneSummoners .ultimateInfo p{font-size:clamp(11px,1.45vw,17px);line-height:1.65;padding:1.2dvh 0 0}
+#phoneSummoners .starter{min-height:0;flex:1;display:flex;flex-direction:column;gap:1.3dvh}
+#phoneSummoners .starter>header{display:flex;justify-content:space-between;align-items:center;font:13px Georgia;color:#ccbc98}
+#phoneSummoners .starter h2{font-size:12px;display:flex;gap:7px;align-items:center}
+#phoneSummoners .starter h2 svg{width:16px;height:16px}
+#phoneSummoners .starterGrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:5px 7px;min-height:0;flex:1;max-width:100%;align-items:center;justify-items:center}
+#phoneSummoners .starterCard{height:100%;max-width:100%;aspect-ratio:300/470;position:relative;border:0;padding:0;background:transparent;border-radius:0;overflow:hidden;box-shadow:0 2px 5px #0008}
+#phoneSummoners .cardCanvas{position:absolute;left:0;top:0;width:300px;height:470px;transform-origin:top left;pointer-events:none}
+#phoneSummoners .cardCanvas>.face{width:300px!important;height:470px!important;position:absolute;inset:0;transform:none!important;--card-art-height:69%;--card-boundary-top:61.8%;--card-cost-top:62.8%;--card-info-top:70.8%;--card-stats-height:36%}
+#phoneSummoners .cardCanvas .ccArt{height:69%!important}
+#phoneSummoners .cardCanvas .ccInfo{top:70.8%!important}
+#phoneSummoners .cardCanvas .ccBrush{top:61.8%!important}
+#phoneSummoners .cardCanvas .ccCost{top:62.8%!important}
+#phoneSummoners .cardCanvas .cardDetailHint{display:none!important}
+#phoneSummoners .chooseSummoner{height:10dvh;min-height:33px;flex:none;display:flex;align-items:center;justify-content:center;gap:20px;border:1px solid #d5bb7c;border-radius:0;background:linear-gradient(110deg,#e3d09d,#aa8950);color:#171c22!important;font-size:clamp(13px,1.6vw,19px)!important;letter-spacing:.07em;box-shadow:0 3px 20px #0004}
+#phoneSummoners .chooseSummoner svg{width:22px;height:22px}
+#phoneSummoners .chooseSummoner.chosen{background:#2a4943;color:#e4f9e3!important}
+#phoneSummoners .starterZoom{position:absolute;inset:0;background:#05090de8;backdrop-filter:blur(8px);z-index:20;display:grid;place-items:center}
+#phoneSummoners .zoomFrame{height:88dvh;aspect-ratio:300/470;position:relative}
+#phoneSummoners .zoomClose{position:absolute;top:15px;right:20px;width:42px;height:42px;border:1px solid #d3ba77;border-radius:50%;background:#101621;display:grid;place-items:center;padding:0}
+#phoneSummoners .zoomClose svg{width:22px;height:22px}
+
+@keyframes rosterEnter{from{opacity:0;transform:translateY(55px)}
+to{opacity:1;transform:none}
+}
+@keyframes backgroundEnter{from{opacity:0;transform:translateX(-35%)}
+to{opacity:.8;transform:none}
+}
+@keyframes portraitEnter{0%{opacity:0;transform:translateX(-100px) scale(1.13)}
+70%{opacity:1}
+100%{opacity:1;transform:none}
+}
+@keyframes infoEnter{from{opacity:0;transform:translateX(80px)}
+to{opacity:1;transform:none}
+}
+@keyframes crestEnter{from{opacity:0;transform:scale(1.6) rotate(-20deg)}
+to{opacity:.19;transform:none}
+}
+#phoneSummoners.arrive .detailBackground{animation:backgroundEnter .55s cubic-bezier(.16,1,.3,1) both}
+#phoneSummoners.arrive .portraitStage{animation:portraitEnter .65s .08s cubic-bezier(.16,1,.3,1) both}
+#phoneSummoners.arrive .summonerInfo{animation:infoEnter .55s .16s cubic-bezier(.16,1,.3,1) both}
+#phoneSummoners.arrive .detailCrest{animation:crestEnter .8s .14s cubic-bezier(.16,1,.3,1) both}
+#phoneSummoners#phoneSummoners[data-motion=previous] .portraitStage{animation-direction:normal}
+#phoneSummoners#phoneSummoners[data-motion=previous]{--direction:-1}
+
+@media(min-aspect-ratio:2.2){#phoneSummoners .summonerInfo{left:46%;right:8%;gap:1.5dvh}
+#phoneSummoners .ultimateInfo{padding:1.5dvh 0}
+#phoneSummoners .ultimateInfo p{line-height:1.45}
+#phoneSummoners .detailHeading h1{font-size:7dvh}
+#phoneSummoners .portraitStage{left:7%;width:36%}
+}
+@media(max-width:700px){#phoneSummoners .summonerInfo{left:44%;right:7%;gap:1.8dvh}
+#phoneSummoners .detailHeading{gap:6px}
+#phoneSummoners .detailHeading h1{font-size:25px}
+#phoneSummoners .detailHeading .elementIcon{width:26px!important;height:26px!important}
+#phoneSummoners .ultimateInfo h2 small{font-size:8px}
+#phoneSummoners .starterGrid{gap:4px}
+#phoneSummoners .tileName{font-size:13px}
+#phoneSummoners .tileName .elementIcon{width:16px!important}
+#phoneSummoners .index{font-size:15px}
+#phoneSummoners .concept{font-size:11px}
+#phoneSummoners .ultimateInfo p{font-size:11px}
+#phoneSummoners .portraitStage{left:3%;width:43%}
+}
+@media(prefers-reduced-motion:reduce){#phoneSummoners#phoneSummoners *,#phoneSummoners#phoneSummoners *:after{animation:none!important;transition:none!important}
+}
+
+
+#phoneSummoners[hidden]{display:none!important}
+#phoneSummoners#phoneSummoners{z-index:45}
+#phoneSummoners .summonerTile.unavailable .tileArt{opacity:.4}
+#phoneSummoners .summonerTile.mine .tileArt{opacity:1}
+#phoneSummoners .tileStatus{position:absolute;left:3px;right:3px;bottom:2px;color:#ffe2a1;font:10px/1.3 sans-serif;text-align:center;background:#10151bcc}
+#phoneSummoners .selectionStatus{margin-left:auto;font-size:12px;color:#dfc88e}
+#phoneSummoners .reselectSummoner{margin-left:12px;padding:8px 12px;border:1px solid #d9c48b70;background:#d9c48b15;border-radius:0;font-size:13px}
+#phoneSummoners .chooseSummoner:disabled{opacity:.55;cursor:default}
+#phoneSummoners .selectionFeedback{position:absolute;bottom:15%;left:44%;right:7%;padding:12px;background:#241a18;border:1px solid #e0a878;color:#ffe1c0;font:12px/1.5 sans-serif;z-index:30}
+
+
+/* Shared ornate navigation asset and six element filters. */
+#phoneSummoners#phoneSummoners .backList .ornateArrow{filter:brightness(0) invert(1) drop-shadow(0 1px 3px #0008)}
+#phoneSummoners .elementFilters{gap:1.5dvh}
+#phoneSummoners .elementFilters button{height:10dvh;max-height:48px}
+#phoneSummoners .rosterEmpty{grid-column:1/-1;color:#c6baa1;font-size:14px;text-align:center;padding:12dvh 0}
+#phoneSummoners .affinityBenefit{display:flex;align-items:center;gap:5px;margin-top:4px;color:#ddd3bb;font:11px/1.3 sans-serif;letter-spacing:0}
+#phoneSummoners#phoneSummoners .affinityBenefit .elementIcon{width:15px;height:16px}
+#phoneSummoners .affinityBenefit b{color:#ffe099;font-weight:600}

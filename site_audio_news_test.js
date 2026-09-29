@@ -22,19 +22,26 @@ const out=path.join(__dirname,'output/site-audio-news');fs.mkdirSync(out,{recurs
   await p.getByRole('link',{name:'アップデート',exact:true}).click();assert.equal(await p.locator('.news-row').count(),news.entries.filter(e=>e.category==='update').length);
   await p.screenshot({path:path.join(out,'news-list.png')});await p.locator('.news-row').first().click();await p.screenshot({path:path.join(out,'article.png')});
   await p.locator('.site-bgm').click();await p.waitForFunction(()=>document.querySelector('.site-bgm').textContent==='BGM ON');assert.ok(requests.some(u=>u.includes('bgm_select')));
-  await p.waitForFunction(()=>JSON.parse(sessionStorage.getItem('sc_site_audio_v1')).position>.5);
-  const position=await p.evaluate(()=>JSON.parse(sessionStorage.getItem('sc_site_audio_v1')).position);
+  await p.waitForFunction(()=>JSON.parse(sessionStorage.getItem('sc_site_audio_position_v2'))>.5);
+  const position=await p.evaluate(()=>JSON.parse(sessionStorage.getItem('sc_site_audio_position_v2')));
   await p.goto(base+'/cards');assert.equal(await p.locator('.site-audio-gate').count(),0);
   await p.waitForFunction(()=>['BGM ON','BGMを再開'].includes(document.querySelector('.site-bgm').textContent));
   if(await p.locator('.site-bgm').innerText()==='BGMを再開')await p.locator('.site-bgm').click();
-  await p.waitForFunction(pos=>JSON.parse(sessionStorage.getItem('sc_site_audio_v1')).position>=pos,position);
+  await p.waitForFunction(pos=>JSON.parse(sessionStorage.getItem('sc_site_audio_position_v2'))>=pos,position);
   // Simulate visibility to verify lifecycle without relying on headless tab activation.
   await p.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});document.dispatchEvent(new Event('visibilitychange'));});assert.equal(await p.locator('.site-bgm').innerText(),'BGMを再開');
   await p.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,get:()=>false});document.dispatchEvent(new Event('visibilitychange'));});await p.waitForFunction(()=>document.querySelector('.site-bgm').textContent==='BGM ON');
   await p.locator('.site-bgm').click();assert.equal(await p.locator('.site-bgm').innerText(),'BGM OFF');await p.goto(base+'/rules');assert.equal(await p.locator('.site-bgm').innerText(),'BGM OFF');
   const blocked=await browser.newPage();watch(blocked);await blocked.addInitScript(()=>{window.originalMediaPlay=HTMLMediaElement.prototype.play;HTMLMediaElement.prototype.play=function(){return Promise.reject(new DOMException('blocked','NotAllowedError'));};});await blocked.goto(base+'/news');await blocked.locator('[data-audio="on"]').click();assert.equal(await blocked.locator('.site-bgm').innerText(),'BGMを再開');assert.equal(await blocked.locator('.site-audio-gate').count(),0);await blocked.evaluate(()=>{HTMLMediaElement.prototype.play=window.originalMediaPlay;});await blocked.locator('.site-bgm').click();await blocked.waitForFunction(()=>document.querySelector('.site-bgm').textContent==='BGM ON');
   const m=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});watch(m);await m.goto(base);await m.locator('[data-audio="off"]').focus();await m.keyboard.press('Tab');assert.equal(await m.evaluate(()=>document.activeElement.dataset.audio),'on');await m.screenshot({path:path.join(out,'mobile-choice.png')});await m.locator('[data-audio="off"]').click();
-  for(const width of [320,390,768,900,1100]){await m.setViewportSize({width,height:844});assert.ok(await m.locator('.site-bgm').isVisible());assert.ok(await m.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));const rects=await m.locator('.site-header__logo,.site-bgm,.site-header__play,.nav-toggle').evaluateAll(els=>els.filter(e=>e.getClientRects().length).map(e=>{const r=e.getBoundingClientRect();return {x:r.x,right:r.right};}).sort((a,b)=>a.x-b.x));for(let i=1;i<rects.length;i++)assert.ok(rects[i].x>=rects[i-1].right-1,'header controls must not overlap');}
+  for(const width of [320,390,768,900,1100]){
+    await m.setViewportSize({width,height:844});
+    assert.ok(await m.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+    const rects=await m.locator('.nv-logo,.nv-play,.nv-menu').evaluateAll(els=>els.filter(e=>e.getClientRects().length).map(e=>{const r=e.getBoundingClientRect();return {x:r.x,right:r.right};}).sort((a,b)=>a.x-b.x));
+    for(let i=1;i<rects.length;i++)assert.ok(rects[i].x>=rects[i-1].right-1,'header controls must not overlap');
+    await m.locator('.nv-menu').click();assert.ok(await m.locator('.site-bgm').isVisible(),'mobile audio control is inside the open menu');
+    assert.equal(await m.locator('.site-bgm').innerText(),'BGM OFF');await m.locator('.mc-close').click();await m.waitForFunction(()=>!document.querySelector('#nv-dialog').open);
+  }
   await m.setViewportSize({width:390,height:844});await m.goto(base+'/news');await m.screenshot({path:path.join(out,'mobile-news.png'),fullPage:true});assert.ok(await m.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   const noStorage=await browser.newPage();await noStorage.addInitScript(()=>{Storage.prototype.getItem=()=>{throw Error('denied');};Storage.prototype.setItem=()=>{throw Error('denied');};});watch(noStorage);await noStorage.goto(base);await noStorage.locator('[data-audio="off"]').click();assert.equal(await noStorage.locator('.site-audio-gate').count(),0);
   const noJS=await browser.newPage({javaScriptEnabled:false});await noJS.goto(base+'/news');assert.equal(await noJS.locator('.news-row').count(),news.entries.length);await noJS.locator('.news-row').first().click();assert.equal(noJS.url(),base+'/news/'+news.entries[0].slug);

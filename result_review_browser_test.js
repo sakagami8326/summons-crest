@@ -6,7 +6,7 @@ const G=new Function('require','__dirname','setInterval','console',source+`;retu
  const r=G.makeFixtureRoom();r.code='RV01';r.lastBattle=null;r.lastEvent=null;r.lastUlt=null;r.pending={};r.players.forEach((p,i)=>{p.name=['レダーニ','リンネイ','グリース','ミオ'][i];p.cardsCollected=0;p.tollCollected=0;p.battleWins=[6,3,4,8][i];G.gainToDeck(r,p,Array.from({length:[8,9,12,10][i]},(_,j)=>['gecko','weapon','sp_gold','poponga'][j%4]));});G.payToll(r,r.players[1],r.players[0],4200);G.initMatchAnalytics(r);r.phase='ended';r.winner=r.players[0].id;G.buildMatchResult(r);r.resultReview.unlockAt=Date.now()+120000;G.rooms.set(r.code,r);
  const rare=G.makeFixtureRoom();rare.code='UR01';rare.phase='playing';rare.winner=null;rare.matchResult=null;rare.resultReview=null;rare.pending={};rare.lastBattle=null;rare.lastEvent=null;rare.lastUlt=null;rare.turn=0;rare.deck=['samurai_saga','gecko','sp_gold'];G.startDraft(rare,rare.players[0],'castle');G.rooms.set(rare.code,rare);
  // The winner has fewer assets than another player; both screens must still award first place to the winner.
- r.players[2].gold=20000;G.buildMatchResult(r);r.resultReview.unlockAt=Date.now()+120000;
+ r.players[2].gold=20000;r.players[0].exile=['weapon','weapon','sp_gold'];G.buildMatchResult(r);r.resultReview.unlockAt=Date.now()+120000;
  assert(r.matchResult.rankings[0].assets.total<r.matchResult.rankings[1].assets.total);
  await new Promise(resolve=>G.server.listen(0,'127.0.0.1',resolve));const base='http://127.0.0.1:'+G.server.address().port;
  browser=await chromium.launch({channel:'chrome',headless:true});const page=await browser.newPage({viewport:{width:1440,height:900},reducedMotion:'reduce'}),errors=[];const watch=p=>{p.on('pageerror',e=>errors.push(e.message));p.on('response',res=>{if(res.status()>=400)errors.push(res.status()+' '+res.url())});};watch(page);
@@ -25,7 +25,11 @@ const G=new Function('require','__dirname','setInterval','console',source+`;retu
  assert.deepEqual(fallback,{winner:true,rank:'1位'});
  await page.evaluate(()=>resultReviewScreen.showPodium());await page.screenshot({path:'output/rarity-result-preview/winner-first-ranking.png'});await page.evaluate(()=>resultReviewScreen.showDecks());
  console.log('PASS winner first despite lower assets on board, phone and legacy fallback');
- for(const row of r.matchResult.rankings){await page.locator('#deck-tab-'+row.id).click();assert.equal(await page.locator('.reviewDeckCard').count(),Math.min(24,row.finalDeck.length));}
+ for(const row of r.matchResult.rankings){await page.locator('#deck-tab-'+row.id).click();assert.equal(await page.locator('.reviewDeckCard').count(),Math.min(24,row.finalDeck.length+(row.finalExile||[]).length));}
+ await page.locator('#deck-tab-'+r.players[0].id).click();
+ assert.equal(await page.locator('.reviewElementIcon').count(),5);
+ await page.locator('#deckShowExile').click();assert.equal(await page.locator('#deckGrid').getAttribute('data-zone'),'mixed');assert.equal(await page.locator('.reviewDeckCard.isExiled').count(),3);assert.deepEqual(await page.locator('#deckGrid .isExiled review-game-card').evaluateAll(es=>es.map(e=>e.getAttribute('card-id')).sort()),['sp_gold','weapon','weapon']);
+ await page.screenshot({path:'output/rarity-result-preview/final-exile.png'});
  await page.locator('.reviewDeckCard').first().click();await page.waitForSelector('.reviewCardDialog[open]');await page.keyboard.press('Escape');await page.setViewportSize({width:1280,height:720});await page.screenshot({path:'output/rarity-result-preview/implemented-deck-720.png'});
  // Cover every summoner, including characters absent from the default four-player fixture.
  const chars=await page.evaluate(()=>Object.keys(state.catalog.CHARS));
@@ -52,6 +56,11 @@ const G=new Function('require','__dirname','setInterval','console',source+`;retu
  }
  fs.writeFileSync('output/rarity-result-preview/all-summoners-verification.json',JSON.stringify(portraitChecks,null,2));
  console.log('PASS all 8 summoner portraits in final deck tabs');
+ // Exile-only decks and an exile section spanning several pages retain every copy.
+ await page.evaluate(()=>{const result=structuredClone(state.matchResult);result.rankings[0].finalDeck=[];result.rankings[0].finalExile=Array(25).fill('weapon');showMatchResult(result);resultReviewScreen.showDecks();});
+ assert.equal(await page.locator('#deckGrid').getAttribute('data-zone'),'exile');assert.equal(await page.locator('.reviewDeckCard').count(),24);
+ await page.locator('#deckNextPage').click();assert.equal(await page.locator('.reviewDeckCard').count(),1);
+ await page.locator('#deckPrevPage').click();assert.equal(await page.locator('.reviewDeckCard').count(),24);
  await page.evaluate(()=>showMatchResult(state.matchResult));assert.equal(await page.locator('#rvPodium').count(),1);assert.equal(await page.locator('.reviewCardDialog').count(),1);await page.evaluate(()=>resultReviewScreen.showDecks());await page.locator('#reviewClose').click();await page.waitForSelector('#titleOv.on');
  const rp=await browser.newPage({viewport:{width:844,height:390}});watch(rp);await rp.goto(base+'/phone?guide=done');await rp.evaluate(()=>{room='UR01';pid='fx0';state=null;document.getElementById('join').style.display='none';document.body.classList.add('ingame');connect();});await rp.waitForSelector('#uxRail .card.rarity-UR');assert.equal(await rp.locator('#uxRail .card.rarity-UR').count(),1);assert.equal(await rp.locator('#uxRail .card:not(.rarity-UR) .urShine').count(),0);assert.equal(await rp.locator('#uxRail .card .pvRarity,#uxRail .card .galBadge').count(),0);await rp.locator('#uxRail .card.rarity-UR').click();await rp.locator('#uxConfirm').click();await rp.waitForSelector('.dcOne.rarity-UR');assert.equal(rare.players[0].cardsCollected,1);await rp.screenshot({path:'output/rarity-result-preview/implemented-ur-phone.png'});
  await rp.evaluate(()=>{revealQueue=[];revealCurrent=null;enqueueCardReveal(['samurai_saga'],'draw');});assert.equal(await rp.locator('.dcOne.rarity-UR').count(),0,'ordinary draw does not replay random-draw effect');

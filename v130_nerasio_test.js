@@ -135,13 +135,12 @@ ok(phone.includes("'ult_nerasio_land'") && phone.includes("p.type === 'ult_neras
   'phone implements map selection and element selection');
 ok(phone.includes('選択中 ${selected.length}/${multiMax}') && phone.includes('multiMax = p.type === \'ult_nerasio_land\' ? 2 : 3'),
   'phone clearly displays the two-land selection limit');
-ok(phone.includes("cdArt${id === 'nerasio' ? ' cdArtNerasio' : ''}") &&
-   phone.includes('.cdHero .cdArt.cdArtNerasio'),
-  'Nerasio uses the enlarged summoner-detail artwork treatment');
-ok(phone.includes("const villaIndex = entries.findIndex(([id]) => id === 'villa')") &&
-   phone.includes("const nerasioIndex = entries.findIndex(([id]) => id === 'nerasio')") &&
-   phone.includes('[entries[villaIndex], entries[nerasioIndex]] = [entries[nerasioIndex], entries[villaIndex]]'),
-  'phone swaps Villa and Nerasio positions without changing the shared catalog order');
+const summoners = fs.readFileSync(path.join(__dirname,'public','phone-summoners.js'),'utf8');
+ok(summoners.includes('/assets/board-actors/${id}.png') &&
+   fs.existsSync(path.join(__dirname,'public','assets','board-actors','nerasio.png')),
+  'Nerasio uses the approved dedicated actor artwork');
+ok(summoners.includes("'adel','villa','nerasio'") && summoners.includes('preferred.filter(id=>C.CHARS[id])'),
+  'phone preserves the approved roster order independently of the shared catalog');
 ok(!phone.includes('data-id="upcoming-earth"'),'obsolete upcoming earth placeholder is removed');
 const board = fs.readFileSync(path.join(__dirname,'public','board.html'),'utf8');
 ok(board.includes("sp.name.length <= 8 ? '5.1vh' : '4.2vh'") &&

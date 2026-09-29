@@ -455,102 +455,6 @@
   .myTurning { margin-top:1.4dvh; display:flex; flex-direction:column; gap:.65dvh; }
   .myTurning article { padding:.7dvh 1.2dvh; border-left:3px solid #d3aa42; background:#090d1dbf; }
   .myTurning b { display:block; color:#f0d48b; } .myTurning span { color:#cfc2aa; font-size:max(1.45dvh,10px); }
-  #charSel { position:fixed; inset:0; display:none; z-index:35; background:rgba(10,8,25,.96);
-      flex-direction:column; align-items:center; justify-content:center; gap:1.2dvh;
-      padding:2.5dvh 0 3dvh; }
-  #charSel.on { display:flex; }
-  #csRow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); grid-template-rows:repeat(2,minmax(0,1fr));
-      gap:.75dvh .65vw; width:100%; align-items:stretch; min-height:0; flex:1;
-      padding-left:calc(1.5vw + env(safe-area-inset-left));
-      padding-right:calc(1.5vw + env(safe-area-inset-right)); overflow:hidden; }
-  .csCard { position:relative; min-width:0; min-height:0; height:100%;
-      border-radius:1.25dvh; border:0; background:#16364f; cursor:pointer; transition:transform .15s;
-      overflow:hidden; isolation:isolate; box-shadow:0 5px 16px rgba(0,0,0,.5); }
-  .csCard:active { transform:scale(.97); }
-  .csCard .csVisual { position:absolute; z-index:1; inset:0 0 30%; overflow:hidden; }
-  .csCard .csBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-1; }
-  .csCard .csArt { position:absolute; z-index:2; inset:1% 1% 0; width:98%; height:99%; object-fit:contain;
-      object-position:center bottom; filter:drop-shadow(0 5px 8px rgba(0,0,0,.48)); }
-  .csCard .csInfo { position:absolute; z-index:6; inset:auto 0 0; height:30%; padding:3% 5% 2.5%;
-      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.25dvh;
-      background:linear-gradient(180deg,#fff2d5 0%,#f6e9c8 30%,#e9d3a6 100%); color:#172536;
-      box-shadow:0 -2px 8px rgba(5,13,25,.32); }
-  .csCard .csInfo::before { content:""; position:absolute; left:0; bottom:99%; width:100%; height:36%;
-      background:url('/assets/cards/brush-boundary-b-paper.png') center/100% 100% no-repeat; pointer-events:none; }
-  .csCard .csTop { position:relative; z-index:2; width:100%; min-height:48%; display:grid;
-      grid-template-columns:minmax(2.8dvh,15%) 1fr minmax(2.8dvh,15%); align-items:center; }
-  .csCard .csElem { width:100%; height:100%; display:grid; place-items:center; }
-  .csCard .csElem svg { width:min(3.9dvh,88%); height:min(3.9dvh,88%); }
-  .csCard .csName { grid-column:2; min-width:0; color:#172536; font:700 clamp(14px,2.65dvh,22px)/1 Marudeco,sans-serif;
-      letter-spacing:.02em; text-align:center; white-space:nowrap; text-shadow:0 1px 0 rgba(255,255,255,.62); }
-  .csCard .csBottom { position:relative; z-index:2; width:100%; min-height:38%; display:flex;
-      align-items:center; justify-content:center; color:#31445a; font-size:clamp(11px,1.65dvh,15px);
-      font-weight:700; text-align:center; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .csCard .csState { position:absolute; z-index:8; top:3%; right:4%; padding:.45dvh 1dvh; border-radius:999px;
-      background:rgba(20,18,39,.88); color:#fff4d5; font-size:clamp(13px,1.8dvh,16px); text-align:center; }
-  .csCard.mine { box-shadow:0 0 0 3px #F2D062, 0 0 20px rgba(242,208,98,.5); }
-  .csCard.dim { filter:brightness(.5) saturate(.5); cursor:default; }
-  .csUpcoming { position:relative; min-width:0; min-height:0; height:100%;
-      overflow:hidden; isolation:isolate; border-radius:1.35dvh; border:1px solid rgba(168,232,250,.72);
-      background:#102f46; box-shadow:0 5px 16px rgba(0,0,0,.48); cursor:default; }
-  .csUpcoming .csuBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-3;
-      filter:saturate(.32) brightness(.66) hue-rotate(8deg); }
-  .csUpcoming .csuArt { position:absolute; z-index:-1; left:-110%; bottom:7%; width:320%; height:80%;
-      object-fit:contain; filter:brightness(0) saturate(0) opacity(.76)
-      drop-shadow(0 0 7px rgba(159,233,255,.68)); }
-  .csUpcoming .csuElem { position:absolute; top:4%; left:50%; transform:translateX(-50%);
-      width:min(4.8dvh,76%); height:min(4.8dvh,76%); }
-  .csUpcoming .csuElem svg { width:100%; height:100%; }
-  .csUpcoming .csuElem svg * { fill:#fff !important; }
-  .csUpcoming .csuName { position:absolute; top:19%; left:50%; transform:translateX(-50%);
-      writing-mode:vertical-rl; color:#effcff; font:700 clamp(14px,2.1dvh,19px)/1 Marudeco,sans-serif;
-      letter-spacing:.12em; text-shadow:0 2px 5px #06111c; }
-  .csUpcoming .csuState { position:absolute; left:7%; right:7%; bottom:4%; padding:.7dvh .2dvh;
-      color:#e9fbff; background:rgba(5,18,30,.82); border:1px solid rgba(177,235,250,.55);
-      border-radius:.7dvh; font-size:clamp(10px,1.35dvh,13px); font-weight:700; text-align:center;
-      line-height:1.15; letter-spacing:.04em; }
-  .csUpcoming.revealed { cursor:pointer; border-color:rgba(113,236,169,.78); background:#102d28; }
-  .csUpcoming.revealed .csuBg { filter:saturate(.78) brightness(.78); }
-  .csUpcoming.revealed .csuArt { z-index:1; inset:8% 2% 14%; width:96%; height:78%;
-      object-fit:contain; filter:drop-shadow(0 5px 9px rgba(0,0,0,.52)); }
-  .csUpcoming.revealed .csuName { z-index:4; top:4%; writing-mode:horizontal-tb; color:#fff5d8;
-      font-size:clamp(15px,2.3dvh,21px); letter-spacing:.08em; white-space:nowrap; }
-  .csUpcoming.revealed .csuElem { z-index:5; left:8%; transform:none; }
-  .csUpcoming.revealed::after { content:""; position:absolute; z-index:2; inset:0;
-      background:linear-gradient(180deg,rgba(4,12,18,.08) 35%,rgba(4,12,18,.78) 100%); pointer-events:none; }
-  .csUpcoming.empty .csuArt { display:none; }
-  .csUpcoming.empty::before { content:"?"; position:absolute; inset:0; display:grid; place-items:center;
-      color:rgba(238,251,255,.26); font:700 12dvh/1 Georgia,serif; }
-  .cdPending { display:inline-flex; align-items:center; padding:.45dvh 1.2dvh; border-radius:999px;
-      color:#d9fff0; background:#164b38; border:1px solid #58c48a; font-weight:700; letter-spacing:.1em; }
-  #charDetail { position:fixed; inset:0; display:none; z-index:36; background:rgba(10,8,25,.98);
-      padding:2dvh calc(3vw + env(safe-area-inset-right)) 2dvh calc(3vw + env(safe-area-inset-left)); }
-  #charDetail.on { display:grid; grid-template-columns:minmax(24dvh,31vw) 1fr; gap:3vw; }
-  .cdHero { position:relative; min-height:0; overflow:hidden; border-radius:2dvh; isolation:isolate; }
-  .cdHero .csBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-2; }
-  .cdHero .cdArt { position:absolute; inset:10% 2% 2%; width:96%; height:88%; object-fit:contain;
-      filter:drop-shadow(0 0 7px rgba(255,255,255,.48)) drop-shadow(0 7px 12px rgba(0,0,0,.55)); }
-  .cdHero .cdArt.cdArtNerasio { inset:2% -8% -8%; width:116%; height:106%; }
-  .cdHero .cdName { position:absolute; z-index:3; top:3%; left:5%; right:5%; color:#fff4d5;
-      font:700 clamp(18px,4dvh,34px)/1 Marudeco,sans-serif; text-align:center; text-shadow:0 2px 5px #000; }
-  .cdBody { min-width:0; min-height:0; display:flex; flex-direction:column; gap:1.2dvh; }
-  .cdInfo { flex:1; min-height:0; overflow-y:auto; background:#f6e9c8; color:#172536; border-radius:1.6dvh;
-      padding:2dvh 2.5vw; font-size:clamp(13px,2dvh,18px); line-height:1.5; }
-  .cdInfo h2 { margin:0 0 .5dvh; font:700 clamp(16px,2.8dvh,24px)/1.2 Marudeco,sans-serif; }
-  .cdInfo .cdSec { padding:1dvh 0; border-bottom:2px solid rgba(23,37,54,.18); }
-  .cdDeck { display:flex; gap:1dvh; overflow-x:auto; padding:.6dvh .3dvh 1dvh; }
-  .cdDeckThumb { position:relative; flex:none; width:15dvh; aspect-ratio:300/470; overflow:hidden;
-      border-radius:1.2dvh; background:#24203d; box-shadow:0 3px 8px rgba(0,0,0,.35); isolation:isolate; cursor:pointer; }
-  .cdDeckThumb:active { transform:scale(.96); }
-  .cdDeckThumb .cdtBg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-2; }
-  .cdDeckThumb .cdtArt { position:absolute; inset:8% 4% 5%; width:92%; height:87%; display:grid; place-items:center;
-      color:#fff4d5; filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)); }
-  .cdDeckThumb .cdtArt img { width:100%; height:100%; object-fit:contain; }
-  .cdDeckThumb .cdtArt svg { width:58%; height:58%; }
-  .cdDeckThumb .cdtCount { position:absolute; z-index:3; right:6%; bottom:4%; min-width:3.8dvh; height:3.8dvh;
-      display:grid; place-items:center; padding:0 .8dvh; border-radius:999px; background:#f6e9c8; color:#172536;
-      border:2px solid #C9A227; font:700 max(2dvh,13px)/1 Marudeco,sans-serif; }
-  .cdActions { flex:none; display:flex; justify-content:flex-end; gap:1.5dvh; }
   /* ダイス画像ボタン */
   .diceImgBtn { position:relative; isolation:isolate; background:none; border:none; cursor:pointer; padding:0; height:100%;
         display:flex; align-items:center; justify-content:center; }
@@ -940,8 +844,8 @@
   .tdStat { font-family:sans-serif; font-size:max(2dvh, 13px); font-variant-numeric:tabular-nums; }
   .tdStat b { color:#F09B7B; font-weight:600; } .tdStat i { color:#8FD8A8; font-style:normal; }
 </style>
-<link rel="stylesheet" href="/wind-supply-ui.css"><script defer src="/wind-supply-ui.js"></script>
-<link rel="stylesheet" href="/rare-draw.css"></head>
+<link rel="stylesheet" href="/wind-supply-ui.css?release=164"><script defer src="/wind-supply-ui.js?release=164"></script>
+<link rel="stylesheet" href="/rare-draw.css?release=164"></head>
 <body>
   <div id="connBar" style="display:none; position:fixed; top:0; left:50%; transform:translateX(-50%);
     z-index:98; background:#5A1512; color:#F5B0A5; font-size:1.8dvh; letter-spacing:2px;
@@ -1010,8 +914,7 @@
     <button class="abtn ghost" id="deckClose">閉じる</button></div>
   <div id="resultOv"><div id="resultTitle"></div><div id="resList"></div>
     <button class="abtn" id="resultBtn" style="margin-top:1.4dvh">タイトルへ戻る</button></div>
-  <div id="charSel"><div id="csMsg" style="font-size:max(2.2dvh,14px);color:var(--gold-soft);letter-spacing:2px"></div><div id="csRow"></div></div>
-  <div id="charDetail"></div>
+  <div id="phoneSummoners" hidden aria-label="召喚士選択"></div>
   <div id="draftOv"><div class="drawHeading"><div id="draftTitle">カードを1枚選んで獲得</div><div id="draftGold" class="drawGold"></div></div><div id="draftRow"></div><div id="draftFoot"></div></div>
   <div id="pickOv"><div class="drawHeading"><div id="pickTitle">手札に加えるカードを選んでください</div><div id="pickGold" class="drawGold"></div></div>
     <div id="pickRow"></div><div id="pickHint"></div></div>
@@ -1062,12 +965,14 @@
 <link rel="stylesheet" href="/map-ui.css?v=159-3">
 <script src="/map-definitions.js?v=159-3"></script>
 <script src="/map-ui.js?v=158"></script>
-<script src="/game_timing.js"></script>
+<script src="/game_timing.js?release=164"></script>
 <script src="/vendor/phaser.min.js"></script>
 <script src="/ult_fx_world.js"></script>
-<link rel="stylesheet" href="/phone-card-picker.css">
-<link rel="stylesheet" href="/phone-deck.css">
-<script src="/phone-card-picker.js"></script>
+<link rel="stylesheet" href="/phone-card-picker.css?v=20260928-draw5&release=164">
+<link rel="stylesheet" href="/phone-deck.css?release=164">
+<link rel="stylesheet" href="/phone-summoners.css?v=20260929-2&release=164">
+<script src="/phone-summoners.js?v=20260929-2&release=164"></script>
+<script src="/phone-card-picker.js?v=20260928-draw5&release=164"></script>
 <script>
 const $ = id => document.getElementById(id);
 const REMOVE_CARD_HTML = '<div class="face removeCard"><div class="removeTitle">カードを削除</div><img src="/assets/cards/shop-remove-v2.webp" alt="カード削除"></div>';
@@ -1076,7 +981,7 @@ let resultUnlockT = null;
 const ROOM_CODE_PATTERN = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{4}$/;
 let presetRoom = null;
 let inShopHand = false, prevHandKey = '', moveT = null;
-let charPreview = null, charSubmitting = false, fitResizeT = null;
+let fitResizeT = null;
 let actionOverlayKey = '', actionSubmitting = false, browsingActionHand = false;
 let liaTapLock = false, lastLiaSelectedKey = '';
 // v0.61 選択ドロー・カード追加演出
@@ -1095,7 +1000,10 @@ function playPhoneUlt(u) {
   $('phoneUltDesc').textContent = (state.catalog.ULTS[u.charId] || {}).desc || '';
   $('phoneUlt').classList.remove('on'); void $('phoneUlt').offsetWidth; $('phoneUlt').classList.add('on');
   if (window.UltFxWorld) UltFxWorld.play(matchMedia('(prefers-reduced-motion:reduce)').matches);
-  phoneUltT = setTimeout(() => { $('phoneUlt').classList.remove('on'); if (window.UltFxWorld) UltFxWorld.stop(); }, 4950);
+  const remaining = state.ultSequence?.resolveAt
+    ? Math.max(0,state.ultSequence.resolveAt-Date.now()-serverClockOffset)
+    : GAME_TIMING.ultimateDuration;
+  phoneUltT = setTimeout(() => { $('phoneUlt').classList.remove('on'); if (window.UltFxWorld) UltFxWorld.stop(); }, remaining);
 }
 let lastPendKey = '', pendSince = 0;
 // アートが存在するクリーチャー。正はサーバーのcatalog.artIds(assetsを走査 ─ v0.82)。
@@ -1480,7 +1388,7 @@ const el=$('deckOv');
 const key=JSON.stringify([m.id,m.charId,entries,m.exileList||[]]);
 if(el.dataset.inventory===key)return;
 const scrollTop=el.querySelector('.overviewScroll')?.scrollTop||0;
-el.innerHTML=`<h2 hidden>デッキ確認</h2><header class="overviewHeader"><div class="summonerCrop"><img src="/assets/hud_${m.charId}.png" alt="${C.CHARS[m.charId].name}"><span>${C.CHARS[m.charId].name}</span></div><div class="elementCounts">${elemOrder.map((e,i)=>`<div class="elementCount ${elements[e]?'':'empty'}" title="${elemNames[i]}属性 ${elements[e]}枚"><svg viewBox="-34 -36 68 72" class="${e}" aria-label="${elemNames[i]}属性">${e==='neutral'?'<path d="M0 -26 21 0 0 26 -21 0Z" fill="none" stroke="currentColor" stroke-width="6"/><path d="M0 -10 8 0 0 10 -8 0Z" fill="currentColor"/>':ELEM_MINI[e]}</svg><b>${elements[e]}</b></div>`).join('')}</div><div class="kindCounts">${[['creature','クリーチャー'],['spell','スペル'],['weapon','ウェポン'],['exile','廃棄']].map(([k,n])=>`<div><b>${totals[k]}</b><span>${n}</span></div>`).join('')}</div><button class="overviewClose" id="deckClose" aria-label="デッキを閉じる"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header><div class="overviewScroll" id="deckScroll"><div class="overviewGrid">${entries.map(c=>`<button class="overviewCard" data-card="${c}" aria-label="${dkInfo(c).nm}"><div class="miniCanvas">${bigCardHTML(c)}</div></button>`).join('')}</div>${(m.exileList||[]).length?`<section class="overviewExile" aria-label="廃棄カード"><h3>廃棄 <span>${totals.exile}</span></h3><div class="overviewGrid">${m.exileList.map(c=>`<button class="overviewCard" data-card="${c}" aria-label="${dkInfo(c).nm}（廃棄）"><div class="miniCanvas">${bigCardHTML(c)}</div></button>`).join('')}</div></section>`:''}</div>`;
+el.innerHTML=`<h2 hidden>デッキ確認</h2><header class="overviewHeader"><div class="summonerCrop"><img src="/assets/hud_${m.charId}.png" alt="${C.CHARS[m.charId].name}"><span>${C.CHARS[m.charId].name}</span></div><div class="elementCounts">${elemOrder.map((e,i)=>`<div class="elementCount ${elements[e]?'':'empty'}" title="${elemNames[i]}属性 ${elements[e]}枚">${e==='neutral'?`<span class="deckElementIcon neutral" role="img" aria-label="${elemNames[i]}属性"></span>`:`<svg viewBox="-34 -36 68 72" class="${e}" aria-label="${elemNames[i]}属性">${ELEM_MINI[e]}</svg>`}<b>${elements[e]}</b></div>`).join('')}</div><div class="kindCounts">${[['creature','クリーチャー'],['spell','スペル'],['weapon','ウェポン'],['exile','廃棄']].map(([k,n])=>`<div><b>${totals[k]}</b><span>${n}</span></div>`).join('')}</div><button class="overviewClose" id="deckClose" aria-label="デッキを閉じる"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header><div class="overviewScroll" id="deckScroll"><div class="overviewGrid">${entries.map(c=>`<button class="overviewCard" data-card="${c}" aria-label="${dkInfo(c).nm}"><div class="miniCanvas">${bigCardHTML(c)}</div></button>`).join('')}</div>${(m.exileList||[]).length?`<section class="overviewExile" aria-label="廃棄カード"><h3>廃棄 <span>${totals.exile}</span></h3><div class="overviewGrid">${m.exileList.map(c=>`<button class="overviewCard" data-card="${c}" aria-label="${dkInfo(c).nm}（廃棄）"><div class="miniCanvas">${bigCardHTML(c)}</div></button>`).join('')}</div></section>`:''}</div>`;
 
 el.querySelector('.overviewScroll').scrollTop=scrollTop;
 el.querySelector('.overviewClose').onclick=closeDeckOverview;
@@ -1501,7 +1409,9 @@ if (typeof ResizeObserver !== 'undefined') new ResizeObserver(layoutDeckOverview
 let sharedCardPicker = null;
 function getCardPicker() {
   if (!sharedCardPicker) sharedCardPicker = new PhoneCardPicker({
-    state:()=>state, player:()=>me(), pending:()=>pend(), cancelGesture:()=>cancelHandGesture(),
+    handAccess:blocked=>{ $('hdr').inert=blocked; $('handWrap').inert=blocked; },
+    closeHandDetail:()=>{ if($('cardZoom').dataset.drawHand==='true'){ $('cardZoom').classList.remove('on'); delete $('cardZoom').dataset.drawHand; } },
+    state:()=>state, identity:()=>[room,pid], player:()=>me(), pending:()=>pend(), cancelGesture:()=>cancelHandGesture(),
     card:(c,i,e)=>e.html ? '<div class="card"><div class="flip">'+e.html+'</div></div>' : cardHTML(c,i),
     bigCard:(c,e)=>e.html || bigCardHTML(c), name:c=>dkInfo(c).nm,
     decoration:c=>pend()?.type==='draft'?rareDrawDecoration(c):'',
@@ -1633,6 +1543,8 @@ function renderRouteChoice(p){
 
 async function submitMapChoice(optionId) {
   if (mapChoiceLock) return;
+  const context = phoneSyncContext();
+  let errorMessage = '';
   mapChoiceLock = true;
   document.querySelectorAll('#mapOvSide button').forEach(b => { b.disabled = true; });
   try {
@@ -1640,22 +1552,26 @@ async function submitMapChoice(optionId) {
     if (!res) throw new Error('map action failed: no response');
     if (res.status === 409) {
       mmSel = null;
-      const active = pend();
-      if (active) renderMiniMap(active);
-      else hideMapOv();
       return;
     }
     if (!res.ok) throw new Error(`map action failed: ${res.status}`);
     mmSel = null;
-    hideMapOv();
   } catch (err) {
     console.error(err);
-    const active = pend();
-    if (active) renderMiniMap(active);
-    const panel = $('mapOvSel');
-    if (panel) panel.insertAdjacentHTML('beforeend', '<div class="tdSub" style="color:#ff9b8c;margin-top:.8dvh">通信できませんでした。もう一度お試しください</div>');
+    errorMessage = '通信できませんでした。もう一度お試しください';
   } finally {
     mapChoiceLock = false;
+    // choose() may already have rendered the next sell/move prompt from SSE or
+    // the action response. Do not close that newer map after the request ends.
+    if (currentPhoneContext(context)) {
+      render();
+      if (errorMessage && $('mapOv').classList.contains('on')) {
+        const message = document.createElement('div');
+        message.className = 'tdSub'; message.style.cssText = 'color:#ff9b8c;margin-top:.8dvh';
+        message.textContent = errorMessage;
+        $('mapOvSel')?.append(message);
+      }
+    }
   }
 }
 
@@ -2336,103 +2252,10 @@ function renderShopDetail(item, visit) {
 const me = () => state.players.find(p => p.id === pid);
 const pend = () => state.pending[pid];
 
-function charDeckCards(id) {
-  const deck = (state.catalog.STARTER_DECKS && state.catalog.STARTER_DECKS[id]) || [];
-  const counts = new Map();
-  deck.forEach(c => counts.set(c, (counts.get(c) || 0) + 1));
-  return [...counts.entries()].map(([c, n]) => charDeckThumb(c, n, id)).join('');
-}
-function charDeckThumb(c, n, charId) {
-  const C = state.catalog, cr = C.CREATURES[c], spl = C.SPELLS && C.SPELLS[c], sup = C.SUPPORTS && C.SUPPORTS[c];
-  let bg = '/assets/cards/bg-neutral.webp', art = '';
-  if (cr) {
-    const bid = c.replace(/_f$/, '');
-    bg = `/assets/cards/bg-${cr.elem || 'neutral'}.webp`;
-    art = HAS_ART.has(bid) ? `<img src="/assets/cards/c_${bid}.webp" alt="">`
-      : `<div class="tok2" style="background:${RUNE[cr.elem] || '#6E7288'}">${cr.name.slice(0,4)}</div>`;
-  } else if (spl) {
-    bg = '/assets/cards/bg-spell-v1.webp';
-    art = SPELL_ART.has(c) ? `<img src="${spellAsset(c)}" alt="">` : sic('spell','8dvh');
-  } else if (sup) {
-    bg = '/assets/cards/bg-weapon-v1.webp';
-    art = supportArt(c);
-  }
-  return `<div class="cdDeckThumb" role="button" tabindex="0" data-card="${c}" title="${n}枚"
-      onclick="openStarterDeckDetail('${charId}','${c}')"><img class="cdtBg" src="${bg}" alt=""><div class="cdtArt${sup ? ' weaponArtHost' : ''}">${art}</div><span class="cdtCount">×${n}</span></div>`;
-}
-function closeCharDetail() {
-  charPreview = null;
-  charSubmitting = false;
-  $('charDetail').classList.remove('on');
-  $('charDetail').innerHTML = '';
-}
-function confirmCharacter(id) {
-  if (charSubmitting) return;
-  const p = pend();
-  if (!p || p.type !== 'select_char' || !p.options.some(o => o.id === id)) return;
-  charSubmitting = true;
-  const btn = $('charChoose');
-  if (btn) { btn.disabled = true; btn.textContent = '確定中…'; }
-  choose(id);
-}
-function openCharDetail(id, readonly = false) {
-  const c = state.catalog.CHARS[id], u = state.catalog.ULTS && state.catalog.ULTS[id];
-  const p = pend(), enabled = !!(p && p.type === 'select_char' && p.options.some(o => o.id === id));
-  const previewOnly = readonly || c && (c.selectable === false || c.upcoming);
-  if (!c || (!enabled && !previewOnly)) return;
-  charPreview = id;
-  const elemJa = { fire:'火', water:'水', earth:'土', wind:'風' }[c.elem] || '';
-  $('charDetail').innerHTML = `<div class="cdHero"><img class="csBg" src="/assets/cards/bg-${c.elem}.webp" alt="">
-      <div class="cdName">${c.name}</div><img class="cdArt${id === 'nerasio' ? ' cdArtNerasio' : ''}" src="/assets/full_${id}.png" alt="${c.name}"></div>
-    <div class="cdBody"><div class="cdInfo">
-      <div class="cdSec"><h2>${sic('ult','2.5dvh')}【${u ? u.name : '固有スキル'}】</h2>${u ? u.desc : ''}</div>
-      <div class="cdSec"><h2>属性親和：${elemJa}</h2>同属性の土地の強化費を20%軽減する。</div>
-      <div class="cdSec"><h2>プレイスタイル</h2>${c.style || ''}<br>${c.deckNote || ''}</div>
-      ${previewOnly ? '<div class="cdSec"><span class="cdPending">準備中</span><p>性能は現在調整中です。正式実装まで選択できません。</p></div>'
-        : `<div class="cdSec"><h2>初期デッキ</h2><div class="cdDeck">${charDeckCards(id)}</div></div>`}
-    </div><div class="cdActions"><button class="abtn ghost" onclick="closeCharDetail()">戻る</button>
-      ${previewOnly ? '' : `<button class="abtn" id="charChoose" onclick="confirmCharacter('${id}')">選ぶ</button>`}</div></div>`;
-  openBlockingOverlay('charDetail');
-  afterUiPaint(() => fitCreatureNames($('charDetail')));
-}
-
-function renderCharSelection(m, C, p) {
-  const opts = p && p.type === 'select_char' ? p.options.map(o => o.id) : [];
-  openBlockingOverlay('charSel');
-  $('csMsg').textContent = p ? '使用する召喚士を選んでください'
-    : (m.charId ? C.CHARS[m.charId].name + ' で決定 ─ 他のプレイヤーを待っています' : '…');
-  const entries = Object.entries(C.CHARS);
-  const villaIndex = entries.findIndex(([id]) => id === 'villa');
-  const nerasioIndex = entries.findIndex(([id]) => id === 'nerasio');
-  if (villaIndex >= 0 && nerasioIndex >= 0)
-    [entries[villaIndex], entries[nerasioIndex]] = [entries[nerasioIndex], entries[villaIndex]];
-  const cards = entries.map(([id, c]) => {
-    if (c.selectable === false || c.upcoming) {
-      const elemIcon = `<span class="csuElem"><svg viewBox="-34 -36 68 72">${ELEM_MINI[c.elem]}</svg></span>`;
-      return `<div class="csUpcoming revealed" data-id="${id}" role="button" aria-label="${c.name}の準備中情報を見る">
-        <img class="csuBg" src="/assets/cards/bg-${c.elem || 'neutral'}.webp" alt="">
-        <img class="csuArt" src="/assets/full_${id}.png" alt="">
-        ${elemIcon}<div class="csuName">${c.name}</div><div class="csuState">準備中・詳細を見る</div></div>`;
-    }
-    const taken = state.players.find(x => x.confirmed && x.charId === id && x.id !== pid);
-    const mine = m.charId === id;
-    const enabled = opts.includes(id);
-    const elemIcon = `<span class="csElem"><svg viewBox="-34 -36 68 72">${ELEM_MINI[c.elem]}</svg></span>`;
-    return `<div class="csCard ${mine ? 'mine' : ''} ${(!enabled && !mine) ? 'dim' : ''}" data-id="${id}">
-      <div class="csVisual"><img class="csBg" src="/assets/cards/bg-${c.elem}.webp" alt="">
-        <img class="csArt" src="/assets/hud_${id}.png?v=1276" alt="${c.name}"
-          onerror="this.onerror=null;this.src='/assets/full_${id}.png'"></div>
-      <div class="csInfo"><div class="csTop">${elemIcon}<div class="csName">${c.name}</div></div>
-        <div class="csBottom">${c.style || ''}</div></div>
-      ${(mine || taken) ? `<div class="csState">${mine ? '選択済み' : taken.name + 'が使用中'}</div>` : ''}</div>`;
-  });
-  $('csRow').innerHTML = cards.join('');
-  document.querySelectorAll('.csCard:not(.dim)').forEach(el => el.onclick = () => openCharDetail(el.dataset.id));
-  document.querySelectorAll('.csUpcoming.revealed').forEach(el => el.onclick = () => openCharDetail(el.dataset.id, true));
-  if (charPreview && opts.includes(charPreview)) openCharDetail(charPreview);
-  else if (charPreview && C.CHARS[charPreview] && (C.CHARS[charPreview].selectable === false || C.CHARS[charPreview].upcoming))
-    openCharDetail(charPreview, true);
-  else if (charPreview) closeCharDetail();
+let summonerSelection=null;
+function renderCharSelection(m,C,p){
+ if(!summonerSelection)summonerSelection=PhoneSummonerSelection.create($('phoneSummoners'),{card:bigCardHTML,icon:sic,send:choose,onOpen:()=>cancelHandGesture()});
+ summonerSelection.update(state,pid);
 }
 
 // 手札の各カードが「今どの選択肢に対応するか」
@@ -2706,7 +2529,8 @@ function bindHand() {
   document.querySelectorAll('#hand .card').forEach(el => {
     el.onclick = e => {
       if (Date.now() < handClickSuppressUntil) { e.preventDefault(); return; }
-      openCardZoom(el.dataset.c);
+      openCardZoom(el.dataset.c,['draft','pick_draw'].includes(pend()?.type));
+      if(['draft','pick_draw'].includes(pend()?.type))$('cardZoom').dataset.drawHand='true';
     };
     el.onpointerdown = e => beginHandPointer(e, el);
     el.oncontextmenu = e => e.preventDefault();
@@ -2942,8 +2766,10 @@ function render() {
 
   // キャラ選択オーバーレイ
   if (state.phase === 'select') {
+    closeActionOverlay(true);
     renderCharSelection(m, C, p);
-  } else { $('charSel').classList.remove('on'); closeCharDetail(); }
+    return;
+  } else { summonerSelection?.hide(); }
   if (!p || p.type !== 'draft') $('draftOv').classList.remove('on');
   if (!p || p.type !== 'gate') $('gateOv').classList.remove('on');
   // 選択ドロー: 選択後の飛翔演出が終わるまでは閉じない(操作ロック)
@@ -3024,10 +2850,11 @@ function render() {
       if (p.type === 'draft' && ld.castle) {
         // 城ドラフトはズームと内訳表示が終わってから表示する
         doneAt = p.availableAt || ld.castle.availableAt ||
-          ld.at + init + (ld.castle.castleStep || steps) * scale(GT.stepMs) + scale(GT.castleDraftLead);
+          ld.at + init + (ld.castle.castleStep || steps) * scale(GT.stepMs) + scale(GT.castleZoom + GT.castleDuration(ld.castle));
       }
+      if(ld.gateReadyAt)doneAt=Math.max(doneAt,ld.gateReadyAt);
       if (ld.forcedStop && p.type !== 'draft') doneAt += scale(GT.anchorStop);
-      // サーバーとの時計ズレで「移動中…」から抜けなくなるのを防ぐ(最大8秒で強制解除)
+      // サーバーとの時計ズレで待機が固定されるのを防ぐ。回復対象が多い帰還演出にも対応。
       doneAt = Math.min(doneAt, pendSince + GT.moveWaitMax);
       const serverNow = Date.now() + serverClockOffset;
       if (serverNow < doneAt) {
@@ -3064,7 +2891,7 @@ function render() {
     selected = null;
   } else if (p.type === 'pick_draw') {
     $('msg').textContent=taskPrompt(p); A.innerHTML=''; $('pickOv').classList.remove('on');
-    getCardPicker().show({title:'カードを選ぶ',center:true,sections:[{name:'候補',entries:p.options.map(o=>({card:o.card,pickId:o.id}))}],action:'手札に加える'});
+    getCardPicker().show({title:'カードを選ぶ',drawOverlay:true,center:true,sections:[{name:'候補',entries:p.options.map(o=>({card:o.card,pickId:o.id}))}],action:'手札に加える'});
     renderHand(); return;
   } else if (p.type === 'roll') {
     const hasSp = p.options.some(o => o.id.startsWith('sp:'));
@@ -3194,7 +3021,7 @@ function render() {
     A.innerHTML = '';
   } else if (p.type === 'draft') {
     $('msg').textContent=taskPrompt(p); A.innerHTML=''; $('draftOv').classList.remove('on');
-    getCardPicker().show({title:'カード獲得',center:true,sections:[{name:'候補',entries:p.options.filter(o=>o.id.startsWith('take:')).map(o=>({card:o.id.slice(5),pickId:o.id}))}],action:'獲得する',cancelId:p.options.some(o=>o.id==='skip')?'skip':null,cancelLabel:'カードを加えない'});
+    getCardPicker().show({title:'カード獲得',drawOverlay:true,center:true,sections:[{name:'候補',entries:p.options.filter(o=>o.id.startsWith('take:')).map(o=>({card:o.id.slice(5),pickId:o.id}))}],action:'獲得する',cancelId:p.options.some(o=>o.id==='skip')?'skip':null,cancelLabel:'カードを加えない',confirmCancel:true});
   } else if (p.type === 'market' && !inShopHand) {
     sharedCardPicker?.hide();
     $('msg').textContent = taskPrompt(p);

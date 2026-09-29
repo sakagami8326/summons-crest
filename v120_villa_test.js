@@ -46,9 +46,10 @@ for (const asset of ['full_villa.png','p_villa.png','f_villa.png','summoner-stil
 
 const phone = fs.readFileSync('public/phone.html', 'utf8');
 const board = fs.readFileSync('public/board.html', 'utf8');
-ok(/grid-template-columns:repeat\(4,minmax\(0,1fr\)\); grid-template-rows:repeat\(2,minmax\(0,1fr\)\)/.test(phone),
-  'phone selection uses a 4 by 2 grid');
-ok(phone.includes('csUpcoming revealed') && phone.includes("openCharDetail(el.dataset.id, true)"),
+const summoners = fs.readFileSync('public/phone-summoners.js', 'utf8');
+ok(/grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/.test(fs.readFileSync('public/phone-summoners.css','utf8')),
+  'phone selection uses the approved 5-column roster');
+ok(summoners.includes('Object.keys(C.CHARS)') && summoners.includes("return '準備中'") && summoners.includes('deck=C.STARTER_DECKS[id]||[]'),
   'phone keeps forward-compatible summoner preview support');
 ok(/Array\.from\(\{ length:4 \}/.test(board) && board.includes('data-player-slot=') &&
    board.includes('scPortrait') && board.includes('scPawnWrap'),

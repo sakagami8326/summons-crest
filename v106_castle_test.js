@@ -22,9 +22,10 @@ ok(server.includes("return startDraft(r, p, meta && meta.villaUlt ? 'villa_recov
   'castle draft has presentation gate and Villa resume target');
 ok(server.includes("error: '城の帰還演出中です'"), 'early HTTP selection is rejected');
 ok(server.includes('healed.push({ tile: i, creature:'), 'healing details retain before/after data');
-ok(board.includes('id="castleBreakdown"') && board.includes('領地総価値'), 'TV has detailed castle panel');
+const notice=fs.readFileSync(path.join(__dirname,'public/board-notice.js'),'utf8');
+ok(board.includes("BoardNotice.reward('castle'") && notice.includes('threeRewards'), 'TV uses shared three-reward castle panel');
 ok(board.indexOf('setZoom(0)') < board.indexOf('playSe(seCastleBonus)'), 'castle zoom precedes sound');
-ok(board.includes('刻印がありません') && board.includes('ドラフトなし'), 'no-seal presentation exists');
+ok(notice.includes('刻印なし') && notice.includes('帰還ボーナスなし'), 'no-seal presentation exists');
 ok(phone.includes('p.availableAt || ld.castle.availableAt'), 'phone waits for draft availability');
 
 const supplied = 'E:\\クレストサーキット\\sounds\\城通過.mp3';

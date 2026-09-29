@@ -125,7 +125,8 @@ ok(/let mmPendingKey = ''/.test(phone) && /function syncMapPendingSelection\(p\)
   'phone clears stale tile selection whenever the pending map context changes');
 ok(/async function submitMapChoice\(optionId\)/.test(phone) && /通信できませんでした。もう一度お試しください/.test(phone),
   'phone keeps map choices recoverable after a communication failure');
-ok(/res\.status === 409[\s\S]*?renderMiniMap\(active\)/.test(phone),
+const submitMapChoiceSource = phone.slice(phone.indexOf('async function submitMapChoice(optionId)'), phone.indexOf('\nfunction ', phone.indexOf('async function submitMapChoice(optionId)')));
+ok(/res\.status === 409/.test(submitMapChoiceSource) && /finally\s*\{[\s\S]*?currentPhoneContext\(context\)[\s\S]*?render\(\)/.test(submitMapChoiceSource) && !/hideMapOv\(\)/.test(submitMapChoiceSource),
   'phone keeps the server-refreshed map visible after a stale choice');
 ok(/\^\(up\|ct[\s\S]*?ms\|md(?:\|am)?\)/.test(phone) && /\/cancel\$\|\^pass\$/.test(phone),
   'phone supports Marlow source and destination cancellation in the shared map flow');

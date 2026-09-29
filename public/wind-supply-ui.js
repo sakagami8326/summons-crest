@@ -37,6 +37,11 @@ window.WindSupplyUI = (() => {
     a.queue(4, async () => {
       if (!a.current()?.windSupply?.active || a.current().windSupply.id !== e.id) return;
       await ack(a, e, 'wind_supply_started');
+      if(window.BoardEffects){
+        try{await BoardEffects.present('wind',e,s);}
+        finally{await ack(a,e,'wind_supply_complete');}
+        return;
+      }
       const name = portrait(byId('windSupplyPortrait'), e, s);
       byId('windSupplyOwner').textContent = (s.players.find(p => p.id === e.player)?.name || '') + 'の ' + name;
       byId('windSupplyWindow').classList.add('on');

@@ -96,5 +96,5 @@ function drawCreature(t){
       timer=setTimeout(finish,duration*1000/speed+1200);raf=requestAnimationFrame(frame);
     });
   }
-  window.SummonsEvolution={play,cancel:()=>active?.(),stopAudio:()=>charge.stopAll(),unlockAudio:()=>charge.unlock().catch(()=>false)};
+  window.SummonsEvolution={play,cancel:()=>active?.(),stopAudio:()=>charge.stopAll(),setVolume:value=>charge.setVolume(value),unlockAudio:()=>charge.unlock().catch(()=>false)};
 })();

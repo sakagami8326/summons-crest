@@ -78,9 +78,10 @@ ok(/class="bdSoul"/.test(board) && /class="tiSoul"/.test(board),
 // Recovery selection and starter-deck browsing use the common detail overlay.
 ok(/\.dkCard\.picked/.test(phone) && /selected:picked\.has\(/.test(phone),
   'Villa recovery selection has a persistent selected-card treatment');
-ok(/function openStarterDeckDetail\(charId,\s*cid\)/.test(phone) &&
-   phone.includes("onclick=\"openStarterDeckDetail('${charId}','${c}')\""),
-  'starter-deck cards open the common detail overlay');
+const summonerPicker = fs.readFileSync('public/phone-summoners.js','utf8');
+ok(summonerPicker.includes('showCard(b.dataset.card)') && summonerPicker.includes('${bigCardHTML(cid)}') &&
+   phone.includes('card:bigCardHTML'),
+  'starter-deck cards open read-only enlargement using the existing card renderer');
 ok(/else if \(spl\)/.test(phone) && /else if \(sup\)/.test(phone),
   'common detail navigation supports spells and support cards');
 
@@ -91,10 +92,10 @@ ok(/height:min\(41\.5dvh/.test(phone) && /gap:\.16dvh \.08vw/.test(phone),
 ok(!/shopCompactExile/.test(compact), 'phone shop shelf omits exile badges');
 ok(/#shopGold\s*\{[^}]*bottom:1\.2dvh/.test(phone), 'shop gold is anchored at bottom-left');
 
-// Summoner selection uses the dedicated HUD crops and keeps copy in a separate panel.
-ok(/src="\/assets\/hud_\$\{id\}\.png\?v=1276"/.test(phone) &&
-   /class="csVisual"/.test(phone) && /class="csInfo"/.test(phone),
-  'phone summoner portraits use dedicated HUD art with a separate information panel');
+// Summoner selection reuses the approved board actor art with a dedicated information panel.
+ok(summonerPicker.includes('/assets/board-actors/${id}.png') &&
+   summonerPicker.includes('class="portraitStage"') && summonerPicker.includes('class="summonerInfo"'),
+  'phone summoner portraits use dedicated actor art with a separate information panel');
 ok(!/const CHAR_SELECT_FOCUS\s*=/.test(phone) && !/--cs-scale/.test(phone),
   'phone summoner portraits no longer depend on per-character CSS cropping');
 ok(/\.scPawnWrap::after\s*\{[^}]*bottom:-\.35vh/.test(board),

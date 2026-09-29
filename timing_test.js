@@ -20,7 +20,7 @@ ok(GT.moveStartDelayMulti > GT.moveStartDelay, 'game_timing: 複数ダイスの�
 const board = fs.readFileSync(path.join(__dirname, 'public/board.html'), 'utf8');
 const phone = fs.readFileSync(path.join(__dirname, 'public/phone.html'), 'utf8');
 for (const [name, html] of [['board', board], ['phone', phone]]) {
-  ok(html.includes('src="/game_timing.js"'), `${name}: game_timing.jsを読み込んでいる`);
+  ok(/src="\/game_timing\.js(?:\?[^"\s]*)?"/.test(html), `${name}: game_timing.jsを読み込んでいる`);
   ok(/GAME_TIMING[.;]/.test(html), `${name}: GAME_TIMING定数を参照している`);
 }
 ok(fs.readFileSync(path.join(__dirname, 'public/board_world.js'), 'utf8').includes('GAME_TIMING.'),
@@ -38,7 +38,7 @@ const arrive = phone.match(/doneAt = ld\.at \+ init \+ steps \* scale\(GT\.stepM
 ok(!!arrive, 'phone: 通常到着の式が共有定数で構成されている');
 ok(/castleAt \+ scale\(GT\.castleResume\) \+ remaining \* scale\(GT\.stepMs\) \+ scale\(GT\.arriveBufCastle\)/.test(phone),
   'phone: 城経由の到着式が共有定数で構成されている');
-ok(/castleStep \|\| steps\) \* scale\(GT\.stepMs\) \+ scale\(GT\.castleDraftLead\)/.test(phone),
+ok(/castleStep \|\| steps\) \* scale\(GT\.stepMs\) \+ scale\(GT\.castleZoom \+ GT\.castleDuration\(ld\.castle\)\)/.test(phone),
   'phone: 城ドラフト表示の式が共有定数で構成されている');
 
 // 5) 盤面のホップ進行が共有定数で構成されていること

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>アップデート：盤面メッセージ・スマホUIの刷新とレダーニの調整 | SUMMONS CODE</title>
+  <meta name="description" content="盤面メッセージと召喚士選択画面を刷新。ドロー中の手札確認、音量調整、レダーニの必殺技変更、ランダムドローの追加カード、廃棄カードの振り返りなど、今回のアップデートの内容をまとめました。">
+  <meta name="theme-color" content="#0b0d18">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="SUMMONS CODE">
+  <meta property="og:url" content="https://summonscode.jp/news/2026-09-29-ui-update">
+  <meta property="og:title" content="アップデート：盤面メッセージ・スマホUIの刷新とレダーニの調整 | SUMMONS CODE">
+  <meta property="og:description" content="盤面メッセージと召喚士選択画面を刷新。ドロー中の手札確認、音量調整、レダーニの必殺技変更、ランダムドローの追加カード、廃棄カードの振り返りなど、今回のアップデートの内容をまとめました。">
+  <meta property="og:image" content="https://summonscode.jp/assets/site/og-summons-code-v2.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="SUMMONS CODE — 火と水の召喚士とクリーチャーたち">
+  <meta name="twitter:image" content="https://summonscode.jp/assets/site/og-summons-code-v2.jpg">
+  <meta name="twitter:image:alt" content="SUMMONS CODE — 火と水の召喚士とクリーチャーたち">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://summonscode.jp/news/2026-09-29-ui-update">
+  <link rel="icon" href="/assets/site/spark-star.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/site/design-system.css?v=154">
+  <link rel="stylesheet" href="/site/site-pages.css?v=154-2">
+  <link rel="stylesheet" href="/site/news.css?v=3">
+  <link rel="stylesheet" href="/site/site-header.css?v=154-3">
+  <script src="/analytics.js"></script>
+  <script src="/site/site-pages.js?v=154-2" defer></script>
+  <link rel="stylesheet" href="/site/site-audio.css?v=1">
+  <script src="/site/site-audio.js?v=2&release=164" defer></script>
+  <link rel="stylesheet" href="/site/navigation.css?v=footer-shared-20260930&release=164">
+  <script src="/site/navigation.js?v=1&release=164" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#news-content">記事本文へ移動</a>
+  <header class="site-header is-scrolled" data-header>
+    <a class="site-header__logo" href="/" aria-label="SUMMONS CODE ホーム"><img src="/assets/summons-code-white.svg" alt="SUMMONS CODE" width="1415" height="744"></a>
+    <nav class="site-nav" id="site-nav" aria-label="メインメニュー" data-nav>
+      <a href="/#concept">CONCEPT</a><a href="/#how-to-play">HOW TO PLAY</a><a href="/#game-system">GAME SYSTEM</a><a href="/cards">CARDS</a><a href="/rules">RULES</a><a href="/#summoners">SUMMONERS</a><a href="/#feedback">FEEDBACK</a>
+      <div class="site-nav__socials" role="group" aria-label="SUMMONS CODE公式SNS"><a class="site-social-link site-social-link--x" href="https://x.com/gamitestman" target="_blank" rel="me noopener noreferrer" aria-label="開発者のXアカウント @gamitestman を開く"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.657l-5.214-6.817-5.967 6.817H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z"/></svg></a><a class="site-social-link site-social-link--youtube" href="https://www.youtube.com/@SUMMONSCODE" target="_blank" rel="noopener noreferrer" aria-label="SUMMONS CODE公式YouTubeチャンネルを開く"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="4.2"/><path class="youtube-play" d="m10 8.7 5.4 3.3-5.4 3.3V8.7Z"/></svg></a></div>
+    </nav>
+    <div class="site-header__socials" role="group" aria-label="SUMMONS CODE公式SNS"><a class="site-social-link site-social-link--x" href="https://x.com/gamitestman" target="_blank" rel="me noopener noreferrer" aria-label="開発者のXアカウント @gamitestman を開く"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.657l-5.214-6.817-5.967 6.817H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z"/></svg></a><a class="site-social-link site-social-link--youtube" href="https://www.youtube.com/@SUMMONSCODE" target="_blank" rel="noopener noreferrer" aria-label="SUMMONS CODE公式YouTubeチャンネルを開く"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="4.2"/><path class="youtube-play" d="m10 8.7 5.4 3.3-5.4 3.3V8.7Z"/></svg></a></div>
+    <a class="site-header__play play-cta play-cta--header" href="/play" data-game-cta="news-header"><span>無料でプレイ</span><span class="play-cta__arrow" aria-hidden="true">→</span></a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="メニューを開く" data-nav-toggle><span></span><span></span></button>
+  </header>
+
+  <main class="sub-main">
+    <article class="news-article" aria-labelledby="page-title">
+      <header class="sub-hero news-hero">
+        <div class="sub-shell news-shell">
+          <nav class="news-breadcrumb" aria-label="パンくず"><a href="/">ホーム</a><span aria-hidden="true">／</span><a href="/news">更新情報</a></nav>
+          <p class="sub-kicker">NEWS</p>
+          <p class="news-meta"><time datetime="2026-09-30">2026.09.30</time><span class="news-category news-category--update">アップデート</span></p>
+          <h1 id="page-title">アップデート：盤面メッセージ・スマホUIの刷新とレダーニの調整</h1>
+        </div>
+      </header>
+      <div class="sub-shell news-shell news-content" id="news-content" tabindex="-1">
+
+<p class="news-intro">「誰が何をしたのか」「今、何を選べるのか」が伝わるように、盤面の案内とスマホの操作画面を見直しました。レダーニの必殺技やランダムドローの調整、不具合修正もあわせてご紹介します。</p>
+<p class="news-image-note"><strong>2026年9月30日アップデート（Ver.1.64）</strong><br>掲載画像は、今回の更新内容を紹介するためのプレイ画面です。</p>
+
+<section aria-labelledby="update-board">
+<h2 id="update-board">1. 盤面の出来事を、イラストと数字で分かりやすくしました</h2>
+<p>盤面に表示するメッセージを、<strong>透ける黒背景と金のライン</strong>を使ったデザインに統一しました。召喚士のイラスト・属性・プレイヤー名を添え、誰の行動なのかを分かりやすくしました。</p>
+<figure class="news-shot"><a href="/assets/site/news/20260929/board-message.png?v=20260930-anon" target="_blank" rel="noopener" aria-label="召喚士のイラストと、獲得したGを大きく表示する新メッセージウィンドウ（拡大画像を開く）"><img src="/assets/site/news/20260929/board-message.png?v=20260930-anon" alt="召喚士のイラストと、獲得したGを大きく表示する新メッセージウィンドウ" width="1440" height="900" loading="lazy" decoding="async"></a><figcaption>召喚士のイラストと、獲得したGを大きく表示する新メッセージウィンドウ</figcaption></figure>
+<p>盤面の雰囲気を残しながら、行動したプレイヤーと効果の内容がひと目で伝わる構成にしています。</p>
+<ul>
+<li><strong>戦闘終了・通行料：</strong>Gを支払う側と受け取る側、動いた金額をまとめて表示するようにしました。</li>
+<li><strong>城への帰還：</strong>「ボーナス」「HPを回復」「カードを選択」の3つを分けて表示。回復する領地が多いときは、対象を自動で切り替えて案内するようにしました。</li>
+<li><strong>祠・門・カード効果：</strong>獲得したGやカード、効果の対象をアイコンやイラストで表示するようにしました。</li>
+<li><strong>必殺技：</strong>ダメージ・回復・進化・廃棄カードの利用など、効果の要点を強調。通常の通知より少し長く表示するようにしました。</li>
+<li><strong>レアカード獲得：</strong>カードの絵が白く飛ばないよう、カードの周囲が虹色に光る演出に調整しました。</li>
+<li><strong>ターン開始・終盤：</strong>「〇〇のターン」の案内、ゴール接近、破産、勝利の表示を整理。勝利時は城に寄った画面のままメッセージを表示するようにしました。</li>
+</ul>
+<p>連鎖・称号獲得・領地の崩壊などの通知も共通デザインに合わせました。召喚士が登場する動きは、ターン開始時には力強く、それ以外は控えめに調整しました。</p>
+<figure class="news-shot"><a href="/assets/site/news/20260929/castle-message.png?v=20260930-anon" target="_blank" rel="noopener" aria-label="城への帰還では、ボーナス・HP回復・カード選択の3つを分けて表示（拡大画像を開く）"><img src="/assets/site/news/20260929/castle-message.png?v=20260930-anon" alt="城への帰還では、ボーナス・HP回復・カード選択の3つを分けて表示" width="1440" height="900" loading="lazy" decoding="async"></a><figcaption>城への帰還では、ボーナス・HP回復・カード選択の3つを分けて表示</figcaption></figure>
+<figure class="news-shot"><a href="/assets/site/news/20260929/battle-message.png?v=20260930-anon" target="_blank" rel="noopener" aria-label="戦闘後の通行料は、支払いと受け取りの金額・手持ちGの変化を表示（拡大画像を開く）"><img src="/assets/site/news/20260929/battle-message.png?v=20260930-anon" alt="戦闘後の通行料は、支払いと受け取りの金額・手持ちGの変化を表示" width="1440" height="900" loading="lazy" decoding="async"></a><figcaption>戦闘後の通行料は、支払いと受け取りの金額・手持ちGの変化を表示</figcaption></figure>
+</section>
+
+<section aria-labelledby="update-land">
+<h2 id="update-land">2. 進む道と、止まった領地の情報を見やすくしました</h2>
+<p>進行方向の案内をコンパクトにし、盤面が見える範囲を広げました。選べる経路は<strong>青白い矢印と流れる破線</strong>で示し、到着するマスの縁を発光させるようにしました。光は召喚士やクリーチャー、建物に重ならないようにしました。</p>
+<p>敵領地に止まったときは、マスへズームしてから、その近くに確認ウィンドウを表示するようにしました。</p>
+<ul>
+<li>クリーチャーのイラストと、<strong>残りHP＋DFの合計</strong>を大きく表示するようにしました。</li>
+<li>領地とクリーチャーの属性、属性一致・不一致をアイコンで示すようにしました。</li>
+<li>攻め側・守り側の追加効果を分けて表示。侵略できない場合は赤色で強調するようにしました。</li>
+</ul>
+<p>空き地・自分の領地でも、ズーム後に情報を表示するようにしました。強化の案内は、止まったマスだけでなく<strong>自分の領地を選んで強化できる</strong>ことが伝わる文面に変更しました。</p>
+<p>クリーチャー配置時は、<strong>メッセージ → 配置先へズーム → クリーチャー登場 → 全体へ戻る</strong>の順に演出するようにしました。</p>
+</section>
+
+<section aria-labelledby="update-hud">
+<h2 id="update-hud">3. 次のプレイヤーとボーナスの所持者を確認しやすくしました</h2>
+<p>盤面のプレイヤー情報の下に、召喚士アイコンを使った<strong>行動順</strong>を追加しました。現在のプレイヤーをハイライトし、総資産の順位と行動順を見分けやすくしました。</p>
+<p>「覇者」「大巡礼者」は、現在の所持者・戦闘勝利数または祠巡礼数・<strong>総資産＋500のボーナス</strong>をそれぞれひとまとまりで表示するようにしました。プレイヤー情報の枠も整え、破産したプレイヤーはグレーで表示するようにしました。</p>
+</section>
+
+<section aria-labelledby="update-phone">
+<h2 id="update-phone">4. スマホの召喚士選択とドロー操作を刷新しました</h2>
+<h3>召喚士を一覧から選び、詳細を見比べられるようにしました</h3>
+<p>召喚士選択を、<strong>属性で絞り込めるカード一覧</strong>に変更しました。カードをタップすると、召喚士のイラストとともに、コンセプト・必殺技・初期デッキを確認できます。左右の矢印で別の召喚士へ切り替えられます。</p>
+<p>詳細画面では、既存ルールの<strong>「同属性の領地は強化費用20％OFF」</strong>と、必殺技が1試合に1回であることも案内するようにしました。将来の追加に備えて無属性の絞り込みも用意しましたが、今回、無属性の召喚士の追加はありません。</p>
+<figure class="news-shot"><a href="/assets/site/news/20260929/summoners.png?v=20260930-anon" target="_blank" rel="noopener" aria-label="属性で絞り込める召喚士一覧（拡大画像を開く）"><img src="/assets/site/news/20260929/summoners.png?v=20260930-anon" alt="属性で絞り込める召喚士一覧" width="844" height="390" loading="lazy" decoding="async"></a><figcaption>属性で絞り込める召喚士一覧</figcaption></figure>
+<figure class="news-shot"><a href="/assets/site/news/20260929/summoner-detail.png?v=20260930-anon" target="_blank" rel="noopener" aria-label="召喚士の特徴・必殺技・初期デッキをまとめた詳細画面（拡大画像を開く）"><img src="/assets/site/news/20260929/summoner-detail.png?v=20260930-anon" alt="召喚士の特徴・必殺技・初期デッキをまとめた詳細画面" width="844" height="390" loading="lazy" decoding="async"></a><figcaption>召喚士の特徴・必殺技・初期デッキをまとめた詳細画面</figcaption></figure>
+<h3>ドローする前に、自分の手札を確認できるようにしました</h3>
+<p>ランダムドロー・選択ドローに<strong>「手札を確認する」</strong>ボタンを追加しました。選択を確定せずに手札とプレイヤー情報へ切り替え、「カード選択に戻る」で元の画面へ戻れます。</p>
+<p>ランダムドローの右上の×ボタンはなくし、カードの下に<strong>「手札に加えない」</strong>ボタンを配置しました。押した際は確認を表示し、意図せずカードを見送ってしまう操作を減らしました。</p>
+</section>
+
+<section aria-labelledby="update-balance">
+<h2 id="update-balance">5. レダーニとランダムドローを調整しました</h2>
+<h3>レダーニの必殺技「烈火の進軍」</h3>
+<p>効果を<strong>「ヘビーアックス（AT＋40）を1枚手札に加え、ダイスを3個振って移動する」</strong>に変更しました。移動に加えて、侵略に使えるウェポンを確保できるようになりました。</p>
+<h3>ランダムドローの候補を追加しました</h3>
+<p><strong>ソード・シールド・ディスアーム</strong>をランダムドローの候補に加えました。ショップ以外でも、攻撃・防御を補うカードや相手のウェポンに対抗するカードを入手できる機会を増やしました。</p>
+</section>
+
+<section aria-labelledby="update-audio">
+<h2 id="update-audio">6. 音のON／OFFと音量をまとめて設定できるようにしました</h2>
+<p>盤面左下の設定ボタンから、画面中央に設定ウィンドウを開けるようにしました。「ルーム」「音声」のタブで切り替え、ルームコードの確認と音量調整を同じ場所で行えます。</p>
+<ul><li>すべての音のON／OFF</li><li>BGM・効果音それぞれの音量調整</li><li>効果音の試聴と、標準の音量へのリセット</li></ul>
+<p>設定は利用中のブラウザに保存するようにしました。また、ホームページで音をOFFにしたあと、ページ移動や別タブを開いた際にONへ戻る場合がある問題を修正しました。</p>
+<figure class="news-shot" style="max-width:460px;margin-left:auto;margin-right:auto"><a href="/assets/site/news/20260929/audio.png?v=20260930-anon" target="_blank" rel="noopener" aria-label="ルーム情報とタブで切り替えられる音声設定（拡大画像を開く）"><img src="/assets/site/news/20260929/audio.png?v=20260930-anon" alt="ルーム情報とタブで切り替えられる音声設定" width="460" height="534" loading="lazy" decoding="async"></a><figcaption>ルーム情報とタブで切り替えられる音声設定</figcaption></figure>
+</section>
+
+<section aria-labelledby="update-result">
+<h2 id="update-result">7. 廃棄したカードも、リザルトで振り返れるようにしました</h2>
+<p>リザルトの最終デッキでは、<strong>所持カードのあとに廃棄カードを続けて表示</strong>するようにしました。廃棄カードには印を付け、所持枚数とは別に集計するようにしました。廃棄枚数のボタンから、廃棄カードのあるページへ移動できます。</p>
+<p>属性ごとの枚数には、文字の代わりに火・水・土・風・無属性のアイコンを使用するようにしました。</p>
+<figure class="news-shot"><a href="/assets/site/news/20260929/result-deck.png?v=20260930-anon" target="_blank" rel="noopener" aria-label="所持カードと廃棄カードを同じ一覧で確認できる最終デッキ（拡大画像を開く）"><img src="/assets/site/news/20260929/result-deck.png?v=20260930-anon" alt="所持カードと廃棄カードを同じ一覧で確認できる最終デッキ" width="1440" height="900" loading="lazy" decoding="async"></a><figcaption>所持カードと廃棄カードを同じ一覧で確認できる最終デッキ</figcaption></figure>
+</section>
+
+<section aria-labelledby="update-fixes">
+<h2 id="update-fixes">8. 不具合の修正とホームページの調整を行いました</h2>
+<ul><li>所持金が不足して領地を売却する際、1つ目の領地を選んだあとに、次の売却先を選ぶ画面が出ない問題を修正しました。</li><li>ホームページのフッターにある開発者ブログのバナーを調整し、文字とイラストが重ならないようにしました。</li></ul>
+<p>プレイ中に気になった点は、引き続き<a href="/#feedback">フィードバック</a>からお寄せください。</p>
+</section>
+
+<nav class="news-back" aria-label="記事ナビゲーション"><a href="/news">← 更新情報一覧に戻る</a></nav>
+
+
+
+      </div>
+    </article>
+  </main>
+
+  <footer class="sub-footer"><img src="/assets/summons-code-gold.svg" alt="SUMMONS CODE" width="1415" height="744" loading="lazy"><nav aria-label="フッターメニュー"><a href="/">HOME</a><a href="/cards">CARDS</a><a href="/rules">RULES</a><a href="/#feedback">FEEDBACK</a><a href="/play" data-game-cta="news-footer">GAME START</a></nav><small>© 2026 SUMMONS CODE</small></footer>
+</body>
+</html>

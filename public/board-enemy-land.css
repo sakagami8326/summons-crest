@@ -1,0 +1,176 @@
+/* Approved enemy-land panel; inspection only. */
+#boardNotice[data-flow=inspection] .messageWindow{animation:none!important;opacity:1}
+#boardNotice[data-scene=enemy][data-owner=g]{--stand-w:240px;--stand-h:360px;width:min(1100px,calc(100vw - 450px));left:calc((100vw + 420px)/2);top:53%}#boardNotice[data-scene=enemy][data-owner=g] .messageWindow{padding:24px 27px;width:calc(100% - var(--stand-w) + 32px)}#boardNotice[data-scene=enemy] .noticeContent{padding-right:4px;width:100%;box-sizing:border-box}#boardNotice[data-scene=enemy] .actorStand{right:-4px}#boardNotice[data-scene=enemy] .elOwnerLabel{font-size:11px;letter-spacing:.15em;margin-bottom:4px}#boardNotice[data-scene=enemy] .standName b{font-size:15px}
+#boardNotice .elHeader{display:flex;justify-content:space-between;align-items:center;gap:14px;border-bottom:1px solid #baa16c55;padding-bottom:14px}#boardNotice[data-scene=enemy] .elElement{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;flex-shrink:0}#boardNotice[data-scene=enemy] .elElement img{width:100%;height:100%;object-fit:contain}#boardNotice[data-scene=enemy] .elLand{display:flex;align-items:center;gap:12px;color:#f0dba7}#boardNotice[data-scene=enemy] .elLand>.elElement{width:41px;height:41px}#boardNotice[data-scene=enemy] .elLand>span{font-size:19px}#boardNotice[data-scene=enemy] .elLand b{font-size:31px;margin-left:4px}#boardNotice[data-scene=enemy] .elToll{display:flex;align-items:center;gap:10px;white-space:nowrap}#boardNotice[data-scene=enemy] .elToll>small{font-size:14px;color:#d1c7ae}#boardNotice[data-scene=enemy] .elToll>img{width:44px;height:44px;object-fit:contain}#boardNotice[data-scene=enemy] .elToll strong{font-size:55px;font-weight:500;line-height:1.15;color:#f4d889;font-variant-numeric:tabular-nums}#boardNotice[data-scene=enemy] .elToll em{font-size:24px;font-style:normal;margin-left:4px}#boardNotice[data-scene=enemy] .elMain{display:grid;grid-template-columns:1.08fr 1fr;gap:24px;align-items:center;padding:12px 0 16px}#boardNotice[data-scene=enemy] .elCreature{min-width:0}#boardNotice[data-scene=enemy] .elCreatureArt{height:205px;position:relative;display:grid;place-items:center;isolation:isolate}#boardNotice[data-scene=enemy] .elCreatureArt>img{width:230px;height:230px;object-fit:contain;position:relative;z-index:1}#boardNotice[data-scene=enemy] .elCreatureArt>i{position:absolute;bottom:0;width:130px;height:95px;background:var(--land) center/cover;border:1px solid #c0aa72;transform:rotateX(55deg) rotate(45deg);box-shadow:5px 5px 0 #121716}#boardNotice[data-scene=enemy] .elCreature h2{display:flex;align-items:center;justify-content:center;gap:7px;font-size:21px;margin:16px 0 0;font-weight:500;color:#eee0bd;white-space:nowrap}#boardNotice[data-scene=enemy] .elHp{display:flex;align-items:center;gap:12px;position:relative;padding-bottom:22px}#boardNotice[data-scene=enemy] .elHp>img{width:40px;height:40px}#boardNotice[data-scene=enemy] .elHp>div{display:flex;align-items:baseline;gap:9px}#boardNotice[data-scene=enemy] .elHp small{font-size:15px;color:#b6cbaa}#boardNotice[data-scene=enemy] .elHp strong{font-size:45px;font-weight:500;line-height:1.2;color:#bbe1ba;white-space:nowrap}#boardNotice[data-scene=enemy] .elHp em{font-size:19px;font-style:normal;color:#c2bba6}#boardNotice[data-scene=enemy] .elWound{position:absolute;bottom:0;right:4px;font-size:12px;color:#dba18c}#boardNotice[data-scene=enemy] .elAt{display:flex;align-items:center;gap:12px;margin:10px 0 15px}#boardNotice[data-scene=enemy] .elAt img{width:28px;height:28px}#boardNotice[data-scene=enemy] .elAt small{font-size:13px;color:#c6baa2}#boardNotice[data-scene=enemy] .elAt b{font-size:25px;font-weight:500}#boardNotice[data-scene=enemy] .elTerrain{padding:10px 0 0;border-top:1px solid #baa16c44}#boardNotice[data-scene=enemy] .elAffinity{display:flex;align-items:center;gap:8px;margin-bottom:12px;color:#e0c885}#boardNotice[data-scene=enemy] .elAffinity small{font-size:12px}#boardNotice[data-scene=enemy] .elTerrain>div+div{display:flex;align-items:center;gap:7px;color:#dbc589}#boardNotice[data-scene=enemy] .elTerrain svg{width:23px;height:25px;fill:none;stroke:currentColor;stroke-width:2}#boardNotice[data-scene=enemy] .elTerrain>div+div>span{font-size:12px}#boardNotice[data-scene=enemy] .elTerrain strong{font-size:25px;font-weight:500;white-space:nowrap}#boardNotice[data-scene=enemy] .elTerrain.mismatch{color:#b0b0a7}#boardNotice[data-scene=enemy] .elTerrain.mismatch>div+div{color:#b0b0a7}
+#boardNotice[data-scene=enemy] .elAbility{border-top:1px solid #baa16c44;padding:12px 0}#boardNotice[data-scene=enemy] .elAbility>div{display:flex;justify-content:space-between;align-items:center;gap:10px}#boardNotice[data-scene=enemy] .elAbilityLabel{font-size:12px;color:#bdae91}#boardNotice[data-scene=enemy] .elAbility small{font-size:12px;color:#b8d5c2}#boardNotice[data-scene=enemy] .elAbility.inactive small{color:#b9b0a3}#boardNotice[data-scene=enemy] .elAbility p{font-size:15px;line-height:1.6;color:#e0d3b2;margin:7px 0 0}#boardNotice[data-scene=enemy] .elSoul{display:flex;align-items:center;gap:8px;font-size:14px;color:#d7d5ba}#boardNotice[data-scene=enemy] .elSoul img{width:24px;height:24px;object-fit:contain}#boardNotice[data-scene=enemy] .elSoul b{color:#c4e4bd;font-size:21px;font-weight:500;margin-left:8px}#boardNotice[data-scene=enemy] .elExtras{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 16px;border-top:1px solid #baa16c44;padding:12px 0}#boardNotice[data-scene=enemy] .elExtra{display:flex;align-items:center;gap:11px;min-width:0;background:linear-gradient(90deg,#cbb4730b,transparent)}#boardNotice[data-scene=enemy] .elMiniCard{width:43px;height:67.37px;flex-shrink:0}#boardNotice[data-scene=enemy] .elMiniCard review-game-card{display:block;width:100%;height:100%}#boardNotice[data-scene=enemy] .elExtra>div+div,#boardNotice[data-scene=enemy] .elExtra>.elMark+div{display:flex;flex-direction:column;gap:3px}#boardNotice[data-scene=enemy] .elExtra small{font-size:11px;color:#c3b79c}#boardNotice[data-scene=enemy] .elExtra strong{font-size:23px;color:#ecddb5;font-weight:500;white-space:nowrap}#boardNotice[data-scene=enemy] .elExtra span{font-size:11px;color:#bdae91}#boardNotice[data-scene=enemy] .elMark{width:43px;height:57px;object-fit:contain}#boardNotice[data-scene=enemy] .elFooter{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid #baa16c55;padding-top:13px;min-height:28px}#boardNotice[data-scene=enemy] .elChoice{display:flex;align-items:center;gap:8px;font-size:16px}#boardNotice[data-scene=enemy] .elChoice img{width:23px;height:23px;object-fit:contain}#boardNotice[data-scene=enemy] .elBattleIcon{display:flex}#boardNotice[data-scene=enemy] .elOr{color:#a3967a;margin:0 4px;font-size:13px}#boardNotice[data-scene=enemy] .elPhone{display:flex;align-items:center;gap:8px;font-size:12px;color:#c3b79c;white-space:nowrap}#boardNotice[data-scene=enemy] .elPhone>i{width:13px;height:21px;border:1px solid #c9b779;position:relative}#boardNotice[data-scene=enemy] .elPhone>i:after{content:'';position:absolute;bottom:3px;left:4px;width:3px;height:1px;background:#c9b779}#boardNotice[data-scene=enemy] .elWard{display:flex;align-items:center;gap:9px;color:#cbe2ed}#boardNotice[data-scene=enemy] .elWard svg{width:28px;height:30px;fill:#9bd6ed18;stroke:#cbe2ed;stroke-width:2}#boardNotice[data-scene=enemy] .elWard b{font-size:18px;font-weight:500}#boardNotice[data-scene=enemy] .elWard span{font-size:14px}
+@media(max-height:850px){#boardNotice[data-scene=enemy][data-owner=g]{top:51%}#boardNotice[data-scene=enemy] .elCreatureArt{height:165px}#boardNotice[data-scene=enemy] .elCreatureArt>img{height:195px;width:195px}#boardNotice[data-scene=enemy] .elMain{padding:7px 0 10px}#boardNotice[data-scene=enemy] .elCreature h2{margin-top:13px}#boardNotice[data-scene=enemy] .elExtras{padding:9px 0;gap:6px 12px}#boardNotice[data-scene=enemy] .elMiniCard{width:35px;height:54.83px}#boardNotice[data-scene=enemy] .elExtra strong{font-size:21px}#boardNotice[data-scene=enemy] .elAbility{padding:8px 0}#boardNotice[data-scene=enemy] .elHeader{padding-bottom:8px}#boardNotice[data-scene=enemy] .elToll strong{font-size:48px}}
+@media(max-width:1200px){#boardNotice[data-scene=enemy][data-owner=g]{--stand-w:190px;--stand-h:285px;width:calc(100vw - 264px);left:calc(50vw + 120px)}#boardNotice[data-scene=enemy][data-owner=g] .messageWindow{padding:22px 23px}#boardNotice .elHeader{gap:8px}#boardNotice[data-scene=enemy] .elToll{gap:6px}#boardNotice[data-scene=enemy] .elToll>img{width:33px;height:33px}#boardNotice[data-scene=enemy] .elToll strong{font-size:43px}#boardNotice[data-scene=enemy] .elToll>small{font-size:12px}#boardNotice[data-scene=enemy] .elToll em{font-size:18px}#boardNotice[data-scene=enemy] .elLand>.elElement{width:32px;height:32px}#boardNotice[data-scene=enemy] .elLand{gap:7px}#boardNotice[data-scene=enemy] .elMain{gap:14px;grid-template-columns:1fr 1fr}#boardNotice[data-scene=enemy] .elCreatureArt>img{width:190px;height:190px}#boardNotice[data-scene=enemy] .elCreature h2{font-size:18px}#boardNotice[data-scene=enemy] .elHp{gap:7px}#boardNotice[data-scene=enemy] .elHp>img{width:28px;height:28px}#boardNotice[data-scene=enemy] .elHp>div{gap:6px}#boardNotice[data-scene=enemy] .elHp strong{font-size:34px}#boardNotice[data-scene=enemy] .elHp em{font-size:15px}#boardNotice[data-scene=enemy] .elAffinity{gap:5px}#boardNotice[data-scene=enemy] .elAffinity .elElement{width:23px;height:23px}#boardNotice[data-scene=enemy] .elTerrain strong{font-size:22px}#boardNotice[data-scene=enemy] .elAbility p{font-size:13px}#boardNotice[data-scene=enemy] .elAbility small{font-size:10px}#boardNotice[data-scene=enemy] .elExtra{gap:8px}#boardNotice[data-scene=enemy] .elExtra strong{font-size:20px}#boardNotice[data-scene=enemy] .elExtra small,#boardNotice[data-scene=enemy] .elExtra span{font-size:10px}#boardNotice[data-scene=enemy] .elChoice{font-size:14px}#boardNotice[data-scene=enemy] .elPhone{font-size:11px}#boardNotice[data-scene=enemy] .standName b{font-size:12px}#boardNotice[data-scene=enemy] .elSoul{gap:4px;font-size:12px}#boardNotice[data-scene=enemy] .elSoul b{font-size:18px;margin-left:3px}}
+@media(prefers-reduced-motion:reduce){#boardNotice[data-scene=enemy] *{animation:none!important}}
+/* Keep ability status inside the text area, clear of the overlapping owner portrait. */
+#boardNotice[data-scene=enemy] .elAbility>div{justify-content:flex-start;gap:18px}
+#boardNotice[data-scene=enemy] .elHp small{font-size:12px;white-space:nowrap}
+@media(min-width:1300px){#boardNotice[data-scene=enemy] .elExtras{grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}#boardNotice[data-scene=enemy] .elExtra{gap:7px}#boardNotice[data-scene=enemy] .elExtra strong{font-size:20px}#boardNotice[data-scene=enemy] .elExtra small{font-size:10px}#boardNotice[data-scene=enemy] .elMiniCard{width:36px;height:56.4px}#boardNotice[data-scene=enemy] .elMark{width:36px}}
+
+/* Tile-focused inspection: board zoom is primary; this panel follows the tile. */
+#boardNotice[data-scene=enemy][data-owner=g]{--stand-w:115px;--stand-h:172.5px;width:clamp(330px,28vw,410px);transform:none;opacity:0;transition:opacity .2s;pointer-events:none}
+#boardNotice[data-scene=enemy][data-owner=g].elAnchoredVisible{opacity:1}
+#boardNotice[data-scene=enemy][data-owner=g] .messageWindow{width:100%;min-height:0;padding:19px 22px;gap:0;background:#090b0deb}
+#boardNotice[data-scene=enemy] .noticeContent{padding:0}
+#boardNotice[data-scene=enemy] .cutinStage,#boardNotice[data-scene=enemy] .crestStage,#boardNotice[data-scene=enemy] .motionFx,#boardNotice[data-scene=enemy] .ringLayer{display:none!important}
+#boardNotice[data-scene=enemy] .actorStand{--stand-bottom:7px;right:-101px;top:27px;transform:none;animation:none!important;clip-path:inset(-8px -12px var(--stand-bottom) -12px)}
+#boardNotice[data-scene=enemy] .standBackdrop{inset:26px 4px var(--stand-bottom) 7px}
+#boardNotice[data-scene=enemy] .standArt{filter:drop-shadow(2px 4px 3px #0008)}
+#boardNotice[data-scene=enemy] .standName{bottom:13px;right:0;min-width:100px;padding:4px 5px;min-height:26px;max-width:115px}
+#boardNotice[data-scene=enemy] .standName b{font-size:11px;letter-spacing:0}
+#boardNotice[data-scene=enemy] .elOwnerLabel{font-size:9px;margin-bottom:2px}
+#boardNotice[data-scene=enemy] .elHeader{padding-bottom:10px;gap:8px}
+#boardNotice[data-scene=enemy] .elLand{gap:6px}
+#boardNotice[data-scene=enemy] .elLand>.elElement{width:29px;height:29px}
+#boardNotice[data-scene=enemy] .elLand>span{font-size:14px}
+#boardNotice[data-scene=enemy] .elLand b{font-size:24px}
+#boardNotice[data-scene=enemy] .elToll{gap:6px}
+#boardNotice[data-scene=enemy] .elToll>img{width:29px;height:29px}
+#boardNotice[data-scene=enemy] .elToll>small{font-size:11px}
+#boardNotice[data-scene=enemy] .elToll strong{font-size:37px}
+#boardNotice[data-scene=enemy] .elToll em{font-size:16px}
+#boardNotice[data-scene=enemy] .elMain{display:block;padding:8px 0}
+#boardNotice[data-scene=enemy] .elCreatureArt{display:none}
+#boardNotice[data-scene=enemy] .elCreature h2{justify-content:flex-start;font-size:19px;margin:0 0 10px;gap:6px}
+#boardNotice[data-scene=enemy] .elCreature h2>.elElement{width:22px;height:22px}
+#boardNotice[data-scene=enemy] .elNumbers{display:grid;grid-template-columns:1.25fr 1fr;gap:6px 12px;align-items:start}
+#boardNotice[data-scene=enemy] .elHp{gap:6px;padding-bottom:18px}
+#boardNotice[data-scene=enemy] .elHp>img{width:24px;height:24px}
+#boardNotice[data-scene=enemy] .elHp>div{gap:5px;flex-wrap:wrap}
+#boardNotice[data-scene=enemy] .elHp small{font-size:10px}
+#boardNotice[data-scene=enemy] .elHp strong{font-size:29px}
+#boardNotice[data-scene=enemy] .elHp em{font-size:13px}
+#boardNotice[data-scene=enemy] .elWound{font-size:10px;right:2px}
+#boardNotice[data-scene=enemy] .elAt{margin:3px 0 0;gap:7px;justify-content:flex-end}
+#boardNotice[data-scene=enemy] .elAt img{width:23px;height:23px}
+#boardNotice[data-scene=enemy] .elAt small{font-size:11px}
+#boardNotice[data-scene=enemy] .elAt b{font-size:23px}
+#boardNotice[data-scene=enemy] .elTerrain{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0 0}
+#boardNotice[data-scene=enemy] .elAffinity{gap:5px;margin:0}
+#boardNotice[data-scene=enemy] .elAffinity .elElement{width:21px;height:21px}
+#boardNotice[data-scene=enemy] .elAffinity small{font-size:10px}
+#boardNotice[data-scene=enemy] .elTerrain svg{width:19px;height:21px}
+#boardNotice[data-scene=enemy] .elTerrain strong{font-size:20px}
+#boardNotice[data-scene=enemy] .elTerrain>div+div{gap:4px}
+#boardNotice[data-scene=enemy] .elTerrain>div+div>span{font-size:10px}
+#boardNotice[data-scene=enemy] .elAbility{padding:8px 0}
+#boardNotice[data-scene=enemy] .elAbility>div{gap:10px}
+#boardNotice[data-scene=enemy] .elAbilityLabel,#boardNotice[data-scene=enemy] .elAbility small{font-size:10px}
+#boardNotice[data-scene=enemy] .elAbility p{font-size:12px;line-height:1.6;margin:5px 0 0}
+#boardNotice[data-scene=enemy] .elSoul{gap:5px;font-size:12px}
+#boardNotice[data-scene=enemy] .elSoul img{width:20px;height:20px}
+#boardNotice[data-scene=enemy] .elSoul b{font-size:18px}
+#boardNotice[data-scene=enemy] .elExtras{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 10px;padding:9px 0}
+#boardNotice[data-scene=enemy] .elExtra{gap:7px}
+#boardNotice[data-scene=enemy] .elExtra small,#boardNotice[data-scene=enemy] .elExtra span{font-size:9px}
+#boardNotice[data-scene=enemy] .elExtra strong{font-size:18px}
+#boardNotice[data-scene=enemy] .elMiniCard{width:29px;height:45.44px}
+#boardNotice[data-scene=enemy] .elMark{width:29px;height:42px}
+#boardNotice[data-scene=enemy] .elFooter{padding-top:9px;min-height:22px}
+#boardNotice[data-scene=enemy] .elChoice{gap:5px;font-size:12px}
+#boardNotice[data-scene=enemy] .elChoice img{width:18px;height:18px}
+#boardNotice[data-scene=enemy] .elPhone{font-size:10px;gap:6px}
+#boardNotice[data-scene=enemy] .elPhone>i{width:11px;height:17px}
+#boardNotice[data-scene=enemy] .elWard{gap:6px}
+#boardNotice[data-scene=enemy] .elWard svg{width:23px;height:25px}
+#boardNotice[data-scene=enemy] .elWard b{font-size:15px}
+#boardNotice[data-scene=enemy] .elWard span{font-size:12px}
+#elTileLink{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:85;opacity:0;transition:opacity .2s}
+#elTileLink.visible{opacity:1}#elTileLink ellipse{fill:#f4d99a08;stroke:#e1c382;stroke-width:1.3}#elTileLink path{fill:none;stroke:#d4bd87;stroke-width:1.2}
+@media(max-width:1100px){#boardNotice[data-scene=enemy][data-owner=g]{--stand-w:100px;--stand-h:150px;width:330px}#boardNotice[data-scene=enemy] .actorStand{right:-88px}#boardNotice[data-scene=enemy] .standName{min-width:98px;max-width:104px}#boardNotice[data-scene=enemy] .standName b{font-size:10px}#boardNotice[data-scene=enemy] .messageWindow{padding:17px 20px!important}#boardNotice[data-scene=enemy] .elTerrain{gap:5px}#boardNotice[data-scene=enemy] .elAffinity small{font-size:9px}#boardNotice[data-scene=enemy] .elTerrain strong{font-size:18px}}
+#boardNotice[data-scene=enemy][data-owner=g][data-side=right] .actorStand{left:auto;right:-101px;top:27px;transform:none}
+@media(max-width:1100px){#boardNotice[data-scene=enemy][data-owner=g][data-side=right] .actorStand{right:-88px}}
+#boardNotice[data-scene=enemy][data-owner=g] .standName{padding:4px 5px;min-width:100px;min-height:26px;max-width:115px}
+#boardNotice[data-scene=enemy][data-owner=g] .standName b{font-size:11px;white-space:nowrap;letter-spacing:0}
+@media(max-width:1100px){#boardNotice[data-scene=enemy][data-owner=g] .standName{min-width:98px;max-width:104px}#boardNotice[data-scene=enemy][data-owner=g] .standName b{font-size:10px}}
+
+/* Revision 3: colored elements, clear match state, battle-style source badges. */
+#boardNotice[data-scene=enemy] .elElement{filter:none;opacity:1}
+#boardNotice[data-scene=enemy] .elGlyph{display:block;width:100%;height:100%;background:currentColor;mask-size:contain;mask-position:center;mask-repeat:no-repeat;-webkit-mask-size:contain;-webkit-mask-position:center;-webkit-mask-repeat:no-repeat}
+#boardNotice[data-scene=enemy] .elTerrain{padding:9px 8px;margin-top:2px;border:1px solid color-mix(in srgb,var(--affinity-color) 75%,transparent);background:color-mix(in srgb,var(--affinity-color) 7%,transparent);box-shadow:0 0 13px color-mix(in srgb,var(--affinity-color) 30%,transparent),inset 0 0 9px color-mix(in srgb,var(--affinity-color) 8%,transparent);filter:none;opacity:1}
+#boardNotice[data-scene=enemy] .elTerrain.mismatch{border-color:color-mix(in srgb,var(--affinity-color) 42%,transparent);background:color-mix(in srgb,var(--affinity-color) 4%,transparent);box-shadow:none;filter:none;opacity:1}
+#boardNotice[data-scene=enemy] .elAffinity>span:not(.elElement){font-size:22px;font-weight:bold;color:var(--affinity-color);line-height:1}
+#boardNotice[data-scene=enemy] .elAffinity small{font-size:12px;color:#ede5cd;font-weight:700}
+#boardNotice[data-scene=enemy] .elTerrain.mismatch .elMatchMark,#boardNotice[data-scene=enemy] .elTerrain.mismatch .elAffinity small{color:#d0c9b8}
+#boardNotice[data-scene=enemy] .elTerrain.mismatch>div+div{color:#d0c9b8}
+#boardNotice[data-scene=enemy] .elTerrain>div+div>span{display:none}
+#boardNotice[data-scene=enemy] .elExtras{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:14px 1px 4px}
+#boardNotice[data-scene=enemy] .elEffectBadge{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:0;background:none;--glow:#bba05b;--rim:#cbb776;animation-duration:3.2s;min-width:0;filter:none}
+#boardNotice[data-scene=enemy] .elEffectBadge .elBadgeTarget{display:block;text-align:center;font-size:9px;line-height:1.3;color:#d1c6ac;min-height:24px;margin:0 0 4px;white-space:normal}
+#boardNotice[data-scene=enemy] .battleExternalArt{width:42px;height:65.8px;border-width:1px;flex-shrink:0}
+#boardNotice[data-scene=enemy] .battleExternalArt review-game-card{display:block;width:100%;height:100%}
+#boardNotice[data-scene=enemy] .battleExternalArt>img{width:100%;height:100%;object-fit:contain}
+#boardNotice[data-scene=enemy] .battleExternalValue{margin:-8px -4px 0;min-width:64px;box-sizing:border-box;padding:4px 5px;gap:3px;border-radius:4px}
+#boardNotice[data-scene=enemy] .battleExternalValue img{width:16px;height:16px;object-fit:contain}
+#boardNotice[data-scene=enemy] .battleExternalValue span{font:bold 12px Georgia}
+#boardNotice[data-scene=enemy] .battleExternalValue b{font:bold 20px/1.1 Georgia;color:#fff0b5}
+#boardNotice[data-scene=enemy] .elWardNotice{display:flex;align-items:center;justify-content:center;gap:15px;color:#ffb3a5;margin:13px 0 4px;padding:11px 14px;border:1px solid #ec756bbb;background:radial-gradient(ellipse at center,#9b302c70,#39141380);box-shadow:0 0 15px #f15d492e,inset 0 0 16px #ef75651a}
+#boardNotice[data-scene=enemy] .elWardNotice svg{width:39px;height:43px;fill:#ef756522;stroke:currentColor;stroke-width:1.5;filter:drop-shadow(0 0 6px #ff78688c);animation:elWardLight 3s ease-in-out infinite}
+#boardNotice[data-scene=enemy] .elWardNotice>div{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+#boardNotice[data-scene=enemy] .elWardNotice small{font-size:11px;color:#e6a297;letter-spacing:.15em}
+#boardNotice[data-scene=enemy] .elWardNotice strong{font-size:28px;line-height:1.2;font-weight:700;letter-spacing:.12em;color:#ffe4db;text-shadow:0 2px 4px #000,0 0 12px #ff756457}
+@keyframes elWardLight{0%,100%{filter:drop-shadow(0 0 4px #ff786866)}50%{filter:drop-shadow(0 0 9px #ffac96b3)}}
+#boardNotice[data-scene=enemy][data-owner=g]{--stand-w:100px;--stand-h:150px}
+#boardNotice[data-scene=enemy][data-owner=g][data-side=right] .actorStand{right:-88px}
+#boardNotice[data-scene=enemy][data-owner=g] .standName{max-width:104px;min-width:98px}
+#boardNotice[data-scene=enemy][data-owner=g] .standName b{font-size:10px}
+
+
+@media(max-width:1100px),(max-height:760px){#boardNotice[data-scene=enemy] .battleExternalValue{min-width:58px}#boardNotice[data-scene=enemy] .battleExternalValue b{font-size:18px}#boardNotice[data-scene=enemy] .elExtras{gap:8px}#boardNotice[data-scene=enemy] .elAffinity small{font-size:11px}}
+@media(prefers-reduced-motion:reduce){}
+#boardNotice[data-scene=enemy] .elEffectBadge .battleExternalValue{flex-direction:row}
+
+/* Revision 4: creature inside the frame; durability and effect roles. */
+#boardNotice[data-scene=enemy][data-owner=g]{width:clamp(370px,31vw,450px)}
+#boardNotice[data-scene=enemy] .elMain{display:grid;grid-template-columns:1.3fr 1fr;gap:8px;padding:8px 0 0;align-items:center}
+#boardNotice[data-scene=enemy] .elCreatureArt{display:grid;height:206px}
+#boardNotice[data-scene=enemy] .elCreatureArt>img{width:220px;height:220px;max-width:115%;object-fit:contain;filter:drop-shadow(0 4px 5px #0006)}
+#boardNotice[data-scene=enemy] .elNumbers{display:flex;flex-direction:column;gap:7px;align-items:stretch}
+#boardNotice[data-scene=enemy] .elTotal{display:flex;flex-direction:column;align-items:center;color:#f3d996;border-bottom:1px solid #cbb77744;padding-bottom:5px}
+#boardNotice[data-scene=enemy] .elTotal small{font:14px Georgia;letter-spacing:.06em}
+#boardNotice[data-scene=enemy] .elTotal strong{font:700 66px/1.05 Georgia;text-shadow:0 3px 5px #000;font-variant-numeric:tabular-nums}
+#boardNotice[data-scene=enemy] .elHp,#boardNotice[data-scene=enemy] .elDf,#boardNotice[data-scene=enemy] .elAt{display:flex;align-items:center;justify-content:flex-start;padding:0;margin:0;gap:7px;white-space:nowrap}
+#boardNotice[data-scene=enemy] .elHp>img,#boardNotice[data-scene=enemy] .elAt>img{width:21px;height:21px}
+#boardNotice[data-scene=enemy] .elDf>svg{width:21px;height:23px;fill:none;stroke:#dbc589;stroke-width:2}
+#boardNotice[data-scene=enemy] .elHp small,#boardNotice[data-scene=enemy] .elDf small,#boardNotice[data-scene=enemy] .elAt small{font-size:11px;min-width:28px;color:#bfb7a3}
+#boardNotice[data-scene=enemy] .elHp strong,#boardNotice[data-scene=enemy] .elDf b,#boardNotice[data-scene=enemy] .elAt b{font:500 24px Georgia}
+#boardNotice[data-scene=enemy] .elHp em{font-size:12px}
+#boardNotice[data-scene=enemy] .elCreatureName{display:flex;align-items:center;justify-content:center;gap:7px;font-size:21px;font-weight:500;color:#eee0bd;margin:2px 0 12px;white-space:nowrap}
+#boardNotice[data-scene=enemy] .elCreatureName .elElement{width:23px;height:23px}
+#boardNotice[data-scene=enemy] .elTileElement{display:inline-grid;place-items:center;position:relative;width:33px;height:33px;margin:4px 9px;background:linear-gradient(#0c1416aa,#0c1416aa),var(--tile-bg) center/cover;border:1px solid #cbb574;transform:rotate(45deg);box-shadow:3px 3px 0 #181c20;flex-shrink:0}
+#boardNotice[data-scene=enemy] .elTileElement .elElement{width:24px;height:24px;transform:rotate(-45deg);filter:none}
+#boardNotice[data-scene=enemy] .elAffinity>.elTileElement{font-size:inherit;line-height:normal}
+#boardNotice[data-scene=enemy] .elAffinity{gap:7px}
+#boardNotice[data-scene=enemy] .elAffinity>.elElement{width:25px;height:25px}
+#boardNotice[data-scene=enemy] .elTerrain{padding:8px 7px;margin-bottom:10px}
+#boardNotice[data-scene=enemy] .elEffectGroups{display:grid;grid-template-columns:1fr 1fr;gap:15px;padding-top:9px;border-top:1px solid #baa16c44}
+#boardNotice[data-scene=enemy] .elEffectGroup{min-width:0;border:0;background:radial-gradient(ellipse at 50% 15%,#3f718526,transparent 75%)}
+#boardNotice[data-scene=enemy] .elEffectGroup.attack{background:radial-gradient(ellipse at 50% 15%,#9a643626,transparent 75%)}
+#boardNotice[data-scene=enemy] .elEffectGroup h3{display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;line-height:1.2;color:#afd5dd;margin:7px 0}
+#boardNotice[data-scene=enemy] .elEffectGroup.attack h3{color:#e8bb98}
+#boardNotice[data-scene=enemy] .elEffectGroup h3>svg{width:17px;height:18px;fill:none;stroke:currentColor;stroke-width:2}
+#boardNotice[data-scene=enemy] .elEffectGroup h3>img{width:17px;height:18px}
+#boardNotice[data-scene=enemy] .elGroupBadges{display:flex;justify-content:center;align-items:center;gap:14px;padding:3px 0 0}
+#boardNotice[data-scene=enemy] .elBadgeTarget{display:none!important}
+#boardNotice[data-scene=enemy] .elNoEffect{color:#a69d88}
+#boardNotice[data-scene=enemy] .elAbility p{margin-bottom:0}
+@media(max-height:780px),(max-width:1100px){
+ #boardNotice[data-scene=enemy][data-owner=g]{width:370px}
+ #boardNotice[data-scene=enemy][data-owner=g] .messageWindow{padding:16px 19px!important}
+ #boardNotice[data-scene=enemy] .elCreatureArt{height:176px}
+ #boardNotice[data-scene=enemy] .elCreatureArt>img{width:192px;height:192px}
+ #boardNotice[data-scene=enemy] .elTotal strong{font-size:57px}
+ #boardNotice[data-scene=enemy] .elCreatureName{font-size:19px;margin-bottom:8px}
+ #boardNotice[data-scene=enemy] .elNumbers{gap:5px}
+ #boardNotice[data-scene=enemy] .elTerrain{margin-bottom:6px;padding:6px}
+ #boardNotice[data-scene=enemy] .elAbility{padding:6px 0}
+}
+
+#boardNotice[data-scene=enemy][data-owner=g]{transform:scale(var(--inspect-scale,1));transform-origin:top left}
+#boardNotice[data-scene=enemy] .actorStand *{animation:none!important}
+#boardNotice[data-scene=enemy] .elGroupBadges{flex-wrap:wrap;row-gap:10px}
+#boardNotice[data-scene=enemy] .elEffectBadge{width:64px}

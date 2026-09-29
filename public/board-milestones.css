@@ -1,0 +1,30 @@
+#boardNotice[data-scene=milestones] .effectHeading{margin-bottom:18px;text-align:center}
+#boardNotice .msBody{min-height:265px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px}
+#boardNotice .msBody img{object-fit:contain}
+#boardNotice .msTitleHero{display:flex;align-items:center;gap:30px}
+#boardNotice .msTitleIcon{width:108px;height:108px;animation:msTitleLight .8s .9s both}
+#boardNotice .msTitleHero h3{font-size:43px;color:#f1d793;font-weight:500;margin:0 0 10px;letter-spacing:.08em}
+#boardNotice .msTitleHero small{font-size:16px;color:#c9bea2}
+#boardNotice .msAsset{display:flex;align-items:center;gap:22px;color:#f1d793;font-variant-numeric:tabular-nums}
+#boardNotice .msAsset>span{font-size:19px;color:#d2c6aa}#boardNotice .msAsset strong{font-size:60px;line-height:1.2;font-weight:500}#boardNotice .msAsset em{font-style:normal;font-size:24px;margin-left:5px}
+#boardNotice .msFormer{display:flex;align-items:center;justify-content:center;gap:30px;width:100%;border-top:1px solid #b9a06344;padding-top:12px;font-size:15px;color:#bcb49f}#boardNotice .msFormer b{color:#e2a593;font-weight:500}
+#boardNotice .msOwner{display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;white-space:nowrap;color:#d4c9ae}
+#boardNotice .msOwner .msPawn{width:36px;height:42px;object-fit:contain}
+#boardNotice .msArrow{display:block;position:relative;width:35px;min-width:35px;height:1px;background:#ccaf69}#boardNotice .msArrow:after{content:'';position:absolute;right:0;top:-4px;width:8px;height:8px;border-top:1px solid #ccaf69;border-right:1px solid #ccaf69;transform:rotate(45deg)}
+#boardNotice .msSummon{display:flex;align-items:center;justify-content:center;gap:42px;width:100%;padding:6px 0}
+#boardNotice .msCard{width:170px;height:266.33px;flex-shrink:0}#boardNotice .msCard review-game-card{display:block;width:100%;height:100%}
+#boardNotice .msLanding{display:flex;flex-direction:column;align-items:center;gap:14px;font-size:20px;color:#e0c88c;min-width:130px}
+#boardNotice .msEmptyLand{display:grid;place-items:center;width:86px;height:86px;background:var(--land-bg) center/cover;border:1px solid #d2b66e;transform:rotate(45deg);margin:18px;box-shadow:7px 7px 0 #121515;animation:msLandLight .8s 1.2s both}
+#boardNotice .msElement{width:28px;height:28px;display:inline-flex;vertical-align:middle}#boardNotice .msElement svg{width:100%;height:100%}#boardNotice .msEmptyLand .msElement{width:47px;height:47px;transform:rotate(-45deg);filter:brightness(0) invert(1)}
+#boardNotice .msTransfer{display:flex;align-items:center;justify-content:center;gap:18px;width:100%}
+#boardNotice .msLand{display:flex;flex-direction:column;align-items:center;gap:9px;min-width:0;flex:1}
+#boardNotice .msLandArt{position:relative;isolation:isolate;width:205px;height:172px;display:grid;align-items:end;justify-items:center}
+#boardNotice .msLandArt i{position:absolute;bottom:8px;width:146px;height:100px;background:var(--land-bg) center/cover;border:1px solid #c9ac66;transform:rotateX(56deg) rotateZ(45deg);box-shadow:5px 5px 0 #181c20;z-index:-1}
+#boardNotice .msLandArt img{width:175px;height:165px;object-fit:contain}
+#boardNotice .msLandBadge{display:flex;align-items:center;gap:8px;font-size:16px;color:#e1cc91}#boardNotice .msLand>b{font-size:17px;font-weight:500;color:#e1cc91;white-space:nowrap}
+#boardNotice .msPrevious .msLandArt{opacity:.48}#boardNotice .msAcquired .msLandArt i{animation:msLandLight .8s 1.1s both}
+#boardNotice .msDefend{display:flex;align-items:center;gap:28px;width:100%}#boardNotice .msDefend .msLand{flex:1}#boardNotice .msRemaining{flex:1;display:flex;flex-direction:column;align-items:center;gap:12px;color:#e6d59b}#boardNotice .msRemaining small,#boardNotice .msRemaining span{font-size:17px}#boardNotice .msRemaining strong{font-size:66px;font-weight:500;color:#d1e4b7;line-height:1.2}
+@keyframes msTitleLight{0%,100%{filter:none}45%{filter:drop-shadow(0 0 13px #ebcc83)}}
+@keyframes msLandLight{0%,100%{filter:none}40%{filter:brightness(1.5) drop-shadow(0 0 10px #efdba1)}}
+@media(max-width:1300px){#boardNotice .msBody{gap:17px;min-height:245px}#boardNotice .msTitleHero h3{font-size:36px}#boardNotice .msAsset strong{font-size:50px}#boardNotice .msSummon{gap:23px}#boardNotice .msCard{width:150px;height:235px}#boardNotice .msLanding{min-width:100px}#boardNotice .msLand>b{font-size:14px}#boardNotice .msOwner{font-size:12px;gap:4px}#boardNotice .msOwner .msPawn{width:28px;height:34px}#boardNotice .msLandArt{width:160px;height:158px}#boardNotice .msLandArt img{width:150px;height:153px}#boardNotice .msLandArt i{width:118px;height:88px}#boardNotice .msTransfer{gap:10px}#boardNotice .msFormer{gap:14px}}
+@media(prefers-reduced-motion:reduce){#boardNotice[data-scene=milestones] *{animation:none!important}}

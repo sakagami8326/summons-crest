@@ -11,7 +11,7 @@ window.mountMatchReview=({result,state,esc,fmt,onComplete=()=>{}})=>{
  const map=SummonsMapUI.get(state).background;
  history.classList.add('awardPage');deck.classList.add('deckReviewPage');
  history.innerHTML='<header class="reviewHeader"><h2>ハイライト</h2><span id="awardStep"></span></header><section id="awardStage" aria-live="polite"></section><footer class="reviewFooter"><button class="mrBtn" id="awardBack">‹ 順位へ</button><div class="awardPlayback"><button id="awardPause" class="mrBtn" aria-label="自動再生を一時停止">Ⅱ</button><div id="awardDots"></div></div><button class="mrBtn primary" id="awardNext">次へ →</button></footer>';
- deck.innerHTML='<header class="reviewHeader"><h2>最終デッキ</h2><nav id="deckTabs" role="tablist" aria-label="プレイヤーのデッキ"></nav></header><div class="deckLayout"><section class="deckBook" aria-label="デッキのカード"><div id="deckGrid" role="tabpanel"></div><nav id="deckPaging"></nav></section><aside id="deckComposition"></aside></div><footer class="reviewFooter"><button class="mrBtn" id="deckBack">‹ ハイライトへ</button><span></span><div class="reviewExitButtons"><button class="mrBtn" id="deckToRanking">順位を見る</button><button class="mrBtn primary" id="reviewClose">タイトルへ</button></div></footer>';
+ deck.innerHTML='<header class="reviewHeader"><h2>最終デッキ</h2><nav id="deckTabs" role="tablist" aria-label="プレイヤーのデッキ"></nav></header><div class="deckLayout"><section class="deckBook" aria-label="デッキのカード"><div id="deckSectionLabel"></div><div id="deckGrid" role="tabpanel"></div><nav id="deckPaging"></nav></section><aside id="deckComposition"></aside></div><footer class="reviewFooter"><button class="mrBtn" id="deckBack">‹ ハイライトへ</button><span></span><div class="reviewExitButtons"><button class="mrBtn" id="deckToRanking">順位を見る</button><button class="mrBtn primary" id="reviewClose">タイトルへ</button></div></footer>';
  history.style.setProperty('--review-map',`url("${map}")`);deck.style.setProperty('--review-map',`url("${map}")`);
  const dialog=document.createElement('dialog');dialog.className='reviewCardDialog';dialog.setAttribute('aria-label','カードの詳細');document.body.append(dialog);
  dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close();});
@@ -49,23 +49,28 @@ window.mountMatchReview=({result,state,esc,fmt,onComplete=()=>{}})=>{
   dialog.querySelector('button').onclick=()=>dialog.close();dialog.showModal();
  }
  function renderDeck(id){
-  selected=id;const cards=(stats(id)?.finalDeck||[]).map(cardInfo).sort((a,b)=>{
+  selected=id;const sorted=list=>list.map(cardInfo).sort((a,b)=>{
    const k={creature:0,support:1,spell:2,unknown:3};return k[a.kind]-k[b.kind]||(a.kind==='creature'?elementOrder.indexOf(a.element)-elementOrder.indexOf(b.element):0)||a.id.localeCompare(b.id);
   });
-  const p=players.find(x=>x.id===id),total=cards.length,pageSize=24,pages=Math.max(1,Math.ceil(total/pageSize));page=Math.min(page,pages-1);
+  const cards=sorted(stats(id)?.finalDeck||[]),exile=sorted(stats(id)?.finalExile||[]).map(c=>({...c,exiled:true}));
+  const allCards=[...cards,...exile];
+  const p=players.find(x=>x.id===id),total=cards.length,pageSize=24,pages=Math.max(1,Math.ceil(allCards.length/pageSize));page=Math.min(page,pages-1);
   $('deckTabs').innerHTML=players.map(p=>{const ch=state.catalog.CHARS[p.charId],elem=ch?.elem||'neutral';return `<button class="plate" id="deck-tab-${p.id}" role="tab" aria-controls="deckGrid" aria-selected="${p.id===id}" tabindex="${p.id===id?0:-1}" data-player="${p.id}" style="--hud-color:${RUNE[elem]||'#C9A227'};--hud-bg:url('/assets/cards/bg-${elem}.webp')"><div class="hudPortrait"><img class="hudBust" src="/assets/pawn_${esc(p.charId)}.${p.charId==='adel'?'webp':'png'}" alt=""></div><span class="pname">${esc(ch?.name||p.name)}</span></button>`;}).join('');
   $('deckTabs').querySelectorAll('button').forEach((el,i)=>{
    el.onclick=()=>{page=0;renderDeck(el.dataset.player);$('deck-tab-'+el.dataset.player).focus();};
    el.onkeydown=e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();const n=e.key==='Home'?0:e.key==='End'?players.length-1:(i+(e.key==='ArrowRight'?1:-1)+players.length)%players.length;page=0;renderDeck(players[n].id);$('deck-tab-'+players[n].id).focus();};
   });
   $('deckGrid').setAttribute('aria-labelledby','deck-tab-'+id);
-  const visible=cards.slice(page*pageSize,(page+1)*pageSize);
-  $('deckGrid').innerHTML=visible.map((c,i)=>`<button class="reviewDeckCard" aria-label="${esc(c.name)}の詳細" data-card-index="${i}">${face(c)}</button>`).join('')||`<p class="deckEmpty">${stats(id)?.finalDeck?'カードがありません':'この試合のデッキ記録はありません'}</p>`;
+  const visible=allCards.slice(page*pageSize,(page+1)*pageSize);
+  $('deckSectionLabel').textContent=`所持 ${total}枚${exile.length?` ／ 廃棄 ${exile.length}枚`:''}`;
+  $('deckGrid').dataset.zone=visible.some(c=>c.exiled)?(visible.every(c=>c.exiled)?'exile':'mixed'):'owned';
+  $('deckGrid').innerHTML=visible.map((c,i)=>`<button class="reviewDeckCard${c.exiled?' isExiled':''}" aria-label="${esc(c.name)}${c.exiled?'（廃棄）':''}の詳細" data-card-index="${i}">${face(c)}${c.exiled?'<span class="reviewExileBadge">廃棄</span>':''}</button>`).join('')||`<p class="deckEmpty">${stats(id)?.finalDeck?'カードがありません':'この試合のデッキ記録はありません'}</p>`;
   $('deckGrid').querySelectorAll('button').forEach((el,i)=>el.onclick=()=>openCard(visible[i]));
   $('deckPaging').innerHTML=pages>1?`<button aria-label="前のページ" id="deckPrevPage" ${page===0?'disabled':''}>‹</button><span>${page+1} / ${pages}</span><button aria-label="次のページ" id="deckNextPage" ${page===pages-1?'disabled':''}>›</button>`:'';
   if(pages>1){$('deckPrevPage').onclick=()=>{page--;renderDeck(id);};$('deckNextPage').onclick=()=>{page++;renderDeck(id);};}
   const counts=Object.fromEntries(['creature','support','spell'].map(k=>[k,cards.filter(c=>c.kind===k).length]));
-  $('deckComposition').innerHTML=`<h3>${esc(p.name)}</h3><div class="deckCount">${total}<small>枚</small></div><div class="deckElements">${elementOrder.map(e=>{const n=cards.filter(c=>c.element===e).length;return `<div><span style="color:${elementColors[e]}">${elementNames[e]}</span><b>${n}</b><i><em style="width:${total?n/total*100:0}%;background:${elementColors[e]}"></em></i></div>`;}).join('')}</div><div class="deckKinds">${Object.entries(counts).map(([k,n])=>`<div><span>${typeNames[k]}</span><b>${n}</b></div>`).join('')}</div>`;
+  $('deckComposition').innerHTML=`<h3>${esc(p.name)}</h3><div class="deckCount">${total}<small>枚</small></div><div class="deckElements">${elementOrder.map(e=>{const n=cards.filter(c=>c.element===e).length;return `<div><span class="reviewElementIcon" role="img" aria-label="${elementNames[e]}属性" style="background:${elementColors[e]};mask-image:url(/assets/element-${e==='water'?'water-v2':e}.svg)"></span><b>${n}</b><i><em style="width:${total?n/total*100:0}%;background:${elementColors[e]}"></em></i></div>`;}).join('')}</div><div class="deckKinds">${Object.entries(counts).map(([k,n])=>`<div><span>${typeNames[k]}</span><b>${n}</b></div>`).join('')}<div class="deckExileCount"><button id="deckShowExile" ${exile.length?'':'disabled'}>廃棄</button><b>${stats(id)?.finalExile?exile.length:'—'}</b></div></div>`;
+  $('deckShowExile').onclick=()=>{page=Math.floor(total/pageSize);renderDeck(id);$('deckGrid').querySelector('.isExiled')?.focus({preventScroll:true});};
  }
  function showDecks(id=selected){stop();onComplete();history.classList.remove('on');deck.classList.add('on');page=0;renderDeck(id);}
  $('deckBack').onclick=showHighlights;$('deckToRanking').onclick=()=>{stop();back();};

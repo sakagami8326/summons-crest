@@ -16,6 +16,22 @@ function roomFor(charId) {
   r.players=[p]; r.pending[p.id]={type:'roll',options:[{id:'ult'}]}; return {r,p};
 }
 {
+  const {r,p}=roomFor('redani');
+  p.hand=Array(7).fill('weapon');p.cardsCollected=0;
+  G.handleChoose(r,p.id,'ult');
+  eq(p.hand.length,7,'Redani grant waits for ultimate resolution');
+  const dice=r.ultSequence.data.dice.slice();
+  eq(dice.length,3,'Redani rolls three dice');
+  G.resolveUltSequence(r);
+  eq(p.hand.filter(c=>c==='gweapon').length,1,'Redani adds one Heavy Axe directly to hand');
+  eq(p.cardsCollected,1,'Redani grant is counted as acquisition');
+  eq(r.lastDice.multi,dice,'movement uses the original three dice');
+  eq(G.publicState(r,p.id).lastGain.cards,['gweapon'],'owner receives acquired card');
+  ok(!G.publicState(r,null).lastGain.cards,'board does not receive private grant cards');
+  G.resolveUltSequence(r);
+  eq(p.hand.filter(c=>c==='gweapon').length,1,'Redani resolution cannot grant twice');
+}
+{
   const {r,p}=roomFor('grease');
   p.hand=['nome'];
   G.handleChoose(r,p.id,'ult');
@@ -24,7 +40,7 @@ function roomFor(charId) {
   ok(p.ultUsed && r.ultSequence && !r.ultSequence.resolved,'activation creates unresolved sequence');
   eq(r.pending[p.id].type,'ult_resolve','input is locked during cut-in');
   ok(!r.barrier[p.id],'effect is not applied before cut-in ends');
-  ok(r.ultSequence.resolveAt-r.ultSequence.startedAt===5000,'cut-in lasts 5 seconds');
+  ok(r.ultSequence.resolveAt-r.ultSequence.startedAt===7000,'intro and effect notice last 7 seconds');
   const pub=G.publicState(r,p.id).ultSequence;
   ok(pub && !('data' in pub),'private resolution payload is not public');
   ok(G.serializeRoom(r).room.ultSequence.id===r.ultSequence.id,'sequence is saved');
@@ -59,8 +75,9 @@ const boardWorld=fs.readFileSync(path.join(__dirname,'public','board_world.js'),
   G.startBattle(r,p,1);
   eq(G.publicState(r,p.id).battlePreview.terrainElem,'water','battle preview persists overridden terrain element');
 }
-ok(board.includes("'/assets/ult_' + u.charId + '.webp'") && board.includes('se_ult_cutin.mp3'),'TV uses new art and sound');
-ok(board.includes('UltFxWorld.play') && phone.includes('UltFxWorld.play'),'TV and phone use Phaser sparkles');
+const nextNotices=fs.readFileSync(path.join(__dirname,'public','board-next-notices.js'),'utf8');
+ok(nextNotices.includes('nextUltSplash') && board.includes('se_ult_cutin.mp3'),'TV uses dedicated ultimate intro and sound');
+ok(board.includes("BoardNext.present('ultimate'") && phone.includes('UltFxWorld.play'),'TV uses approved effect notice while phone keeps its cut-in');
 ok(board.includes("level >= (state.evoLevel || 3) && !!base.evo"),'battle card only requests evolved art when evolution exists');
 ok(board.includes('animation:ultInfo var(--ult-info-duration,2.9s) var(--ult-info-delay,1.45s)'),
   'effect message remains readable longer while allowing captured presentation speed');

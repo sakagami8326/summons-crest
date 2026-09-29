@@ -43,7 +43,7 @@ try {
    if(level===3 && G.CREATURES[cid].evo)old.battle.atkCreature=cid+'_f';
    seed=10;G.referenceBattle(old);seed=10;G.resolveBattle(next);
    // The frozen resolver predates result-only counters; compare all combat state.
-   const combatOnly=r=>{const c=copy(r);if(c.lastBattle)delete c.lastBattle.externalModifiers;c.players.forEach(p=>{delete p.cardsCollected;delete p.tollCollected;});return c;};
+   const combatOnly=r=>{const c=copy(r);if(c.lastBattle){delete c.lastBattle.externalModifiers;delete c.lastBattle.moneyEvents;delete c.lastBattle.tollWaived;}c.players.forEach(p=>{delete p.cardsCollected;delete p.tollCollected;});return c;};
    eq(combatOnly(next),combatOnly(old),`full combat unchanged: ${cid}/${defender}/Lv${level}`);
    for(const [a,b] of [['atkDmg','st'],['effHp','hp'],['defDF','df'],['dealt','dealt'],['win','win'],['atkSurvived','atkSurvived'],['counterDealt','counterDealt']])eq(q[a],next.lastBattle[b],'prediction matches actual '+b);
  }

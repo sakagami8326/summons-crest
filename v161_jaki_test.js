@@ -26,7 +26,7 @@ const j=G.CREATURES.jaki;
 eq([j.name,j.evo,j.elem,j.rarity,j.cost,j.st,j.hp,j.evoSt,j.evoHp],['ジャキ','アシュラカン','earth','R',90,45,30,60,60],'approved definition');
 eq(G.CREATURES.jaki_f.fx,j.fx,'ability shared by both forms');
 for(const pool of [G.makeDeck(),G.shopRandomPool()])eq([pool.filter(c=>c==='jaki').length,pool.includes('jaki_f')],[2,false],'two base cards only');
-eq(G.makeDeck().length,152,'common deck total');
+eq(G.makeDeck().length,158,'common deck total');
 eq(G.publicCardCatalog().counts,{total:77,creatures:47,evolutions:40,spells:25,weapons:5},'public counts');
 eq(G.CHAR_DECKS.grease,['nome','nome','nome','jaki','jaki','cleo','sp_gold','sp_insight','sp_evolve','shield','shield','jinx'],'approved starter');
 for(const form of ['jaki','jaki_f'])for(const defense of [false,true]){

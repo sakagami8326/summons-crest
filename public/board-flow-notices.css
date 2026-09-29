@@ -1,0 +1,34 @@
+#boardNotice[data-scene=ruin] .noticeContent{padding-right:12px}
+#boardNotice[data-scene=ruin] .messageWindow{min-height:350px}
+#boardNotice[data-scene=ruin] .elTileElement{display:inline-grid;place-items:center;position:relative;background:linear-gradient(#0c1416aa,#0c1416aa),var(--tile-bg) center/cover;border:1px solid #cbb574;transform:rotate(45deg);flex-shrink:0}
+#boardNotice[data-scene=ruin] .elElement{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transform:rotate(-45deg)}
+#boardNotice[data-scene=ruin] .elGlyph{display:block;width:100%;height:100%;background:currentColor;mask-size:contain;mask-position:center;mask-repeat:no-repeat;-webkit-mask-size:contain;-webkit-mask-position:center;-webkit-mask-repeat:no-repeat}
+.ruinOutcome{display:grid;grid-template-columns:minmax(0,1.2fr) 42px minmax(0,1fr);align-items:center;gap:14px}
+.ruinBefore{display:grid;justify-items:center;align-content:center;min-width:0}.ruinArt{width:240px;max-width:120%;height:210px;display:grid;place-items:center}.ruinArt img{width:100%;height:100%;object-fit:contain;animation:ruinDim 900ms 2.1s ease-out both}.ruinName{font-size:20px;font-weight:500;white-space:nowrap}.ruinHp{display:flex;align-items:center;gap:9px;height:66px;color:#efa996}.ruinHp img{width:38px;height:38px;object-fit:contain}.ruinHp strong{font-size:58px;font-weight:500;line-height:1;font-variant-numeric:tabular-nums}
+.ruinArrow{color:#d4b77a;align-self:center;animation:ruinResult 650ms 2.1s both}.ruinArrow svg{width:100%;fill:none;stroke:currentColor;stroke-width:1.5}
+.ruinAfter{display:grid;justify-items:center;gap:33px;animation:ruinResult 650ms 2.1s both}.ruinAfter strong{font-size:28px;color:#eddbac;font-weight:500;white-space:nowrap}.ruinTile{display:grid;place-items:center;height:150px;width:100%}#boardNotice[data-scene=ruin] .ruinTile .elTileElement{height:90px;width:90px;margin:0;box-shadow:5px 5px 0 #171c20}#boardNotice[data-scene=ruin] .ruinTile .elElement{width:64px;height:64px}.ruinOwner{font-size:12px;letter-spacing:.1em;padding-bottom:4px}
+@keyframes ruinDim{to{filter:grayscale(.85);opacity:.48}}
+@keyframes ruinResult{from{opacity:0}to{opacity:1}}
+@media(max-width:1300px){.ruinOutcome{gap:9px;grid-template-columns:minmax(0,1.15fr) 25px minmax(0,1fr)}.ruinArt{width:190px;height:170px}.ruinName{font-size:17px}.ruinAfter strong{font-size:24px}#boardNotice[data-scene=ruin] .ruinTile .elTileElement{width:74px;height:74px}#boardNotice[data-scene=ruin] .ruinTile .elElement{width:52px;height:52px}}
+@media(max-width:1100px){#boardNotice[data-scene=ruin] .noticeContent{padding-right:0}.ruinArt{height:140px;width:150px}.ruinName{font-size:15px}.ruinAfter strong{font-size:20px}.ruinHp strong{font-size:46px}.ruinHp img{width:28px;height:28px}.ruinTile{height:120px}#boardNotice[data-scene=ruin] .ruinTile .elTileElement{width:60px;height:60px}#boardNotice[data-scene=ruin] .ruinTile .elElement{width:44px;height:44px}.ruinAfter{gap:20px}}
+@media(prefers-reduced-motion:reduce){.ruinArt img,.ruinArrow,.ruinAfter{animation:none}}
+
+#boardNotice[data-scene=start-game]{top:51%;width:min(860px,calc(100vw - var(--board-safe-left,420px) - 36px))}
+#boardNotice[data-scene=start-game] .messageWindow{padding:30px 28px 22px;min-height:0;display:block}
+.startGame{text-align:center}.startGame h2{font-size:46px;letter-spacing:.22em;font-weight:500;margin:0 0 12px;color:#f4dfac;animation:startTitle .55s ease-out both}
+.startPlayers{display:grid;grid-template-columns:repeat(var(--start-count,4),minmax(0,1fr));gap:12px;align-items:end;padding:4px 0 20px}
+.startPlayers>div{display:grid;justify-items:center;gap:6px;animation:startPlayer .4s calc(.2s + var(--i)*.12s) both}
+.startPlayers img{width:100%;height:145px;object-fit:contain;filter:drop-shadow(0 6px 7px #0007)}.startPlayers b{font-size:16px;white-space:nowrap;font-weight:500}
+.startGoal{border-top:1px solid #cfb57440;display:flex;align-items:center;justify-content:center;gap:16px;font-size:21px;color:#d5c7a5}
+.startGoal img{width:94px;height:88px;object-fit:contain}.startGoal strong{font-size:36px;font-weight:500;color:#f4db9d;margin-right:12px}.startGoal small{font-size:20px;margin-left:5px}
+#boardNotice[data-scene=start-turn][data-owner=g] .messageWindow{min-height:260px;display:block}
+#boardNotice[data-scene=start-turn] .standName{display:none}
+#boardNotice[data-scene=start-turn] .noticeContent{width:100%;padding:0}
+.startTurn{text-align:center;min-height:208px;display:flex;flex-direction:column;justify-content:center}.startTurn h2{margin:20px 0 24px;font-weight:500;font-size:clamp(25px,2.5vw,38px);white-space:nowrap;color:#fff2ce;text-shadow:0 3px 8px #000}
+.startUnderline{width:80%;height:1px;margin:0 auto;background:linear-gradient(90deg,transparent,#d8bc7b,transparent);animation:startRule .55s .9s both}
+@keyframes startPlayer{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes startTitle{from{opacity:0;letter-spacing:.45em}to{opacity:1;letter-spacing:.22em}}
+@keyframes startRule{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media(max-width:1300px){.startGame h2{font-size:36px}.startPlayers{gap:8px}.startPlayers img{height:120px}.startPlayers b{font-size:13px}.startGoal{font-size:18px}.startGoal strong{font-size:30px}.startGoal img{width:78px}.startTurn h2{font-size:28px}.startCaption{font-size:23px}}
+@media(max-width:1100px){#boardNotice[data-scene=start-game] .messageWindow{padding:28px 20px 15px}.startPlayers img{height:102px}.startPlayers b{font-size:12px}.startGoal{gap:8px;font-size:16px}.startGoal strong{font-size:28px}.startGoal img{width:68px}.startTurn h2{font-size:22px}.startCaption{font-size:21px}#boardNotice[data-scene=start-turn] .messageWindow{padding:22px 14px;min-height:220px}}
+@media(prefers-reduced-motion:reduce){.startPlayers>div,.startGame h2,.startUnderline{animation:none}}

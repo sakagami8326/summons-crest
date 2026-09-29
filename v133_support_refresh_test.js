@@ -29,9 +29,11 @@ eq(G.SUPPORTS.jinx.fx, '相手のウェポンを無効化', 'Disarm exposes its 
 const deck = G.makeDeck();
 eq(deck.filter(x => x === 'gweapon').length, 2, 'common deck has two Heavy Axes');
 eq(deck.filter(x => x === 'gshield').length, 2, 'common deck has two Big Shields');
-eq(G.RANDOM_SUPPORT_POOL, ['gweapon','gshield'], 'only rare supports enter random supply');
+eq(G.RANDOM_SUPPORT_POOL, ['gweapon','gshield','weapon','shield','jinx'], 'all five supports enter random supply');
+for(const id of ['weapon','shield','jinx'])eq(deck.filter(x=>x===id).length,2,`${id} random draw weight`);
 eq(G.RANDOM_SUPPORT_COPIES, 2, 'rare support weight is two');
 const weighted = G.shopRandomPool();
+for(const id of ['weapon','shield','jinx'])ok(!weighted.includes(id),`${id} stays on the fixed shop shelf only`);
 eq(weighted.filter(x => x === 'gweapon').length, 2, 'Heavy Axe shop weight');
 eq(weighted.filter(x => x === 'gshield').length, 2, 'Big Shield shop weight');
 eq(G.CHAR_DECKS.redani.filter(x => x === 'gweapon').length, 1, 'Redani starter has one Heavy Axe');

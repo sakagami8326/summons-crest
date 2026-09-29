@@ -1,0 +1,16 @@
+#boardNotice.landStop .messageWindow{animation:none!important;opacity:1}
+#boardNotice.landStop .lsEmpty{padding:54px 0 20px;gap:46px}
+#boardNotice.landStop .lsEmpty .elTileElement{width:96px;height:96px;margin:12px 28px;box-shadow:5px 5px 0 #181c20}
+#boardNotice.landStop .lsEmpty .elTileElement .elElement{width:69px;height:69px}
+.lsUpgradeGuide{border-top:1px solid #cbb37844;padding:21px 0 8px;text-align:center;font-size:22px;color:#efdeb2}
+#boardNotice.landStop .lsMax{border:0;padding:6px 0 4px;font-size:13px;color:#baaf99}
+#boardNotice.landStop .noticeContent{display:block}#boardNotice.landStop .lsHeading{display:flex;align-items:center;gap:12px;padding-bottom:15px;border-bottom:1px solid #cbb37844}#boardNotice.landStop h2{margin:0;font-size:23px;font-weight:500}
+.lsHeading h2 b{font-size:34px}
+.lsCurrentToll{margin-left:auto;display:grid;justify-items:end;gap:3px}.lsCurrentToll>small{font-size:12px;color:#c8bfa8}.lsGold{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;font-variant-numeric:tabular-nums}.lsGold img{width:31px;height:31px;object-fit:contain}.lsGold b{font-weight:500;font-size:30px;line-height:1.1;color:#f4d889}.lsGold em{font-style:normal;font-size:12px;margin-left:4px}
+.lsEmpty{display:grid;justify-items:center;gap:24px;padding:36px 0 20px;color:#8de6c8;font-size:20px}.lsPlacement{display:flex;align-items:center;justify-content:center;gap:12px;padding:15px 0}.lsPlacement img{width:44px;height:44px;object-fit:contain}.lsPlacement b{font-size:20px;font-weight:500}
+.lsCreature{display:grid;grid-template-columns:1.2fr 1fr;align-items:center;height:188px}.lsCreature>img{width:207px;height:207px;object-fit:contain;max-width:none;justify-self:center}.lsCreature>div{display:grid;justify-items:end;gap:5px}.lsCreature strong{font-size:60px;color:#f4d889;line-height:1}.lsCreature small{font-size:14px}.lsCreature span{font-size:12px;color:#c8bfa8}#boardNotice.landStop .lsCreatureName{text-align:center;font-size:22px;margin-bottom:18px}
+.lsMax{text-align:center}
+@media(max-height:780px){.lsCreature{height:156px}.lsCreature>img{width:178px;height:178px}.lsCreature strong{font-size:51px}.lsUpgrade{gap:8px;padding-top:12px}#boardNotice.landStop .lsCreatureName{margin-bottom:12px}.lsHeading{padding-bottom:8px!important}}
+
+.lsWorldGlow{position:absolute;z-index:97;transform:translate(-50%,-50%);pointer-events:none;animation:lsGlowFade var(--inspection-fade,900ms) ease-in-out both}.lsWorldGlow svg{position:absolute;left:-32px;top:-32px;width:calc(100% + 64px);height:calc(100% + 64px);overflow:visible}.lsWorldGlow path{fill:none;stroke:#ffecb0;stroke-width:4;filter:drop-shadow(0 0 6px #ffe4a0) blur(1.5px)}
+@keyframes lsGlowFade{from{opacity:0}to{opacity:1}}

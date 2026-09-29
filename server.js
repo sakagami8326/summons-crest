@@ -10,7 +10,7 @@ const crypto = require('crypto');
 const SITE_NEWS = require('./site-news');
 const START_DEVICE = require('./public/assets/start-guide/device');
 
-const VERSION = '1.63';
+const VERSION = '1.64';
 const MAPS = require('./public/map-definitions');
 const mapOf = r => MAPS[r.mapId || 'starting_corridor'];
 const tilesOf = r => mapOf(r).tiles;
@@ -269,7 +269,7 @@ const CHARS = {
             style: '地脈・属性連鎖', deckNote: '土地属性を再構成し、連鎖と地形補正を組み替える', selectable: true, upcoming: false },
 };
 const ULTS = {
-  redani: { name: '烈火の進軍', desc: 'サイコロを3個振って移動する' },
+  redani: { name: '烈火の進軍', desc: 'ヘビーアックス（AT＋40）を手札に1枚加え、ダイスを3個振って移動する' },
   linnei: { name: '水鏡の大商談', desc: '現在のマスでショップを開き、全品半額で買い物' },
   grease: { name: '進化の胎動', desc: '手札と自分の領地から未進化クリーチャーを各1体まで選び、進化させる', art: '/assets/ult_grease-evolution-v1.webp' },
   mio:    { name: '追い風の導き', desc: '好きなマスへ移動して止まる。移動先で侵略する場合、その戦闘中AT+20' },
@@ -405,7 +405,8 @@ function publicCardCatalog() {
 }
 const RARITY_COPIES = { L: 1, R: 2, N: 3 };
 const MARKET_COPY_OVERRIDES = { marlow: 3, mist_jelly: 2 };
-const RANDOM_SUPPORT_POOL = ['gweapon', 'gshield'];
+const RANDOM_SUPPORT_POOL = ['gweapon', 'gshield', 'weapon', 'shield', 'jinx'];
+const SHOP_SUPPORT_POOL = ['gweapon', 'gshield'];
 const RANDOM_SUPPORT_COPIES = 2;
 function makeDeck() {
   const d = [];
@@ -428,7 +429,7 @@ function shopRandomPool() {
     const info = CREATURES[id] || SPELLS[id];
     for (let i = 0; i < marketCopies(id); i++) weighted.push(id);
   }
-  for (const sid of RANDOM_SUPPORT_POOL)
+  for (const sid of SHOP_SUPPORT_POOL)
     for (let i = 0; i < RANDOM_SUPPORT_COPIES; i++) weighted.push(sid);
   return weighted;
 }
@@ -503,6 +504,7 @@ function makeRoom(mode = 'normal', mapId = 'starting_corridor') {
     owners: MAPS[mapId].tiles.map(() => null),        // { player, level, creature }
     deck, market: deck.splice(0, 5), shopVisit: null,
     turn: 0, round: 1, log: [],
+    goalProgress: {}, goalNotices: [],
     pending: {},                          // playerId → { type, prompt, options }
     titles: { conqueror: null, pilgrim: null },
     duel: null, lastBattle: null, winner: null, barrier: {}, ultSequence: null, ultTimer: null,
@@ -535,7 +537,8 @@ const presentationMs = (r, playerId, ms) => GAME_TIMING.scaled(ms,
 function stamp(r) { r.atSeq = Math.max(Date.now(), (r.atSeq || 0) + 1); return r.atSeq; }
 // 盤面スペル演出イベント(発注書v0.75 §7 ─ TVがPW.playへ接続する。結果はstateが正)
 function spellFx(r, sid, tiles, caster, extra) {
-  r.lastSpellFx = Object.assign({ spell: sid, tiles, caster: caster || null, at: stamp(r) }, extra || {});
+  const targets=tiles.flatMap(tile=>{const o=r.owners[tile];return o?[{tile,creature:isEvolved(o)&&CREATURES[baseId(o.creature)]?.evo?baseId(o.creature)+'_f':o.creature,level:o.level,elem:tileElem(r,tile)}]:[];});
+  r.lastSpellFx = Object.assign({ spell: sid, tiles, targets, caster: caster || null, at: stamp(r) }, extra || {});
 }
 function tileElem(r, i) { return (r.elemOv && r.elemOv[i]) || tilesOf(r)[i].e; }
 const ELEM_OF_SPELL = { sp_volcanic_core: 'fire', sp_abyssal_pearl: 'water',
@@ -566,11 +569,11 @@ function grantEvolutionPrayer(r, b, winner, evolved) {
 }
 function recordHeal(r, p, source, targets, extra = {}) {
   const actual = (targets || []).filter(t => t && Number(t.amount) > 0)
-    .map(t => Object.assign({}, t, { amount: Number(t.amount) }));
+    .map(t => {const o=r.owners[t.tile];return Object.assign({},t,{amount:Number(t.amount),creatureId:o?(isEvolved(o)&&CREATURES[baseId(o.creature)]?.evo?baseId(o.creature)+'_f':o.creature):t.creature});});
   if (!actual.length) return null;
   const total = actual.reduce((sum, t) => sum + t.amount, 0);
   const providers = r.owners.map((o, tile) => o && o.player === p.id && baseId(o.creature) === 'wakatama'
-    ? { tile, creature:o.creature } : null).filter(Boolean);
+    ? { tile, creature:isEvolved(o) ? 'wakatama_f' : 'wakatama' } : null).filter(Boolean);
   providers.sort((a, b) => a.tile - b.tile);
   let reward = null;
   if (providers.length) {
@@ -783,6 +786,39 @@ function landCombatUi(r, tile) {
     effect: creatureEffectUi(r, o.creature, tile, 'defender', 'land_stop'),
   });
 }
+// Public, weapon-free baseline before an invading creature is chosen.
+// Shared with battle resolution so land inspection cannot drift from its DF rules.
+function landDefenseStats(r, tile) {
+  const o=r.owners[tile], c=CREATURES[o.creature], def=pById(r,o.player);
+  const evolved=isEvolved(o), bid=baseId(o.creature), terrain=terrainBreakdown(r,tile).appliedBonus;
+  const maxHp=evolved&&c.evo?c.evoHp:c.hp, at=(evolved&&c.evo?c.evoSt:c.st);
+  let queen=0;
+  if(tileElem(r,tile)==='fire') for(const other of r.owners)
+    if(other&&other.player===def.id&&baseId(other.creature)==='qbaby')queen=Math.max(queen,isEvolved(other)?20:10);
+  const ownDf=(bid==='bonerex'?(evolved?20:10):0)+(bid==='beruf'?(o.shade||0)*10:0)+
+    (bid==='alter'?(def.exile||[]).length*5:0)+(bid==='komao'&&evolved?chainCount(r,def.id,'earth')*5:0)+
+    (bid==='valk'?earthLandBattleBonus(r,def.id).bonus:0);
+  const df=terrain+queen+ownDf+(r.tileFx[tile]?.uplift?10:0)+(o.iceWard?10:0);
+  const hp=Math.max(1,maxHp-(o.dmg||0)-(bid!=='beruf'?(r.curses[tile]?.hp||0):0));
+  return {maxHp,hp,df,total:hp+df,at:at+(bid==='emeri'?earthLandBattleBonus(r,def.id).bonus:0)};
+}
+function landStopUi(r) {
+  const p=r.players[r.turn],pd=p&&r.pending[p.id],tile=p?.pos;
+  if(r.phase!=='playing'||!pd||tilesOf(r)[tile]?.t!=='land')return null;
+  const o=r.owners[tile],base={tile,player:p.id,promptId:pd.promptId,element:tileElem(r,tile)};
+  if(pd.type==='tile'&&!o)return {...base,kind:'empty',canSummon:pd.options.some(x=>x.id.startsWith('summon:'))};
+  if(pd.type==='upgrade'&&pd.where==='自領地'&&o?.player===p.id)return {...base,kind:'own',maxLevel:RULES.maxLevel,
+    stats:landDefenseStats(r,tile),canUpgrade:pd.options.some(x=>x.id.startsWith('up:')),canMove:pd.options.some(x=>x.id==='marlow:move')};
+  return null;
+}
+function enemyLandUi(r) {
+  const p=r.players[r.turn],pd=p&&r.pending[p.id],o=p&&r.owners[p.pos];
+  if(r.phase!=='playing'||pd?.type!=='tile'||!o||o.player===p.id)return null;
+  const b={tile:p.pos,attacker:p.id,defender:o.player,mioUlt:!!pd.mioUlt};
+  return {tile:p.pos,player:p.id,owner:o.player,promptId:pd.promptId,
+    stats:landDefenseStats(r,p.pos),externalModifiers:battleExternalModifiers(r,b),
+    barrier:!!r.barrier[o.player],canInvade:pd.options.some(x=>x.id==='invade')};
+}
 function cardName(cardId) {
   return (CREATURES[cardId] || SPELLS[cardId] || SUPPORTS[cardId] || { name: cardId }).name;
 }
@@ -956,7 +992,9 @@ function spellDamage(r, i, raw, srcName, isSpellCard = true) {
   if (baseHp - (o.dmg || 0) <= 0) {
     pById(r, o.player).discard.push(o.creature);  // スペルによる撃破は旋風も発動しない(捨て札)
     r.owners[i] = null;
-    r.lastRuin = { tile: i, creature: o.creature, player: o.player, src: srcName, at: stamp(r) };
+    const ruin={tile:i,creature:o.creature,player:o.player,src:srcName,at:stamp(r),level:o.level,evolved:isEvolved(o),element:tileElem(r,i)};
+    const recent=r.lastRuin?.events || (r.lastRuin?[r.lastRuin]:[]);
+    r.lastRuin={...ruin,events:[...recent.slice(-63),ruin]};
     log(r, `${cE.name}は${srcName}に蝕まれて滅びた… 土地は空き地になった`);
     return true;
   }
@@ -1168,7 +1206,7 @@ function buildMatchResult(r) {
       landCount: r.owners.filter(o => o && o.player === p.id).length,
       battleWins: p.battleWins || 0, shrineVisits: p.shrineVisits || 0, bankrupt: !!p.bankrupt,
       cardsCollected: p.cardsCollected ?? null, tollCollected: p.tollCollected ?? null,
-      finalDeck: finalDeckSnapshot(r, p) };
+      finalDeck: finalDeckSnapshot(r, p), finalExile: [...(p.exile || [])] };
   }), r.winner);
   const typeCount = {};
   const selected = a.candidates.slice().filter(c => c.baseImpact >= 300)
@@ -1256,7 +1294,7 @@ function askGreaseUlt(r, p, targets = []) {
   r.pending[p.id].targets = targets;
   r.pending[p.id].selected = targets.map(t => t.id);
 }
-const ULT_CUTIN_MS = 5000;
+const ULT_CUTIN_MS = GAME_TIMING.ultimateDuration;
 function clearUltTimer(r) {
   if (r.ultTimer) clearTimeout(r.ultTimer);
   r.ultTimer = null;
@@ -1277,7 +1315,7 @@ function beginUltSequence(r, p, data = {}) {
   const startedAt = Date.now();
   const id = crypto.randomBytes(6).toString('hex');
   r.ultSequence = { id, player: p.id, charId: p.charId, name: ULTS[p.charId].name,
-    desc: ULTS[p.charId].desc, startedAt, resolveAt: startedAt + ULT_CUTIN_MS,
+    desc: ULTS[p.charId].desc, startedAt, resolveAt: startedAt + presentationMs(r,p.id,ULT_CUTIN_MS),
     resolved: false, data };
   r.lastUlt = { player: p.id, charId: p.charId, name: ULTS[p.charId].name,
     sequenceId: id, at: stamp(r) };
@@ -1295,6 +1333,10 @@ function resolveUltSequence(r) {
   delete r.pending[p.id];
   const d = seq.data || {};
   if (seq.charId === 'redani') {
+    p.hand.push('gweapon');
+    recordCardAcquisition(p, 1);
+    r.lastGain = { player:p.id, n:1, cards:['gweapon'], reason:'ult_redani', at:stamp(r) };
+    log(r, `${p.name}はヘビーアックスを手札に1枚加えた`);
     const dice = d.dice || [1, 1, 1], sum = dice.reduce((n, x) => n + x, 0);
     r.ultSequence = null;
     return performMove(r, p, sum, { value: dice[0], multi: dice }, `3つのダイスで${sum}を出した!(${dice.join('+')})`);
@@ -1535,12 +1577,14 @@ function resolvePickDraw(r, p, idx) {
   log(r, `${p.name}がカードを1枚引いた(残り${cards.length - 1}枚は捨て札へ)`);  // カード名は共有ログに出さない
   return done();
 }
-function beginTurn(r) {
+function beginTurn(r, { gameStart=false } = {}) {
   if (r.phase !== 'playing') return;
   r.turnEpoch = (r.turnEpoch || 0) + 1;
   const p = cur(r);
   // テレビの手番交代演出が終わる前にスマホが次ターンを開始しないためのサーバーロック。
-  r.turnReadyAt = Date.now() + presentationMs(r, p.id, 4300);
+  r.turnReadyAt = Date.now() + presentationMs(r,p.id,GAME_TIMING.turnNotice+GAME_TIMING.turnNoticeBuffer+
+    (gameStart?GAME_TIMING.gameNotice+GAME_TIMING.startNoticeGap:0))+
+    (gameStart?GAME_TIMING.gameEntryReturn+GAME_TIMING.gameEntryCameraReturn:0);
   p.spellCast = false;  // 呪文は1ターンに1回まで
   p.gale = false;
   p.fixedDice = null;
@@ -1729,7 +1773,7 @@ function publishCavernSegment(r,p,path,events,initial=false) {
   const startAt=Date.now()+delay;
   r.lastDice=Object.assign({},m.meta,{at:m.at,player:p.id,movementId:m.id,resolvedSteps:m.resolved,
     segment:{id:`${m.id}:${++m.segmentSeq}`,from:m.segmentFrom,path,events,startAt,
-      availableAt:startAt+path.length*presentationMs(r,p.id,GAME_TIMING.stepMs)}});
+      availableAt:startAt+path.length*presentationMs(r,p.id,GAME_TIMING.stepMs)+events.filter(e=>e.type==='gate').length*presentationMs(r,p.id,GAME_TIMING.gateNotice)}});
   m.segmentFrom=p.pos;
   return r.lastDice.segment;
 }
@@ -1738,10 +1782,11 @@ function cavernGate(r,p,events,step=0) {
   if(!map.gates.includes(p.pos)) return;
   p.gatesVisited=p.gatesVisited || [];
   if(p.gatesVisited.includes(p.pos)) return;
+  const beforeGold=p.gold;
   p.gatesVisited.push(p.pos); p.gold+=map.gateBonus;
   p.seal=map.gates.every(i=>p.gatesVisited.includes(i));
-  const ev={type:'gate',tile:p.pos,gold:map.gateBonus,step}; events.push(ev);
-  r.lastSeal={player:p.id,tile:p.pos,gold:map.gateBonus,at:stamp(r)};
+  const ev={type:'gate',player:p.id,tile:p.pos,gold:map.gateBonus,step,beforeGold,afterGold:p.gold,gatesVisited:[...p.gatesVisited],at:stamp(r)}; events.push(ev);
+  r.lastSeal={...ev};
   log(r,`❖ ${p.name}は${p.pos===22?'西門':'東門'}を通過 ─ +100G (${p.gatesVisited.length}/2)`);
 }
 function cavernCastle(r,p) {
@@ -1751,12 +1796,13 @@ function cavernCastle(r,p) {
   p.lap=(p.lap||1)+1; p.gatesVisited=[]; p.seal=false;
   const completedLaps=p.lap-1, bonus=castleLapBonus(completedLaps);
   const lands=r.owners.reduce((n,o,i)=>n+(o&&o.player===p.id?landValue(r,i):0),0), lb=castleLandBonus(lands);
+  const beforeGold=p.gold;
   markMatchCause(r,'castle',{actor:p.id,amount:bonus+lb}); p.gold+=bonus+lb;
   const healed=[];
-  r.owners.forEach((o,i)=>{if(o&&o.player===p.id&&o.dmg>0){const before=o.dmg;o.dmg=Math.max(0,before-10);healed.push({tile:i,creature:cardName(o.creature),before,after:o.dmg,amount:before-o.dmg});}});
-  const availableAt=seg.availableAt+presentationMs(r,p.id,GAME_TIMING.castleZoom+GAME_TIMING.castleBreakdown);
+  r.owners.forEach((o,i)=>{if(o&&o.player===p.id&&o.dmg>0){const before=o.dmg;o.dmg=Math.max(0,before-10);healed.push({tile:i,creature:cardName(o.creature),creatureId:movingCreatureId(o),before,after:o.dmg,amount:before-o.dmg});}});
+  const availableAt=seg.availableAt+presentationMs(r,p.id,GAME_TIMING.castleZoom+GAME_TIMING.castleDuration({healed}));
   seg.events.push({type:'castle',tile:p.pos,gold:bonus+lb}); seg.availableAt=availableAt;
-  r.lastDice.castle={usedSeal:true,completedLaps,bonusPerLap:100,baseBonus:bonus,gold:bonus,landValue:lands,
+  r.lastDice.castle={player:p.id, beforeGold, afterGold:p.gold, usedSeal:true,completedLaps,bonusPerLap:100,baseBonus:bonus,gold:bonus,landValue:lands,
     landRate:CASTLE_LAND_RATE,landFixedBonus:CASTLE_LAND_FIXED,landBonus:lb,total:bonus+lb,drew:1,healed,castleStep:seg.path.length,availableAt};
   if(healed.length) recordHeal(r,p,'castle',healed.map(h=>({tile:h.tile,amount:h.amount,creature:r.owners[h.tile].creature})),{availableAt});
   log(r,`${p.name}は第${completedLaps}周を完了 ─ 城帰還 +${bonus}G＋領地ボーナス${lb}G`);
@@ -1841,13 +1887,13 @@ function performMove(r, p, steps, meta, moveLabel) {
   }
   r.lastDice = Object.assign({ player: p.id, at: stamp(r) }, meta);
   const dir = p.dir || 1;
-  let bonus = 0, gotSeal = false, noSeal = false, castleStep = 0, usedSeal = false;
+  let bonus = 0, gotSeal = false, noSeal = false, castleStep = 0, gateStep = 0, usedSeal = false;
   let movedSteps = 0, forcedStop = null;
   let completedLaps = Math.max(0, (p.lap || 1) - 1);
   for (let s2 = 0; s2 < steps; s2++) {
     p.pos = (p.pos + dir + tilesOf(r).length) % tilesOf(r).length;
     movedSteps = s2 + 1;
-    if (p.pos === GATE_TILE && !p.seal) { p.seal = true; gotSeal = true; }
+    if (p.pos === GATE_TILE && !p.seal) { p.seal = true; gotSeal = true; gateStep = movedSteps; }
     if (p.pos === 0) {
       castleStep = s2 + 1;
       p.lap = (p.lap || 1) + 1;  // 刻印の有無に関わらず周回は進む
@@ -1875,8 +1921,10 @@ function performMove(r, p, steps, meta, moveLabel) {
   }
   if (gotSeal) {
     // v0.59: 門通過で+200Gと刻印を入手(オーナー指示)
+    const beforeGold = p.gold;
     p.gold += RULES.gateBonus;
-    r.lastSeal = { player: p.id, gold: RULES.gateBonus, at: stamp(r) };
+    r.lastSeal = { player: p.id, tile:GATE_TILE, gold: RULES.gateBonus, beforeGold, afterGold:p.gold, step:gateStep, at: stamp(r) };
+    r.lastDice.gateEvents = [{...r.lastSeal, type:"gate"}];
     log(r, `❖ ${p.name}は門を通過 ─ +${RULES.gateBonus}Gと刻印を得た(城まで持ち帰ると一周ボーナス)`);
   }
   if (bonus) {
@@ -1885,6 +1933,7 @@ function performMove(r, p, steps, meta, moveLabel) {
     const landRate = CASTLE_LAND_RATE;
     const lb = castleLandBonus(lands);
     markMatchCause(r, 'castle', { actor: p.id, amount: bonus + lb });
+    const beforeGold = p.gold;
     p.gold += bonus + lb;
     // 帰還の癒し: 自領地のクリーチャーの負傷を10回復(最大値は超えない)
     const healed = [];
@@ -1893,16 +1942,17 @@ function performMove(r, p, steps, meta, moveLabel) {
         const before = o.dmg;
         o.dmg = Math.max(0, o.dmg - 10);
         const c = CREATURES[o.creature] || CREATURES[baseId(o.creature)] || {};
-        healed.push({ tile: i, creature: c.name || o.creature, before, after: o.dmg, amount: before - o.dmg });
+        healed.push({ tile: i, creature: c.name || o.creature, creatureId:movingCreatureId(o), before, after: o.dmg, amount: before - o.dmg });
       }
     });
     if (healed.length) log(r, `⛨ 帰還の癒し ─ ${p.name}の領地のクリーチャーが回復した(負傷-10 × ${healed.length}体)`);
     const initial = presentationMs(r, p.id, meta.multi ? GAME_TIMING.moveStartDelayMulti : GAME_TIMING.moveStartDelay);
     const availableAt = r.lastDice.at + initial + castleStep * presentationMs(r, p.id, GAME_TIMING.stepMs) +
-      presentationMs(r, p.id, GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown);
+      presentationMs(r, p.id, GAME_TIMING.castleZoom + GAME_TIMING.castleDuration({healed}))+
+      (gotSeal && gateStep <= castleStep ? presentationMs(r,p.id,GAME_TIMING.gateNotice) : 0);
     if (healed.length) recordHeal(r, p, 'castle', healed.map(h => ({ tile:h.tile, amount:h.amount,
       creature:r.owners[h.tile] ? r.owners[h.tile].creature : h.creature })), { availableAt });
-    r.lastDice.castle = { usedSeal, completedLaps, bonusPerLap: RULES.castleBonusPerLap,
+    r.lastDice.castle = { player:p.id, beforeGold, afterGold:p.gold, usedSeal, completedLaps, bonusPerLap: RULES.castleBonusPerLap,
       baseBonus: bonus, gold: bonus, landValue: lands, landRate, landFixedBonus: CASTLE_LAND_FIXED,
       landBonus: lb, total: bonus + lb, drew: 1, healed, castleStep, availableAt };
     log(r, `${p.name}は${moveLabel}(城通過 +${bonus}G${lb ? `+領地ボーナス${lb}G` : ''}、カードを選択!)`);
@@ -1915,8 +1965,8 @@ function performMove(r, p, steps, meta, moveLabel) {
   if (noSeal) {
     const initial = presentationMs(r, p.id, meta.multi ? GAME_TIMING.moveStartDelayMulti : GAME_TIMING.moveStartDelay);
     const availableAt = r.lastDice.at + initial + castleStep * presentationMs(r, p.id, GAME_TIMING.stepMs) +
-      presentationMs(r, p.id, GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown);
-    r.lastDice.castle = { usedSeal: false, completedLaps, bonusPerLap: RULES.castleBonusPerLap,
+      presentationMs(r, p.id, GAME_TIMING.castleZoom + GAME_TIMING.castleDuration({usedSeal:false}));
+    r.lastDice.castle = { player:p.id, beforeGold:p.gold, afterGold:p.gold, usedSeal: false, completedLaps, bonusPerLap: RULES.castleBonusPerLap,
       baseBonus: 0, gold: 0, landValue: 0, landRate: CASTLE_LAND_RATE,
       landBonus: 0, total: 0, drew: 0, healed: [], castleStep, availableAt };
     if (forcedStop && movedSteps > castleStep) {
@@ -1931,10 +1981,17 @@ function performMove(r, p, steps, meta, moveLabel) {
     r.lastDice.castle = null;
     log(r, `${p.name}は${moveLabel}`);
   }
-  if (meta && meta.villaUlt) return startVillaRecovery(r, p,
-    r.lastDice && r.lastDice.castle ? r.lastDice.castle.availableAt : 0);
+  if (gotSeal) {
+    const initial=presentationMs(r,p.id,meta.multi?GAME_TIMING.moveStartDelayMulti:GAME_TIMING.moveStartDelay);
+    const gateReadyAt=r.lastDice.at+initial+movedSteps*presentationMs(r,p.id,GAME_TIMING.stepMs)+presentationMs(r,p.id,GAME_TIMING.gateNotice+GAME_TIMING.arriveBuf);
+    r.turnReadyAt=Math.max(r.turnReadyAt||0,gateReadyAt);
+    r.lastDice.gateReadyAt=gateReadyAt;
+    if(forcedStop)forcedStop.availableAt+=presentationMs(r,p.id,GAME_TIMING.gateNotice);
+  }
+  if (meta && meta.villaUlt) return startVillaRecovery(r, p, Math.max(r.lastDice.castle?.availableAt||0,r.lastDice.gateReadyAt||0,forcedStop?.availableAt||0));
   resolveTile(r, p);
   if (forcedStop && r.pending[p.id]) r.pending[p.id].availableAt = forcedStop.availableAt;
+  if (r.lastDice.gateReadyAt && r.pending[p.id]) r.pending[p.id].availableAt = Math.max(r.pending[p.id].availableAt||0, r.lastDice.gateReadyAt);
 }
 function doRoll(r, p) {
   if (p.fixedDice) {
@@ -2441,7 +2498,7 @@ function calculateBattle(r, b = r.battle) {
   if (iceWard) notes.push('【氷晶の勅令】防衛DF+10!');
   const shadeDF = baseId(o.creature) === 'beruf' ? (o.shade || 0) * 10 : 0;
   if (shadeDF) notes.push(`【死影】蓄えた影が防衛DFを${shadeDF}高める!`);
-  let defDF = terrain + queenBonus + (dEff ? dEff.hp : 0) + upliftDF + boneArmor + iceWard + shadeDF + defSoul + defEarthChain + defEarthDfBonus;
+  let defDF = landDefenseStats(r,b.tile).df - terrainUi.potentialBonus + terrain + (dEff ? dEff.hp : 0);
   if (corrosion) {
     const reduced = Math.min(defDF, corrosion);
     defDF = Math.max(0, defDF - corrosion);
@@ -2486,6 +2543,15 @@ function calculateBattle(r, b = r.battle) {
 }
 
 function resolveBattle(r) {
+  // Ordered, authoritative cash movements for the board's battle settlement UI.
+  const moneyEvents = [];
+  const battlePay = (payer, receiver, amount, reason, source) => {
+    const fromBefore = payer.gold, toBefore = receiver.gold;
+    const paid = reason === 'toll' ? payToll(r, payer, receiver, amount) : payTo(r, payer, receiver, amount);
+    if (paid > 0) moneyEvents.push({ reason, source:source || null, amount:paid,
+      from:payer.id, to:receiver.id, fromBefore, fromAfter:payer.gold, toBefore, toAfter:receiver.gold });
+    return paid;
+  };
   const { b, atk, def, o, tile, ac, dc, defEvolved, notes, aSup, dSup, aEff, dEff, mvSrc, corridor, carried, atkEvolved, atkWeaponMastery, defWeaponMastery, atkSoul, defSoul, atkEarthChain, defEarthChain, atkEarthLand, defEarthLand, atkEarthAtBonus, defEarthAtBonus, atkEarthDfBonus, defEarthDfBonus, aBase, dBase, atkDmg, effHp, defDF, dealt, atkEffHp, atkDF, defSt, counterSt, counterDealt, atkSurvived, atkShadeDF, hitsDone, preempt, terrain, terrainUi, curse, win, iceWard, atkCarried } = calculateBattle(r);
   // Older saved battles have no snapshot; capture before any resolution changes.
   b.evolutionPrayerProviders ||= evolutionPrayerProviders(r);
@@ -2524,7 +2590,7 @@ function resolveBattle(r) {
     remainHp: win ? 0 : effHp - dealt,
     terrain, terrainBreakdown: terrainUi,
     effectStates: battleEffectStates(r, b, battleResultUi),
-    curse, notes, win, at: stamp(r) };
+    curse, notes, win, moneyEvents, tollWaived:!win && !!(mvSrc || corridor), at: stamp(r) };
   log(r, `⚔ ${atk.name}の${ac.name}(AT${atkDmg}${hitsDone === 2 ? '×2回' : ''}) vs ${def.name}の${dc.name}(HP${effHp}/DF${defDF}) → 実ダメージ${dealt}`);
   for (const n of notes) log(r, n);
   if (iceWard) delete o.iceWard;
@@ -2550,7 +2616,7 @@ function resolveBattle(r) {
     atk.battleWins++;
     log(r, `${ac.name}の${hitsDone === 2 ? '連撃' : '一撃'}(実ダメージ${dealt})が${dc.name}を討ち取った! Lv${o.level}の土地を奪取!`);
     if (baseId(b.atkCreature) === 'zati') {
-      const got = payTo(r, def, atk, 50);
+      const got = battlePay(def, atk, 50, 'plunder', b.atkCreature);
       if (got) log(r, `【略奪】ザーティーが${def.name}から${got}Gを奪った!`);
     }
   } else {
@@ -2591,20 +2657,20 @@ function resolveBattle(r) {
     }
     if (!mvSrc && !corridor) {
       const toll = tollOf(r, b.tile);
-      payToll(r, atk, def, toll);
+      battlePay(atk, def, toll, 'toll');
       log(r, `${def.name}が防衛成功! 通行料${toll}Gも支払わせた`);
     } else {
       log(r, `${def.name}が防衛成功!(移動系スペルによる侵略のため通行料なし)`);
     }
     def.battleWins++;
     if (baseId(o.creature) === 'barbaro') {
-      const extra = payTo(r, atk, def, defEvolved ? 50 : 30);
+      const extra = battlePay(atk, def, defEvolved ? 50 : 30, 'rage', o.creature);
       if (extra) log(r, `【逆鱗】バーグランダの怒りで追加${extra}Gを支払った!`);
     }
   }
   // --- スペル継続効果の後処理 ---
   if (win && atk.blade) {
-    const got = payTo(r, def, atk, 30);
+    const got = battlePay(def, atk, 30, 'bloodstained_blade', 'sp_bloodstained_blade');
     log(r, `血染めの刃が輝く ─ ${atk.name}は${def.name}から${got}Gを奪った!`);
   }
   atk.blade = false;                                  // 侵略したら成否問わず解除
@@ -2617,6 +2683,8 @@ function resolveBattle(r) {
   const prayer = grantEvolutionPrayer(r, b, bWinner, win ? atkEvolved : defEvolved);
   if (prayer) {
     r.lastBattle.evolutionPrayer = prayer;
+    moneyEvents.push({ reason:'evolution_prayer', from:null, to:prayer.player, amount:prayer.gold,
+      toBefore:prayer.beforeGold, toAfter:prayer.afterGold, providers:prayer.providers });
     r.lastBattle.notes.push(`【進化の祈り】${bWinner.name} +${prayer.gold}G（配置${prayer.providers.length}体分）`);
   }
   r.battleAfter = { winner: bWinner.id, attacker: atk.id, defender: def.id, tile: b.tile,
@@ -2849,7 +2917,7 @@ function handleChoose(r, playerId, optionId) {
         target && target.player === p.id && tilesOf(r)[tile]?.t === 'land' && !alreadyMarked) {
       source.abyssMarkTarget = tile;
       const bonus = abyssMarkBonusFor(source, target);
-      r.lastEvent = { type: 'abyss_mark', player: p.id, tile, sourceTile, bonus, at: stamp(r) };
+      r.lastEvent = { type: 'abyss_mark', player: p.id, tile, sourceTile, creature:isEvolved(source)?'night_jelly_f':'night_jelly', bonus, at: stamp(r) };
       log(r, `【深淵標】${p.name}の${CREATURES[source.creature].name}が土地${tile}へ標を刻んだ（通行料+${bonus}G）`);
     } else {
       log(r, `【深淵標】選択候補が変化したため、標を置けなかった`);
@@ -3017,7 +3085,7 @@ function handleChoose(r, playerId, optionId) {
       p.gold += gain;
       r.lastEvent.desc = `第${p.lap || 1}周 ─ ${gain}Gを獲得(所持${p.gold}G)`;
       log(r, `第${p.lap || 1}周 ─ ${p.name}は${gain}Gを得た(所持${p.gold}G)`);
-      spellFx(r, 'sp_gold', [], p.id);
+      spellFx(r, 'sp_gold', [], p.id, {display:{gold:gain}});
       return askRoll(r, p);
     }
     if (sid === 'sp_insight') {
@@ -3135,8 +3203,10 @@ function handleChoose(r, playerId, optionId) {
         r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_weaken.name,
           desc: `${pById(r, o.player).name}の${CREATURES[o.creature].name}に20ダメージ!`, at: stamp(r) };
         log(r, `☠ ${p.name}が${pById(r, o.player).name}の${CREATURES[o.creature].name}に衰弱の呪文!(20ダメージ)`);
+        const beforeHp=Math.max(0,creatureMaxHp(o)-(o.dmg||0));
         spellFx(r, 'sp_weaken', [i], p.id);
         spellDamage(r, i, SPELLS.sp_weaken.hp, '衰弱');
+        r.lastSpellFx.display={creature:r.lastSpellFx.targets[0].creature,beforeHp,afterHp:r.owners[i]?Math.max(0,creatureMaxHp(o)-(o.dmg||0)):0};
       }
     }
     return askRoll(r, p);
@@ -3181,18 +3251,21 @@ function handleChoose(r, playerId, optionId) {
       if (o.player !== p.id || tileElem(r, i) === ELEM_OF_SPELL[sid]) return askRoll(r, p);
       pay();
       const el = ELEM_OF_SPELL[sid];
+      const beforeElem=tileElem(r,i);
       if (tilesOf(r)[i].e === el) delete r.elemOv[i]; else r.elemOv[i] = el;
       r.lastEvent.desc = `${p.name}の領地(${i}番)が${ELEM_JA[el]}属性に変化!(連鎖・地価を再計算)`;
       log(r, `📜 ${p.name}が${SPELLS[sid].name}を使用。マス${i}が${ELEM_JA[el]}属性に変化した!(連鎖・地価を再計算)`);
-      spellFx(r, sid, [i], p.id, { elem: el });
+      spellFx(r, sid, [i], p.id, { elem: el,display:{beforeElem} });
     } else if (sid === 'sp_flame_vortex') {
       if (o.player === p.id) return askRoll(r, p);
       pay();
       fx().vortex = true; fx().vortexSource = {cardId:'sp_flame_vortex'};
       r.lastEvent.desc = `${pById(r, o.player).name}の${CREATURES[o.creature].name}に10ダメージ! 次の侵略者はAT+10`;
       log(r, `🔥 炎の渦がマス${i}を包む。${CREATURES[o.creature].name}に10ダメージ! 次の侵略者はAT+10`);
+      const beforeHp=Math.max(0,creatureMaxHp(o)-(o.dmg||0));
       spellFx(r, 'sp_flame_vortex', [i], p.id, { cid: o.creature });
       spellDamage(r, i, 10, '炎の渦');
+      r.lastSpellFx.display={creature:r.lastSpellFx.targets[0].creature,beforeHp,afterHp:r.owners[i]?Math.max(0,creatureMaxHp(o)-(o.dmg||0)):0};
     } else if (sid === 'sp_bedrock_uplift') {
       if (o.player !== p.id || !(o.dmg > 0)) return askRoll(r, p);
       pay();
@@ -3202,7 +3275,7 @@ function handleChoose(r, playerId, optionId) {
       fx().uplift = true;
       r.lastEvent.desc = `${CREATURES[o.creature].name}の負傷${before}→${o.dmg}。次の戦闘でDF+10`;
       log(r, `⛰ リストア! ${CREATURES[o.creature].name}の負傷${before}→${o.dmg}。次の戦闘でDF+10`);
-      spellFx(r, 'sp_bedrock_uplift', [i], p.id);
+      spellFx(r, 'sp_bedrock_uplift', [i], p.id,{display:{creature:isEvolved(o)&&CREATURES[baseId(o.creature)]?.evo?baseId(o.creature)+'_f':o.creature,beforeHp:Math.max(0,creatureMaxHp(o)-before),afterHp:Math.max(0,creatureMaxHp(o)-o.dmg),df:10}});
     }
     return resumeAfterExileEffects(r, { type: 'roll', player: p.id });
   }
@@ -3394,11 +3467,12 @@ function handleChoose(r, playerId, optionId) {
       p.gold -= spellCost;
       p.spellCast = true;
       onSpellCast(r, p, 'sp_quake');
+      const beforeLevel=o.level;
       o.level = Math.max(1, o.level - 1);
       r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_quake.name,
         desc: `${pById(r, o.player).name}の領地(${i}番)がLv${o.level}に崩れた!`, at: stamp(r) };
       log(r, `⛰ ${p.name}の地割れで${pById(r, o.player).name}の領地(${i}番)がLv${o.level}に崩れた!`);
-      spellFx(r, 'sp_quake', [i], p.id);
+      spellFx(r, 'sp_quake', [i], p.id,{display:{beforeLevel,afterLevel:o.level}});
     }
     return resumeAfterExileEffects(r, { type: 'roll', player: p.id });
   }
@@ -3714,6 +3788,7 @@ function startGame(r) {
     return;
   }
   r.phase = 'playing';
+  r.goalProgress = {}; r.goalNotices = [];
   r.pending = {};
   const order = r.players.slice().sort(() => Math.random() - 0.5);
   r.players = order;
@@ -3731,7 +3806,7 @@ function startGame(r) {
   log(r, `全員のキャラが確定! ゲーム開始(手番順: ${r.players.map(p => p.name).join(' → ')})`);
   for (const p of r.players) p.dir = 0;  // 方向は初回のダイス後に選ぶ
   initMatchAnalytics(r);
-  beginTurn(r);
+  beginTurn(r,{gameStart:true});
 }
 
 // ===== v1.05 BOT判断・実行 =====
@@ -3953,6 +4028,7 @@ function publicState(r, viewerId) {
   return {
     ver: VERSION, code: r.code, mapId: r.mapId || 'starting_corridor', mapName:mapOf(r).name,
     routePreview:r.routePreview || null,
+    goalNotices:r.goalNotices || [],
     phase: r.phase, evoLevel: RULES.evoLevel, turn: r.turn, round: r.round, target: ASSET_GOAL, reachAt: ASSET_REACH,
     stateRev: r.stateRev || 0, stateInstanceId: r.stateInstanceId, turnEpoch: r.turnEpoch || 0, serverNow: Date.now(),
     presentationSpeed: r.presentationSpeed === 2 ? 2 : 1,
@@ -3961,6 +4037,8 @@ function publicState(r, viewerId) {
     tiles: tilesOf(r).map((t, i) => r.elemOv[i] ? Object.assign({}, t, { e: r.elemOv[i] }) : t),
     tolls: r.owners.map((o, i) => o ? tollOf(r, i) : 0),
     landCombat: r.owners.map((o, i) => o ? landCombatUi(r, i) : null),
+    enemyLand: enemyLandUi(r),
+    landStop: landStopUi(r),
     abyssMarks: activeAbyssMarks(r),
     tileFx: r.tileFx,
     owners: r.owners, market: r.market, shopVisit: r.shopVisit || null, log: r.log,
@@ -3987,7 +4065,7 @@ function publicState(r, viewerId) {
     pending: Object.fromEntries(Object.entries(r.pending).map(([k, v]) =>
       v.type === 'draft' && k !== viewerId
         ? [k, { type: v.type, prompt: v.prompt, options: [], aura: r.draft ? displayRarity(r.draft.aura) : null,
-            resume: r.draft ? r.draft.resume : null }]
+            resume: r.draft ? r.draft.resume : null, promptId:v.promptId, turnEpoch:v.turnEpoch }]
         : v.type === 'pick_draw' && k !== viewerId
           ? [k, { type: v.type, prompt: v.prompt, options: [], until: v.until }]  // 候補カードは本人だけに見せる
           : ['gaust_exile', 'fatal_exile', 'ult_villa_recover', 'daitekkan_recover', 'spell_evolve', 'frontline_swap', 'ult_grease'].includes(v.type) && k !== viewerId
@@ -4028,9 +4106,29 @@ function publicState(r, viewerId) {
     })),
   };
 }
+// A match-wide threshold history, independent of board connections and turns.
+function collectGoalNotices(r) {
+  if (r.phase !== 'playing') return;
+  r.goalProgress ||= {}; r.goalNotices ||= [];
+  for (const p of r.players) {
+    if (p.bankrupt) continue;
+    const prior = Object.hasOwn(r.goalProgress,p.id) ? r.goalProgress[p.id] : {near:false,ready:false};
+    const assets = points(r,p);
+    let stage = null;
+    if (assets >= ASSET_GOAL && !prior.ready) { stage='ready'; prior.near=true; prior.ready=true; }
+    else if (assets >= ASSET_REACH && !prior.near) { stage='near'; prior.near=true; }
+    Object.defineProperty(r.goalProgress,p.id,{value:prior,writable:true,enumerable:true,configurable:true});
+    if (stage) {
+      const at=stamp(r);
+      r.goalNotices.push({id:`${p.id}:${stage}:${at}`,player:p.id,stage,points:assets,
+        target:ASSET_GOAL,reachAt:ASSET_REACH,at,name:p.name,charId:p.charId});
+    }
+  }
+}
 function broadcast(r) {
   reconcileAbyssMarks(r);
   captureMatchFrame(r);
+  collectGoalNotices(r);
   r.saveRev = (r.saveRev || 0) + 1;  // v0.62: 状態変化ごとに単調増加(盤面の自動セーブ契機)
   r.stateRev = (r.stateRev || 0) + 1;
   for (const c of r.clients) {
@@ -4053,6 +4151,7 @@ const ROOM_PERSIST_KEYS = new Set([                                            /
   'lastEvent', 'lastDice', 'lastUlt', 'ultSequence', 'lastHeal', 'lastSeal', 'lastRuin', 'lastDraw', 'lastGain',
   'lastBarrierHit', 'lastSpellFx', 'botMode', 'presentationSpeed', 'turnEpoch', 'promptSeq', 'stateRev', 'turnTransition',
   'matchAnalytics', 'matchResult', 'resultReview', 'mapId', 'movement', 'windSupply',
+  'goalProgress', 'goalNotices',
 ]);
 ROOM_RUNTIME_KEYS.add('stateInstanceId');
 function serializeRoom(r) {
@@ -4117,6 +4216,21 @@ function validateSave(save) {
       if(!Array.isArray(q.gatesVisited)||new Set(q.gatesVisited).size!==q.gatesVisited.length||q.gatesVisited.some(i=>!mapOf(d).gates.includes(i))) return '門の取得状態が不正です';
     }
   }
+  if (d.goalProgress != null || d.goalNotices != null) {
+    const progress=d.goalProgress,events=d.goalNotices,seen=new Set();
+    if (!progress || typeof progress!=='object' || Array.isArray(progress) || !Array.isArray(events) || events.length>8)
+      return 'ゴール通知の記録が不正です';
+    for (const [id,v] of Object.entries(progress)) if (!ids.has(id)||!v||typeof v.near!=='boolean'||typeof v.ready!=='boolean'||(v.ready&&!v.near))
+      return 'ゴール通知の記録が不正です';
+    for (const e of events) {
+      if (!e || !ids.has(e.player) || !['near','ready'].includes(e.stage) || !Object.hasOwn(progress,e.player) || !progress[e.player][e.stage] ||
+          typeof e.id!=='string' || e.id.length>100 || !Number.isFinite(e.at) ||
+          !Number.isFinite(e.points) || e.points<(e.stage==='ready'?ASSET_GOAL:ASSET_REACH) ||
+          e.target!==ASSET_GOAL || e.reachAt!==ASSET_REACH || typeof e.name!=='string' || e.name.length>16 || !CHARS[e.charId] ||
+          seen.has(e.player+':'+e.stage)) return 'ゴール通知の記録が不正です';
+      seen.add(e.player+':'+e.stage);
+    }
+  }
   if (!Array.isArray(d.owners) || d.owners.length !== tilesOf(d).length) return '盤面データが不正です';
   for (const o of d.owners) {
     if (o == null) continue;
@@ -4176,6 +4290,8 @@ function validateSave(save) {
       if (row[key] != null && (!Number.isSafeInteger(row[key]) || row[key] < 0)) return 'リザルトの記録が不正です';
     if (row.finalDeck != null && (!Array.isArray(row.finalDeck) || row.finalDeck.length > 1600 || row.finalDeck.some(c=>!VALID_SAVE_CARD(c))))
       return '最終デッキが不正です';
+    if (row.finalExile != null && (!Array.isArray(row.finalExile) || row.finalExile.length > 1600 || row.finalExile.some(c=>!VALID_SAVE_CARD(c))))
+      return '最終廃棄カードが不正です';
   }
   if(d.movement != null) {
     const m=d.movement, actor=d.players.find(p=>p.id===m.player);
@@ -4227,7 +4343,17 @@ function restoreRoom(save) {
   if (room.matchResult == null) room.matchResult = null;
   if (room.matchResult) room.matchResult.rankings = rankMatchPlayers(
     room.matchResult.rankings, room.matchResult.winner || room.winner);
+  if (room.phase === 'ended' && room.matchResult) for (const row of room.matchResult.rankings) {
+    if (row.finalExile == null) row.finalExile = [...(room.players.find(p=>p.id===row.id)?.exile || [])];
+  }
   if (room.resultReview == null) room.resultReview = null;
+  // Old saves have no threshold history. Do not announce their existing assets as a new gain.
+  if (!room.goalProgress) {
+    room.goalProgress = Object.fromEntries(room.players.map(p=>[p.id,{
+      near:points(room,p)>=ASSET_REACH,ready:points(room,p)>=ASSET_GOAL,
+    }]));
+  }
+  if (!room.goalNotices) room.goalNotices = [];
   reconcileAbyssMarks(room);
   if (room.turnTransition) {
     if (room.turnTransition.deadline <= Date.now()) completeTurnTransition(room, room.turnTransition.id, 'timeout');
@@ -4441,9 +4567,10 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const p = url.pathname;
   if(p === '/game-cards.js'){res.writeHead(200,{'Content-Type':'text/javascript; charset=utf-8','Cache-Control':'no-cache'});return res.end(gameCardSource);}
-  if(['/result-review.js','/result-review.css','/rare-draw.css','/battle-external.css','/phone-card-picker.js','/phone-card-picker.css','/phone-deck.css','/hud-rank.js','/hud-rank.css'].includes(p))return serveFile(res,p.slice(1));
+  if(['/phone-summoners.js','/phone-summoners.css','/board-audio-settings.js','/board-settings.js','/board-settings.css','/board-flow-notices.js','/board-flow-notices.css','/board-route.js','/board-route.css','/board-finale.js','/board-finale.css','/board-goal-notice.js','/board-goal-notice.css','/board-land-stop.js','/board-land-stop.css','/board-next-notices.js','/board-next-notices.css','/board-enemy-land.js','/board-enemy-land.css','/board-actor.js','/board-actor.css','/board-effects.js','/board-notice.js','/board-notice.css','/board-milestones.js','/board-milestones.css','/result-review.js','/result-review.css','/rare-draw.css','/battle-external.css','/phone-card-picker.js','/phone-card-picker.css','/phone-deck.css','/hud-rank.js','/hud-rank.css'].includes(p))return serveFile(res,p.slice(1));
   if (p === '/') return serveFile(res, 'site/index.html');
   if (p === '/news') return serveFile(res, 'site/news-index.html', url.searchParams.get('category'));
+  if (p === '/news/2026-09-29-ui-update') return serveFile(res, 'site/news-2026-09-29-ui-update.html');
   if (p === '/news/2026-09-20-mio-update') return serveFile(res, 'site/news-2026-09-20-mio-update.html');
   if (p === '/news/2026-09-17-player-feedback') return serveFile(res, 'site/news-2026-09-17-player-feedback.html');
   if (p === '/news/2026-09-10-start-guide') return serveFile(res, 'site/news-2026-09-10-start-guide.html');

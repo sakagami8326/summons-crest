@@ -84,8 +84,8 @@ ok(/function boardPresentationIdle\([\s\S]*presentationRunning[\s\S]*presentatio
 ok(/type:'presentation_complete'[\s\S]*transitionId:tr\.id/.test(board),
   'TV sends the matching presentation transition id');
 ok(/function tileCloseup\([\s\S]*const completion = new Promise/.test(board) &&
-  /const closeupDone = tileCloseup\([\s\S]*await Promise\.all\(\[closeupDone, resultFxDone\]\)/.test(board),
-  'battle close-up is awaitable before presentation completion');
+  /const resultDone = BoardMilestones\.present\('battle-result'[\s\S]*await Promise\.all\(\[resultDone,resultFxDone\]\);[\s\S]*await BoardNotice\.battle/.test(board),
+  'battle result and map FX finish before money presentation and completion');
 ok(/cameraOwner = \{ token, owner, startedAt:Date\.now\(\),[\s\S]*presentationId/.test(board) &&
   /cameraOwner && Date\.now\(\) - cameraOwner\.startedAt > 12000/.test(board),
   'camera generation ownership has an orphan watchdog');
@@ -122,7 +122,7 @@ ok(/const presentationRegistry = new Map\(\)/.test(board) &&
 ok(/battleResultState !== 'running' && battleResultState !== 'completed'/.test(board) &&
   /battleResultState !== 'queued' && battleResultState !== 'running'/.test(board),
   'SSE renders cannot overwrite or cancel a queued/running battle result');
-ok(/await PW\.play\(\{ type:'chain-glow'/.test(board) && /kind:'chain'/.test(board) &&
+ok(/await PW\.play\(\{\s*type:'chain-glow'/.test(board) && /kind:'chain'/.test(board) &&
   /queueMajorPresentation\(battle\.at, 'battle'/.test(board),
   'chain glow is awaited in the same priority queue behind battle');
 

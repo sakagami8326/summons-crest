@@ -27,10 +27,12 @@ ok(/src="\/assets\/hud_\$\{p\.charId\}\.png\?v=1275"/.test(board), 'HUD selects 
 ok(/this\.src='\/assets\/f_\$\{p\.charId\}\.png'/.test(board), 'HUD retains a face-art fallback');
 ok(/margin-left:107px !important/.test(board) && /margin-left:114px !important/.test(board), 'HUD text clears the compact portrait area');
 ok(/@media \(max-width:1400px\), \(max-height:800px\)[\s\S]*?transform:scale\(1\)/.test(board), 'HUD has a 100 percent compact-TV fallback');
-ok(/src="\/assets\/hud_\$\{id\}\.png\?v=1276"/.test(phone), 'phone summoner shelf uses the same dedicated HUD art');
-ok(/\.csCard \.csVisual \{[^}]*inset:0 0 30%[^}]*overflow:hidden/s.test(phone), 'phone summoner art is clipped to a dedicated visual area');
-ok(/\.csCard \.csInfo \{[^}]*height:30%[^}]*background:/s.test(phone), 'phone summoner name and strategy use a separate opaque information area');
-ok(/\.csCard \.csArt \{[^}]*object-fit:contain;[^}]*object-position:center bottom/s.test(phone), 'phone summoner HUD art keeps its complete 1.2:1 composition');
+const summoners = fs.readFileSync(path.join(root,'public','phone-summoners.js'),'utf8');
+const summonerStyles = fs.readFileSync(path.join(root,'public','phone-summoners.css'),'utf8');
+ok(summoners.includes('/assets/board-actors/${id}.png'), 'phone summoner shelf uses approved dedicated actor art');
+ok(summonerStyles.includes('#phoneSummoners .tileArt') && summonerStyles.includes('mask-image:linear-gradient'), 'phone summoner portraits fade at the edge');
+ok(summonerStyles.includes('#phoneSummoners .tileName') && summoners.includes('${icon(C.CHARS[id].elem)}'), 'phone summoner shelf preserves name and element identification');
+ok(summonerStyles.includes('width:min(100%,80dvh)') && summonerStyles.includes('height:auto'), 'phone detail retains portrait proportions');
 ok(!/CHAR_SELECT_FOCUS/.test(phone) && !/--cs-scale/.test(phone), 'phone summoner shelf has no legacy per-character crop offsets');
 
 for (const id of ['redani', 'linnei', 'grease', 'mio', 'lia', 'adel', 'villa', 'nerasio']) {

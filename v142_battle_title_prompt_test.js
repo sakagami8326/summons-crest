@@ -62,15 +62,14 @@ eq(titleRoom.titles.pilgrim, titleRoom.players[2].id, 'a strictly higher shrine 
 ok(titleRoom.log.some(line => /総資産\+500G/.test(line)) && !titleRoom.log.some(line => /\+2点/.test(line)),
   'title acquisition log reports the actual asset bonus');
 ok(/id = 'titleBonusPanel'/.test(board) && /覇者ボーナス/.test(board) && /大巡礼者ボーナス/.test(board) &&
-   /最多記録を更新すると称号を奪取/.test(board),
-  'TV renders the two-column title bonus panel and takeover rule');
+   /class="titleBonusIcon"/.test(board),
+  'TV renders title icons with accessible title names');
 ok(/#titleBonusPanel \{[^}]*grid-template-columns:repeat\(2/s.test(board) &&
    /innerHeight - 14 - hudBottom/.test(board),
   'title panel uses two columns and log space is measured below the HUD');
-ok(/\.titleBonusHead \{[^}]*grid-template-columns:25px minmax\(0,1fr\)/s.test(board) &&
-   /\.titleBonusValue \{[^}]*grid-column:2/s.test(board) &&
-   /<span>獲得<\/span><b>総資産 \+500G<\/b>/.test(board),
-  'title name and asset reward use separate non-overlapping rows');
+ok(/class="titleBonusPawn"/.test(board) && /class="titleBonusHolder"/.test(board) &&
+   !/titleBonusRows|titleBonusRule|titleBonusValue/.test(board),
+  'title panel shows only the current holder instead of standings and rules');
 
 // TURN STARTはepoch単位で1回だけ登録し、開始ワイプから直接再生しない。
 const entryBody = (board.match(/function playGameEntryTransition\(\) \{([\s\S]*?)\n\}/) || [,''])[1];
@@ -82,7 +81,7 @@ ok(/key:`\$\{Number\(state\.turnEpoch\) \|\| 0\}:\$\{pl\.id\}`/.test(board) &&
 ok(/let telopGeneration = 0, finishActiveTelop = null/.test(board) &&
    /addEventListener\('animationend', onEnd\)/.test(board),
   'telop completion is generation-owned and animation driven');
-const directionCutBody = (board.match(/function updateDirCut\(\) \{([\s\S]*?)\r?\n\}\r?\nfunction sideCut/) || [,''])[1];
+const directionCutBody = (board.match(/function updateDirCut\(\) \{([\s\S]*?)\r?\n\}/) || [,''])[1];
 ok(directionCutBody && /!presentationRunning/.test(directionCutBody) &&
    /!presentationQueue\.length/.test(directionCutBody) && /!cutBusy/.test(directionCutBody),
   'direction guidance cannot interrupt an active queued cut-in');

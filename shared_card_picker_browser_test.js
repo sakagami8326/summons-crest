@@ -47,7 +47,7 @@ const G=new Function('require','__dirname','setInterval','setTimeout',src+`;retu
  }
  const shape=await pg.locator('#uxRail .face.front').evaluateAll(es=>es.map(e=>getComputedStyle(e).getPropertyValue('--card-info-top')));assert(shape.every(s=>s==='70.8%'));
  assert(await pg.locator('#uxPicker').evaluate(e=>e.clientHeight===e.scrollHeight));
- const hasCancel=!!f.r.pending.fx0.options.find(o=>/cancel|^done$|^back$|^skip$/.test(o.id));assert.equal(await pg.locator('#uxClose').isVisible(),hasCancel);
+ const hasCancel=!!f.r.pending.fx0.options.find(o=>/cancel|^done$|^back$|^skip$/.test(o.id));assert.equal(await pg.locator('#uxClose').isVisible(),hasCancel && type!=='draft');if(type==='draft')assert.equal(await pg.locator('#uxSkipDraw').isVisible(),hasCancel);
  const candidate=pg.locator('#uxRail .card[data-option-id]').first();const option=await candidate.getAttribute('data-option-id');await candidate.tap();await pg.waitForSelector('#uxPickDialog[open]');assert.equal(await pg.locator('#uxPickEffect').isVisible(),true);
  if(type==='frontline_swap'){assert.match(await pg.locator('#uxPickCost').innerText(),/50/);const money=f.p.gold;await pg.locator('#uxConfirm').tap();await pg.waitForFunction(()=>pend()?.type!=='frontline_swap');assert.equal(f.p.gold,money-50);assert.equal(f.r.owners[1].creature,'nome');}
  else if(type==='spell_evolve'){const money=f.p.gold;await pg.locator('#uxConfirm').tap();await pg.waitForFunction(()=>me().hand.includes('nome_f'));assert.equal(f.p.gold,money-150);assert(f.p.discard.includes('sp_evolve'));}

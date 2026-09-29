@@ -82,7 +82,7 @@ ok(/\.site-card-art[^}]*filter: drop-shadow\(0 0 [^)]+rgb\(255 255 255/.test(css
 ok(!/\.site-card-art[^}]*box-shadow:/.test(css) && !/\.site-game-card[^}]*box-shadow:/.test(css), 'showcase card and artwork have no rectangular box shadow');
 ok(!/\.card-panel img[^}]*(?:border|box-shadow):/.test(css), 'generic card panel styles do not add a border or shadow to showcase art');
 ok(/\.news\s*\{[^}]*padding:\s*clamp\(3\.5rem, 6vw, 5\.5rem\) 0 clamp\(2\.5rem, 4vw, 4rem\)/.test(css), 'news section uses compact vertical spacing');
-ok(html.includes('href="/news"') && html.includes('ゲームの始め方ガイドを追加しました'), 'news shows latest update and links to archive');
+ok(html.includes('href="/news"') && require('./site-news').entries.slice(0,3).every(e=>html.includes('href="/news/'+e.slug+'"') && html.includes(e.title)), 'news shows latest three updates and links to archive');
 ok(require('./site-news').entries.some(e=>e.slug==='2026-08-31-release') && !/公開準備中/.test(html), 'release article remains in the news archive');
 ok(/\.final-cta\s*\{[^}]*min-height:\s*0[^}]*padding:\s*clamp\(3\.5rem, 6vw, 5rem\)/.test(css), 'final call to action no longer creates a large empty block below news');
 ok(/\.final-cta > :not\(\.final-cta__ring\)/.test(css) && /\.final-cta__ring\s*\{[^}]*position:\s*absolute/.test(css), 'decorative final CTA ring stays out of document flow');

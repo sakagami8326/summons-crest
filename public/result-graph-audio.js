@@ -2,13 +2,13 @@
 (function (root) {
   'use strict';
   root.createResultGraphAudio = function () {
-    let context = null, muted = false, sweep = null, completed = false;
+    let context = null, muted = false, sweep = null, completed = false, output = null, level = 1;
     const voices = new Set();
     function unlock() {
       const AudioContext = root.AudioContext || root.webkitAudioContext;
       if (!AudioContext || muted) return;
       try {
-        if (!context) context = new AudioContext();
+        if (!context) { context = new AudioContext(); output=context.createGain();output.gain.setValueAtTime(level,context.currentTime);output.connect(context.destination); }
         if (context.state === 'suspended') context.resume().catch(() => {});
       } catch (_) { /* Sound must never block result playback. */ }
     }
@@ -32,7 +32,7 @@
       gain.gain.setValueAtTime(0, now);
       gain.gain.linearRampToValueAtTime(volume, now + .012);
       gain.gain.exponentialRampToValueAtTime(.0001, now + length);
-      osc.connect(gain); gain.connect(context.destination);
+      osc.connect(gain); gain.connect(output);
       const voice = { osc, gain }; voices.add(voice);
       osc.onended = () => { osc.disconnect(); gain.disconnect(); voices.delete(voice); };
       osc.start(now); osc.stop(now + length + .025);
@@ -48,7 +48,7 @@
           osc.type = 'sine'; osc.frequency.setValueAtTime(frequency * harmonic, now);
           gain.gain.setValueAtTime(0, now);
           gain.gain.linearRampToValueAtTime(i === 0 ? .012 : .0017, now + .12);
-          osc.connect(gain); gain.connect(context.destination);
+          osc.connect(gain); gain.connect(output);
           const voice = { osc, gain, harmonic }; voices.add(voice);
           osc.onended = () => { osc.disconnect(); gain.disconnect(); voices.delete(voice); };
           osc.start(now);
@@ -59,6 +59,7 @@
     }
     return {
       unlock, update, stop,
+      setVolume(value) { level=Math.max(0,Math.min(1,Number(value)||0));if(output)output.gain.setValueAtTime(level,context.currentTime); },
       reset() { stop(); completed = false; },
       setMuted(value) { muted = !!value; if (muted) stop(); else unlock(); },
       finish() {

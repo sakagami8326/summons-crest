@@ -106,9 +106,10 @@ const scripts = 'class MutationObserver { observe() {} disconnect() {} }\nconst 
   if (!/-webkit-line-clamp:\s*3/.test(css) || !/-webkit-line-clamp:\s*5/.test(css) ||
       !/#cardZoomCard \.ccEffect p/.test(css))
     throw new Error('カード本文検査: 通常表示の省略または拡大時の全文表示がない');
-  if (!/grid-template-columns:repeat\(4,minmax\(0,1fr\)\);\s*grid-template-rows:repeat\(2,minmax\(0,1fr\)\)/.test(css) ||
+  const summonerCss = fs.readFileSync('public/phone-summoners.css','utf8');
+  if (!/grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/.test(summonerCss) ||
       /土属性召喚士・準備中/.test(html))
-    throw new Error('召喚士選択検査: 8人用の4×2レイアウトまたはネラシオ正式解禁表示が不正');
+    throw new Error('召喚士選択検査: 5列レイアウトまたはネラシオ正式解禁表示が不正');
   const boardHtml = fs.readFileSync('public/board.html', 'utf8');
   if (!/jinx:'support-disarm-v1\.webp'/.test(boardHtml))
     throw new Error('ディスアームアート検査: 戦闘支援公開へ専用アートが未接続');
@@ -126,7 +127,7 @@ const scripts = 'class MutationObserver { observe() {} disconnect() {} }\nconst 
     throw new Error('テレビ召喚士選択検査: 選択確定時のイメージアートまたはコマがない');
   if (!/bgm_select\.mp3/.test(boardHtml) || !/summonerOrbit/.test(boardHtml) ||
       !/function playGameEntryTransition\(\)/.test(boardHtml) ||
-      !/class="entryRing"/.test(boardHtml) || !/beginPresentationZoom\(0, 'game-entry'\)/.test(boardHtml))
+      !/class="entryRing"/.test(boardHtml) || !/beginPresentationZoom\(state\.tiles\.findIndex\(t=>t\.t==='castle'\), 'game-entry'\)/.test(boardHtml))
     throw new Error('ゲーム開始演出検査: 選択BGM・回転リング・円形ワイプ・城ズームが不足');
   if (/id="audioGate"/.test(boardHtml) || /function unlockTitleAudio\(\)/.test(boardHtml) ||
       !/function startTitleBgm\(\)/.test(boardHtml) ||
@@ -217,6 +218,12 @@ const FakeDate = new Proxy(Date, {
   construct: (t, args) => args.length ? new t(...args) : new t(Date.now() + skew),
 });
 let pickerConfig=null, pickerContext=null;
+let summonerPending=null;
+// The real summoner component is exercised in phone_summoners_browser_test.js.
+const FakeSummonerSelection={create(root,api){return {
+  update(state,id){api.onOpen();summonerPending=state.phase==='select'?state.pending[id]:null;},
+  hide(){summonerPending=null;}
+};}};
 // This DOM-light integration harness checks the adapter contract. The real shared
 // selector's geometry, confirmation and network interactions are browser-tested.
 class FakePhoneCardPicker {
@@ -228,14 +235,14 @@ class FakePhoneCardPicker {
 let P;
 try {
   P = new Function('window', 'document', 'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval',
-    'EventSource', 'Audio', 'fetch', 'localStorage', 'sessionStorage', 'location', 'navigator', 'history', 'screen', 'console', 'Date', 'PhoneCardPicker',
+    'EventSource', 'Audio', 'fetch', 'localStorage', 'sessionStorage', 'location', 'navigator', 'history', 'screen', 'console', 'Date', 'PhoneCardPicker', 'PhoneSummonerSelection',
     sandboxSrc)(
     win, doc,
     (fn, ms) => { timers.push({ fn, ms: ms || 0, id: timerId }); return timerId++; },
     () => timerId++, id => { const i = timers.findIndex(t => t.id === id); if (i >= 0) timers.splice(i, 1); }, noop,
     FakeES, FakeAudio, () => Promise.resolve({ json: () => Promise.resolve({}) }),
     store, store, { search: '', href: '' }, { userAgent: 'test', clipboard: {} }, { replaceState: noop }, { orientation: {} },
-    { log: noop, warn: noop, error: (...a) => { throw new Error('console.error: ' + a.join(' ')); } }, FakeDate, FakePhoneCardPicker);
+    { log: noop, warn: noop, error: (...a) => { throw new Error('console.error: ' + a.join(' ')); } }, FakeDate, FakePhoneCardPicker, FakeSummonerSelection);
 } catch (e) {
   console.error('スクリプト初期化で例外(スタブ不足の可能性):', e.message);
   process.exit(1);
@@ -258,6 +265,7 @@ function clearDom() {
   qsaCalls.clear();
 }
 function affordance(pid2, st) {
+  if(st.phase==='select'&&summonerPending===st.pending[pid2]&&summonerPending?.options.length)return 'summoner-selection';
   if(pickerConfig){const options=st.pending[pid2]?.options || [];const ids=[pickerConfig.cancelId,pickerConfig.confirmId,...pickerConfig.sections.flatMap(s=>s.entries.map(e=>e.pickId))];if(ids.some(id=>options.some(o=>o.id===id)))return 'shared-card-picker';}
   // 1) インラインonclick(choose等)がどこかに描画されたか
   for (const [id, el] of Object.entries(els)) {
@@ -287,7 +295,7 @@ function affordance(pid2, st) {
   r.pending[p.id]={type:'roll',options:[{id:'sp:sp_evolve'}]};
   S.handleChoose(r,p.id,'sp:sp_evolve');
   P.setPid(p.id);P.setRoom(r.code);P.setState(S.publicState(r,p.id));P.setRolling(false);
-  skew+=9000;clearDom();P.render();flushTimers();P.render();
+  skew+=Math.max(9000,(r.pending[p.id]?.availableAt||0)-Date.now()+100);clearDom();P.render();flushTimers();P.render();
   const ids=pickerConfig?.sections.flatMap(s=>s.entries.map(e=>e.pickId)) || [];
   if(!ids.includes('ev:1')||!ids.includes('ev:2')||pickerConfig.cancelId!=='ev:cancel')throw new Error('進化スペル: カードとキャンセルが選択UIへ渡されない');
   S.handleChoose(r,p.id,'ev:cancel');
@@ -306,7 +314,7 @@ function affordance(pid2, st) {
   r.battleAfter={winner:p.id,attacker:r.players[0].id,defender:p.id,tile:21,invasionWon:false,mermaidDone:true,recoveryDone:true};
   S.continuePostBattle(r);
   P.setPid(p.id);P.setRoom(r.code);P.setState(S.publicState(r,p.id));P.setRolling(false);
-  skew+=9000;clearDom();P.render();flushTimers();P.render();
+  skew+=Math.max(9000,(r.pending[p.id]?.availableAt||0)-Date.now()+100);clearDom();P.render();flushTimers();P.render();
   const entries=pickerConfig?.sections.flatMap(s=>s.entries) || [];
   if(!entries.some(e=>e.pickId==='fl:0')||!entries.some(e=>e.pickId==='fl:1'&&e.cost===90)||pickerConfig.cancelId!=='fl:cancel')throw new Error('戦線交代: カード・費用・キャンセルが選択UIへ渡されない');
   S.handleChoose(r,p.id,'fl:cancel');P.setState(S.publicState(r,p.id));P.render();

@@ -21,7 +21,7 @@ ok(/id="optBotSpeed"/.test(board), 'テレビのオプションにBOT速度ボ�
 ok(GT.scaled(1600, 1) === 1600 && GT.scaled(1600, 2) === 800, '演出2倍は時間を半分にする');
 ok(/presentationMs\(GAME_TIMING\.stepMs, hopState\.id\)/.test(board), 'BOT移動へ倍率を適用');
 ok(/serverClockOffset/.test(phone), 'スマホはサーバー時刻へ補正');
-ok(/turnReadyAt = Date\.now\(\) \+ presentationMs\(r, p\.id, 4300\)/.test(server), '手番交代演出中はサーバーが操作をロック');
+ok(/turnReadyAt = Date\.now\(\) \+ presentationMs\(r,p\.id,GAME_TIMING\.turnNotice\+GAME_TIMING\.turnNoticeBuffer/.test(server), '手番交代演出中はサーバーが操作をロック');
 ok(/テレビ演出中/.test(phone) && /p\.availableAt - promptServerNow/.test(phone), 'スマホも解禁時刻まで操作を表示しない');
 
 console.log(`V1.36 SYNC/SPEED ALL ${pass} CHECKS PASSED`);

@@ -1,4 +1,8 @@
 #hud .plate{transition:none!important}
+#hud :is(.plate,#hudTurnOrder,.titleBonusCard){border:1px solid #bba87e;border-radius:0 24px 0 24px;clip-path:inset(0 round 0 24px 0 24px)}
+#hud .titleBonusCard{position:relative}
+#hud :is(.plate,#hudTurnOrder,.titleBonusCard)::before{content:"";position:absolute;inset:3px;z-index:7;pointer-events:none;border:1px solid #bba87e59;border-radius:0 20px 0 20px;box-shadow:none;background:none}
+#hud .plate::after{display:none}
 #hud .rankBadge{position:relative;width:38px;height:22px;border-radius:0;background:none;box-shadow:none;overflow:visible}
 .rkCrown{position:absolute;width:46px;height:40px;left:-4px;top:-12px;filter:drop-shadow(0 2px 2px #0009)}
 #hud .rankBadge b{position:relative;z-index:1;display:inline-flex;align-items:baseline;font-family:'Arial Black',Arial,sans-serif!important;font-size:22px;line-height:1;font-weight:900;font-style:italic;letter-spacing:-.08em;color:#fff5d9;-webkit-text-stroke:1px #241b17;paint-order:stroke fill;text-shadow:0 2px 0 #18100b,1px 1px 2px #000,-1px 1px 2px #000}
@@ -16,3 +20,17 @@
 @media(prefers-reduced-motion:reduce){.rkReady .rkGoalNotice{animation:none!important}}
 
 @media(prefers-reduced-motion:reduce){#hud .rkShine{display:none}}
+/* Actual turn order is independent of the asset ranking above it. */
+#hudTurnOrder{position:absolute;left:0;width:400px;height:70px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:9px;background:linear-gradient(90deg,#080c17b8,#18202ce0,#080c17b8);border-block:1px solid #d6bd744a}
+#hudTurnOrder .orderDice{width:27px;height:27px;object-fit:contain;margin-right:6px;opacity:.8}
+#hudTurnOrder .orderPlayer{position:relative;width:55px;height:55px;border-radius:50%;border:1px solid #d6bd7455;background:#141623;transition:background .3s,box-shadow .3s,border-color .3s}
+#hudTurnOrder .orderPlayer>img{width:100%;height:100%;object-fit:contain;filter:brightness(.65);transition:filter .3s}
+#hudTurnOrder .orderPlayer small{position:absolute;bottom:-6px;right:-2px;display:grid;place-items:center;width:20px;height:20px;background:#141623;border:1px solid #b8a27070;border-radius:50%;font:14px Georgia,serif;color:#d8cfb7}
+#hudTurnOrder .orderPlayer small svg{display:block;width:18px;height:18px;overflow:visible}
+#hudTurnOrder .orderPlayer small text{font:13px Arial,sans-serif;fill:currentColor}
+#hudTurnOrder .orderPlayer.active{background:#6d5737;border-color:#ffe4a2;box-shadow:0 0 12px #edcb6e80,inset 0 0 10px #edcb6e40}
+#hudTurnOrder .orderPlayer.active>img{filter:brightness(1)}
+#hudTurnOrder .orderPlayer.active small{background:#efd395;color:#17131b;border-color:#fff2c4}
+#hudTurnOrder .orderPlayer.out{filter:grayscale(1);opacity:.35}
+#hudTurnOrder .orderNext{width:6px;height:6px;border-top:1px solid #dbc58b;border-right:1px solid #dbc58b;transform:rotate(45deg);opacity:.65}
+@media(prefers-reduced-motion:reduce){#hudTurnOrder *{transition:none!important}}

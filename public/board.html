@@ -898,18 +898,18 @@
       isolation:isolate; overflow:hidden; }
   .plate::before { content:""; position:absolute; z-index:-1; inset:0; pointer-events:none;
       border:1px solid rgba(255,255,255,.42); border-left:5px solid var(--hud-color,#C9A227);
-      border-radius:12px; box-shadow:inset 0 0 24px rgba(255,255,255,.08); }
+      border-radius:0; box-shadow:inset 0 0 24px rgba(255,255,255,.08); }
   .plate::after { content:""; position:absolute; z-index:-1; right:6px; top:5px; width:102px; height:84px;
       opacity:.17; pointer-events:none; border-radius:50%;
       background:repeating-conic-gradient(from 8deg,var(--hud-color,#C9A227) 0 1.2deg,transparent 1.2deg 18deg);
       -webkit-mask:radial-gradient(circle,transparent 0 42%,#000 43% 45%,transparent 46% 60%,#000 61% 63%,transparent 64%);
       mask:radial-gradient(circle,transparent 0 42%,#000 43% 45%,transparent 46% 60%,#000 61% 63%,transparent 64%); }
   .hudPortrait { position:absolute; z-index:2; left:0; bottom:0; width:124px; height:96px;
-      overflow:hidden; pointer-events:none; border-radius:11px 0 0 11px; }
+      overflow:hidden; pointer-events:none; border-radius:0; }
   .hudBust { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:center bottom;
       transform:translateY(2px);
       filter:drop-shadow(0 3px 6px rgba(0,0,0,.7)); }
-  .hudBust.fallback { inset:8px; width:calc(100% - 16px); height:calc(100% - 16px); border-radius:12px; }
+  .hudBust.fallback { inset:8px; width:calc(100% - 16px); height:calc(100% - 16px); border-radius:0; }
   .plate .row1 { position:relative; z-index:3; margin-left:107px !important; }
   .plate .pname { font-size:16px !important; }
   .plate .pts { font-size:27px !important; letter-spacing:0; white-space:nowrap; }
@@ -920,7 +920,7 @@
   .ebadge { min-width:42px !important; height:22px !important; font-size:12px !important; }
   .plate { background-image:linear-gradient(90deg,rgba(5,9,19,.35) 0 29%,rgba(8,12,28,.9) 35%,rgba(8,12,28,.7)),var(--hud-bg) !important;
       background-position:center !important; background-size:cover !important; border:0;
-      border-radius:12px; color:#fff7df !important; box-shadow:0 7px 20px rgba(0,0,0,.42); }
+      border-radius:0; color:#fff7df !important; box-shadow:0 7px 20px rgba(0,0,0,.42); }
   .plate.turn { filter:drop-shadow(0 0 9px var(--hud-color,#F2D062)) brightness(1.08); }
   .plate .pname { font-family:'Reggae One','Yu Mincho',serif; font-weight:700; color:#fff7df;
       text-shadow:0 2px 5px rgba(0,0,0,.9); }
@@ -930,31 +930,23 @@
   #titleBonusPanel { position:absolute; left:0; top:calc(var(--hud-player-count,4) * 103px + 8px);
       width:400px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px;
       color:#f7edcf; font-family:var(--font-mincho); }
-  .titleBonusCard { position:relative; min-width:0; padding:8px 8px 7px; overflow:hidden;
-      border:1px solid rgba(218,180,68,.55); border-radius:9px;
-      background:linear-gradient(145deg,rgba(30,24,57,.96),rgba(7,9,24,.95));
-      box-shadow:0 7px 18px rgba(0,0,0,.36),inset 0 0 18px rgba(218,180,68,.05); }
-  .titleBonusHead { display:grid; grid-template-columns:25px minmax(0,1fr); align-items:center; column-gap:6px; row-gap:3px;
-      padding-bottom:5px; border-bottom:1px solid rgba(218,180,68,.25); }
-  .titleBonusHead img { grid-row:1 / span 2; width:23px; height:23px; object-fit:contain; align-self:center;
-      filter:drop-shadow(0 0 5px rgba(242,208,98,.35)); }
-  .titleBonusName { min-width:0; overflow:hidden; text-overflow:ellipsis; font-weight:700; font-size:12.5px; line-height:1.1; white-space:nowrap; }
-  .titleBonusName small { display:block; margin-top:2px; color:rgba(247,237,207,.58); font-size:8.5px; letter-spacing:.08em; }
-  .titleBonusValue { grid-column:2; min-width:0; display:flex; align-items:baseline; justify-content:space-between; gap:5px;
-      padding:2px 5px; border:1px solid rgba(218,180,68,.28); border-radius:4px;
-      background:rgba(218,180,68,.07); color:#f2d062; white-space:nowrap; }
-  .titleBonusValue span { color:rgba(247,237,207,.48); font-size:7.5px; letter-spacing:.08em; }
-  .titleBonusValue b { font-size:10.5px; }
-  .titleBonusHolder { margin:5px 0 3px; color:rgba(247,237,207,.68); font-size:9.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .titleBonusHolder b { color:#f2d062; font-size:10.5px; }
-  .titleBonusRows { display:grid; gap:1px; }
-  .titleBonusRow { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:5px; align-items:center;
-      padding:1px 4px; border-radius:4px; color:rgba(247,237,207,.46); font-size:9.5px; line-height:1.35; }
-  .titleBonusRow.ready { color:rgba(247,237,207,.9); }
-  .titleBonusRow.holder { color:#fff4c3; background:rgba(218,180,68,.14); }
-  .titleBonusRow span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .titleBonusRow b { font-size:10px; white-space:nowrap; }
-  .titleBonusRule { margin-top:4px; color:rgba(247,237,207,.42); font-size:8px; text-align:center; letter-spacing:.03em; }
+  .titleBonusCard { min-width:0; height:181px; box-sizing:border-box; display:grid;
+      grid-template-columns:minmax(0,1fr); grid-template-rows:33px 43px 26px 37px; gap:4px; align-items:center; padding:10px 12px;
+      border:1px solid #d6bd744a; background:linear-gradient(115deg,#14191ff5,#090c12ed); }
+  .titleBonusHead { display:flex; align-items:center; justify-content:center; gap:6px; color:#f5e5ba; white-space:nowrap; }
+  .titleBonusHead strong { font-size:23px; letter-spacing:.03em; font-weight:600; }
+  .titleBonusIcon { width:27px; height:27px; object-fit:contain; flex:none; }
+  .titleBonusOwner { display:flex; align-items:center; justify-content:center; gap:5px; min-width:0; }
+  .titleBonusPawn { width:37px; height:43px; object-fit:contain; flex:none; }
+  .titleBonusHolder { min-width:0; color:#f5eee0; font-size:14px; line-height:1.35; font-weight:500; white-space:nowrap; }
+  .titleBonusEmpty { width:100%; text-align:center; color:#ad9f7b; font-size:21px; }
+  .titleBonusStats { display:flex; align-items:center; justify-content:center; gap:7px; white-space:nowrap; }
+  .titleBonusCaption { font-size:10px; color:#ffe099; text-shadow:0 0 4px #ffd36b99,0 0 10px #e7ad415e; }
+  .titleBonusCount { font-size:23px; font-weight:500; font-variant-numeric:tabular-nums; color:#f3d592; line-height:1; }
+  .titleBonusCount small { font-size:11px; margin-left:3px; }
+  .titleBonusReward { display:flex; align-items:baseline; justify-content:center; gap:5px; border-top:1px solid #bba87e40; padding-top:7px; font-size:11px; color:#cfc3a3; line-height:1.2; }
+  .titleBonusReward b { font-size:25px; color:#f1d084; font-weight:500; }
+  .titleBonusCard:not(.claimed) .titleBonusIcon { opacity:.45; }
   @media (max-width:1400px), (max-height:800px) {
     #hud { top:18px !important; left:14px !important; transform:scale(1); }
     #leftUtility { left:14px; bottom:10px; width:296px; }
@@ -963,15 +955,7 @@
     #optBtn,#bgmBtn,#logExpandBtn { min-height:22px; padding:2px 7px; font-size:10px; }
     #verTag { font-size:8.5px; }
     #titleBonusPanel { gap:5px; }
-    .titleBonusCard { padding:6px 6px 5px; }
-    .titleBonusHead { grid-template-columns:21px minmax(0,1fr); column-gap:4px; row-gap:2px; }
-    .titleBonusHead img { width:20px; height:20px; }
-    .titleBonusName { font-size:11px; }
-    .titleBonusName small,.titleBonusRule { font-size:7.5px; }
-    .titleBonusValue { padding:1px 4px; }
-    .titleBonusValue b,.titleBonusHolder b { font-size:9.5px; }
-    .titleBonusValue span { font-size:7px; }
-    .titleBonusHolder,.titleBonusRow { font-size:8.5px; }
+
   }
   .titleChip { display:inline-block; background:linear-gradient(180deg,#E8C55A,#B8901F); color:#241C05;
       border-radius:4px; font-size:11px; padding:1px 6px; margin-left:4px; vertical-align:1px; font-family:sans-serif; }
@@ -1298,9 +1282,11 @@
   @keyframes healRewardIn { from{opacity:0;transform:scale(.97)} to{opacity:1;transform:scale(1)} }
   @media (prefers-reduced-motion:reduce) { #healRewardCutin.on { animation:none; } }
 </style>
-<link rel="stylesheet" href="/wind-supply-ui.css"><script defer src="/wind-supply-ui.js"></script>
-<link rel="stylesheet" href="/result-review.css"><script src="/game-cards.js"></script><script src="/result-review.js"></script><link rel="stylesheet" href="/battle-external.css"><link rel="stylesheet" href="/hud-rank.css?v=1">
-<script src="/hud-rank.js?v=1"></script>
+<link rel="stylesheet" href="/wind-supply-ui.css?release=164"><script defer src="/wind-supply-ui.js?v=2&release=164"></script>
+<link rel="stylesheet" href="/result-review.css?v=20260929-3&release=164"><script src="/game-cards.js"></script><script src="/result-review.js?v=20260929-3&release=164"></script><link rel="stylesheet" href="/battle-external.css?release=164"><link rel="stylesheet" href="/hud-rank.css?v=20260929-6&release=164">
+<script src="/hud-rank.js?v=1&release=164"></script>
+<script src="/board-audio-settings.js?v=1&release=164"></script>
+<link rel="stylesheet" href="/board-settings.css?v=1&release=164">
 </head>
 <body>
   <img id="logoImg" src="/assets/summons-code-gold.svg" alt="SUMMONS CODE">
@@ -1588,17 +1574,38 @@ const QR = (() => {
 <link rel="stylesheet" href="/map-ui.css?v=159-3">
 <script src="/map-definitions.js?v=159-3"></script>
 <script src="/map-ui.js?v=158"></script>
-<link rel="stylesheet" href="/assets/lobby-ticket/lobby-ticket.css?v=2">
-<script src="/assets/lobby-ticket/lobby-ticket.js?v=2"></script>
-<script src="/game_timing.js"></script>
-<script src="/result-graph-audio.js?v=2"></script>
+<link rel="stylesheet" href="/assets/lobby-ticket/lobby-ticket.css?v=2&release=164">
+<script src="/assets/lobby-ticket/lobby-ticket.js?v=2&release=164"></script>
+<script src="/game_timing.js?release=164"></script>
+<script src="/result-graph-audio.js?v=3&release=164"></script>
 <script src="/fx_manifest.js"></script>
 <script src="/vendor/phaser.min.js"></script>
-<script src="/board_world.js"></script>
+<script src="/board_world.js?release=164"></script>
+<link rel="stylesheet" href="/board-notice.css?v=2&release=164">
+<link rel="stylesheet" href="/board-actor.css?v=1&release=164">
+<script src="/board-actor.js?v=2&release=164"></script>
+<script src="/board-effects.js?v=1&release=164"></script>
+<script src="/board-notice.js?v=4&release=164"></script>
+<link rel="stylesheet" href="/board-enemy-land.css?v=1&release=164">
+<script src="/board-enemy-land.js?v=1&release=164"></script>
+<link rel="stylesheet" href="/board-land-stop.css?v=1&release=164">
+<script src="/board-land-stop.js?v=1&release=164"></script>
+<link rel="stylesheet" href="/board-next-notices.css?v=1&release=164">
+<script src="/board-next-notices.js?v=1&release=164"></script>
+<link rel="stylesheet" href="/board-milestones.css?v=1&release=164">
+<script src="/board-milestones.js?v=1&release=164"></script>
+<link rel="stylesheet" href="/board-goal-notice.css?v=1&release=164">
+<script src="/board-goal-notice.js?v=1&release=164"></script>
+<link rel="stylesheet" href="/board-finale.css?v=1&release=164">
+<script src="/board-finale.js?v=1&release=164"></script>
+<link rel="stylesheet" href="/board-flow-notices.css?v=1&release=164">
+<script src="/board-flow-notices.js?v=1&release=164"></script>
+<link rel="stylesheet" href="/board-route.css?v=20260928-compact1&release=164">
+<script src="/board-route.js?v=1&release=164"></script>
 <script src="/battle_world.js"></script>
 <script src="/ult_fx_world.js"></script>
-<script src="/evolution-charge-audio.js?v=2"></script>
-<script src="/evolution-fx.js?v=3"></script>
+<script src="/evolution-charge-audio.js?v=3&release=164"></script>
+<script src="/evolution-fx.js?v=audio1&release=164"></script>
 <script>
 const $ = id => document.getElementById(id);
 const botPresentationActive = actorId => !!(state && state.botMode && state.presentationSpeed === 2 &&
@@ -1639,12 +1646,14 @@ function queueMajorPresentation(at, kind, actorId, run) {
   return queuePresentation({ id:presentationId(kind, at), at, kind, actorId, pri:1, run });
 }
 async function waitForPresentationLane() {
+  window.EnemyLand?.hide();
   while (animBusy || cutBusy || Date.now() <= bannerUntil || cameraOwner ||
          ((typeof PW !== 'undefined') && PW.cameraState && !PW.cameraState().isFit) || hopState || gameEntryRunning || duelPlaying) {
     await new Promise(resolve => setTimeout(resolve, 50));
   }
 }
 function applyPresentationContext(item) {
+  BoardNotice.hideDirection();
   presentationContext = item;
   const root = document.documentElement, half = item.speed === 2;
   root.classList.toggle('presentationFast', half);
@@ -1775,6 +1784,7 @@ const MR_COLORS = ['#f15a54','#55b6f2','#e4ba45','#63d3a6'];
 const resultGraphAudio = window.createResultGraphAudio?.();
 document.addEventListener('visibilitychange', () => { if (document.hidden) resultGraphAudio?.stop(); });
 let matchResultPlayback = null, matchResultTimer = null, matchResultStartTimer = null;
+let victoryPresentationKey = null;
 let matchResultOpenId = '', matchResultAckId = '';
 const mrEsc = value => String(value == null ? '' : value).replace(/[&<>"']/g, c =>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1923,32 +1933,41 @@ function finishHop() {
   lastMoveEnd = Date.now();
   render();
 }
-function hopStep() {
+async function hopStep() {
   if (!hopState || hopState.holding) return;
   hopState.sN++;
   const idx = hopState.path ? hopState.path[hopState.sN - 1] : (hopState.from + hopState.sN * (hopState.dir || 1) + 28 * 40) % 28;
   pawnAnim[hopState.id] = idx;
   renderPawns();
-  if(hopState.events)showCavernGateEvents(hopState.events.filter(e=>e.step===hopState.sN),hopState.id);
+  const activeHop=hopState;
+  const gates=(hopState.events||[]).filter(e=>e.type==='gate'&&e.step===hopState.sN);
+  if(gates.length){
+    hopState.holding=true;hopState.gatePresenting=true;
+    hopState.holdUntil=Date.now()+presentationMs(GAME_TIMING.gateNotice*gates.length,hopState.id);
+    await showCavernGateEvents(gates,hopState.id);
+    if(hopState!==activeHop)return;
+    hopState.holding=false;hopState.gatePresenting=false;hopState.holdUntil=0;
+  }
   if (idx === SummonsMapUI.get(state).castle && hopState.castleEv) {
     const ev = hopState.castleEv;
     const castleCameraToken = beginPresentationZoom(idx, 'castle', hopState.id);
     cutBusy++;
-    hopState.holdUntil = Date.now() + presentationMs(GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown, hopState.id);
+    hopState.holdUntil = Date.now() + presentationMs(GAME_TIMING.castleZoom + GAME_TIMING.castleDuration(ev), hopState.id);
     setTimeout(() => {
       playSe(seCastleBonus);
-      showCastleBreakdown(ev);
+      if(hopState!==activeHop)return;
+      showCastleBreakdown(ev,activeHop.id);
       for (const h of (ev.healed || [])) fxAt(typeof h === 'number' ? h : h.tile, 'fxRing', '#8FE08A');
     }, presentationMs(GAME_TIMING.castleZoom, hopState.id));
     setTimeout(() => {
       hideCastleBreakdown(castleCameraToken);
       cutBusy = Math.max(0, cutBusy - 1);
-      if (!ev.drew && hopState) {
+      if (!ev.drew && hopState===activeHop) {
         hopState.holding = false;
         if (hopState.sN < hopState.steps) scheduleHop(presentationMs(GAME_TIMING.castleResume, hopState.id));
         else finishHop();
       }
-    }, presentationMs(GAME_TIMING.castleZoom + GAME_TIMING.castleBreakdown, hopState.id));
+    }, presentationMs(GAME_TIMING.castleZoom + GAME_TIMING.castleDuration(ev), hopState.id));
     hopState.castleEv = null;
     hopState.holding = true;   // ドラフト完了までここで待機
     render();
@@ -1957,28 +1976,15 @@ function hopStep() {
   if (hopState.sN < hopState.steps) scheduleHop(presentationMs(GAME_TIMING.stepMs, hopState.id));
   else finishHop();
 }
-function showCastleBreakdown(ev) {
-  const el = $('castleBreakdown'), panel = $('castlePanel');
-  if (!ev.usedSeal) {
-    panel.innerHTML = '<div class="castleTitle">城へ帰還</div><div class="castleNone">刻印がありません<br>ボーナス・回復・ドラフトなし</div>';
-  } else {
-    const heals = (ev.healed || []).map(h => typeof h === 'number'
-      ? `マス${h + 1}：負傷 -10`
-      : `マス${h.tile + 1}　${h.creature}：負傷 ${h.before} → ${h.after}`).join('<br>');
-    panel.innerHTML = `<div class="castleTitle">城への帰還ボーナス</div>
-      <div class="castleLine"><span>周回ボーナス</span><b>${ev.completedLaps ?? Math.max(1, Math.round((ev.baseBonus || ev.gold || 100) / (ev.bonusPerLap || 100)))}周 × ${ev.bonusPerLap || 100}G = +${ev.baseBonus ?? ev.gold ?? 100}G</b></div>
-      <div class="castleLine"><span>領地総価値</span><b>${ev.landValue ?? 0}G</b></div>
-      <div class="castleLine"><span>領地ボーナス</span><b>${ev.landFixedBonus ? `${ev.landFixedBonus}G ＋ ` : ''}${ev.landValue ?? 0}G × ${Math.round((ev.landRate ?? .2) * 100)}% = +${ev.landBonus ?? 0}G</b></div>
-      <div class="castleLine total"><span>今回の獲得合計</span><b>+${ev.total ?? ((ev.gold || 0) + (ev.landBonus || 0))}G</b></div>
-      <div class="castleHeal"><b>帰還の癒し（負傷-10）</b><br>${heals || '回復対象なし'}</div>`;
-  }
-  el.classList.add('on');
-  bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(GAME_TIMING.castleBreakdown, hopState && hopState.id));
+function showCastleBreakdown(ev,pid=ev.player||state.lastDice?.player) {
+  const duration=GAME_TIMING.castleDuration(ev);
+  bannerUntil=Math.max(bannerUntil,Date.now()+presentationMs(duration,pid));
+  return BoardNotice.reward('castle',ev,player(pid),state,{
+    ms:n=>presentationMs(n,pid),onHud:renderHUD,
+    key:'castle:'+(state.lastDice?.segment?.id||state.lastDice?.at)
+  });
 }
-function hideCastleBreakdown(cameraToken) {
-  $('castleBreakdown').classList.remove('on');
-  endPresentationZoom(cameraToken);
-}
+function hideCastleBreakdown(cameraToken) { endPresentationZoom(cameraToken); }
 const D_PIPS = { 1:[[30,30]], 2:[[16,16],[44,44]], 3:[[16,16],[30,30],[44,44]],
   4:[[16,16],[44,16],[16,44],[44,44]], 5:[[16,16],[44,16],[30,30],[16,44],[44,44]],
   6:[[16,16],[44,16],[16,30],[44,30],[16,44],[44,44]] };
@@ -2009,28 +2015,15 @@ async function playDuel(d) {
   render();
 }
 let bannerT = null, spotT = null, lastCalloutKey = '';
-async function playUlt(u) {
+async function playUlt(u,snapshot=state) {
   cutBusy++;
   try {
   hideLogo(true);
   initAudio();
-  $('bflash').classList.add('go');
-  $('ultArt').src = (state.catalog.ULTS[u.charId] || {}).art || '/assets/ult_' + u.charId + '.webp';
-  $('ultCut').classList.toggle('evolution', u.charId === 'grease');
-  $('ultSub').innerHTML = sic('ult') + ' ' + player(u.player).name + ' ─ 1ゲームに1回';
-  $('ultDesc').textContent = (state.catalog.ULTS[u.charId] || {}).desc || '';
-  const art = $('ultArt');
-  art.style.animation = 'none'; void art.offsetWidth; art.style.animation = '';
-  bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(4950));
-  $('ultCut').classList.add('on');
-  if (window.UltFxWorld) UltFxWorld.play(false);
+  bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(GAME_TIMING.ultimateDuration));
   playSe(seUltCutin);
-  setTimeout(() => $('bflash').classList.remove('go'), presentationMs(500));
-  await wait(4950);
-  $('ultCut').classList.remove('on');
-  if (window.UltFxWorld) UltFxWorld.stop();
-  hideLogo(false);
-  } finally { cutBusy = Math.max(0, cutBusy - 1); }
+  await BoardNext.present('ultimate',u,snapshot,{ms:presentationMs});
+  } finally { hideLogo(false);cutBusy = Math.max(0, cutBusy - 1); }
 }
 const hideLogo = v => { $('logoImg').style.opacity = v ? 0 : 1; };
 function worldPos(i) { return proj(GEO[i][0], GEO[i][1]); }
@@ -2248,16 +2241,7 @@ async function playHealReward(ev) {
   const reward = ev.reward;
   const delay = Math.max(0, Number(ev.availableAt || 0) - Number(state.serverNow || Date.now()) - (Date.now() - stateReceivedAt));
   if (delay) await new Promise(resolve => setTimeout(resolve, delay));
-  const card = state.catalog.CREATURES[reward.creature] || state.catalog.CREATURES[String(reward.creature).replace(/_f$/, '')];
-  if (!card) return;
-  const evolved = /_f$/.test(reward.creature);
-  $('healRewardCard').innerHTML = summonCardHTML(reward.creature, evolved);
-  $('healRewardMessage').innerHTML = `<h2>【恵みの水脈】</h2><p>このクリーチャーの効果で、<br>回復した<strong>${reward.healed}HP</strong>分の<strong>${reward.gold}G</strong>を獲得！</p>${reward.targetCount > 1 ? `<small>対象 ${reward.targetCount}体</small>` : ''}`;
-  const el = $('healRewardCutin');
-  el.classList.add('on');
-  bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(2800));
-  await wait(2800);
-  el.classList.remove('on');
+  await BoardEffects.present('heal',ev,state,{ms:presentationMs});
 }
 function showDiceMulti(arr) {
   const ov = $('diceOv');
@@ -2330,14 +2314,13 @@ function openMapSelect(mode) {
   ov.querySelector('[data-map]').focus();
 }
 let selectedMapId=null, cavernSegmentSeen=null, cavernAnimationTimer=null;
-let cavernGateNoticeTimer=null;
-function showCavernGateEvents(events,pid){
-  const gates=events.filter(e=>e.type==='gate');if(!gates.length)return;
-  let el=$('cavernGateNotice');if(!el){el=document.createElement('div');el.id='cavernGateNotice';el.setAttribute('role','status');document.body.appendChild(el);}
-  el.textContent=`${player(pid)?.name||''} ─ `+gates.map(e=>`${e.tile===22?'西門':'東門'}通過 +${e.gold}G`).join(' ／ ');
-  el.hidden=false;clearTimeout(cavernGateNoticeTimer);
-  if(!matchMedia('(prefers-reduced-motion: reduce)').matches)gates.forEach(e=>fxAt(e.tile,'fxRing','#ffe393'));
-  cavernGateNoticeTimer=setTimeout(()=>{el.hidden=true;},1400);
+async function showCavernGateEvents(events,pid){
+  for(const ev of events.filter(e=>e.type==='gate')){
+    if(!matchMedia('(prefers-reduced-motion: reduce)').matches)fxAt(ev.tile,'fxRing','#ffe393');
+    await BoardNotice.reward('gate',ev,player(pid),state,{
+      ms:n=>presentationMs(n,pid),onHud:renderHUD,key:'gate:'+ev.at
+    });
+  }
 }
 function syncSelectedMap(){
   const map=SummonsMapUI.get(state);
@@ -2358,11 +2341,13 @@ function syncCavernAnimation(){
   const now=Number(state.serverNow||Date.now())+Date.now()-stateReceivedAt;
   if(!seg.path.length || matchMedia('(prefers-reduced-motion: reduce)').matches){
     prevPos[mover.id]=mover.pos;
-    showCavernGateEvents(seg.events,mover.id);
-    if(ld.castle && seg.events.some(e=>e.type==='castle')){
-      showCastleBreakdown(ld.castle);
-      cavernAnimationTimer=setTimeout(()=>hideCastleBreakdown(),Math.max(0,seg.availableAt-now));
-    }
+    animBusy=true;
+    (async()=>{
+      await showCavernGateEvents(seg.events,mover.id);
+      if(cavernSegmentSeen!==seg.id)return;
+      if(ld.castle && seg.events.some(e=>e.type==='castle'))await showCastleBreakdown(ld.castle,mover.id);
+      if(cavernSegmentSeen===seg.id){animBusy=false;render();}
+    })();
     return;
   }
   animBusy=true;
@@ -2372,13 +2357,13 @@ function syncCavernAnimation(){
   cavernAnimationTimer=scheduleHop(Math.max(0,seg.startAt-now)+presentationMs(GAME_TIMING.stepMs,mover.id));
 }
 function renderRouteTv(){
-  let el=$('routeTv');
-  if(!el){el=document.createElement('div');el.id='routeTv';document.body.appendChild(el);}
-  const actor=state?.players.find(p=>state.pending?.[p.id]?.type==='route_choice'),pd=actor&&state.pending[actor.id];
-  const now=Date.now()+Number(state?.serverNow||Date.now())-stateReceivedAt;
-  if(!pd||animBusy||now<(pd.availableAt||0)){el.innerHTML='';return;}
-  const point=i=>{const w=worldPos(i);if(renderModeActive==='phaser'&&PW.isReady())return PW.worldToViewport(w.x,w.y);const r=$('world').getBoundingClientRect();return{x:r.left+w.x*r.width/1280,y:r.top+w.y*r.height/905};};
-  el.innerHTML=`<div id="routeTvTitle">${SummonsMapUI.esc(actor.name)}の進路選択　残り${pd.remainingSteps}歩<br><small>スマホで方向を選び「ここに決定」</small></div><svg aria-label="進路選択の矢印" viewBox="0 0 ${innerWidth} ${innerHeight}">${SummonsMapUI.routes(state,pd,state.routePreview?.optionId,point,22)}</svg>`;
+  if(!state)return;
+  const actor=state.players.find(p=>state.pending?.[p.id]?.type==='route_choice'),pd=actor&&state.pending[actor.id];
+  const now=Date.now()+Number(state.serverNow||Date.now())-stateReceivedAt;
+  const camera=renderModeActive==='phaser'?PW.cameraState():null;
+  const blocked=document.hidden||!pd||now<(pd.availableAt||0)||animBusy||cutBusy||presentationRunning||presentationQueue.length||gameEntryRunning||duelPlaying||Date.now()<bannerUntil||camera?.panRunning||camera?.zoomRunning||$('battle').classList.contains('on');
+  const point=i=>{const w=worldPos(i);let p;if(renderModeActive==='phaser'&&PW.isReady())p=PW.worldToViewport(w.x,w.y);else{const r=$('world').getBoundingClientRect();p={x:r.left+w.x*r.width/1280,y:r.top+w.y*r.height/905};}return{x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10};};
+  BoardRoute.update(state,{blocked,point,glow:list=>{if(renderModeActive==='phaser')PW.setRouteDestinations(list);}});
 }
 setInterval(renderRouteTv,150);
 
@@ -2390,17 +2375,7 @@ document.getElementById('titleBot').onclick = () => {
   initAudio();
   openMapSelect('bot');
 };
-document.getElementById('titleSettings').onclick = () => {
-  initAudio();
-  document.getElementById('titleSettingsPanel').classList.toggle('on');
-  if (!bgmMuted) setBgm('select');
-};
-document.getElementById('titleSoundToggle').onclick = e => {
-  e.stopPropagation();
-  initAudio();
-  setAudioMuted(!bgmMuted, 'select');
-};
-let bgmN = null, bgmR = null, bgmBattle = null, bgmSelect = null, bgmResult = null, bgmMuted = false, bgmCur = null;
+let bgmN = null, bgmR = null, bgmBattle = null, bgmSelect = null, bgmResult = null, bgmMuted = !BoardAudioSettings.value.enabled, bgmCur = null;
 let bgmFadeTimer = null, bgmFadeFrom = null;
 const caveBgm = {};
 let seTelop = null, seSummon = null, seEvolve = null, seBattleFinish = null, seCastleBonus = null, seUltCutin = null;
@@ -2418,10 +2393,12 @@ function syncAudioButtons() {
 }
 function setAudioMuted(muted, resumeBgm) {
   bgmMuted = !!muted;
+  BoardAudioSettings.set({enabled:!bgmMuted});
   if (bgmMuted) window.SummonsEvolution?.stopAudio();
   else window.SummonsEvolution?.unlockAudio();
   resultGraphAudio?.setMuted(bgmMuted);
   syncAudioButtons();
+  applyBoardAudioVolume();
   if (bgmMuted) {
     clearInterval(bgmFadeTimer); bgmFadeTimer = null;
     bgmFadeFrom = null;
@@ -2430,9 +2407,12 @@ function setAudioMuted(muted, resumeBgm) {
   }
   audioList().forEach(a => { a.muted = false; });
   if (resumeBgm) setBgm(resumeBgm);
-  else if (bgmCur) { bgmCur.volume = bgmVolume(bgmCur); bgmCur.play().catch(() => {}); }
+  else if (bgmCur) { bgmCur.volume = bgmVolume(bgmCur); bgmCur.play().then(audioStarted).catch(reportAudioBlocked); }
 }
 function initAudio() {
+  window.SummonsEvolution?.setVolume(BoardAudioSettings.value.se/100);
+  resultGraphAudio?.setVolume(BoardAudioSettings.value.se/100);
+  resultGraphAudio?.setMuted(bgmMuted);
   if (!bgmMuted) window.SummonsEvolution?.unlockAudio();
   if (!bgmMuted) resultGraphAudio?.unlock();
   if (bgmN) return;
@@ -2464,11 +2444,12 @@ function initAudio() {
     setAudioMuted(!bgmMuted);
     if (!bgmMuted && bgmCur && !bgmCur.paused) btn.classList.remove('needsAudio');
   };
+  applyBoardAudioVolume();
   syncAudioButtons();
 }
 function playSe(a) {
-  if (!a || bgmMuted) return;
-  try { a.pause(); a.currentTime = 0; a.play().catch(() => {}); } catch (e) {}
+  if (!a || bgmMuted || BoardAudioSettings.value.se === 0) return;
+  try { a.pause(); a.currentTime = 0; a.play().then(audioStarted).catch(reportAudioBlocked); } catch (e) {}
 }
 function boardBgmTrack(which) {
   if (state?.mapId === 'twin_gate_cavern' && (which === 'normal' || which === 'reach')) {
@@ -2483,20 +2464,31 @@ function boardBgmTrack(which) {
   return which === 'battle' ? bgmBattle : which === 'reach' ? bgmR
     : which === 'normal' ? bgmN : which === 'select' ? bgmSelect : which === 'result' ? bgmResult : null;
 }
-const bgmVolume = track => track === bgmResult ? 0.25 : 0.35;
+const bgmVolume = track => (track === bgmResult ? 0.25 : 0.35) * BoardAudioSettings.value.bgm / 100;
+let boardAudioBlocked = false;
+function reportAudioBlocked() { boardAudioBlocked=true; document.dispatchEvent(new Event('board-audio-change')); }
+function audioStarted() { boardAudioBlocked=false; document.dispatchEvent(new Event('board-audio-change')); }
+function applyBoardAudioVolume() {
+  const v=BoardAudioSettings.value;
+  if (!bgmFadeTimer) audioList().filter(a=>a.loop).forEach(a=>{a.volume=bgmVolume(a);});
+  [seTelop,seSummon,seEvolve,seBattleFinish,seCastleBonus,seUltCutin].forEach((a,i)=>{if(a)a.volume=[.6,.72,.76,.82,.78,.9][i]*v.se/100;});
+  window.SummonsEvolution?.setVolume(v.se/100);
+  resultGraphAudio?.setVolume(v.se/100);
+  document.dispatchEvent(new Event('board-audio-change'));
+}
 function setBgm(which) {
   if (!bgmN) return;
   const t = boardBgmTrack(which);
   if (bgmCur === t) return;
   clearInterval(bgmFadeTimer); bgmFadeTimer = null;
   if (bgmFadeFrom && bgmFadeFrom !== bgmCur) {
-    bgmFadeFrom.pause(); bgmFadeFrom.currentTime = 0; bgmFadeFrom.volume = 0.35;
+    bgmFadeFrom.pause(); bgmFadeFrom.currentTime = 0; bgmFadeFrom.volume = bgmVolume(bgmFadeFrom);
   }
   bgmFadeFrom = null;
-  if (bgmCur) { bgmCur.pause(); bgmCur.currentTime = 0; bgmCur.volume = 0.35; }
+  if (bgmCur) { bgmCur.pause(); bgmCur.currentTime = 0; bgmCur.volume = bgmVolume(bgmCur); }
   bgmCur = t;
   if (t) t.volume = bgmVolume(t);
-  if (t && !bgmMuted) t.play().catch(() => {});
+  if (t && !bgmMuted) t.play().then(audioStarted).catch(reportAudioBlocked);
 }
 function crossfadeBgmTo(which, duration = 650) {
   if (!bgmN || bgmMuted || duration <= 0) return setBgm(which);
@@ -2505,27 +2497,27 @@ function crossfadeBgmTo(which, duration = 650) {
   if (bgmCur === to) {
     if (bgmFadeTimer) return;
     to.volume = bgmVolume(to);
-    if (to.paused) to.play().catch(() => {});
+    if (to.paused) to.play().then(audioStarted).catch(reportAudioBlocked);
     return;
   }
   clearInterval(bgmFadeTimer);
   if (bgmFadeFrom && bgmFadeFrom !== bgmCur) {
-    bgmFadeFrom.pause(); bgmFadeFrom.currentTime = 0; bgmFadeFrom.volume = 0.35;
+    bgmFadeFrom.pause(); bgmFadeFrom.currentTime = 0; bgmFadeFrom.volume = bgmVolume(bgmFadeFrom);
   }
   const from = bgmCur;
   bgmFadeFrom = from;
   to.currentTime = 0;
   to.volume = 0;
   bgmCur = to;
-  to.play().catch(() => {});
-  const started = Date.now(), fromVolume = from ? from.volume : 0;
+  to.play().then(audioStarted).catch(reportAudioBlocked);
+  const started = Date.now(), fromVolume = from ? from.volume / (BoardAudioSettings.value.bgm / 100 || 1) : 0;
   bgmFadeTimer = setInterval(() => {
     const k = Math.min(1, (Date.now() - started) / duration);
     to.volume = bgmVolume(to) * k;
-    if (from) from.volume = fromVolume * (1 - k);
+    if (from) from.volume = fromVolume * (1 - k) * BoardAudioSettings.value.bgm / 100;
     if (k >= 1) {
       clearInterval(bgmFadeTimer); bgmFadeTimer = null;
-      if (from) { from.pause(); from.currentTime = 0; from.volume = 0.35; }
+      if (from) { from.pause(); from.currentTime = 0; from.volume = bgmVolume(from); }
       bgmFadeFrom = null;
       to.volume = bgmVolume(to);
     }
@@ -2535,16 +2527,16 @@ function fadeBgmTo(which, duration) {
   if (!bgmCur || bgmMuted || duration <= 0) return setBgm(which);
   clearInterval(bgmFadeTimer);
   if (bgmFadeFrom && bgmFadeFrom !== bgmCur) {
-    bgmFadeFrom.pause(); bgmFadeFrom.currentTime = 0; bgmFadeFrom.volume = 0.35;
+    bgmFadeFrom.pause(); bgmFadeFrom.currentTime = 0; bgmFadeFrom.volume = bgmVolume(bgmFadeFrom);
   }
   bgmFadeFrom = null;
-  const from = bgmCur, startVolume = from.volume, started = Date.now();
+  const from = bgmCur, startVolume = from.volume / (BoardAudioSettings.value.bgm / 100 || 1), started = Date.now();
   bgmFadeTimer = setInterval(() => {
     const k = Math.min(1, (Date.now() - started) / duration);
-    from.volume = startVolume * (1 - k);
+    from.volume = startVolume * (1 - k) * BoardAudioSettings.value.bgm / 100;
     if (k >= 1) {
       clearInterval(bgmFadeTimer); bgmFadeTimer = null;
-      from.pause(); from.currentTime = 0; from.volume = 0.35;
+      from.pause(); from.currentTime = 0; from.volume = bgmVolume(from);
       bgmCur = null;
       setBgm(which);
     }
@@ -2570,7 +2562,7 @@ function bgmHeal() {
   const titleOpen = document.getElementById('titleOv').classList.contains('on');
   if (bgmCur && !bgmMuted && bgmCur.paused && (titleOpen || (state &&
       (state.phase === 'playing' || state.phase === 'lobby' || state.phase === 'select' || state.phase === 'ended'))))
-    bgmCur.play().catch(() => {});
+    bgmCur.play().then(audioStarted).catch(reportAudioBlocked);
 }
 function startTitleBgm() {
   initAudio();
@@ -2578,8 +2570,8 @@ function startTitleBgm() {
   setBgm('select');
   if (!bgmCur) return;
   bgmCur.play()
-    .then(() => document.getElementById('bgmBtn').classList.remove('needsAudio'))
-    .catch(() => document.getElementById('bgmBtn').classList.add('needsAudio'));
+    .then(audioStarted)
+    .catch(reportAudioBlocked);
 }
 // まずタイトル表示時に再生を試す。自動再生が拒否された環境では、
 // 専用ゲートを挟まず最初の通常操作を再生許可の契機にする。
@@ -2691,6 +2683,7 @@ function connectBoard() {
       for(const [field,key] of [['lastDice','dice'],['lastBattle','battleAt'],['lastUlt','ultAt'],['lastHeal','healAt'],['lastEvent','eventAt'],['lastSeal','sealAt'],['lastSpellFx','spellFxAt'],['lastBarrierHit','barrierHitAt'],['lastRuin','ruinAt']])prev[key]=state[field]?.at;
       prev.ownersArr=state.owners;prev.cursesKey=JSON.stringify(state.curses||{});
       clearTimeout(cavernAnimationTimer);if(hopState)clearTimeout(hopState.holdTimer);
+      BoardNotice.reset();
       hopState=null;animBusy=false;cavernSegmentSeen=state.lastDice?.segment?.id;
       state.players.forEach(p=>{prevPos[p.id]=p.pos;delete pawnAnim[p.id];});
     }
@@ -3283,7 +3276,19 @@ function endPresentationZoom(token) {
   setZoom(null, true, speed);
   return true;
 }
+async function endPlacementZoom(token) {
+  if(!cameraOwner||cameraOwner.token!==token)return false;
+  // Keep camera ownership until the return finishes so the watchdog cannot snap it to fit.
+  cameraOwner.returning=true;cameraOwner.startedAt=Date.now();
+  const speed=cameraOwner.speed;
+  zoomTile=null;
+  const duration=PW.setCamera(null,{force:true,speed,ease:'Sine.easeInOut',duration:matchMedia('(prefers-reduced-motion: reduce)').matches?1:GAME_TIMING.placementCameraReturn})||0;
+  await new Promise(resolve=>setTimeout(resolve,duration+34));
+  if(cameraOwner?.token!==token)return false;
+  cameraOwner=null;scheduleTurnTransitionCompletion();return true;
+}
 function resetPresentationCamera(reason) {
+  window.EnemyLand?.hide(true);
   window.SummonsEvolution?.cancel();
   cameraGeneration++;
   cameraOwner = null;
@@ -3366,8 +3371,29 @@ function tileInfoHTML(i) {
       </div>
     </div>`;
 }
+let inspectionDomGlow=null,inspectionDomGlowKey='';
+function setInspectionGlow(tile=null,level=1){
+  if(renderModeActive==='phaser'){inspectionDomGlow?.remove();inspectionDomGlow=null;inspectionDomGlowKey='';PW.setInspectionGlow(tile,level);return;}
+  const key=tile==null?'':tile+':'+level;
+  if(key===inspectionDomGlowKey)return;
+  inspectionDomGlow?.remove();inspectionDomGlow=null;inspectionDomGlowKey=key;
+  if(tile==null)return;
+  const w=worldPos(tile);inspectionDomGlow=document.createElement('div');inspectionDomGlow.className='lsWorldGlow';
+  inspectionDomGlow.style.cssText=`left:${w.x}px;top:${w.y-(level-1)*7}px;width:${DW}px;height:${DH}px`;
+  inspectionDomGlow.innerHTML=`<svg viewBox="-32 -32 ${DW+64} ${DH+64}"><path d="M${DW/2} 0 L${DW} ${DH/2} L${DW/2} ${DH} L0 ${DH/2}Z"/></svg>`;$('world').append(inspectionDomGlow);
+}
 function updateTileInfo() {
   const el = $('tileInfo');
+  const inspecting=window.EnemyLand?.sync(state,{
+    blocked:!!(hopState||animBusy||cutBusy||presentationRunning||presentationQueue.length||gameEntryRunning||duelPlaying||closeupTile!==null||Date.now()<=bannerUntil||$('battle').classList.contains('on')||(cameraOwner&&cameraOwner.owner!=='enemy-land')),
+    focus:(tile,actor)=>beginPresentationZoom(tile,'enemy-land',actor),
+    release:token=>endPresentationZoom(token),
+    hold:(token,tile)=>{if(cameraOwner?.token===token){cameraOwner.startedAt=Date.now();if(renderModeActive==='phaser'&&PW.cameraState().isFit)setZoom(tile,true);}},
+    settled:()=>renderModeActive!=='phaser'||(PW.cameraState().ready&&!PW.cameraState().panRunning&&!PW.cameraState().zoomRunning),
+    glow:setInspectionGlow,
+    point:tile=>{const w=worldPos(tile);if(renderModeActive==='phaser')return PW.worldToViewport(w.x,w.y);const r=$('world').getBoundingClientRect();return{x:r.left+w.x*r.width/1280,y:r.top+w.y*r.height/905};}
+  });
+  if(inspecting||state.enemyLand||state.landStop){el.classList.remove('on');el.dataset.k='';return;}
   const cameraState = (typeof PW !== 'undefined') && PW.cameraState ? PW.cameraState() : { isFit:zoomTile === null };
   if (!cameraOwner && (zoomTile !== null || !cameraState.isFit)) resetPresentationCamera('watchdog');
   if (closeupTile !== null) {
@@ -3385,6 +3411,7 @@ function updateTileInfo() {
   if (el.dataset.k !== k) { el.dataset.k = k; el.innerHTML = tileInfoHTML(target); }
   el.classList.add('on');
 }
+setInterval(()=>{if(state?.catalog)updateTileInfo();},150);
 function chain(pid, elem) {
   return state.owners.reduce((n, o, i) => n + (o && o.player === pid && state.tiles[i].e === elem ? 1 : 0), 0);
 }
@@ -3551,7 +3578,7 @@ function renderBoardDom() {
     el.style.left = x + 'px'; el.style.top = (y - lift + 6) + 'px';
     el.style.zIndex = GEO[i][0] + GEO[i][1] + 101;
     el.dataset.evolutionTile = i;
-    el.style.visibility = evolvingTiles.has(i) ? 'hidden' : '';
+    el.style.visibility = evolvingTiles.has(i)||placementHiddenTiles.has(i) ? 'hidden' : '';
     el.innerHTML = artHTML(o.creature, o.level, 80);
     st.appendChild(el);
   }
@@ -3691,32 +3718,52 @@ function summonCardHTML(cid, forceEvolved = false) {
       <div class="scStat"><span class="statIconDisk"><img src="/assets/cards/stat-hp-icon.svg"></span><b>${evolved && base.evoHp != null ? base.evoHp : cr.hp}</b></div>
     </div><div class="scEffect"><h3>${title}</h3><p>${body}</p></div></div>`;
 }
-async function playSummonPresentation(tile, owner) {
-  const pl = player(owner.player), cr = state.catalog.CREATURES[owner.creature];
+async function playSummonPresentation(tile, owner, snapshot = state) {
   cutBusy++;
-  bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(5200));
+  bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(BoardMilestones.duration + 3100));
+  let cameraToken=null;
+  const instance=state?.stateInstanceId,room=state?.code;
+  maskPlacementTile(tile,true);
   try {
     hideLogo(true);
-    $('scCard').innerHTML = summonCardHTML(owner.creature);
-    $('scText').textContent = pl.name + 'が' + cr.name + 'を召喚!';
-    $('summonCut').classList.remove('on'); void $('summonCut').offsetWidth; $('summonCut').classList.add('on');
-    await wait(2050);
-    $('summonCut').classList.remove('on');
-    await wait(180);
+    await BoardMilestones.present('summon', { tile, owner, element:snapshot.tiles[tile].e }, snapshot, {ms:presentationMs});
+    if(state?.stateInstanceId!==instance||state?.code!==room||state?.phase!=='playing')return;
+    cameraToken=beginPresentationZoom(tile,'summon',owner.player);
+    await wait(900);
+    if(cameraOwner?.token!==cameraToken)return;
     playSe(seSummon);
-    const closeupDone = tileCloseup(tile, `${pl.name}が<b style="color:#F2D062">${cr.name}</b>を召喚!`, 2700);
+    maskPlacementTile(tile,false);
     const fxDone = renderModeActive === 'phaser'
-      ? PW.play({ type:'summon', tile, element:state.tiles[tile].e, timeoutMs:2200,
+      ? PW.play({ type:'summon', tile, element:snapshot.tiles[tile].e, timeoutMs:2200,
           speed:presentationContext ? presentationContext.speed : 1 })
-      : Promise.resolve(fxAt(tile, 'fxRing', RUNE[state.tiles[tile].e]));
-    await Promise.all([closeupDone, fxDone]);
+      : Promise.resolve(fxAt(tile, 'fxRing', RUNE[snapshot.tiles[tile].e]));
+    await fxDone;
   } finally {
+    maskPlacementTile(tile,false);
+    if(cameraToken)await endPlacementZoom(cameraToken);
     $('summonCut').classList.remove('on');
     hideLogo(false);
     cutBusy = Math.max(0, cutBusy - 1);
   }
 }
 
+const placementHiddenTiles=new Set();
+function maskPlacementTile(tile,hidden){
+  if(hidden)placementHiddenTiles.add(tile);else placementHiddenTiles.delete(tile);
+  PW.setPlacementHidden?.(tile,hidden);
+  document.querySelectorAll(`[data-evolution-tile="${tile}"],[data-placement-shadow="${tile}"]`).forEach(el=>el.style.visibility=hidden||evolvingTiles.has(tile)?'hidden':'');
+}
+function preparePlacementVisibility(){
+  if(state.phase!=='playing'||!prev.ownersArr)return;
+  state.owners.forEach((now,i)=>{
+    const was=prev.ownersArr[i];if(!now)return;
+    const newBattle=state.lastBattle&&state.lastBattle.at!==prev.battleAt;
+    const spell=state.lastSpellFx&&state.lastSpellFx.at!==prev.spellFxAt&&(state.lastSpellFx.tiles||[]).includes(i);
+    const frontline=state.lastEvent?.type==='frontline_swap'&&state.lastEvent.at!==prev.eventAt&&state.lastEvent.tile===i;
+    if((!was&&!newBattle)||(was&&now.creature!==was.creature&&now.level===was.level&&(!newBattle||frontline)&&(!spell||state.lastSpellFx.spell==='sp_swap')))
+      maskPlacementTile(i,true);
+  });
+}
 const evolvingTiles = new Set();
 function maskEvolutionTile(tile, hidden) {
   if (hidden) evolvingTiles.add(tile); else evolvingTiles.delete(tile);
@@ -3802,18 +3849,20 @@ async function playSpellPresentation(sf, desc) {
   const caster = player(sf.caster);
   cutBusy++;
   bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(5600));
+  let placementCamera=null;
+  const placementTile=sf.spell==='sp_swap'&&Number.isInteger(sf.tiles?.[0])?sf.tiles[0]:null;
+  const instance=state?.stateInstanceId,room=state?.code;
+  if(placementTile!==null)maskPlacementTile(placementTile,true);
   try {
     hideLogo(true);
-    $('spellCard').innerHTML = spellCardHTML(sf.spell);
-    $('spellEffectName').textContent = sp.name;
-    $('spellEffectText').textContent = desc || sp.desc || '';
-    $('spellEffectCaster').textContent = caster ? caster.name + 'が使用' : 'スペル発動';
-    $('spellCut').classList.remove('on'); void $('spellCut').offsetWidth; $('spellCut').classList.add('on');
-    await wait(2400);
-    $('spellCut').classList.remove('on');
-    await wait(180);
-    const closeupDone = sf.tiles && sf.tiles.length === 1
-      ? tileCloseup(sf.tiles[0], iconize(desc || sp.desc || ''), 2800) : Promise.resolve(true);
+    await BoardEffects.present('spell',sf,state,{ms:presentationMs});
+    if(placementTile!==null){
+      if(state?.stateInstanceId!==instance||state?.code!==room||state?.phase!=='playing')return;
+      placementCamera=beginPresentationZoom(placementTile,'placement-swap',sf.caster);
+      await wait(900);
+      if(cameraOwner?.token!==placementCamera)return;
+      maskPlacementTile(placementTile,false);
+    }
     if (renderModeActive === 'phaser') {
       if (sf.sequence && Array.isArray(sf.results)) {
         for (const result of sf.results) {
@@ -3829,6 +3878,8 @@ async function playSpellPresentation(sf, desc) {
     if (sf.spell === 'sp_insight') flyCardBacks(sf.caster, sf.n || 2);
     await wait(900);
   } finally {
+    if(placementTile!==null)maskPlacementTile(placementTile,false);
+    if(placementCamera)await endPlacementZoom(placementCamera);
     $('spellCut').classList.remove('on');
     hideLogo(false);
     cutBusy = Math.max(0, cutBusy - 1);
@@ -3837,28 +3888,44 @@ async function playSpellPresentation(sf, desc) {
 
 // ===== HUD =====
 function titleBonusCardHTML(rule) {
-  const holderId = state.titles && state.titles[rule.key];
-  const holder = state.players.find(p => p.id === holderId);
-  const ordered = state.players.map((p, order) => ({ p, order }))
-    .sort((a, b) => (Number(b.p[rule.field]) || 0) - (Number(a.p[rule.field]) || 0) || a.order - b.order);
-  return `<section class="titleBonusCard ${holder ? 'claimed' : ''}" aria-label="${rule.name}">
-    <div class="titleBonusHead"><img src="/assets/${rule.icon}" alt="">
-      <div class="titleBonusName">${rule.name}<small>${rule.caption}・${rule.min}${rule.unit}で獲得</small></div>
-      <div class="titleBonusValue"><span>獲得</span><b>総資産 +500G</b></div></div>
-    <div class="titleBonusHolder">保持者：<b>${holder ? holder.name : 'まだいない'}</b></div>
-    <div class="titleBonusRows">${ordered.map(({ p }) => {
-      const count = Number(p[rule.field]) || 0;
-      return `<div class="titleBonusRow ${count >= rule.min ? 'ready' : ''} ${p.id === holderId ? 'holder' : ''}">
-        <span>${p.id === holderId ? '♛ ' : ''}${p.name}</span><b>${count}${rule.unit}</b></div>`;
-    }).join('')}</div>
-    <div class="titleBonusRule">最多記録を更新すると称号を奪取</div></section>`;
+  const holder=state.players.find(p=>p.id===state.titles?.[rule.key]);
+  const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const label=rule.name+'：'+(holder?holder.name:'所持者なし');
+  return `<section class="titleBonusCard ${holder?'claimed':''}" aria-label="${esc(label)}" title="${esc(label)}">
+    <div class="titleBonusHead"><img class="titleBonusIcon" src="/assets/${rule.icon}" alt=""><strong>${esc(rule.name.replace('ボーナス',''))}</strong></div>
+    <div class="titleBonusOwner">${holder?`<img class="titleBonusPawn" src="/assets/pawn_${esc(holder.charId)}.${holder.charId==='adel'?'webp':'png'}" alt=""><b class="titleBonusHolder">${esc(holder.name)}</b>`:'<span class="titleBonusEmpty" aria-hidden="true">—</span>'}</div>
+    <div class="titleBonusStats"><span class="titleBonusCaption">${rule.caption}</span><b class="titleBonusCount">${holder?Math.max(0,Number(holder[rule.field])||0):'—'}<small>${holder?rule.unit:''}</small></b></div>
+    <div class="titleBonusReward" aria-label="総資産＋500ボーナス"><span>総資産</span><b>＋500</b></div>
+  </section>`;
+}
+function renderTurnOrder(hud,top) {
+  let strip=$('hudTurnOrder');
+  if(!strip){strip=document.createElement('div');strip.id='hudTurnOrder';strip.setAttribute('role','list');strip.setAttribute('aria-label','ダイスを振る順番');hud.append(strip);}
+  strip.style.top=top+'px';
+  const key=JSON.stringify(state.players.map(p=>[p.id,p.charId,p.name,!!p.bankrupt]));
+  if(strip.dataset.key!==key){
+    strip.replaceChildren();
+    const dice=document.createElement('img');dice.className='orderDice';dice.src='/assets/ic_dice.png';dice.alt='';strip.append(dice);
+    state.players.forEach((p,i)=>{
+      const slot=document.createElement('div');slot.className='orderPlayer';slot.dataset.player=p.id;slot.classList.toggle('out',!!p.bankrupt);slot.setAttribute('role','listitem');
+      slot.setAttribute('aria-label',`${i+1}番目 ${p.name}${p.bankrupt?' 脱落':''}`);slot.title=p.name;
+      const portrait=document.createElement('img');portrait.src=`/assets/pawn_${p.charId}.${p.charId==='adel'?'webp':'png'}`;portrait.alt='';slot.append(portrait);
+      const number=document.createElement('small');number.innerHTML=`<svg viewBox="0 0 20 20" aria-hidden="true"><text x="10" y="10" text-anchor="middle" dominant-baseline="central">${i+1}</text></svg>`;slot.append(number);strip.append(slot);
+      if(i<state.players.length-1){const arrow=document.createElement('span');arrow.className='orderNext';arrow.setAttribute('aria-hidden','true');strip.append(arrow);}
+    });
+    strip.dataset.key=key;
+  }
+  strip.querySelectorAll('.orderPlayer').forEach(el=>{
+    const active=state.phase==='playing'&&el.dataset.player===visualTurnId&&!el.classList.contains('out');
+    el.classList.toggle('active',active);if(active)el.setAttribute('aria-current','step');else el.removeAttribute('aria-current');
+  });
 }
 function renderHUD() {
   const hud = $('hud');
   const ranked = state.players.slice().sort((a, b) => b.points - a.points || b.gold - a.gold);
   const rankBefore = SummonsHudRank.capture(hud);
   const layout = new Map(); let hudTop = 0;
-  ranked.forEach(p => { const near = !p.bankrupt && p.points >= (state.reachAt || state.target - 1); const height = near ? 126 : 96; layout.set(p.id, { top:hudTop, height, near }); hudTop += height + 7; });
+  ranked.forEach(p => { const height = 96; layout.set(p.id, { top:hudTop, height }); hudTop += height + 7; });
   hud.querySelectorAll('.plate').forEach(el => { if(!state.players.some(p => el.id === 'plate-' + p.id)) el.remove(); });
   hud.style.setProperty('--hud-player-count', state.players.length);
   state.players.forEach(p => {
@@ -3873,7 +3940,7 @@ function renderHUD() {
     el.style.top = position.top + 'px';
     el.style.setProperty('height', position.height + 'px', 'important');
     el.dataset.rank = rank + 1;
-    el.classList.toggle('rkReady', position.near && p.points >= state.target);
+    el.classList.toggle('finaleBankrupt', !!p.bankrupt);
     const pe = p.charId && state.catalog.CHARS[p.charId] ? state.catalog.CHARS[p.charId].elem : 'neutral';
     el.style.setProperty('--hud-bg', `url('/assets/cards/bg-${pe || 'neutral'}.webp')`);
     el.style.setProperty('--hud-color', RUNE[pe] || '#C9A227');
@@ -3888,7 +3955,7 @@ function renderHUD() {
         <div class="pts">${p.points}<small>G/${state.target}</small></div>
       </div>
       <div class="row2">
-        <span class="ic"><img src="/assets/ic_gold.png">${p.gold}</span>
+        <span class="ic"><img src="/assets/ic_gold.png">${BoardNotice.hudGold(p)}</span>
         <span class="ic"><img src="/assets/ic_hand.png">${p.handCount}</span>
         <span class="ic" title="山札/捨て札">${sic('draft')}${p.deckCount ?? 0}<small style="opacity:.65">/${p.discardCount ?? 0}</small></span>
         ${SummonsMapUI.get(state).branching ? SummonsMapUI.gates(state,p) : `<span class="ic sealIc ${p.seal ? 'has' : ''}" title="門の刻印">刻</span>`}
@@ -3898,7 +3965,7 @@ function renderHUD() {
         return `<span class="ebadge ${n ? '' : 'zero'}" style="--ec:${RUNE[e]}">
           <svg width="17" height="17" viewBox="-34 -36 68 72">${ELEM[e]}</svg>${n}</span>`;
       }).join('')}</div>
-      ${position.near ? `<div class="rkGoalNotice"><img src="/assets/struct_castle.png" alt=""><span>${state.target}G稼いで城へ向かえ</span></div>` : ''}<span class="rkShine" aria-hidden="true"></span>`;
+      <span class="rkShine" aria-hidden="true"></span>`;
     el.classList.toggle('turn', state.phase === 'playing' && visualTurnId === p.id);
   });
   let titlePanel = $('titleBonusPanel');
@@ -3907,11 +3974,12 @@ function renderHUD() {
     titlePanel.id = 'titleBonusPanel';
     hud.appendChild(titlePanel);
   }
-  titlePanel.style.top = (hudTop + 8) + 'px';
+  renderTurnOrder(hud,hudTop+3);
+  titlePanel.style.top = (hudTop + 82) + 'px';
   SummonsHudRank.animate(hud, rankBefore);
   titlePanel.innerHTML = [
-    { key:'conqueror', field:'battleWins', min:3, unit:'勝', name:'覇者ボーナス', caption:'戦闘勝利', icon:'ic_conqueror.png' },
-    { key:'pilgrim', field:'shrineVisits', min:4, unit:'回', name:'大巡礼者ボーナス', caption:'祠参拝', icon:'ic_pilgrim.png' },
+    { key:'conqueror', field:'battleWins', min:3, unit:'勝', name:'覇者ボーナス', caption:'戦闘勝利数No1', icon:'ic_conqueror.png' },
+    { key:'pilgrim', field:'shrineVisits', min:4, unit:'回', name:'大巡礼者ボーナス', caption:'祠巡礼数No1', icon:'ic_pilgrim.png' },
   ].map(titleBonusCardHTML).join('');
   fitWorld();
 }
@@ -3940,7 +4008,7 @@ function playGameEntryTransition() {
   }, 560));
   // 円形ワイプ後は盤面全景を見せてから開始地点の城へ寄る。
   let gameEntryCameraToken = null;
-  gameEntryTimers.push(setTimeout(() => { gameEntryCameraToken = beginPresentationZoom(0, 'game-entry'); }, 2250));
+  gameEntryTimers.push(setTimeout(() => { gameEntryCameraToken = beginPresentationZoom(state.tiles.findIndex(t=>t.t==='castle'), 'game-entry'); }, 2250));
   gameEntryTimers.push(setTimeout(() => {
     wipe.classList.remove('on', 'reveal');
     gameEntryRunning = false;
@@ -3950,7 +4018,7 @@ function playGameEntryTransition() {
   gameEntryTimers.push(setTimeout(() => {
     if (gameEntryCameraToken) endPresentationZoom(gameEntryCameraToken);
     gameEntryCameraToken = null;
-  }, 4150));
+  }, GAME_TIMING.gameEntryReturn));
 }
 function playTurnCutin(pl) {
   if (!pl || !pl.charId) return Promise.resolve();
@@ -3968,37 +4036,19 @@ function playTurnCutin(pl) {
     tcT2 = setTimeout(() => { el.classList.remove('on', 'out'); resolve(); }, doneAt); // すっと消える
   });
 }
-let dirCutOn = false;
-function updateDirCut() {
-  const tp = state.players[state.turn];
-  const dp = tp && state.pending[tp.id];
-  // 方向選択は通常の描画更新から直接呼ばれるため、統合演出キューのカットインへ
-  // 割り込ませない。以前はここで共有タイマーを消し、TURN STARTのPromiseが
-  // 永久に解決されず、以後の全演出が停止していた。
-  const wantsDirection = !!(dp && dp.type === 'direction');
-  const active = wantsDirection && !presentationRunning && !presentationQueue.length &&
-    !cutBusy && !gameEntryRunning;
-  if (active && !dirCutOn) {
-    dirCutOn = true;
-    const el = $('turnCutin');
-    $('tcImg').src = '/assets/full_' + tp.charId + '.png';
-    el.style.setProperty('--tcc', tp.color);
-    $('tcMsg').innerHTML = `<div class="tcWho">${tp.name} ─ どちらの方向へ進む?</div>
-      <div style="display:flex; gap:3vw; justify-content:center; margin-top:1vh">
-        <svg viewBox="0 0 24 24" width="9vh" height="9vh" style="color:#F2D062"><path d="M15.5 4 8 12l7.5 8" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <svg viewBox="0 0 24 24" width="9vh" height="9vh" style="color:#F2D062"><path d="M8.5 4 16 12l-7.5 8" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </div>
-      <div class="tcGold" style="margin-top:.6vh">スマホの矢印をタップ ─ 選ぶと移動開始(以後変更不可)</div>`;
-    el.classList.remove('out'); el.classList.add('on');
-    $('tcMsg').classList.add('on');
-    bannerUntil = Math.max(bannerUntil, Date.now() + 1200);
-  } else if (!active && dirCutOn) {
-    dirCutOn = false;
-    const el = $('turnCutin');
-    el.classList.add('out');
-    setTimeout(() => { if (!dirCutOn) { el.classList.remove('on', 'out'); $('tcMsg').classList.remove('on'); } }, 450);
-  }
+function boardNoticePoint(i) {
+  const w=worldPos(i);
+  if(renderModeActive==='phaser'&&PW.isReady())return PW.overlayPoint(w.x,w.y-20);
+  const r=$('world').getBoundingClientRect();
+  return {x:r.left+w.x*r.width/1280,y:r.top+(w.y-20)*r.height/905};
 }
+function updateDirCut() {
+  const tp=state?.players[state.turn],dp=tp&&state.pending?.[tp.id];
+  const active=state?.phase==='playing'&&dp?.type==='direction'&&!presentationRunning&&
+    !presentationQueue.length&&!cutBusy&&!gameEntryRunning&&!animBusy&&!finishActiveTelop&&Date.now()>bannerUntil;
+  BoardNotice.direction(state,active?tp:null,active?dp:null,boardNoticePoint);
+}
+setInterval(()=>{if(state)updateDirCut();},150);
 function sideCut(pl, msgHtml, dur) {
   cutBusy++;
   const actual = presentationMs(dur), outAt = Math.max(1, actual - presentationMs(450));
@@ -4019,16 +4069,8 @@ function sideCut(pl, msgHtml, dur) {
   });
 }
 async function playTollCutin(ev) {
-  const fromP = player(ev.from), toP = player(ev.to);
-  if (!fromP || !toP) return;
-  bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(4100));
-  await sideCut(fromP, `<div class="tcWho">${fromP.name} ─ 通行料の支払い</div>
-    <div class="tcAmt minus">−${ev.amount}G</div>
-    <div class="tcGold">所持金 ${ev.fromGold + ev.amount}G → ${ev.fromGold}G</div>`, 2000);
-  await wait(100);
-  await sideCut(toP, `<div class="tcWho">${toP.name} ─ 通行料を受け取った</div>
-    <div class="tcAmt plus">+${ev.amount}G</div>
-    <div class="tcGold">所持金 ${ev.toGold - ev.amount}G → ${ev.toGold}G</div>`, 2000);
+  if(!player(ev.from)||!player(ev.to))return;
+  await BoardNotice.toll(ev,()=>state,{ms:presentationMs,onHud:renderHUD});
 }
 let telopGeneration = 0, finishActiveTelop = null;
 function showTelop(kind, sub) {
@@ -4166,7 +4208,6 @@ async function playInternalAbilityFx(sf) {
       cid:sf.cid, elem:sf.elem, battle:sf.battle, n:sf.n, timeoutMs:3000 });
   } else if (sf.tiles) {
     sf.tiles.forEach(ti => fxAt(ti, 'fxRing', '#C8BAE8'));
-    await closeupDone;
     await wait(250);
   }
 }
@@ -4467,6 +4508,7 @@ async function revealBattleSupport(b, side) {
 async function playBattle(b) {
   cutBusy++;
   try {
+  const resultSnapshot = structuredClone(state);
   activeBattleData = b;
   const C = state.catalog;
   const atk = player(b.attacker), def = player(b.defender);
@@ -4573,7 +4615,7 @@ async function playBattle(b) {
   const showResult = async (text, preWait) => {
     await wait(preWait);
     // 決着SEのために戦闘曲を弱めるが、音声ストリーム自体は切断しない。
-    if (bgmBattle && bgmCur === bgmBattle) bgmBattle.volume = 0.08;
+    if (bgmBattle && bgmCur === bgmBattle) bgmBattle.volume = 0.08 * BoardAudioSettings.value.bgm / 100;
     const winner = $(b.win ? 'bAtk' : 'bDef');
     winner.classList.add('winner');
     playSe(seBattleFinish);
@@ -4664,27 +4706,20 @@ async function playBattle(b) {
   activeBattleData = null;
   $('battleFx').innerHTML = '';
   hideLogo(false);
-  // 2E plan§9: 戦闘終了後の盤面演出。オーバーレイを閉じてからマスへズームし、
-  // 命中余韻(侵略)/反動+残光(防衛)を中央下メッセージと同時に再生する
-  if (renderModeActive === 'phaser') {
-    let msg = b.win
-      ? `<b style="color:#F2D062">侵略成功</b> ─ ${atk.name}が${def.name}の土地を奪取!`
-      : `<b style="color:#8FE08A">防衛成功</b> ─ ${def.name}の${cname(b.defCreature, dLv)}が耐え抜いた(残HP${b.remainHp})`;
-    if (b.evolutionPrayer) msg += `<br><b style="color:#F2D062">進化の祈り +${b.evolutionPrayer.gold}G</b>（配置${b.evolutionPrayer.providers.length}体分）`;
-    const closeupDone = tileCloseup(b.tile, msg);
-    const resultFxDone = PW.play({ type:b.win ? 'invade-fx' : 'defend-fx', tile:b.tile,
+  // Keep the dedicated battle UI; show the approved result only after it closes.
+  const resultDone = BoardMilestones.present('battle-result', b, resultSnapshot, {ms:presentationMs});
+  const resultFxDone = renderModeActive === 'phaser'
+    ? PW.play({ type:b.win ? 'invade-fx' : 'defend-fx', tile:b.tile,
       element:C.CREATURES[b.win ? b.atkCreature : b.defCreature].elem,
-      color:(b.win ? atk : def).color, speed:presentationContext ? presentationContext.speed : 1 });
-    await Promise.all([closeupDone, resultFxDone]);
-  } else {
-    await showBannerAsync(b.win ? '侵略成功!' : sic('up') + ' 防衛成功!',
-      b.win ? atk.name + 'が' + def.name + 'の土地を奪取!'
-            : def.name + 'が耐え抜いた(残HP' + b.remainHp + ')');
-    if (b.evolutionPrayer) await showBannerAsync('進化の祈り', `+${b.evolutionPrayer.gold}G（配置${b.evolutionPrayer.providers.length}体分）`);
-  }
+      color:(b.win ? atk : def).color, speed:presentationContext ? presentationContext.speed : 1 })
+    : Promise.resolve();
+  await Promise.all([resultDone,resultFxDone]);
+  if (b.evolutionPrayer && !Array.isArray(b.moneyEvents)) await showBannerAsync('進化の祈り', `+${b.evolutionPrayer.gold}G（配置${b.evolutionPrayer.providers.length}体分）`);
+  await BoardNotice.battle(b,()=>state,{ms:presentationMs,onHud:renderHUD});
   } finally {
     // ハイブリッド戦闘の後始末(§11.4: 一時オブジェクト・Tweenを残さない。stopは冪等)
     try { if (typeof BW !== 'undefined') BW.stop(); } catch (e) {}
+    BoardNotice.finish(b); renderHUD();
     activeBattleKey = null;
     activeBattleAttacker = null;
     battlePlayingKey = null;
@@ -4703,7 +4738,7 @@ function render() {
   syncSelectedMap();
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
   if (enteringFromSelect) playGameEntryTransition();
-  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.63';
+  $('verTag').textContent = 'ver ' + (state.ver || '?') + ' / board 1.64';
   // ロビー
   $('lobby').classList.toggle('on', state.phase === 'lobby');
   SummonsLobbyTicket.update(state, code);
@@ -4767,6 +4802,7 @@ function render() {
   if (state.phase === 'playing' || state.phase === 'ended') {
     const logicalTurn = state.players[state.turn] && state.players[state.turn].id;
     if (!visualTurnId || !state.players.some(p => p.id === visualTurnId)) visualTurnId = logicalTurn || null;
+    BoardNotice.prepareEconomy(state,prev,cavernSegmentSeen,state.players.some(p=>prevPos[p.id]!==undefined&&prevPos[p.id]!==p.pos));
     // 移動アニメーション(城でドラフト待ちの中断・再開に対応)
     state.players.forEach(p => { if (!(p.id in prevPos)) prevPos[p.id] = p.pos; });
     if (SummonsMapUI.get(state).branching) syncCavernAnimation();
@@ -4778,7 +4814,7 @@ function render() {
         const mdir = (state.players.find(q => q.id === mover.id) || {}).dir || 1;
         hopState = { id: mover.id, from, to: mover.pos, dir: mdir,
           steps: mdir === 1 ? ((mover.pos - from + 28) % 28 || 28) : ((from - mover.pos + 28) % 28 || 28),
-          sN: 0, holding: false,
+          sN: 0, holding: false, events:state.lastDice?.player===mover.id?state.lastDice.gateEvents:[],
           castleEv: state.lastDice && state.lastDice.player === mover.id ? state.lastDice.castle : null };
         pawnAnim[mover.id] = from;
         const mine = state.lastDice && state.lastDice.player === mover.id;
@@ -4786,7 +4822,7 @@ function render() {
           ? (state.lastDice.multi ? GAME_TIMING.moveStartDelayMulti : GAME_TIMING.moveStartDelay)
           : GAME_TIMING.otherStartDelay, mover.id));
       }
-    } else if (hopState?.holding) {
+    } else if (hopState?.holding && !hopState.gatePresenting) {
       if (hopState.holdUntil && Date.now() < hopState.holdUntil) {
         clearTimeout(hopState.holdTimer);
         hopState.holdTimer = setTimeout(render, hopState.holdUntil - Date.now() + 30);
@@ -4799,12 +4835,14 @@ function render() {
         }
       }
     }
+    preparePlacementVisibility();
+    BoardNotice.prepare(state,state.lastBattle,state.lastBattle?.at===prev.battleAt);
     renderBoard(); renderPawns(); renderHUD();
     // お金の増減フロート + 移動が対になっていれば金貨を飛ばす
     const deltas = [];
     state.players.forEach(p => {
       const g0 = prevGold[p.id];
-      if (g0 !== undefined && g0 !== p.gold) {
+      if (g0 !== undefined && g0 !== p.gold && !BoardNotice.held(p.id)) {
         spawnGold(p.id, p.gold - g0);
         deltas.push({ id: p.id, d: p.gold - g0 });
       }
@@ -4906,13 +4944,13 @@ function render() {
         }
       } else if (was && now && was.creature !== now.creature && was.level === now.level &&
                  (!state.lastBattle || state.lastBattle.at === prev.battleAt) &&
+                 !(state.lastEvent?.type==='frontline_swap'&&state.lastEvent.at!==prev.eventAt&&state.lastEvent.tile===i) &&
                  !(state.lastSpellFx && state.lastSpellFx.at !== prev.spellFxAt &&
                    (state.lastSpellFx.tiles || []).includes(i)) &&   // 交代/転移スペルFXと二重再生しない(M4)
                  renderModeActive === 'phaser') {
         // スペル以外で既存領地に別クリーチャーが現れた → 配置演出を流用(発注書v0.75 §4.1)
-        const si = i;
-        queueFx(2, () => PW.play({ type:'summon', tile:si, element:state.tiles[si].e,
-          speed:presentationContext ? presentationContext.speed : 1 }), {
+        const si = i, so = {...now}, summonSnapshot=structuredClone(state);
+        queueFx(2, () => playSummonPresentation(si,so,summonSnapshot), {
           actorId:now.player, id:presentationId('replace-summon', state.stateRev, si), kind:'summon' });
       }
     }
@@ -4921,10 +4959,9 @@ function render() {
         if (!prev.ownersArr[i] && state.owners[i]) {
           const o = state.owners[i];
           const si = i, so = { ...o };
-          // 目玉演出: カードを提示してから、対象マスへズームし、属性FXとともに配置する。
-          queueFx(2, () => playSummonPresentation(si, so), {
+          const summonSnapshot = structuredClone(state);
+          queueFx(2, () => playSummonPresentation(si, so, summonSnapshot), {
             actorId:so.player, id:presentationId('summon', state.stateRev, si), kind:'summon' });
-          break;
         }
       }
     }
@@ -4943,7 +4980,11 @@ function render() {
   }
   // テロップ(移動アニメ中は保留し、完了後に1回だけ表示)
   if (state.phase === 'playing' && prev.phase !== 'playing') {
-    if (!enteringFromSelect) showTelop('game');
+    if(enteringFromSelect){
+      const snapshot=structuredClone(state),actor=snapshot.players[snapshot.turn];
+      queueFx(4,async()=>{playSe(seTelop);await BoardFlow.start('game',snapshot,actor.id,{ms:presentationMs});await wait(GAME_TIMING.startNoticeGap);},
+        {actorId:actor.id,id:presentationId('game-start',snapshot.stateInstanceId),kind:'game-start',stale:()=>state?.phase!=='playing'||state.stateInstanceId!==snapshot.stateInstanceId});
+    }
     armTurnStart();
   } else if (state.phase === 'playing' &&
              (state.turn !== prev.turn || Number(state.turnEpoch || 0) !== Number(prev.turnEpoch || 0))) armTurnStart();
@@ -4961,12 +5002,14 @@ function render() {
   // ドラフトのオーラ通知(中身は見せず気配だけ)
   {
     const de = Object.entries(state.pending).find(([, x]) => x.type === 'draft');
-    const dKey = de ? de[0] + '|' + (de[1].aura || '') : '';
+    const dKey = de ? de[0] + '|' + (de[1].promptId||'') + '|' + (de[1].aura || '') : '';
     if (dKey !== prev.draftKey) {
       prev.draftKey = dKey;
-      if (de && (de[1].aura === 'UR'))
-        queueBanner('レアカードを引いた', player(de[0]).name, 3800, 3,
-          { actorId:de[0], id:presentationId('draft-aura', state.stateRev, de[0]) });
+      if (de && (de[1].aura === 'UR')) {
+        const snapshot=structuredClone(state),event={player:de[0]};
+        queueFx(3,()=>BoardNext.present('rare',event,snapshot,{ms:presentationMs}),
+          {actorId:de[0],id:presentationId('draft-aura',0,`${de[0]}:${de[1].promptId||state.stateRev}`),kind:'rare'});
+      }
     }
   }
   // マス吹き出し(停止イベントの現地表示)
@@ -4977,7 +5020,7 @@ function render() {
       const key = cur.id + '|' + pd.prompt + '|' + cur.pos;
       if (key !== lastCalloutKey) {
         lastCalloutKey = key;
-        showCallout(cur.pos, pd.prompt.replace(' ─ ', '<br>'));
+        if(!state.enemyLand&&!state.landStop)showCallout(cur.pos, pd.prompt.replace(' ─ ', '<br>'));
       }
     }
   }
@@ -5031,8 +5074,8 @@ function render() {
   // 固有スキルのカットイン
   if (state.lastUlt && state.lastUlt.at !== prev.ultAt) {
     prev.ultAt = state.lastUlt.at;
-    const ult = Object.assign({}, state.lastUlt);
-    queueMajorPresentation(ult.at, 'ultimate', ult.player, () => playUlt(ult));
+    const ult = Object.assign({}, state.lastUlt),snapshot=structuredClone(state);
+    queueMajorPresentation(ult.at, 'ultimate', ult.player, () => playUlt(ult,snapshot));
   }
   // 祠イベントの中央表示
   if (state.lastHeal && state.lastHeal.reward && state.lastHeal.at !== prev.healAt) {
@@ -5043,10 +5086,11 @@ function render() {
   }
   if (state.lastEvent && state.lastEvent.at !== prev.eventAt) {
     prev.eventAt = state.lastEvent.at;
-    if (state.lastEvent.type === 'shrine')
-      queueBanner(`祠の加護 +${state.lastEvent.gold}G`,
-        player(state.lastEvent.player).name + ' ─ 通算' + state.lastEvent.visits + '回参拝', 2800, 3,
-        { actorId:state.lastEvent.player, id:presentationId('shrine', state.lastEvent.at) });
+    if (state.lastEvent.type === 'shrine') {
+      const ev=structuredClone(state.lastEvent),snapshot=structuredClone(state);
+      queueFx(3,()=>BoardEffects.present('shrine',ev,snapshot,{ms:presentationMs}),
+        {actorId:ev.player,id:presentationId('shrine',ev.at)});
+    }
     else if (state.lastEvent.type === 'toll') {
       const tollEvent = { ...state.lastEvent };
       queueFx(3, () => playTollCutin(tollEvent), {
@@ -5056,56 +5100,56 @@ function render() {
       const ev = { ...state.lastEvent };
       queueFx(2, async () => {
         fxAt(ev.tile, 'fxRing', '#56D7FF');
-        await showBannerAsync('深淵の錨 ─ 強制停止', `${player(ev.player)?.name || ''}は土地${ev.tile}で足止めされた`, GAME_TIMING.anchorStop);
+        await BoardEffects.present('abyss_anchor',ev,state,{ms:presentationMs});
       }, { actorId:ev.player, id:presentationId('abyss-anchor', ev.at), kind:'abyss-anchor' });
     }
     else if (state.lastEvent.type === 'abyss_mark') {
       const ev = { ...state.lastEvent };
       queueFx(2, async () => {
         fxAt(ev.tile, 'fxRing', '#56D7FF');
-        await showBannerAsync('深淵標を刻印', `土地${ev.tile}の通行料 +${ev.bonus}G`, 2100);
+        await BoardEffects.present('abyss_mark',ev,state,{ms:presentationMs});
       }, { actorId:ev.player, id:presentationId('abyss-mark', ev.at), kind:'abyss-mark' });
     }
     else if (state.lastEvent.type === 'frontline_swap') {
       const ev = { ...state.lastEvent };
       queueFx(2, async () => {
+        let token=null;const instance=state?.stateInstanceId,room=state?.code;
+        maskPlacementTile(ev.tile,true);
+        try{
+        await BoardEffects.present('frontline_swap',ev,state,{ms:presentationMs});
+        if(state?.stateInstanceId!==instance||state?.code!==room||state?.phase!=='playing')return;
+        token=beginPresentationZoom(ev.tile,'frontline-swap',ev.player);
+        await wait(900);
+        if(cameraOwner?.token!==token)return;
+        maskPlacementTile(ev.tile,false);
         if (renderModeActive === 'phaser')
           await PW.play({ type:'spell-fx', spell:'sp_swap', tiles:[ev.tile], caster:ev.player, cid:ev.from, timeoutMs:3000 });
         else fxAt(ev.tile, 'fxRing', '#F2D062');
-        await showBannerAsync('戦線交代', `${state.catalog.CREATURES[ev.from].name} → ${state.catalog.CREATURES[ev.creature].name}（${ev.cost}G）`, 2100);
+        }finally{maskPlacementTile(ev.tile,false);if(token)await endPlacementZoom(token);}
       }, { actorId:ev.player, id:presentationId('frontline-swap', ev.at), kind:'frontline-swap' });
     }
     else if (state.lastEvent.type === 'bankrupt') {
-      const bp = player(state.lastEvent.player);
-      queueFx(1, async () => {
-        $('bkSub').textContent = bp ? bp.name + ' ─ 脱落' : '';
-        $('bankruptCut').classList.add('on');
-        bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(4200));
-        await wait(4000);
-        $('bankruptCut').classList.remove('on');
-      }, { actorId:state.lastEvent.player, id:presentationId('bankrupt', state.lastEvent.at), kind:'bankrupt' });
+      const ev=structuredClone(state.lastEvent),snapshot=structuredClone(state);
+      const stale=()=>state?.code!==snapshot.code || state?.stateInstanceId!==snapshot.stateInstanceId;
+      const settledResult=snapshot.phase==='ended' && (snapshot.resultReview?.completedAt || snapshot.resultReview?.unlockAt<=Date.now());
+      if(!settledResult)queueFx(1,()=>BoardFinale.present('bankrupt',ev.player,snapshot,{ms:presentationMs}),
+        {actorId:ev.player,id:presentationId('bankrupt',ev.at),kind:'bankrupt',stale});
     }
     else if (state.lastEvent.type === 'spell') {
       // カード提示と効果説明はlastSpellFx側で盤面FXと一続きに再生する。
     }
     else if (state.lastEvent.type === 'gate') {
-      const gl = { g_up: sic('up') + ' 領地を強化', g_draft: sic('draft') + ' カードを引く',
-                   g_forge: sic('forge') + ' 鍛錬 ─ クリーチャー進化', pass: '─ 何もしない' }[state.lastEvent.choice];
-      if (gl) queueBanner('変化の門 ─ ' + gl,
-        player(state.lastEvent.player).name + 'の選択', 2400, 3,
-        { actorId:state.lastEvent.player, id:presentationId('gate', state.lastEvent.at) });
+      const ev=structuredClone(state.lastEvent),snapshot=structuredClone(state);
+      queueFx(3,()=>BoardEffects.present('gate',ev,snapshot,{ms:presentationMs}),
+        {actorId:ev.player,id:presentationId('gate',ev.at)});
     }
   }
-  // 門通過 ─ 刻印取得のキャラカットイン
-  if (!SummonsMapUI.get(state).branching && state.lastSeal && state.lastSeal.at !== prev.sealAt) {
-    prev.sealAt = state.lastSeal.at;
-    const sp = player(state.lastSeal.player), sg = state.lastSeal.gold || 0;
-    if (sp) queueFx(3, async () => {   // 経済変化
-      bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(2600));
-      await sideCut(sp, `<div class="tcWho">${sp.name} ─ ${SummonsMapUI.get(state).branching?(state.lastSeal.tile===22?'西門':'東門'):'変化の門'}を通過</div>
-        <div class="tcAmt plus">❖ 刻印を取得!${sg ? ` +${sg}G` : ''}</div>
-        <div class="tcGold">${SummonsMapUI.get(state).branching?'両方の門を取得して城へ戻ると一周成立':'城まで持ち帰ると一周ボーナス'}</div>`, 2400);
-    }, { actorId:sp.id, id:presentationId('seal', state.lastSeal.at), kind:'seal' });
+  // New movement events display the seal at the actual gate; legacy saves use the queued fallback.
+  if(state.lastSeal && state.lastSeal.at!==prev.sealAt){
+    const ev={...state.lastSeal};prev.sealAt=ev.at;
+    const attached=(state.lastDice?.gateEvents||state.lastDice?.segment?.events||[]).some(e=>e.type==='gate'&&e.at===ev.at);
+    if(!attached)queueFx(3,()=>showCavernGateEvents([{...ev,type:'gate'}],ev.player),
+      {actorId:ev.player,id:presentationId('seal',ev.at),kind:'seal'});
   }
   // スペルカード提示→効果説明→対象ズーム→盤面FXをpri2で直列再生。
   if (state.lastSpellFx && state.lastSpellFx.at !== prev.spellFxAt) {
@@ -5117,50 +5161,41 @@ function render() {
       : playSpellPresentation(sf, sfMsg),
       { actorId:sf.caster, id:presentationId('spell', sf.at), kind:'spell' });
   }
-  // 結界が侵略を阻んだ瞬間 ─ クローズアップ+衝撃時発光(v0.73 plan§8.4)
+  // Enemy-land inspection shows the barrier before selection; no duplicate attack-blocked notice.
   if (state.lastBarrierHit && state.lastBarrierHit.at !== prev.barrierHitAt) {
     prev.barrierHitAt = state.lastBarrierHit.at;
-    const bh = state.lastBarrierHit;
-    const op = player(bh.owner), ap = player(bh.by);
-    queueFx(2, async () => {   // 盤面上の出来事
-      const closeupDone = tileCloseup(bh.tile,
-        `${op ? op.name + 'の' : ''}<b style="color:#9BD8FF">結界</b>が${ap ? ap.name + 'の' : ''}侵略を阻んだ!`, 2400);
-      const fxDone = renderModeActive === 'phaser'
-        ? PW.play({ type:'barrier-flash', tile:bh.tile, speed:presentationContext ? presentationContext.speed : 1 })
-        : Promise.resolve(fxAt(bh.tile, 'fxRing', '#9BD8FF'));
-      await Promise.all([closeupDone, fxDone]);
-    }, { actorId:bh.by, id:presentationId('barrier', bh.at), kind:'barrier' });
   }
   // クリーチャー退場(スペル等でHP0) ─ マスにクローズアップ
-  if (state.lastRuin && state.lastRuin.at !== prev.ruinAt) {
-    prev.ruinAt = state.lastRuin.at;
-    const ru = state.lastRuin;
-    const rp = player(ru.player);
-    queueFx(2, async () => {   // 盤面変化
-      const closeupDone = tileCloseup(ru.tile,
-        `${rp ? rp.name + 'の' : ''}${state.catalog.CREATURES[ru.creature].name}は${ru.src}に蝕まれ力尽きた…<br>土地は空き地になった`);
-      // 退場(2C plan§7.4): 旧姿を一時表示して単色化→沈下→粒子分解
-      const fxDone = renderModeActive === 'phaser'
-        ? PW.play({ type:'ruin-fx', tile:ru.tile, cid:ru.creature, element:state.tiles[ru.tile].e,
-            speed:presentationContext ? presentationContext.speed : 1 }) : Promise.resolve();
-      await Promise.all([closeupDone, fxDone]);
-    }, { actorId:ru.player, id:presentationId('ruin', ru.at), kind:'ruin' });
+  if(prev.ruinAt==null)prev.ruinAt=state.lastRuin?.at||0;
+  if(state.lastRuin && state.lastRuin.at!==prev.ruinAt) {
+    const since=prev.ruinAt||0,snapshot=structuredClone(state);
+    const events=state.lastRuin.events||[state.lastRuin];prev.ruinAt=state.lastRuin.at;
+    for(const ru of events.filter(e=>e.at>since)) {
+      const event=structuredClone(ru);
+      const stale=()=>state?.code!==snapshot.code||state?.stateInstanceId!==snapshot.stateInstanceId;
+      queueFx(2,()=>BoardFlow.ruin(event,snapshot,{ms:presentationMs,fx:()=>{
+        if(stale()||renderModeActive!=='phaser')return;
+        const cid=event.evolved&&!/_f$/.test(event.creature)&&snapshot.catalog.CREATURES[event.creature]?.evo?event.creature+'_f':event.creature;
+        return PW.play({type:'ruin-fx',tile:event.tile,cid,element:event.element||snapshot.tiles[event.tile].e,speed:presentationContext?.speed||1});
+      }}),{actorId:event.player,id:presentationId('ruin',event.at),kind:'ruin',stale});
+    }
   }
-  // 称号の移動・リーチ到達を中央バナーで告知
+  // Title notices retain the actual recipient, prior owner and counters at receipt.
   if (state.phase === 'playing') {
     const tk = JSON.stringify(state.titles);
     if (prev.titlesKey && tk !== prev.titlesKey) {
       const before = JSON.parse(prev.titlesKey);
-      if (state.titles.conqueror !== before.conqueror && state.titles.conqueror)
-        queueBanner(player(state.titles.conqueror).name + 'が称号「覇者」を獲得!', '資産+500G(奪い合い)', 2600);
-      if (state.titles.pilgrim !== before.pilgrim && state.titles.pilgrim)
-        queueBanner(player(state.titles.pilgrim).name + 'が称号「大巡礼者」を獲得!', '資産+500G(奪い合い)', 2600);
+      for (const title of ['conqueror','pilgrim']) {
+        const recipient = state.titles[title];
+        if (!recipient || recipient === before[title]) continue;
+        const event = {title,player:recipient,previous:before[title]}, snapshot = structuredClone(state);
+        queueFx(3, () => BoardMilestones.present('title',event,snapshot,{ms:presentationMs}), {
+          actorId:recipient, id:presentationId('title',state.stateRev,`${title}:${recipient}:${before[title]||''}`),kind:'title' });
+      }
     }
     prev.titlesKey = tk;
     // 連鎖数の変動を告知(同属性2マス以上に関わる増減で地価倍率を表示)
     {
-      const EJA2 = { fire: '火', water: '水', earth: '土', wind: '風' };
-      const CHAIN_MUL2 = [0, 1.0, 1.4, 1.8, 2.2, 2.6];
       const ck2 = {};
       state.players.forEach(p => ['fire', 'water', 'earth', 'wind'].forEach(e => {
         ck2[p.id + ':' + e] = state.owners.filter((o, i) => o && o.player === p.id && state.tiles[i].e === e).length;
@@ -5173,34 +5208,18 @@ function render() {
           const [pid2, e] = k.split(':');
           const pl2 = player(pid2);
           if (!pl2) continue;
-          const mul = CHAIN_MUL2[Math.min(5, Math.max(1, n))];
-          // 連鎖の実対象タイルを盤面順に順次発光させてからバナー(2D plan§8.2-8.3)
-          if (renderModeActive === 'phaser') {
-            const tiles2 = [];
-            state.owners.forEach((o2, i2) => { if (o2 && o2.player === pid2 && state.tiles[i2].e === e) tiles2.push(i2); });
-            const dim = n < b0;
-            const chainKey = `${pid2}:${e}:${b0}:${n}`;
-            queueFx(3, async () => {
-              bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(tiles2.length * 140 + 500));
-              await PW.play({ type:'chain-glow', tiles:tiles2, element:e, dim,
-                speed:presentationContext ? presentationContext.speed : 1 });
-            }, { actorId:pid2, id:presentationId('chain-fx', state.stateRev, chainKey), kind:'chain' });
-          }
-          queueBanner(
-            n > b0 ? `${EJA2[e]}の連鎖 ×${n}!` : `${EJA2[e]}の連鎖が ×${n} に減少…`,
-            `${pl2.name}の${EJA2[e]}属性領地${n}つ ─ 地価倍率${mul}倍`, 2600, 3,
-            { actorId:pid2, id:presentationId('chain-banner', state.stateRev, `${pid2}:${e}:${b0}:${n}`), kind:'chain' });
+          const snapshot=structuredClone(state),event={player:pid2,element:e,before:b0,after:n};
+          const tiles2=state.owners.flatMap((o,i)=>o&&o.player===pid2&&state.tiles[i].e===e?[i]:[]);
+          queueFx(3,async()=>{
+            if(renderModeActive==='phaser'&&tiles2.length)await PW.play({type:'chain-glow',tiles:tiles2,element:e,dim:n<b0,speed:presentationContext?.speed||1});
+            await BoardNext.present('chain',event,snapshot,{ms:presentationMs});
+          },{actorId:pid2,id:presentationId('chain',state.stateRev,`${pid2}:${e}:${b0}:${n}`),kind:'chain'});
         }
       }
       prev.chainsKey = JSON.stringify(ck2);
     }
-    state.players.forEach(p => {
-      const p0 = prev['pts_' + p.id];
-      if (p0 !== undefined && p0 < (state.reachAt || state.target - 1) && p.points >= (state.reachAt || state.target - 1) && p.points < state.target)
-        queueBanner(p.name + 'がラストスパート!', '総資産' + p.points + 'G ─ 8000Gで城を通過すれば勝利!', 2800);
-      prev['pts_' + p.id] = p.points;
-    });
   }
+  BoardGoal.observe(state,{queue:queueFx,current:()=>state,ms:presentationMs});
   // 全演出はPromise完了まで待つ統合キューで直列再生する。
   if (presentationQueue.length && !presentationRunning) {
     clearTimeout(presentationPumpT);
@@ -5261,7 +5280,8 @@ function render() {
             rememberTurnSeen(queued.key);
             visualTurnId = tp0.id;
             renderPawns(); renderHUD();
-            await Promise.all([showTelop('turn', tp0.name + 'の手番'), playTurnCutin(tp0)]);
+            playSe(seTelop);
+            await BoardFlow.start('turn',structuredClone(state),tp0.id,{ms:presentationMs});
           } });
       } else if (state.turn === queuedTurn.index && tp0) {
         visualTurnId = tp0.id;
@@ -5310,47 +5330,51 @@ function render() {
     queueMajorPresentation(battle.at, 'battle', battle.attacker, () => playBattle(battle));
   }
   window.WindSupplyUI?.board(state, { queue:queueFx, room:code, token:boardToken, current:()=>state });
-  // 勝利演出(発注書v0.75 §9 ─ M7): 全景→勝者領地の盤面順発光→光の収束→城ズーム→光柱→カットイン
+  // Hold the castle camera through the victory notice and into the result screen.
   if (state.phase === 'ended' && state.winner) {
-    const resultReady = !!state.matchResult;
-    const reviewComplete = !!state.resultReview?.completedAt || (state.resultReview?.unlockAt && Date.now() >= state.resultReview.unlockAt);
-    if (resultReady && reviewComplete && matchResultOpenId !== state.matchResult.id) {
-      prev.winPlayed = state.winner;
-      showMatchResult(state.matchResult, true);
-    } else if (prev.winPlayed !== state.winner) {
-      prev.winPlayed = state.winner;
-      const w = player(state.winner);
-      const castle = state.tiles.findIndex(t2 => t2.t === 'castle');
-      const lands = [];
-      state.owners.forEach((o2, i2) => { if (o2 && o2.player === state.winner) lands.push(i2); });
-      const showWin = () => {
-        const titles2 = [state.titles.conqueror === state.winner ? '覇者' : null,
-                         state.titles.pilgrim === state.winner ? '大巡礼者' : null].filter(Boolean);
-        $('winArt').src = '/assets/full_' + w.charId + '.png';
-        $('winText').textContent = `${w.name}(${state.catalog.CHARS[w.charId].name}) ─ 総資産${w.points}G / 領地${lands.length}つ` +
-          (titles2.length ? ` / 称号「${titles2.join('」「')}」` : '') + 'で勝利!';
-        $('winReviewBtn').textContent = state.matchResult ? '試合を振り返る' : 'タイトルへ戻る';
-        $('winOv').classList.add('on');
-        clearTimeout(matchResultStartTimer);
-        if (state.matchResult) matchResultStartTimer = setTimeout(() => {
-          if (state?.phase === 'ended' && state.matchResult?.id === state.resultReview?.id)
-            showMatchResult(state.matchResult, false);
-        }, 4000);
-      };
-      if (renderModeActive === 'phaser') {
-        queueFx(1, async () => {   // 勝利は最優先(§2.2)。城到着演出の完了はキュー側(animBusy/cutBusy)が保証
-          bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(9000));
-          await PW.play({ type:'victory-glow', tiles:lands, castle, color:w.color, timeoutMs:7000,
-            speed:presentationContext ? presentationContext.speed : 1 });
-          const closeupDone = tileCloseup(castle, `${w.name}の勝利!`, 3200);    // §9.2-6 城へクローズアップ
-          const castleFxDone = PW.play({ type:'victory-castle', castle, timeoutMs:6000,
-            speed:presentationContext ? presentationContext.speed : 1 });
-          await Promise.all([closeupDone, castleFxDone]);
-          showWin();                                        // §9.2-8〜10 カットイン+最終結果(自動では消さない)
-        }, { actorId:w.id, id:presentationId('victory', state.stateRev, w.id), kind:'victory' });
-      } else {
-        queueFx(1, () => showWin());   // DOM描画時は既存勝利画面へフォールバック(§9.5)
-      }
+    const key=state.code+':'+state.stateInstanceId+':'+state.winner;
+    const resultReady=!!state.matchResult;
+    const reviewComplete=!!state.resultReview?.completedAt || (state.resultReview?.unlockAt && Date.now()>=state.resultReview.unlockAt);
+    if(resultReady && reviewComplete && victoryPresentationKey!==key && matchResultOpenId!==state.matchResult.id) {
+      prev.winPlayed=state.winner;
+      showMatchResult(state.matchResult,true);
+    } else if(prev.winPlayed!==state.winner) {
+      prev.winPlayed=state.winner;victoryPresentationKey=key;
+      const snapshot=structuredClone(state),w=snapshot.players.find(p=>p.id===snapshot.winner);
+      const castle=snapshot.tiles.findIndex(t=>t.t==='castle');
+      const lands=snapshot.owners.flatMap((o,i)=>o?.player===w.id?[i]:[]);
+      const stale=()=>state?.phase!=='ended' || state.code+':'+state.stateInstanceId+':'+state.winner!==key;
+      queueFx(1,async()=>{
+        let zoom;
+        try {
+          if(renderModeActive==='phaser' && castle>=0) {
+            const speed=presentationContext?.speed||1;
+            await PW.play({type:'victory-glow',tiles:lands,castle,color:w.color,timeoutMs:7000,speed});
+            if(stale())return;
+            zoom=beginPresentationZoom(castle,'victory');
+            await PW.play({type:'victory-castle',castle,timeoutMs:6000,speed});
+          }
+          if(stale())return;
+          // The held message is intentional; renew the watchdog allowance for it.
+          if(zoom!==undefined && cameraOwner?.token===zoom)cameraOwner.startedAt=Date.now();
+          await BoardFinale.present('victory',w.id,snapshot,{ms:presentationMs});
+        } finally {
+          try {
+            if(!stale()) {
+              if(state.matchResult)showMatchResult(state.matchResult,false);
+              else { // Legacy saves without a review still offer an exit.
+                $('winArt').src='/assets/full_'+w.charId+'.png';
+                $('winText').textContent=w.name+'の勝利';
+                $('winReviewBtn').textContent='タイトルへ戻る';
+                $('winOv').classList.add('on');
+              }
+            }
+          } finally {
+            if(zoom!==undefined)endPresentationZoom(zoom);
+            if(victoryPresentationKey===key)victoryPresentationKey=null;
+          }
+        }
+      },{actorId:w.id,id:presentationId('victory',snapshot.stateInstanceId,w.id),kind:'victory',stale});
     }
   } else {
     clearTimeout(matchResultStartTimer);
@@ -5358,7 +5382,7 @@ function render() {
     cancelAnimationFrame(matchResultTimer); matchResultPlayback = null;
     $('winOv').classList.remove('on'); $('matchResultOv').classList.remove('on');
     resultReviewScreen?.destroy();resultReviewScreen=null;
-    prev.winPlayed = null; matchResultOpenId = '';
+    prev.winPlayed = null; matchResultOpenId = ''; victoryPresentationKey = null;
   }
   scheduleTurnTransitionCompletion();
 }
@@ -5370,5 +5394,29 @@ fitWorld();
 });
 new Image().src = '/assets/p_lia-outline-v1.png';
 </script>
+
+<dialog id="soundPanel" aria-labelledby="soundHeading">
+ <i class="soundCorner tl"></i><i class="soundCorner tr"></i><i class="soundCorner bl"></i><i class="soundCorner br"></i>
+ <header><h2 id="soundHeading">設定</h2><button id="soundClose" aria-label="設定を閉じる"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header>
+ <nav class="settingsTabs" role="tablist" aria-label="設定の種類">
+  <button id="settingsRoomTab" role="tab" aria-selected="true" aria-controls="settingsRoom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h7v7H3zM14 4h7v7h-7zM3 15h7v6H3zM14 15h3v3h4v3m0-6v1m-7 5v-1"/></svg>ルーム</button>
+  <button id="settingsAudioTab" role="tab" aria-selected="false" aria-controls="settingsAudio" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4zM15 8q4 4 0 8m3-11q7 7 0 14"/></svg>音声</button>
+ </nav>
+ <div id="settingsRoom" class="settingsPage" role="tabpanel" aria-labelledby="settingsRoomTab"></div>
+ <div id="settingsAudio" class="settingsPage" role="tabpanel" aria-labelledby="settingsAudioTab" hidden>
+ <div class="soundMaster"><span>すべての音</span><button id="soundMaster" type="button" role="switch" aria-checked="false" aria-label="すべての音"><b>OFF</b><i><em></em></i></button></div>
+ <div class="soundRow" data-channel="bgm">
+  <div class="soundRowHead"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 17V5l11-2v12M9 8l11-2"/><ellipse cx="6" cy="18" rx="3" ry="2"/><ellipse cx="17" cy="16" rx="3" ry="2"/></svg><label for="soundBgm">BGM</label><output for="soundBgm" id="soundBgmValue">70<span>%</span></output></div>
+  <div class="soundControl"><input id="soundBgm" type="range" min="0" max="100" value="70" step="1"/><button id="soundBgmPlay" class="soundPlay" aria-label="BGMを試聴"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7z"/></svg><span>試聴</span></button></div>
+ </div>
+ <div class="soundRow" data-channel="se">
+  <div class="soundRowHead"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10v4m4-7v10m5-14v18m5-14v10m4-7v4"/></svg><label for="soundSe">効果音</label><output for="soundSe" id="soundSeValue">70<span>%</span></output></div>
+  <div class="soundControl"><input id="soundSe" type="range" min="0" max="100" value="70" step="1"/><button id="soundSePlay" class="soundPlay" aria-label="効果音を試聴"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7z"/></svg><span>試聴</span></button></div>
+ </div>
+ <footer><span id="soundHint" role="status">この端末に保存</span><button id="soundReset">初期値に戻す</button></footer>
+ </div>
+</dialog>
+
+<script src="/board-settings.js?v=1&release=164"></script>
 </body>
 </html>

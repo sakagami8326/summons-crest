@@ -35,3 +35,40 @@
 @media(prefers-reduced-motion:reduce){#uxRail>.card{transition:none}}
 
 .uxEntryNote{position:absolute;bottom:-3.5dvh;left:0;right:0;text-align:center;color:#e9d8ad;font-size:2.8dvh;white-space:nowrap}
+
+/* Draw cancellation is explicit; inspecting a hand never submits a choice. */
+#uxCancelDialog{box-sizing:border-box;width:min(90vw,560px);max-height:92dvh;margin:auto;padding:clamp(28px,9dvh,44px) 5vw 4dvh;border:1px solid #bda76b;border-radius:8px;background:#101725;color:#ecdec1;font-family:'Reggae One','Yu Mincho',serif}
+#uxCancelDialog::backdrop{background:#02050bcc}
+#uxCancelTitle{font-size:clamp(16px,4.5dvh,22px);text-align:center;margin:0 0 6dvh;line-height:1.6}
+.uxCancelActions{display:flex;justify-content:center;gap:16px}
+#uxCancelDialog button{font:inherit;font-size:clamp(14px,3.5dvh,18px);padding:3dvh 2vw;border:1px solid #bda76b;border-radius:5px;background:#1b2637;color:#ecdec1;cursor:pointer;touch-action:manipulation}
+#uxCancelDialog #uxCancelBack{background:linear-gradient(#e5c783,#b89850);color:#1c2030}
+#uxCancelDialog .uxDialogClose{position:absolute;top:4px;right:4px;display:grid;place-items:center;width:44px;height:44px;padding:0;line-height:1;border:0;background:transparent}
+#uxCancelDialog button:disabled{opacity:.45;cursor:default}
+#uxCancelDialog button:focus-visible{outline:2px solid #ffe39b;outline-offset:3px}
+#uxCancelError{font-size:clamp(12px,3dvh,15px);text-align:center;color:#ffc1b2;margin:3dvh 0 0}
+#uxCancelError:empty{display:none}
+
+/* Random draw sits over the real hand/HUD, then withdraws to reveal it. */
+#uxPicker.isRandomDraw{background:rgba(5,10,20,.86);transition:background .42s ease,opacity .42s ease,visibility 0s;}
+#uxPicker.isRandomDraw .uxPickerHead{border-color:#d4b56626;background:transparent}
+#uxPicker.isRandomDraw #uxZones{height:3dvh}
+#uxPicker.isRandomDraw .uxRailWrap,#uxPicker.isRandomDraw .uxPickerHead,#uxPicker.isRandomDraw .uxPickerFoot{transition:transform .46s cubic-bezier(.22,.8,.25,1),opacity .3s ease}
+#uxPicker.isRandomDraw.isHandView{opacity:0;visibility:hidden;pointer-events:none;transition:opacity .36s ease,visibility 0s .46s}
+#uxPicker.isRandomDraw.isHandView .uxRailWrap{transform:translateY(16dvh) scale(.93);opacity:0}
+#uxPicker.isRandomDraw.isHandView .uxPickerHead{opacity:0}
+#uxPicker.isRandomDraw.isHandView .uxPickerFoot{transform:translateY(9dvh);opacity:0}
+#uxPicker #uxBrowseHand,#uxReturnDraw{display:flex;align-items:center;justify-content:center;gap:8px;width:auto;height:auto;min-height:44px;margin:0;padding:8px 14px;border:1px solid #d4b56688;border-radius:4px;background:#122035e8;color:#f3e7c9;font:clamp(12px,3.5dvh,18px) 'Reggae One','Yu Mincho',serif;cursor:pointer;touch-action:manipulation;line-height:1.4}
+#uxBrowseHand svg,#uxReturnDraw svg{width:24px;height:24px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+#uxPicker #uxBrowseHand,#uxReturnDraw{position:fixed;top:calc(max(15dvh,50px) / 2 - 22px);right:calc(max(12px,env(safe-area-inset-right)) + 1vw);box-sizing:border-box;width:calc(8em + 66px);height:44px;white-space:nowrap}
+#uxReturnDraw{z-index:59}
+body.randomDrawActive #topTools{visibility:hidden;pointer-events:none}
+#uxReturnDraw[hidden]{display:none}
+#uxPicker.isRandomDraw .uxPickerFoot{height:17dvh;min-height:54px;position:relative}
+#uxPicker.isRandomDraw #uxSkipDraw{width:auto;padding:0 26px;height:42px;font-size:clamp(13px,3.5dvh,18px);background:#152034d9;border:1px solid #d4b56688;color:#efdfbb}
+#uxPicker.isRandomDraw #uxRailProgress,#uxPicker.isRandomDraw #uxLeft,#uxPicker.isRandomDraw #uxRight{display:none}
+body.randomDrawActive #hdr,body.randomDrawActive #handWrap{transition:filter .46s ease,transform .46s cubic-bezier(.22,.8,.25,1);transform-origin:center}
+body.randomDrawActive:not(.randomDrawHandView) #hdr,body.randomDrawActive:not(.randomDrawHandView) #handWrap{filter:brightness(.85);transform:translateY(1dvh) scale(.98)}
+body.randomDrawActive #hand .card.dim{opacity:1;filter:none}
+body.randomDrawHandView #hdr,body.randomDrawHandView #handWrap{filter:none;transform:none}
+@media(prefers-reduced-motion:reduce){#uxPicker.isRandomDraw,#uxPicker.isRandomDraw .uxRailWrap,#uxPicker.isRandomDraw .uxPickerHead,#uxPicker.isRandomDraw .uxPickerFoot,body.randomDrawActive #hdr,body.randomDrawActive #handWrap{transition:none!important}#uxReturnDraw{animation:none}}

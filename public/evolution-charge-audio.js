@@ -43,9 +43,9 @@
     return {set,stop,params};
   }
   class EvolutionChargeAudio {
-    constructor(){this.context=null;this.voice=null;this.impactBuffer=null;this.impactLoading=null;this.impactSource=null;}
+    constructor(){this.context=null;this.voice=null;this.impactBuffer=null;this.impactLoading=null;this.impactSource=null;this.output=null;this.volume=1;}
     async unlock(){const A=window.AudioContext||window.webkitAudioContext;if(!A)return false;
-      this.context ||= new A();this.loadImpact();
+      this.context ||= new A();if(!this.output){this.output=this.context.createGain();this.output.gain.value=this.volume;this.output.connect(this.context.destination);}this.loadImpact();
       if(this.context.state==='suspended')await this.context.resume();return this.context.state==='running';}
     loadImpact(){
       if(this.impactBuffer||this.impactLoading||!this.context)return;
@@ -59,7 +59,7 @@
       const source=this.context.createBufferSource(),gain=this.context.createGain();
       source.buffer=this.impactBuffer;gain.gain.setValueAtTime(0,this.context.currentTime);
       gain.gain.linearRampToValueAtTime(.9,this.context.currentTime+.008);
-      source.connect(gain);gain.connect(this.context.destination);
+      source.connect(gain);gain.connect(this.output);
       source.onended=()=>{source.disconnect();gain.disconnect();if(this.impactSource===source)this.impactSource=null;};
       this.impactSource=source;
       // Skip the near-silent lead-in so the attack coincides with the evolution flash.
@@ -68,8 +68,9 @@
     }
     stopImpact(){if(this.impactSource){this.impactSource.stop();this.impactSource=null;}}
     stopAll(){this.stop();this.stopImpact();}
+    setVolume(value){this.volume=Math.max(0,Math.min(1,Number(value)||0));if(this.output)this.output.gain.setValueAtTime(this.volume,this.context.currentTime);}
     update(t,duration,enabled){if(!enabled||t>=duration||!this.context||this.context.state!=='running'){this.stop();return;}
-      this.voice ||= makeVoice(this.context,this.context.destination);this.voice.set(t/duration);}
+      this.voice ||= makeVoice(this.context,this.output);this.voice.set(t/duration);}
     stop(){if(this.voice){this.voice.stop();this.voice=null;}}
   }
   window.EvolutionChargeAudio=EvolutionChargeAudio;
