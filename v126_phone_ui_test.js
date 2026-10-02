@@ -30,8 +30,8 @@ ok(/id="lobbyWait"[\s\S]*ゲームの開始を待っています。[\s\S]*class=
   'lobby has a dedicated waiting screen and magic-circle loader');
 ok(/state\.phase === 'lobby'[\s\S]*lobbyWait[\s\S]*classList\.toggle\('on', lobbyWaiting\)/.test(phone) &&
    /body\.lobby-wait #hdr/.test(phone), 'lobby state hides the regular HUD and hand');
-ok(/width:clamp\(40px,9\.5dvh,66px\)/.test(phone) && /height:clamp\(40px,9\.5dvh,66px\)/.test(phone),
-  'join fullscreen button uses the reduced size');
+ok(!/joinFsBtn/.test(phone) && /void enterPhoneFullscreen\(\)/.test(phone),
+  'join tap enters fullscreen without a separate entry button');
 ok(/\$\('diceDock'\)\.innerHTML = '';[\s\S]*\$\('msg'\)\.textContent = p \? taskPrompt\(p\) : waitingTaskPrompt\(\)/.test(phone) &&
    /相手のウェポン選択を待て/.test(phone),
   'idle guidance is routed to msg instead of diceDock');

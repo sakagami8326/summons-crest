@@ -10,7 +10,7 @@ const crypto = require('crypto');
 const SITE_NEWS = require('./site-news');
 const START_DEVICE = require('./public/assets/start-guide/device');
 
-const VERSION = '1.64';
+const VERSION = '1.65';
 const MAPS = require('./public/map-definitions');
 const mapOf = r => MAPS[r.mapId || 'starting_corridor'];
 const tilesOf = r => mapOf(r).tiles;
@@ -116,7 +116,7 @@ const CREATURES = {
   detropas:{ name: 'デトロパス', evo: 'クラーケンイービル', elem: 'fire', st: 30, hp: 25, cost: 60, evoSt: 50, evoHp: 45, fx: '【群れ】攻撃時、自分の火領地1つにつきAT+10', rarity: 'N' },
   goagoa:  { name: 'ゴアゴア', evo: 'ノーク・ゴーア', elem: 'water', st: 40, hp: 40, cost: 100, evoSt: 60, evoHp: 65, fx: '【深海】防衛成功時、自分の負傷を10回復する', rarity: 'R' },
   fugorm:  { name: 'フーゴルム', evo: 'ゴーレムアイン', elem: 'earth', st: 35, hp: 40, cost: 80, evoSt: 55, evoHp: 60, fx: '【鍛冶】召喚時、ウェポン「ソード」を得る', rarity: 'N' },
-  bedebero:{ name: 'ベデベロ',         elem: 'earth', st: 30, hp: 60, cost: 120, fx: '【不動】受けるスペルダメージを10軽減する', rarity: 'R' },
+  bedebero:{ name: 'ベデベロ',         elem: 'earth', st: 20, hp: 60, cost: 120, fx: '【不動】受けるスペルダメージを10軽減する', rarity: 'R' },
   zati:    { name: 'ザーティー', evo: 'ザンティアー', elem: 'wind', st: 40, hp: 30, cost: 60, evoSt: 60, evoHp: 50, fx: '【略奪】侵略成功時、相手から50G奪う', rarity: 'N' },
   pakawata:{ name: 'パカワタ',         elem: 'wind',  st: 50, hp: 25, cost: 130, fx: '【先制】防衛時、侵略側より先に攻撃する', rarity: 'L' },
   avalanche:{ name: 'アヴァランチ', evo: 'アヴァランチジャイアント', elem: 'earth', st: 20, hp: 40, cost: 120, evoSt: 30, evoHp: 60, fx: '【双撃】侵略時、同じATで2回続けて攻撃する', rarity: 'L' },
@@ -183,7 +183,7 @@ const CREATURES = {
              evoSt: 40, evoHp: 70,
              fx: '【進化の祈り】配置中、進化済みの味方が戦闘に勝つたび100Gを得る（重複）',
              evoFx: '【進化の祈り】配置中、進化済みの味方が戦闘に勝つたび300Gを得る（重複）', rarity: 'R' },
-  jaki:    { name: 'ジャキ', evo: 'アシュラカン', elem: 'earth', st: 45, hp: 30, cost: 90,
+  jaki:    { name: 'ジャキ', evo: 'アシュラカン', elem: 'earth', st: 40, hp: 30, cost: 90,
              evoSt: 60, evoHp: 60,
              fx: '【戦線交代】戦闘勝利時、召喚コストを払い手札のクリーチャーと交代できる', rarity: 'R' },
 };
@@ -830,8 +830,10 @@ function exileCard(r, p, cardId, source = 'effect', battle = false) {
   p.exile.push(cardId);
   if (!Array.isArray(r.effectQueue)) r.effectQueue = [];
   const triggers = placedToxyCount(r, p.id);
+  const providers = r.owners.filter(o => o && o.player === p.id && baseId(o.creature) === 'toxy');
   for (let n = 0; n < triggers; n++)
-    r.effectQueue.push({ type: 'toxy', owner: p.id, card: cardId, source, battle: !!battle, order: n + 1 });
+    r.effectQueue.push({ type: 'toxy', owner: p.id, card: cardId, source, battle: !!battle, order: n + 1,
+      creature: isEvolved(providers[n]) ? 'toxy_f' : 'toxy' });
   return triggers;
 }
 function finishEffectResume(r, resume) {
@@ -901,6 +903,10 @@ function onCreatureSummoned(r, p, creatureId, reason, tile) {
     p.hand.push('weapon');
     recordCardAcquisition(p, 1);
     r.lastGain = { player: p.id, n: 1, cards: ['weapon'], reason: 'kamadoma', at: stamp(r) };
+    // The fixed Sword reward is public; keep it separate from private/random lastGain cards.
+    r.kamadomaNotices = [...(r.kamadomaNotices || []), { player:p.id, count:1, tile, reason,
+      creature:isEvolved({creature:creatureId}) || (r.owners[tile]?.player===p.id &&
+        baseId(r.owners[tile].creature)==='kamadoma' && isEvolved(r.owners[tile])) ? 'kamadoma_f' : 'kamadoma', at:r.lastGain.at }].slice(-32);
     log(r, `【武具錬成】${CREATURES.kamadoma.name}の配置で${p.name}はソード1枚を手札に加えた`);
   }
   if (baseId(creatureId) === 'gaust') {
@@ -2790,6 +2796,11 @@ function handleChoose(r, playerId, optionId) {
       const i = Math.floor(Math.random() * target.hand.length);
       const card = target.hand.splice(i, 1)[0];
       target.discard.push(card);
+      // Keep chained triggers separate even when multiple choices arrive before the next board render.
+      // Card identities are not needed for the public notice.
+      r.toxyNotices = [...(r.toxyNotices || []), { player:p.id, target:target.id,
+        creature:pend.effect?.creature || 'toxy', count:1,
+        beforeCount:target.hand.length + 1, afterCount:target.hand.length, at:stamp(r) }].slice(-32);
       log(r, `【瘴気連鎖】${p.name}の瘴気が${target.name}の手札「${cardName(card)}」を捨てさせた`);
     }
     return processEffectQueue(r);
@@ -3788,7 +3799,7 @@ function startGame(r) {
     return;
   }
   r.phase = 'playing';
-  r.goalProgress = {}; r.goalNotices = [];
+  r.goalProgress = {}; r.goalNotices = []; r.toxyNotices = []; r.kamadomaNotices = [];
   r.pending = {};
   const order = r.players.slice().sort(() => Math.random() - 0.5);
   r.players = order;
@@ -4036,6 +4047,8 @@ function publicState(r, viewerId) {
     selectionReady: isSelectionReady(r),
     tiles: tilesOf(r).map((t, i) => r.elemOv[i] ? Object.assign({}, t, { e: r.elemOv[i] }) : t),
     tolls: r.owners.map((o, i) => o ? tollOf(r, i) : 0),
+    landStats: r.owners.map((o,i)=>o ? {...landDefenseStats(r,i),saleValue:Math.round(landValue(r,i)*0.7)} : null),
+    landRules: {forgeCost:RULES.forgeCost,shrineBonus:RULES.shrineBonus,gateBonus:isCavern(r)?mapOf(r).gateBonus:RULES.gateBonus,castleBonusPerLap:RULES.castleBonusPerLap,castleLandFixed:CASTLE_LAND_FIXED,castleLandRate:CASTLE_LAND_RATE,forgetCost:RULES.forgetCost,goal:ASSET_GOAL},
     landCombat: r.owners.map((o, i) => o ? landCombatUi(r, i) : null),
     enemyLand: enemyLandUi(r),
     landStop: landStopUi(r),
@@ -4043,6 +4056,10 @@ function publicState(r, viewerId) {
     tileFx: r.tileFx,
     owners: r.owners, market: r.market, shopVisit: r.shopVisit || null, log: r.log,
     titles: r.titles, duel: r.duel, curses: r.curses, lastEvent: r.lastEvent || null,
+    toxyNotices: (r.toxyNotices || []).map(e => ({player:e.player,target:e.target,creature:e.creature,
+      count:e.count,beforeCount:e.beforeCount,afterCount:e.afterCount,at:e.at})),
+    kamadomaNotices: (r.kamadomaNotices || []).map(e => ({player:e.player,creature:e.creature,
+      count:e.count,tile:e.tile,reason:e.reason,at:e.at})),
     barrier: r.barrier || {}, lastUlt: r.lastUlt || null,
     turnTransition: r.turnTransition ? {
       id: r.turnTransition.id, fromPlayer: r.turnTransition.fromPlayer,
@@ -4151,7 +4168,7 @@ const ROOM_PERSIST_KEYS = new Set([                                            /
   'lastEvent', 'lastDice', 'lastUlt', 'ultSequence', 'lastHeal', 'lastSeal', 'lastRuin', 'lastDraw', 'lastGain',
   'lastBarrierHit', 'lastSpellFx', 'botMode', 'presentationSpeed', 'turnEpoch', 'promptSeq', 'stateRev', 'turnTransition',
   'matchAnalytics', 'matchResult', 'resultReview', 'mapId', 'movement', 'windSupply',
-  'goalProgress', 'goalNotices',
+  'goalProgress', 'goalNotices', 'toxyNotices', 'kamadomaNotices',
 ]);
 ROOM_RUNTIME_KEYS.add('stateInstanceId');
 function serializeRoom(r) {
@@ -4567,7 +4584,7 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const p = url.pathname;
   if(p === '/game-cards.js'){res.writeHead(200,{'Content-Type':'text/javascript; charset=utf-8','Cache-Control':'no-cache'});return res.end(gameCardSource);}
-  if(['/phone-summoners.js','/phone-summoners.css','/board-audio-settings.js','/board-settings.js','/board-settings.css','/board-flow-notices.js','/board-flow-notices.css','/board-route.js','/board-route.css','/board-finale.js','/board-finale.css','/board-goal-notice.js','/board-goal-notice.css','/board-land-stop.js','/board-land-stop.css','/board-next-notices.js','/board-next-notices.css','/board-enemy-land.js','/board-enemy-land.css','/board-actor.js','/board-actor.css','/board-effects.js','/board-notice.js','/board-notice.css','/board-milestones.js','/board-milestones.css','/result-review.js','/result-review.css','/rare-draw.css','/battle-external.css','/phone-card-picker.js','/phone-card-picker.css','/phone-deck.css','/hud-rank.js','/hud-rank.css'].includes(p))return serveFile(res,p.slice(1));
+  if(['/phone-land.js','/phone-land.css','/phone-enemy-choice.js','/phone-enemy-choice.css','/phone-summoners.js','/phone-summoners.css','/board-audio-settings.js','/board-settings.js','/board-settings.css','/board-flow-notices.js','/board-flow-notices.css','/board-route.js','/board-route.css','/board-finale.js','/board-finale.css','/board-goal-notice.js','/board-goal-notice.css','/board-land-stop.js','/board-land-stop.css','/board-next-notices.js','/board-next-notices.css','/board-enemy-land.js','/board-enemy-land.css','/board-actor.js','/board-actor.css','/board-effects.js','/board-notice.js','/board-notice.css','/board-milestones.js','/board-milestones.css','/result-review.js','/result-review.css','/rare-draw.css','/battle-external.css','/phone-card-picker.js','/phone-card-picker.css','/phone-deck.css','/hud-rank.js','/hud-rank.css'].includes(p))return serveFile(res,p.slice(1));
   if (p === '/') return serveFile(res, 'site/index.html');
   if (p === '/news') return serveFile(res, 'site/news-index.html', url.searchParams.get('category'));
   if (p === '/news/2026-09-29-ui-update') return serveFile(res, 'site/news-2026-09-29-ui-update.html');

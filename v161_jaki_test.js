@@ -23,7 +23,8 @@ function battle({defense=false,form='jaki',hand=['nome'],level=1,move=false,win=
 const choose=(g,id)=>G.handleChoose(g.r,g.p.id,id);
 const pick=(g,card)=>{const o=g.r.pending[g.p.id].options.find(o=>o.card===card);assert.ok(o,card+' selectable');choose(g,o.id);};
 const j=G.CREATURES.jaki;
-eq([j.name,j.evo,j.elem,j.rarity,j.cost,j.st,j.hp,j.evoSt,j.evoHp],['ジャキ','アシュラカン','earth','R',90,45,30,60,60],'approved definition');
+eq([j.name,j.evo,j.elem,j.rarity,j.cost,j.st,j.hp,j.evoSt,j.evoHp],['ジャキ','アシュラカン','earth','R',90,40,30,60,60],'approved definition');
+eq(G.CREATURES.bedebero.st,20,'Bedebero AT balance');
 eq(G.CREATURES.jaki_f.fx,j.fx,'ability shared by both forms');
 for(const pool of [G.makeDeck(),G.shopRandomPool()])eq([pool.filter(c=>c==='jaki').length,pool.includes('jaki_f')],[2,false],'two base cards only');
 eq(G.makeDeck().length,158,'common deck total');

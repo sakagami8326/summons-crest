@@ -18,10 +18,10 @@ if (!/grid-template-columns:repeat\(5,13\.2dvh\)/.test(css) ||
 if (!/#msg\s*\{[^}]*grid-column:1\s*\/\s*6[^}]*color:#111[^}]*-webkit-line-clamp:2/.test(css) ||
     !/<div id="topTools">[\s\S]*?<div id="msg"/.test(phone))
   throw new Error('アナウンス検査: ボタン群の下段・黒文字・2行表示になっていない');
-if (!/<button id="joinFsBtn"[^>]*>/.test(phone) ||
-    !/\$\('joinFsBtn'\)\.onclick\s*=\s*toggleFullscreen/.test(phone) ||
-    !/screen\.orientation\.lock\('landscape'\)/.test(phone))
-  throw new Error('全画面検査: 入室前の全画面ボタンまたは共通処理がない');
+if (/joinFsBtn/.test(phone) ||
+    !/void enterPhoneFullscreen\(\)/.test(phone) ||
+    !/screen\.orientation\?\.lock\?\.\('landscape'\)/.test(phone))
+  throw new Error('全画面検査: 参加時の全画面化・横向き処理がない、または旧ボタンが残っている');
 if (!/#diceBtn\s*\{[^}]*width:22dvh[^}]*height:22dvh/.test(css) ||
     !/\.dice3d\s*\{[^}]*width:15dvh[^}]*height:15dvh/.test(css))
   throw new Error('サイコロ検査: ボタンまたは3Dサイコロが拡大されていない');

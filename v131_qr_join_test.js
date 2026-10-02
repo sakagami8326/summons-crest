@@ -66,7 +66,7 @@ ok(/String\(sess\.room \|\| ''\)\.toUpperCase\(\) === candidate/.test(phone) &&
 ok(/QRコードのルーム情報が正しくありません/.test(phone) &&
    /このルームは見つかりません/.test(phone) && /showManualRoom/.test(phone),
   'malformed and missing QR rooms fall back to manual entry with an error');
-ok(/id="joinFsBtn"/.test(phone) && /id="nameIn"/.test(phone) && /id="joinBtn"/.test(phone),
-  'fullscreen, name and explicit join controls remain available');
+ok(!/joinFsBtn/.test(phone) && /id="nameIn"/.test(phone) && /id="joinBtn"/.test(phone),
+  'name and explicit join remain available without a separate join fullscreen button');
 
 console.log(`V1.31 QR JOIN ALL ${pass} CHECKS PASSED`);

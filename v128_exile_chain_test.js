@@ -49,10 +49,23 @@ eq(G.CHAR_DECKS.redani, ['kamadoma','kamadoma','swordgear','gecko','gecko','cleo
   G.handleChoose(r, owner.id, 'tx:' + a.id);
   eq([a.hand.length, a.discard[0], r.pending[owner.id].type], [0, 'shield', 'toxy_target'],
     'first target loses one random card to normal discard');
+  eq([r.toxyNotices[0].player,r.toxyNotices[0].target,r.toxyNotices[0].creature,
+    r.toxyNotices[0].count,r.toxyNotices[0].beforeCount,r.toxyNotices[0].afterCount],
+    [owner.id,a.id,'toxy',1,1,0], 'discard notice records actor, target and actual count change');
   G.handleChoose(r, owner.id, 'tx:' + b.id);
   eq([b.hand.length, b.discard[0], owner.exile], [0, 'weapon', ['jinx']],
     'second placed copy resolves without re-exiling the discarded card');
   ok(r.pending[owner.id].type === 'roll', 'chain returns to the saved continuation');
+  eq(r.toxyNotices.map(e=>e.creature),['toxy','toxy_f'],'both chained notices retain source evolution');
+  ok(r.toxyNotices[1].at>r.toxyNotices[0].at,'chain notice stamps are unique and ordered');
+  for(const viewer of [null,owner.id,a.id]){
+    const notices=G.publicState(r,viewer).toxyNotices;
+    eq(notices,r.toxyNotices,'same public count-only notice for each viewer');
+    ok(notices.every(e=>!('card' in e)&&!('cards' in e)),'notice never exposes card identities');
+  }
+  eq(G.serializeRoom(r).room.toxyNotices,r.toxyNotices,'notices survive saves');
+  G.handleChoose(r,owner.id,'tx:'+a.id);
+  eq(r.toxyNotices.length,2,'stale choice does not duplicate a notice');
   G.rooms.delete(r.code);
 }
 
@@ -64,6 +77,7 @@ eq(G.CHAR_DECKS.redani, ['kamadoma','kamadoma','swordgear','gecko','gecko','cleo
   G.exileCard(r, owner, 'weapon', 'test');
   G.resumeAfterExileEffects(r, { type: 'roll', player: owner.id });
   ok(r.pending[owner.id].type === 'roll' && !r.effectQueue.length, 'no-target chain is skipped');
+  eq(r.toxyNotices,[],'no notice when no card was discarded');
   G.rooms.delete(r.code);
 }
 
@@ -75,10 +89,36 @@ eq(G.CHAR_DECKS.redani, ['kamadoma','kamadoma','swordgear','gecko','gecko','cleo
   eq(G.onCreatureSummoned(r, p, 'kamadoma_f', 'swap', 1), false, 'evolved placement does not pause');
   G.onCreatureSummoned(r, p, 'kamadoma', 'move', 2);
   eq(p.hand, ['weapon', 'weapon'], 'summon/swap forge weapons but simple movement does not');
+  eq(r.kamadomaNotices.map(e=>[e.creature,e.reason,e.count]),
+    [['kamadoma','summon',1],['kamadoma_f','swap',1]],'placement notices record base/evolved source and exclude simple moves');
+  const notices=JSON.stringify(r.kamadomaNotices);
+  r.lastGain={player:p.id,n:1,cards:['sp_quake'],reason:'draft',at:999};
+  require('assert/strict').deepEqual(G.publicState(r,null).kamadomaNotices,JSON.parse(notices),'subsequent private gain cannot erase Sword notice');
+  ok(!G.publicState(r,null).lastGain.cards,'private reward identities remain hidden');
+  eq(G.serializeRoom(r).room.kamadomaNotices,r.kamadomaNotices,'Sword notices are saved');
   G.rooms.delete(r.code);
 }
 
 // Soul Eater changes DF only on both sides and keeps explicit compatibility payload fields.
+// Actual invasion resolution, rather than calling the placement hook directly.
+for(const cid of ['kamadoma','kamadoma_f']){
+  for(const wins of [true,false]){
+    const r=game(['redani','adel']),atk=r.players[0],def=r.players[1];
+    atk.hand=[cid];atk.exile=[];def.hand=[];def.exile=[];
+    r.owners[21]={player:def.id,level:1,creature:wins?'gecko':'nome_f',dmg:wins?29:0};
+    r.elemOv[21]='water';
+    r.battle={tile:21,attacker:atk.id,defender:def.id,atkCreature:cid,
+      supports:{[atk.id]:{kind:'none'},[def.id]:{kind:'none'}},startedAt:1};
+    G.resolveBattle(r);
+    eq(r.owners[21].player,wins?atk.id:def.id,`${cid} invasion outcome`);
+    eq(count(atk.hand,'weapon'),wins?1:0,`${cid} invasion victory grants exactly one sword; defeat grants none`);
+    if(wins)eq(r.lastGain.reason,'kamadoma','sword reward comes from Kamadoma placement');
+    eq(r.kamadomaNotices.length,wins?1:0,'only actual victory produces board reward notice');
+    if(wins)eq([r.kamadomaNotices[0].creature,r.kamadomaNotices[0].reason],[cid,'battle'],'battle source and evolution recorded');
+    G.rooms.delete(r.code);
+  }
+}
+
 {
   const r = game(['villa','adel']), atk = r.players[0], def = r.players[1];
   atk.exile = ['weapon','shield']; atk.hand = ['alter']; def.exile = [];

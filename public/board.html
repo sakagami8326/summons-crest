@@ -1582,9 +1582,9 @@ const QR = (() => {
 <script src="/vendor/phaser.min.js"></script>
 <script src="/board_world.js?release=164"></script>
 <link rel="stylesheet" href="/board-notice.css?v=2&release=164">
-<link rel="stylesheet" href="/board-actor.css?v=1&release=164">
+<link rel="stylesheet" href="/board-actor.css?v=1&release=165">
 <script src="/board-actor.js?v=2&release=164"></script>
-<script src="/board-effects.js?v=1&release=164"></script>
+<script src="/board-effects.js?v=1&release=165"></script>
 <script src="/board-notice.js?v=4&release=164"></script>
 <link rel="stylesheet" href="/board-enemy-land.css?v=1&release=164">
 <script src="/board-enemy-land.js?v=1&release=164"></script>
@@ -5219,6 +5219,8 @@ function render() {
       prev.chainsKey = JSON.stringify(ck2);
     }
   }
+  BoardEffects.observeToxy(state,{queue:queueFx,current:()=>state,ms:presentationMs});
+  BoardEffects.observeKamadoma(state,{queue:queueFx,current:()=>state,ms:presentationMs});
   BoardGoal.observe(state,{queue:queueFx,current:()=>state,ms:presentationMs});
   // 全演出はPromise完了まで待つ統合キューで直列再生する。
   if (presentationQueue.length && !presentationRunning) {

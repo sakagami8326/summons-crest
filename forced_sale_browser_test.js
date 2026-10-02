@@ -14,15 +14,15 @@ for(const [width,mode] of [[844,'recover'],[667,'bankrupt'],[844,'retry'],[667,'
  p.gold=-(first+(mode==='bankrupt'?second+100:Math.ceil(second/2)));G.settleAll(r);G.rooms.set(r.code,r);
  const page=await browser.newPage({viewport:{width,height:390},isMobile:true,hasTouch:true});page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base+'/phone?guide=done');await page.evaluate(code=>{room=code;pid='fx0';$('join').style.display='none';document.body.classList.add('ingame');['hdr','msg','action','handWrap'].forEach(id=>$(id).style.display='');connect();},r.code);
- await page.locator('#mapOv.on .mmT.pickable').first().waitFor();if(mode!=='sse')await page.evaluate(()=>es.close());
+ await page.locator('#mapOv.on .tile.eligible').first().waitFor();if(mode!=='sse')await page.evaluate(()=>es.close());
  if(mode==='sse')await page.route('**/api/action',async route=>{const old=route.request().postDataJSON()?.promptId;const res=await route.fetch();await page.waitForFunction(old=>pend()?.promptId!==old,old);await route.fulfill({response:res});});
  let fail=mode==='retry';if(fail)await page.route('**/api/action',route=>{if(fail&&route.request().postDataJSON()?.type==='choose'){fail=false;return route.fulfill({status:503,body:'unavailable'});}return route.continue();});
  let stale=mode==='stale';if(stale)await page.route('**/api/action',async route=>{if(stale&&route.request().postDataJSON()?.type==='choose'){stale=false;const body=route.request().postDataJSON();body.promptId='outdated';const res=await route.fetch({postData:body});assert.equal(res.status(),409);return route.fulfill({response:res});}return route.continue();});
- const sell=async()=>{await page.locator('#mapOv.on .mmT.pickable').first().tap();await page.getByRole('button',{name:'ここに決定',exact:true}).tap();await page.waitForFunction(()=>!mapChoiceLock);};
- if(mode==='retry'){const money=p.gold;await sell();assert.equal(p.gold,money);assert(await page.locator('#mapOv').isVisible());assert.match(await page.locator('#mapOvSel').innerText(),/通信/);}
- if(mode==='stale'){const money=p.gold;await sell();assert.equal(p.gold,money);assert(await page.locator('#mapOv').isVisible());assert.equal(await page.locator('#mapOv .mmT.pickable').count(),2);}
+ const sell=async()=>{await page.locator('#mapOv.on .tile.eligible').first().tap();await page.getByRole('button',{name:'この領地を売却',exact:true}).tap();await page.waitForFunction(()=>!mapChoiceLock);};
+ if(mode==='retry'){const money=p.gold;await sell();assert.equal(p.gold,money);assert(await page.locator('#mapOv').isVisible());assert.match(await page.locator('#phoneLand [data-pl="decision"]').innerText(),/通信/);}
+ if(mode==='stale'){const money=p.gold;await sell();assert.equal(p.gold,money);assert(await page.locator('#mapOv').isVisible());assert.equal(await page.locator('#mapOv .tile.eligible').count(),2);}
  const old=r.pending[p.id].promptId;await sell();assert(p.gold<0);assert.notEqual(r.pending[p.id].promptId,old);assert.equal(r.pending[p.id].type,'sell');assert.equal(r.owners[lands[0]],null);
- assert(await page.locator('#mapOv').isVisible(),'next sale map must stay visible after action response');assert.equal(await page.locator('#mapOv .mmT.pickable').count(),1);
+ assert(await page.locator('#mapOv').isVisible(),'next sale map must stay visible after action response');assert.equal(await page.locator('#mapOv .tile.eligible').count(),1);
  await page.screenshot({path:path.join(out,'second-sale-'+mode+'-'+width+'.png')});await sell();assert.equal(r.owners[lands[1]],null);
  assert.equal(p.bankrupt,mode==='bankrupt');if(mode!=='bankrupt')assert(p.gold>=0);
  assert.notEqual(r.pending[p.id]?.type,'sell');assert(!await page.locator('#mapOv').isVisible());await page.close();console.log('PASS consecutive sale',mode,width);

@@ -28,6 +28,15 @@ window.BoardEffects = (() => {
       title='深淵標';left=source(e.creature||'night_jelly',s);body=`<div class="targetResult">${img('abyss-mark-v1.webp','markArt')}${metric('ic_gold.png','通行料','+'+n(e.bonus),'G')}</div>`;
     }else if(kind==='frontline_swap'){
       title='戦線交代';left=source(e.from,s);body=`<div class="creaturePair">${target(e.from,s,'手札へ')}${arrow}${target(e.creature,s,'配置')}</div>`;
+    }else if(kind==='kamadoma'){
+      title='武具錬成';left=source(e.creature||'kamadoma',s);
+      body='<div class="forgeReward"><div class="sourceCard"><review-game-card card-id="weapon"></review-game-card></div>'
+        +metric('ic_hand.png','手札に追加',n(e.count),'枚')+'</div>';duration=3500;
+    }else if(kind==='toxy'){
+      title='瘴気連鎖';left=source(e.creature||'toxy',s);
+      const victim=s.players.find(p=>p.id===e.target);
+      body=`<div class="discardTarget">${victim?img(`pawn_${victim.charId}.${victim.charId==='adel'?'webp':'png'}`,'discardPawn'):''}<b>${esc(victim?.name)}</b></div>`
+        +metric('ic_hand.png','手札を捨てる',n(e.count),'枚')+pair('手札',n(e.beforeCount)+'枚',n(e.afterCount)+'枚');
     }else if(kind==='spell'){
       scene='spell';actor=e.caster;duration=3500;const sid=e.spell,sp=s.catalog.SPELLS[sid];title=sp?.name||'効果発動';
       left=`<div class="effectSource spellSource"><div class="sourceCard"><review-game-card card-id="${esc(sid)}"></review-game-card></div></div>`;
@@ -55,5 +64,23 @@ window.BoardEffects = (() => {
     window.mountExistingGameCards?.(s);
     return BoardNotice.effect(model(kind,e,s),s,options);
   }
-  return {present,model};
+  function noticeObserver(kind,field){
+   let seenScope='',seen=0;
+   return function(s,{queue,current,ms}){
+    const scope=`${s.code}:${s.stateInstanceId||''}`,events=s[field]||[];
+    // Initial load/save restoration must not replay earlier effect history.
+    if(scope!==seenScope){seenScope=scope;seen=Math.max(0,...events.map(e=>e.at));return;}
+    for(const e of events){
+      if(e.at<=seen)continue;
+      seen=e.at;
+      const ev=structuredClone(e),snapshot=structuredClone(s);
+      queue(3,()=>{const now=current();if(now?.code!==snapshot.code||now?.stateInstanceId!==snapshot.stateInstanceId)return;
+        return present(kind,ev,snapshot,{ms});},
+        {actorId:e.player,id:`${kind}:${scope}:${e.at}`,kind,at:e.at});
+    }
+   };
+  }
+  const observeToxy=noticeObserver('toxy','toxyNotices');
+  const observeKamadoma=noticeObserver('kamadoma','kamadomaNotices');
+  return {present,model,observeToxy,observeKamadoma};
 })();

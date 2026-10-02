@@ -74,6 +74,7 @@ const timingSrc = fs.readFileSync('public/game_timing.js', 'utf8');
 // DOM lifecycle is exercised in deck_sync_browser_test; this stub covers game choices.
 const scripts = 'class MutationObserver { observe() {} disconnect() {} }\nconst SummonsMaps = ' + JSON.stringify(require('./public/map-definitions')) + ';\n' +
   fs.readFileSync('public/map-ui.js','utf8') + '\nconst SummonsMapUI=window.SummonsMapUI;\n' + timingSrc + '\n' +
+  fs.readFileSync('public/phone-enemy-choice.js','utf8') + '\nconst PhoneEnemyChoice=window.PhoneEnemyChoice;\n' +
   [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n');
 
 // ===== レイアウト不変条件 =====
@@ -171,7 +172,7 @@ function makeEl(id) {
       contains: x => cls.has(x),
     },
     _cls: cls,
-    appendChild: () => {}, remove: () => {}, focus: () => {}, addEventListener: () => {},
+    appendChild: () => {}, remove: () => {}, focus: () => {}, addEventListener: () => {}, setAttribute: () => {},
     querySelector: sel => (qEls[id + '|' + sel] || (qEls[id + '|' + sel] = makeEl(sel))),
     querySelectorAll: sel => { qsaCalls.add(sel); return []; },
     getBoundingClientRect: () => ({ left: 0, top: 0, width: 100, height: 100 }),
@@ -192,7 +193,7 @@ const doc = {
   // classセレクタ等は実HTMLに存在する前提の汎用スタブ(ID参照の欠落検知はgetElementByIdで担保)
   querySelectorAll: sel => { qsaCalls.add(sel); return []; },
   querySelector: sel => (qEls[sel] || (qEls[sel] = makeEl(sel))),
-  createElement: () => makeEl('_dyn'), body: { appendChild: () => {},dataset:{} },
+  createElement: () => makeEl('_dyn'), body: Object.assign(makeEl('_body'), {append(el){knownIds.add(el.id);els[el.id]=el;}}),
   addEventListener: () => {}, hidden: false,
 };
 const win = {
@@ -259,12 +260,16 @@ if (els.contextBtn.style.display !== 'inline-flex' || els.contextBtn.textContent
 // ===== 操作可能性の判定 =====
 function clearDom() {
   for (const el of Object.values(els)) {
+    // Dedicated component retains its own render cache and DOM across state notifications.
+    if (['phoneEnemyChoice','ecHandToggle'].includes(el.id)) continue;
     el.innerHTML = ''; el.textContent = ''; el.onclick = null;
     for (const k of Object.keys(el.dataset)) delete el.dataset[k];  // 再描画キャッシュも毎フレーム破棄
   }
   qsaCalls.clear();
 }
 function affordance(pid2, st) {
+  if(els.phoneEnemyChoice&&!els.phoneEnemyChoice.hidden&&st.enemyLand?.player===pid2&&
+    st.pending[pid2]?.options.some(o=>(els.phoneEnemyChoice.innerHTML||'').includes(`data-action="${o.id}"`)))return 'enemy-land-choice';
   if(st.phase==='select'&&summonerPending===st.pending[pid2]&&summonerPending?.options.length)return 'summoner-selection';
   if(pickerConfig){const options=st.pending[pid2]?.options || [];const ids=[pickerConfig.cancelId,pickerConfig.confirmId,...pickerConfig.sections.flatMap(s=>s.entries.map(e=>e.pickId))];if(ids.some(id=>options.some(o=>o.id===id)))return 'shared-card-picker';}
   // 1) インラインonclick(choose等)がどこかに描画されたか

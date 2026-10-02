@@ -46,11 +46,6 @@
   #join button { font-family:inherit; font-size:16px; letter-spacing:3px; padding:12px;
         width:min(70vw, 300px); background:linear-gradient(180deg,#E8C55A,#B8901F);
         color:#241C05; border:1px solid #F2D062; border-radius:10px; cursor:pointer; }
-  #join #joinFsBtn { position:absolute; top:calc(10px + env(safe-area-inset-top));
-        right:calc(10px + env(safe-area-inset-right)); width:clamp(40px,9.5dvh,66px);
-        height:clamp(40px,9.5dvh,66px); padding:0; border:0; border-radius:0;
-        background:transparent url('/assets/ui/phone-btn-fullscreen-v1.webp') center / contain no-repeat;
-        color:transparent; font-size:0; filter:drop-shadow(0 .45dvh .55dvh rgba(0,0,0,.42)); }
   #err { color:#F09595; font-size:13px; min-height:1.2em; }
 
   #lobbyWait { position:fixed; inset:0; z-index:48; display:none; align-items:center; justify-content:center;
@@ -853,7 +848,6 @@
   <div id="rotate"><div class="ic"><svg viewBox="0 0 24 24" width="52" height="52" fill="none" stroke="#C9A227" stroke-width="1.6"><rect x="7" y="2.5" width="10" height="19" rx="2.2"/><circle cx="12" cy="18.4" r="1" fill="#C9A227" stroke="none"/></svg></div>スマホを横向きにしてください</div>
 
   <div id="join">
-    <button id="joinFsBtn" aria-label="全画面">全画面</button>
     <img src="/assets/summons-code-gold.svg" alt="SUMMONS CODE">
     <div id="roomPreset" role="status" aria-live="polite"></div>
     <input id="codeIn" placeholder="ルームコード" maxlength="4" autocapitalize="characters">
@@ -970,9 +964,13 @@
 <script src="/ult_fx_world.js"></script>
 <link rel="stylesheet" href="/phone-card-picker.css?v=20260928-draw5&release=164">
 <link rel="stylesheet" href="/phone-deck.css?release=164">
-<link rel="stylesheet" href="/phone-summoners.css?v=20260929-2&release=164">
-<script src="/phone-summoners.js?v=20260929-2&release=164"></script>
+<link rel="stylesheet" href="/phone-summoners.css?v=20261001-1&release=165">
+<script src="/phone-summoners.js?v=20261001-1&release=165"></script>
 <script src="/phone-card-picker.js?v=20260928-draw5&release=164"></script>
+<link rel="stylesheet" href="/phone-enemy-choice.css?v=20261001-1&release=165">
+<script src="/phone-enemy-choice.js?v=20261001-1&release=165"></script>
+<link rel="stylesheet" href="/phone-land.css?v=20261002-3&release=165">
+<script src="/phone-land.js?v=20261002-3&release=165"></script>
 <script>
 const $ = id => document.getElementById(id);
 const REMOVE_CARD_HTML = '<div class="face removeCard"><div class="removeTitle">カードを削除</div><img src="/assets/cards/shop-remove-v2.webp" alt="カード削除"></div>';
@@ -1174,6 +1172,9 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('online', () => { if (deckIsOpen() && !document.hidden) refreshDeckOverview(); });
 $('joinBtn').onclick = async () => {
   $('err').textContent = '';
+  // Request while the tap still has user activation, before any network await.
+  // Fullscreen/orientation failures must not block joining the room.
+  void enterPhoneFullscreen();
   const r = await fetch('/api/join', { method:'POST', body: JSON.stringify({
     room: presetRoom || $('codeIn').value.trim().toUpperCase(), name: $('nameIn').value.trim() }) });
   const d = await r.json();
@@ -1264,15 +1265,23 @@ async function resumeSavedSession(sess) {
   if (!sess) return;
   if (!await resumeSavedSession(sess)) clearSavedSession();
 })();
-async function toggleFullscreen() {
+async function enterPhoneFullscreen() {
   cancelHandGesture();
-  if (!document.fullscreenElement) {
-    await document.documentElement.requestFullscreen({ navigationUI:'hide' }).catch(() => {});
-    try { await screen.orientation.lock('landscape'); } catch (e) {}
-  } else await document.exitFullscreen().catch(() => {});
+  try {
+    if (!document.fullscreenElement) {
+      if (typeof document.documentElement.requestFullscreen !== 'function') return false;
+      await document.documentElement.requestFullscreen({ navigationUI:'hide' });
+    }
+    try { await screen.orientation?.lock?.('landscape'); } catch (e) {}
+    return true;
+  } catch (e) { return false; }
+}
+async function toggleFullscreen() {
+  if (!document.fullscreenElement) return enterPhoneFullscreen();
+  cancelHandGesture();
+  try { await document.exitFullscreen(); } catch (e) {}
 }
 $('fsBtn').onclick = toggleFullscreen;
-$('joinFsBtn').onclick = toggleFullscreen;
 window.addEventListener('blur', () => cancelHandGesture());
 window.addEventListener('pagehide', () => cancelHandGesture({ rerender:false }));
 document.addEventListener('fullscreenchange', () => cancelHandGesture());
@@ -1407,6 +1416,17 @@ new MutationObserver(() => { if (!deckIsOpen()) { stopDeckPolling(); deckReady =
 if (typeof ResizeObserver !== 'undefined') new ResizeObserver(layoutDeckOverview).observe($('deckOv'));
 // ピックモード: 所持カード全体を見せつつ、選べるカードだけ点灯させる全画面UI
 let sharedCardPicker = null;
+let enemyChoice = null;
+function getEnemyChoice() {
+  if (!enemyChoice) enemyChoice = new PhoneEnemyChoice({
+    state:()=>state, playerId:()=>pid, choose:id=>choose(id),
+    ready:p=>!p.availableAt || Date.now()+serverClockOffset>=p.availableAt,
+    cancelGesture:cancelHandGesture, renderHand,
+    handAccess:blocked=>{ $('hdr').inert=blocked; $('handWrap').inert=blocked; },
+    closeHandDetail:()=>{ if($('cardZoom').dataset.enemyHand==='true'){ $('cardZoom').classList.remove('on'); delete $('cardZoom').dataset.enemyHand; } },
+  });
+  return enemyChoice;
+}
 function getCardPicker() {
   if (!sharedCardPicker) sharedCardPicker = new PhoneCardPicker({
     handAccess:blocked=>{ $('hdr').inert=blocked; $('handWrap').inert=blocked; },
@@ -1514,9 +1534,24 @@ function syncMapPendingSelection(p) {
   mmPendingKey = next;
   mmSel = null;
 }
-function hideMapOv() { $('mapOv').classList.remove('on','routePicking'); }
+let phoneLand = null;
+function getPhoneLand() {
+  if (!phoneLand && window.PhoneLandUI) phoneLand=PhoneLandUI.create($('mapOv'),{
+    close(){mapView=false;hideMapOv();},
+    submit(id){const p=pend();if(!p?.options.some(o=>o.id===id)||p.availableAt>Date.now()+serverClockOffset){phoneLand?.setBusy(false);return;}submitMapChoice(id);},
+    inspect(i){mmSel=i;const p=pend();if(p?.type==='upgrade'&&tileTargets(p)[i]&&Date.now()-upPvT>120){upPvT=Date.now();fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room,type:'upgrade_preview',playerId:pid,tile:i})}).catch(()=>{});}}
+  });
+  return phoneLand;
+}
+function showPhoneLand(p) {
+  const view=getPhoneLand();if(!view)return false;
+  $('mapOv').classList.remove('routePicking');$('mapOv').classList.add('landInspect');
+  openBlockingOverlay('mapOv');view.show(state,pid,p,mapChoiceLock);return true;
+}
+function hideMapOv() { phoneLand?.hide();$('mapOv').classList.remove('on','routePicking','landInspect'); }
 let routeSelected=null,routePrompt=null,routeBusy=false,routeError='',routeSequence=0;
 function renderRouteChoice(p){
+  phoneLand?.hide();$('mapOv').classList.remove('landInspect');
   if(routePrompt!==p.promptId){routePrompt=p.promptId;routeSelected=null;routeBusy=false;routeError='';}
   mapView=false;
   $('mapOv').classList.add('routePicking');
@@ -1546,6 +1581,7 @@ async function submitMapChoice(optionId) {
   const context = phoneSyncContext();
   let errorMessage = '';
   mapChoiceLock = true;
+  phoneLand?.setBusy(true);
   document.querySelectorAll('#mapOvSide button').forEach(b => { b.disabled = true; });
   try {
     const res = await choose(optionId);
@@ -1566,6 +1602,7 @@ async function submitMapChoice(optionId) {
     if (currentPhoneContext(context)) {
       render();
       if (errorMessage && $('mapOv').classList.contains('on')) {
+        if ($('mapOv').classList.contains('landInspect')) phoneLand?.setError(errorMessage);
         const message = document.createElement('div');
         message.className = 'tdSub'; message.style.cssText = 'color:#ff9b8c;margin-top:.8dvh';
         message.textContent = errorMessage;
@@ -1635,6 +1672,7 @@ function advanceReveal() {
   showNextReveal();
 }
 function renderMiniMap(p) {
+  if (showPhoneLand(p)) {$('msg').textContent=taskPrompt(p);$('action').innerHTML='';return;}
   syncMapPendingSelection(p);
   const targets = tileTargets(p);
   const cancel = p.options.find(o => /cancel$|^pass$/.test(o.id));
@@ -1752,6 +1790,7 @@ function tileDetailHTML(i) {
 // ===== 領地閲覧モード(「領地を見る」ボタン) =====
 let mapView = false, viewSel = null;
 function renderMapView() {
+  if (showPhoneLand(null)) return;
   const cells = [];
   MM_GEO.forEach(([gx, gy], i) => {
     const t = state.tiles[i], o = state.owners[i];
@@ -2136,6 +2175,7 @@ function refreshCardZoomAction() {
   $('cardZoomReason').textContent = cardActionSubmitting ? '送信中…' : optionId ? 'ボタンをタップするとすぐに使用します' : '現在の手順では使用できません';
 }
 function openCardZoom(c, readOnly = false) {
+  if (enemyChoice?.handView) { readOnly = true; $('cardZoom').dataset.enemyHand = 'true'; }
   $('cardZoom').dataset.readOnly = String(readOnly);
   cancelHandGesture();
   zoomCardId = c;
@@ -2282,6 +2322,7 @@ function selectableKind() {
 }
 // カードを暗くするかの判定(cardHTMLとクラス更新の両方で共用)
 function cardDim(c) {
+  if (enemyChoice?.handView) return false;
   const skind = selectableKind();
   if (!skind) return false;
   if (pend() && pend().type === 'support') return !cardOption(c);
@@ -2704,6 +2745,7 @@ function render() {
   document.body.dataset.mapId = SummonsMapUI.get(state).id;
   if (state.lastUlt && state.lastUlt.at !== phoneUltAt) playPhoneUlt(state.lastUlt);
   const m = me(), C = state.catalog, p = pend();
+  enemyChoice?.sync();
   sharedCardPicker?.sync();
   if (deckIsOpen() && deckReady) {
     try { buildDeckOv(); $('deckOv').querySelector('.overviewNotice')?.remove(); } catch (error) { setDeckFailure(); }
@@ -2826,6 +2868,7 @@ function render() {
     }
     const promptServerNow = Date.now() + serverClockOffset;
     if (p && p.availableAt && promptServerNow < p.availableAt) {
+      if(!mapView)hideMapOv();
       $('msg').textContent = 'テレビ演出の完了を待て';
       $('diceDock').innerHTML = '<div style="text-align:center"><div class="waitDots">● ● ●</div><div style="font-size:max(1.8dvh,12px);color:var(--gold-soft)">テレビ演出中</div></div>';
       clearTimeout(moveT);
@@ -2889,6 +2932,10 @@ function render() {
     $('msg').textContent = waitingTaskPrompt();
     A.innerHTML = '<div class="waitDots">● ● ●</div>';
     selected = null;
+  } else if (p.type === 'tile' && state.enemyLand?.player === pid && p.options.some(o=>o.id==='toll')) {
+    closeActionOverlay(true);
+    A.innerHTML = '';
+    getEnemyChoice().show();
   } else if (p.type === 'pick_draw') {
     $('msg').textContent=taskPrompt(p); A.innerHTML=''; $('pickOv').classList.remove('on');
     getCardPicker().show({title:'カードを選ぶ',drawOverlay:true,center:true,sections:[{name:'候補',entries:p.options.map(o=>({card:o.card,pickId:o.id}))}],action:'手札に加える'});

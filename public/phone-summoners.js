@@ -30,7 +30,14 @@ window.PhoneSummonerSelection={create(root,{card:bigCardHTML,icon:sic,send,onOpe
  root.querySelector('.chooseSummoner').onclick=()=>submit(self()?.charId===id&&canUnpick()?'unpick':id);
  fit();
  }
- function fit(){root.querySelectorAll('.starterCard').forEach(b=>b.querySelector('.cardCanvas').style.transform=`scale(${b.clientWidth/300})`);}
+ function fit(){
+ const grid=root.querySelector('.starterGrid');if(!grid)return;
+ const style=getComputedStyle(grid),gapX=parseFloat(style.columnGap)||0,gapY=parseFloat(style.rowGap)||0;
+ const rows=Math.ceil(grid.children.length/6);
+ const width=Math.max(0,Math.min((grid.clientWidth-gapX*5)/6,(grid.clientHeight-gapY*(rows-1))/Math.max(1,rows)*300/470));
+ grid.style.setProperty('--starter-card-width',`${width}px`);
+ root.querySelectorAll('.starterCard').forEach(b=>b.querySelector('.cardCanvas').style.transform=`scale(${b.clientWidth/300})`);
+ }
  function showCard(cid){const d=document.createElement('div');d.className='starterZoom';d.setAttribute('role','dialog');d.setAttribute('aria-modal','true');d.setAttribute('aria-label','カード詳細');d.innerHTML=`<button class="zoomClose" aria-label="閉じる"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button><div class="zoomFrame"><div class="cardCanvas">${bigCardHTML(cid)}</div></div>`;root.append(d);d.querySelector('.cardCanvas').style.transform=`scale(${d.querySelector('.zoomFrame').clientWidth/300})`;const close=()=>{d.remove();root.querySelector(`[data-card="${cid}"]`)?.focus();};d.querySelector('button').onclick=close;d.onclick=e=>{if(e.target===d)close();};d.querySelector('button').focus();}
  function step(dir){if(busy||submitting)return;const next=ids[(ids.indexOf(active)+dir+ids.length)%ids.length];transition(()=>detail(next),dir>0?'next':'previous');}
  async function transition(render,mode){

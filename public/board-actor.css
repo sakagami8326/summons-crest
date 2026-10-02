@@ -447,6 +447,13 @@
  #boardNotice[data-actor] .spellText{font-size:18px}
  #boardNotice[data-actor] .miniPage{gap:8px}
 }
+#boardNotice[data-actor] .discardTarget{display:flex;justify-content:center;align-items:center;gap:12px;margin-bottom:12px}
+#boardNotice[data-actor] .forgeReward{display:flex;align-items:center;justify-content:center;gap:20px}
+#boardNotice[data-actor] .forgeReward .sourceCard{width:138px;height:216px;flex-shrink:0}
+#boardNotice[data-actor] .forgeReward .metric{flex-direction:column;gap:0}
+@media(max-width:1100px){#boardNotice[data-actor] .forgeReward{gap:12px}#boardNotice[data-actor] .forgeReward .sourceCard{width:108px;height:169px}}
+#boardNotice[data-actor] .discardPawn{width:64px;height:76px;object-fit:contain}
+#boardNotice[data-actor] .discardTarget b{font-size:clamp(16px,1.8vw,24px);font-weight:500;white-space:nowrap}
 /* Everyday messages keep the portrait readable without the turn-start impact. */
 #boardNotice[data-actor][data-motion=calm] :is(.cutinStage,.crestStage,.motionFx,.ringLayer){display:none}
 #boardNotice[data-actor].enter[data-owner=g][data-motion=calm] .actorStand{animation:actorQuiet .4s ease-out both}
