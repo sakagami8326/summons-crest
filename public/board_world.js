@@ -9,6 +9,17 @@ const PW = (() => {
   let stoneDataUrl = null;
   let pendingState = null, pendingLayout = null;   // Scene準備前に届いたstateの保留(最新1件)
   let boardKey = '', boardGen = 0;
+  let boardReadyPromise = Promise.resolve();
+  const creatureOpacity = new Map(), pawnOpacity = new Map();
+  function setCreatureOpacity(tile,alpha){
+    if(alpha===1)creatureOpacity.delete(tile);else creatureOpacity.set(tile,alpha);
+    for(const ob of placementObjects[tile]||[])if(ob?.scene)ob.setAlpha(alpha);
+  }
+  function setPawnOpacity(ids,alpha){
+    for(const id of ids){if(alpha===1)pawnOpacity.delete(id);else pawnOpacity.set(id,alpha);const p=pawns[id];
+      for(const ob of p?[p.spr,p.sh,p.aura,p.marker]:[])if(ob?.scene)ob.setAlpha(alpha);
+    }
+  }
   let boardObjs = [];                               // 現行世代の表示オブジェクト
   const evolutionHidden = new Set();
   const placementHidden = new Set(), placementObjects = {};
@@ -18,7 +29,7 @@ const PW = (() => {
   }
   function placementObject(tile,ob) {
     (placementObjects[tile] ||= []).push(ob);
-    ob.setVisible(!placementHidden.has(tile));return ob;
+    ob.setVisible(!placementHidden.has(tile));ob.setAlpha(creatureOpacity.get(tile)??1);return ob;
   }
   function setEvolutionHidden(tile, hidden) {
     if(hidden)evolutionHidden.add(tile);else evolutionHidden.delete(tile);
@@ -976,7 +987,7 @@ const PW = (() => {
     if(displayedMapId!==st.mapId){displayedMapId=st.mapId;computeFit();resetCamera();boardKey='';}
     const key = (window.BoardTiles?.revision || '') + JSON.stringify(st.owners) + JSON.stringify(st.tolls || []) + JSON.stringify(st.curses || {}) + JSON.stringify(st.abyssMarks || []) + JSON.stringify(st.barrier || {}) +
       st.players.map(p => p.id + p.color).join('') + st.tiles.map(t => t.e || t.t).join('');
-    if (key === boardKey) return;
+    if (key === boardKey) return boardReadyPromise;
     boardKey = key;
     const gen = ++boardGen;
     const jobs = [];      // [Promise(texKey), 適用関数]の組
@@ -1023,7 +1034,7 @@ const PW = (() => {
       const { x, y } = proj(GEO[i][0], GEO[i][1]);
       const lift = (o.level - 1) * 7;
       const bid = o.creature.replace(/_f$/, '');
-      const evo = bid !== o.creature || (o.level >= (st.evoLevel || 3) && st.catalog.CREATURES[bid].evo);
+      const evo = bid !== o.creature || (!o.displayEvolutionPending && o.level >= (st.evoLevel || 3) && st.catalog.CREATURES[bid].evo);
       const d = 101 + sum(i);
       makers.push(() => {
         boardObjs.push(placementObject(i,scene.add.image(x, y - lift, 'pwShadow').setOrigin(0.5, 0.5).setDisplaySize(64, 20).setDepth(100 + sum(i))));
@@ -1066,7 +1077,7 @@ const PW = (() => {
       makers.push(() => boardObjs.push(makeBadge(b)));
     }
 
-    Promise.all(jobs).then(() => {
+    boardReadyPromise = Promise.all(jobs).then(() => {
       if (gen !== boardGen || !scene) {   // 古い世代: 生成したテクスチャだけ掃除して破棄
         newTileTex.forEach(k => { if (scene && scene.textures.exists(k)) scene.textures.remove(k); });
         return;
@@ -1079,6 +1090,7 @@ const PW = (() => {
       tileTexKeys = newTileTex;
       makers.forEach(fn => { try { fn(); } catch (e) {} });
     });
+    return boardReadyPromise;
   }
 
   function makeAbyssMark(mark) {
@@ -1207,7 +1219,9 @@ const PW = (() => {
     }
   }
   function place(P, x, y, it, d) {
+    const opacity=pawnOpacity.get(it.id)??1;
     if (P.spr) {
+      P.spr.setAlpha(opacity);
       const base = it.w / P.spr.width;
       P.spr.setPosition(x, y).setDepth(it.z);
       const focus = it.active ? 1.12 : 1;
@@ -1216,7 +1230,9 @@ const PW = (() => {
     const air = d ? d.air : 0;
     P.sh.setPosition(x, y - 5).setDepth(it.zs != null ? it.zs : it.z - 2);
     P.sh.setDisplaySize(40 * (1 - 0.35 * air), 13 * (1 - 0.35 * air));
-    P.sh.setAlpha(1 - 0.5 * air);
+    P.sh.setAlpha((1 - 0.5 * air)*opacity);
+    if(P.aura)P.aura.setAlpha(opacity);
+    if(P.marker)P.marker.setAlpha(opacity);
     if (P.aura) P.aura.setPosition(x, y - 6).setDepth(it.active ? it.z - 1 : it.z - 3);
     if (P.marker) P.marker.setPosition(x, y - Math.max(90, it.w * 1.55) - air * 10).setDepth(it.z + 3);
   }
@@ -1465,6 +1481,7 @@ const PW = (() => {
   }
   return { init, syncBoard, syncPawns, setCamera, resetCamera, cameraState, setPresentationSpeed,
            worldToViewport, overlayPoint, pawnViewport, fx, resize, setEvolutionHidden, setPlacementHidden,
+           setCreatureOpacity,setPawnOpacity,
            snapshot, debugCounts, pump, isReady: () => ready, hasFailed: () => failed,
            setHighlights,setInspectionGlow,setRouteDestinations,
            // Phase 2A: 演出基盤

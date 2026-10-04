@@ -1576,12 +1576,12 @@ const QR = (() => {
 <script src="/map-ui.js?v=158"></script>
 <link rel="stylesheet" href="/assets/lobby-ticket/lobby-ticket.css?v=2&release=164">
 <script src="/assets/lobby-ticket/lobby-ticket.js?v=2&release=164"></script>
-<script src="/game_timing.js?release=164"></script>
+<script src="/game_timing.js?release=164&upgrade=20261005"></script>
 <script src="/result-graph-audio.js?v=3&release=164"></script>
 <script src="/fx_manifest.js"></script>
 <script src="/vendor/phaser.min.js"></script>
 <script src="/assets/board-tiles.js?v=1"></script>
-<script src="/board_world.js?release=164&tiles=1"></script>
+<script src="/board_world.js?release=164&tiles=1&upgrade=20261005"></script>
 <link rel="stylesheet" href="/board-notice.css?v=2&release=164">
 <link rel="stylesheet" href="/board-actor.css?v=1&release=165">
 <script src="/board-actor.js?v=2&release=164&noir=166"></script>
@@ -1607,6 +1607,9 @@ const QR = (() => {
 <script src="/ult_fx_world.js"></script>
 <script src="/evolution-charge-audio.js?v=3&release=164"></script>
 <script src="/evolution-fx.js?v=audio1&release=164"></script>
+<link rel="stylesheet" href="/board-upgrade.css?v=20261004-1">
+<script src="/upgrade-ui.js?v=20261004-1"></script>
+<script src="/board-upgrade.js?v=20261004-1"></script>
 <script>
 const $ = id => document.getElementById(id);
 const botPresentationActive = actorId => !!(state && state.botMode && state.presentationSpeed === 2 &&
@@ -3283,12 +3286,16 @@ async function endPlacementZoom(token) {
   cameraOwner.returning=true;cameraOwner.startedAt=Date.now();
   const speed=cameraOwner.speed;
   zoomTile=null;
-  const duration=PW.setCamera(null,{force:true,speed,ease:'Sine.easeInOut',duration:matchMedia('(prefers-reduced-motion: reduce)').matches?1:GAME_TIMING.placementCameraReturn})||0;
+  const returnMs=matchMedia('(prefers-reduced-motion: reduce)').matches?1:GAME_TIMING.placementCameraReturn;
+  let duration;
+  if(renderModeActive==='phaser')duration=PW.setCamera(null,{force:true,speed,ease:'Sine.easeInOut',duration:returnMs})||0;
+  else {duration=GAME_TIMING.scaled(returnMs,speed);applyZoom(false,speed);$('world').style.transition=`transform ${duration}ms ease-in-out`;}
   await new Promise(resolve=>setTimeout(resolve,duration+34));
   if(cameraOwner?.token!==token)return false;
   cameraOwner=null;scheduleTurnTransitionCompletion();return true;
 }
 function resetPresentationCamera(reason) {
+  window.BoardUpgrade?.cancel();
   window.EnemyLand?.hide(true);
   window.SummonsEvolution?.cancel();
   cameraGeneration++;
@@ -3522,13 +3529,33 @@ function buildTileSVG(i, t, o, ownColor, barrier, pad, stoneHref) {
 }
 // 描画モードに応じてPhaser/DOMへ振り分け
 function renderBoard() {
-  if (renderModeActive === 'phaser') return PW.syncBoard(state);
+  if (renderModeActive === 'phaser') return PW.syncBoard(BoardUpgrade.view(state));
   renderBoardDom();
 }
 window.BoardTiles?.ready.then(loaded => {
   if (loaded && state?.catalog) { ownersCache = ''; renderBoard(); }
 });
-function renderBoardDom() {
+function windowState(){return state;}
+BoardUpgrade.configure({
+ state:()=>state,queue:queuePresentation,wait,ms:ms=>presentationMs(ms),
+ zoom:(tile,actor)=>beginPresentationZoom(tile,'land-upgrade',actor),
+ hold:token=>{if(cameraOwner?.token===token)cameraOwner.startedAt=Date.now();},
+ return:endPlacementZoom,release:endPresentationZoom,mask:maskEvolutionTile,
+ stopEvolution:()=>SummonsEvolution.cancel(),
+ draw:async()=>{const done=renderBoard();renderPawns();await done;},
+ glow:setInspectionGlow,impact:()=>playSe(seTelop),
+ pawnOpacity:(ids,alpha)=>{PW.setPawnOpacity(ids,alpha);for(const id of ids)for(const key of ['pw-','pws-']){const el=$(key+id);if(el)el.style.opacity=alpha;}},
+ creatureOpacity:(tile,alpha)=>{PW.setCreatureOpacity(tile,alpha);document.querySelectorAll(`[data-evolution-tile="${tile}"],[data-placement-shadow="${tile}"]`).forEach(el=>el.style.opacity=alpha);},
+ point:(tile,level)=>{
+  const p=proj(GEO[tile][0],GEO[tile][1]),y=p.y-(level-1)*7+6;
+  if(renderModeActive==='phaser'){const v=PW.worldToViewport(p.x,y),edge=PW.worldToViewport(p.x+DW/2,y),art=PW.worldToViewport(p.x+80,y);return {...v,width:Math.abs(edge.x-v.x)*2,artWidth:Math.abs(art.x-v.x)};}
+  const r=$('world').getBoundingClientRect(),scale=r.width/1280;return{x:r.left+p.x*scale,y:r.top+y*scale,width:DW*scale,artWidth:80*scale};
+ },
+ evolve:(d,s,point)=>SummonsEvolution.play({bid:d.creature,base:s.catalog.CREATURES[d.creature],
+  anchor:()=>{const p=point();return {...p,width:p.artWidth};},speed:presentationContext?.speed||1,
+  soundEnabled:()=>!bgmMuted&&!document.hidden,onImpact:()=>playSe(seEvolve)}),
+});
+function renderBoardDom(state=BoardUpgrade.view(windowState())) {
   const key = (window.BoardTiles?.revision || '') + JSON.stringify(state.owners) + JSON.stringify(state.tolls || []) + JSON.stringify(state.curses || {}) + JSON.stringify(state.abyssMarks || []) + JSON.stringify(state.barrier || {}) + state.players.map(p => p.id + p.color).join('') + state.tiles.map(t => t.e || t.t).join('');
   if (key === ownersCache) return;
   ownersCache = key;
@@ -3577,6 +3604,8 @@ function renderBoardDom() {
     sh.className = 'shadow';
     sh.style.left = x + 'px'; sh.style.top = (y - lift) + 'px';
     sh.style.zIndex = GEO[i][0] + GEO[i][1] + 100;
+    sh.dataset.placementShadow=i;
+    sh.style.opacity=BoardUpgrade.creatureAlpha(i);
     st.appendChild(sh);
     const el = document.createElement('div');
     el.className = 'sprite';
@@ -3584,7 +3613,8 @@ function renderBoardDom() {
     el.style.zIndex = GEO[i][0] + GEO[i][1] + 101;
     el.dataset.evolutionTile = i;
     el.style.visibility = evolvingTiles.has(i)||placementHiddenTiles.has(i) ? 'hidden' : '';
-    el.innerHTML = artHTML(o.creature, o.level, 80);
+    el.style.opacity=BoardUpgrade.creatureAlpha(i);
+    el.innerHTML = artHTML(o.creature, o.displayEvolutionPending?1:o.level, 80);
     st.appendChild(el);
   }
   // 深淵標（DOM版／Phaser版で同じ座標計算を使用）
@@ -3670,7 +3700,7 @@ function pawnLayout() {
       g.length === 2 ? [[-32, 12], [30, 16]] : [[-38, 4], [-14, 14], [14, 14], [38, 4]];
     const [dx, dy] = slots[Math.min(k, slots.length - 1)];
     const pp = posOf(p);
-    const o = state.owners[pp];
+    const o = BoardUpgrade.view(state).owners[pp];
     const lift = o ? (o.level - 1) * 7 : 0;
     const { x, y } = proj(GEO[pp][0], GEO[pp][1]);
     const active = state.phase === 'playing' && visualTurnId === p.id;
@@ -3702,6 +3732,7 @@ function renderPawnsDom(layout) {
     el.style.zIndex = it.z;
     sh.style.left = it.x + 'px'; sh.style.top = (it.y - 5) + 'px';
     sh.style.zIndex = it.zs;
+    el.style.opacity=sh.style.opacity=BoardUpgrade.pawnAlpha(it.id);
   }
 }
 
@@ -4740,6 +4771,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
+  let upgradeTile=null;
   syncBotSpeedUi();
   syncSelectedMap();
   const enteringFromSelect = state.phase === 'playing' && prev.phase === 'select';
@@ -4842,6 +4874,7 @@ function render() {
       }
     }
     preparePlacementVisibility();
+    upgradeTile=BoardUpgrade.prepare(state,prev);
     BoardNotice.prepare(state,state.lastBattle,state.lastBattle?.at===prev.battleAt);
     renderBoard(); renderPawns(); renderHUD();
     // お金の増減フロート + 移動が対になっていれば金貨を飛ばす
@@ -4931,7 +4964,7 @@ function render() {
     // レベルアップ・進化のFX
     for (let i = 0; i < state.tiles.length; i++) {
       const was = prev.ownersArr[i], now = state.owners[i];
-      if (was && now && now.level > was.level) {
+      if (i!==upgradeTile && was && now && now.level > was.level) {
         const col = player(now.player).color;
         const isEvo = now.level >= (state.evoLevel || 3) && !/_f$/.test(now.creature) &&
             state.catalog.CREATURES[now.creature].evo && was.level < (state.evoLevel || 3);

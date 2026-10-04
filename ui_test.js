@@ -76,6 +76,8 @@ const scripts = 'class MutationObserver { observe() {} disconnect() {} }\nconst 
   fs.readFileSync('public/map-ui.js','utf8') + '\nconst SummonsMapUI=window.SummonsMapUI;\n' + timingSrc + '\n' +
   fs.readFileSync('public/phone-enemy-choice.js','utf8') + '\nconst PhoneEnemyChoice=window.PhoneEnemyChoice;\n' +
   fs.readFileSync('public/phone-player-target.js','utf8') + '\nconst PhonePlayerTarget=window.PhonePlayerTarget;\n' +
+  fs.readFileSync('public/upgrade-ui.js','utf8') + '\nconst UpgradeUI=window.UpgradeUI;\n' +
+  fs.readFileSync('public/phone-upgrade.js','utf8') + '\nconst PhoneUpgrade=window.PhoneUpgrade;\n' +
   [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n');
 
 // ===== レイアウト不変条件 =====
@@ -190,6 +192,7 @@ function flushTimers(maxMs = 5000) {
 qEls = {};
 qsaCalls = new Set();  // このフレームでバインドを試みたセレクタ
 const doc = {
+  documentElement:{clientWidth:800,clientHeight:380},
   getElementById: id => knownIds.has(id) ? (els[id] || (els[id] = makeEl(id))) : null,
   // classセレクタ等は実HTMLに存在する前提の汎用スタブ(ID参照の欠落検知はgetElementByIdで担保)
   querySelectorAll: sel => { qsaCalls.add(sel); return []; },
@@ -262,13 +265,15 @@ if (els.contextBtn.style.display !== 'inline-flex' || els.contextBtn.textContent
 function clearDom() {
   for (const el of Object.values(els)) {
     // Dedicated component retains its own render cache and DOM across state notifications.
-    if (['phoneEnemyChoice','ecHandToggle','phonePlayerTarget'].includes(el.id)) continue;
+    if (['phoneEnemyChoice','ecHandToggle','phonePlayerTarget','phoneUpgrade'].includes(el.id)) continue;
     el.innerHTML = ''; el.textContent = ''; el.onclick = null;
     for (const k of Object.keys(el.dataset)) delete el.dataset[k];  // 再描画キャッシュも毎フレーム破棄
   }
   qsaCalls.clear();
 }
 function affordance(pid2, st) {
+  if(els.phoneUpgrade&&!els.phoneUpgrade.hidden&&st.pending[pid2]?.type==='upgrade_lv'&&
+    st.pending[pid2]?.options.some(o=>o.id.startsWith('ul:')&&o.id.split(':').length===3&&(els.phoneUpgrade.innerHTML||'').includes(`data-level="${o.id.split(':')[2]}"`)))return 'territory-upgrade-choice';
   if(els.phonePlayerTarget&&!els.phonePlayerTarget.hidden&&['censor_target','toxy_target'].includes(st.pending[pid2]?.type)&&
     st.pending[pid2]?.options.some(o=>o.player&&(els.phonePlayerTarget.innerHTML||'').includes(`data-player="${o.player}"`)))return 'player-target-choice';
   if(els.phoneEnemyChoice&&!els.phoneEnemyChoice.hidden&&st.enemyLand?.player===pid2&&

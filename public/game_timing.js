@@ -7,6 +7,14 @@ const GAME_TIMING = {
   gameEntryReturn: 4150,
   gameEntryCameraReturn: 850,
   placementCameraReturn: 1300,
+  upgradeZoom: 950,
+  upgradeLead: 220,
+  upgradeFade: 340,
+  upgradeStep: 700,
+  upgradeEvolution: 6250,
+  upgradeResult: 2000,
+  upgradeEvolutionResult: 500,
+  upgradeDismiss: 220,
   gameNotice: 4200,
   startNoticeGap: 350,
   turnNotice: 3300,
@@ -33,5 +41,9 @@ const GAME_TIMING = {
 };
 GAME_TIMING.scaled = (ms, speed) => Math.max(1, Math.round(ms / (speed === 2 ? 2 : 1)));
 GAME_TIMING.ultimateDuration = GAME_TIMING.ultimateIntro + GAME_TIMING.ultimateNotice;
+GAME_TIMING.upgradeDuration = (steps,evolves) => GAME_TIMING.upgradeZoom + GAME_TIMING.upgradeLead +
+  GAME_TIMING.upgradeFade*3 + steps*GAME_TIMING.upgradeStep +
+  (evolves ? GAME_TIMING.upgradeEvolution+GAME_TIMING.upgradeEvolutionResult : GAME_TIMING.upgradeResult) +
+  GAME_TIMING.upgradeDismiss + GAME_TIMING.placementCameraReturn + 1200;
 GAME_TIMING.castleDuration = ev => ev?.usedSeal === false ? 4000 : Math.max(GAME_TIMING.castleBreakdown, 1600 + Math.ceil((ev?.healed?.length || 0) / 3) * GAME_TIMING.healPageInterval);
 if (typeof module !== 'undefined') module.exports = GAME_TIMING;

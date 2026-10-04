@@ -193,7 +193,7 @@ const CREATURES = {
     evoFx:'【インクの選別】配置時・領地進化時、3枚引き、手札1枚を選んで捨てる', rarity:'R' },
   joma: { name:'ジョーマ', evo:'ジョーマギア', elem:null, st:10, hp:40, cost:90, evoSt:30, evoHp:90,
     fx:'【武庫の鍵】配置時、山札・捨て札からウェポン1枚を選び手札へ',
-    evoFx:'【武庫の鍵】配置時・領地進化時、山札・捨て札からウェポン1枚を選び手札へ', rarity:'R' },
+    evoFx:'【武庫の鍵】配置・領地進化時、山札・捨て札のウェポン1枚を手札へ。侵略は報酬後', rarity:'R' },
   yomiga: { name:'ヨミガ', evo:'モスグリフ', elem:null, st:20, hp:35, cost:100, evoSt:40, evoHp:80,
     fx:'【禁書の頁】配置時、山札・捨て札からスペル1枚を選び手札へ',
     evoFx:'【禁書の頁】配置時・領地進化時、山札・捨て札からスペル1枚を選び手札へ', rarity:'R' },
@@ -903,10 +903,26 @@ function askMandatoryHandExile(r, p, type, prompt, extra = {}) {
   return true;
 }
 function resumeAfterPlacement(r, p, pend) {
+  if (pend.after === 'battle_reward') return settleAll(r);
   if (pend.after === 'evolution') return processPlacementQueue(r);
   if (pend.after === 'swap') return askRoll(r, p);
   if (pend.after === 'battle' || pend.after === 'frontline') return continuePostBattle(r);
   return endTurn(r);
+}
+function askCardSearch(r,p,creatureId,kind,after,tile) {
+  const options=['deck','discard'].flatMap(zone=>p[zone].flatMap((card,index)=>
+    (kind==='weapon'?SUPPORTS[card]:SPELLS[card])
+      ? [{id:`search:${zone}:${index}`,card,zone,index,label:cardName(card)}] : []));
+  if(!options.length)return false;
+  ask(r,p.id,'card_search',kind==='weapon'?'【武庫の鍵】ウェポンを1枚選ぶ':'【禁書の頁】スペルを1枚選ぶ',options);
+  Object.assign(r.pending[p.id],{after,tile,creature:creatureId,kind});
+  return true;
+}
+function finishBattleReward(r,p,search) {
+  const o=search&&r.owners[search.tile];
+  if(o?.player===p.id&&baseId(o.creature)==='joma'&&isEvolved(o)&&
+      askCardSearch(r,p,'joma_f','weapon','battle_reward',search.tile))return;
+  return settleAll(r);
 }
 function onCreatureSummoned(r, p, creatureId, reason, tile) {
   if (!['summon', 'swap', 'battle', 'frontline', 'evolution'].includes(reason)) return false;
@@ -965,14 +981,7 @@ function onCreatureSummoned(r, p, creatureId, reason, tile) {
   }
   if (['joma','yomiga'].includes(baseId(creatureId))) {
     const kind = baseId(creatureId)==='joma' ? 'weapon' : 'spell';
-    const options = ['deck','discard'].flatMap(zone => p[zone].flatMap((card,index) =>
-      (kind==='weapon' ? SUPPORTS[card] : SPELLS[card])
-        ? [{id:`search:${zone}:${index}`,card,zone,index,label:cardName(card)}] : []));
-    if (options.length) {
-      ask(r,p.id,'card_search',kind==='weapon'?'【武庫の鍵】ウェポンを1枚選ぶ':'【禁書の頁】スペルを1枚選ぶ',options);
-      Object.assign(r.pending[p.id],{after:reason,tile,creature:creatureId,kind});
-      return true;
-    }
+    if(askCardSearch(r,p,creatureId,kind,reason,tile))return true;
   }
   if (baseId(creatureId) === 'night_jelly' && Number.isInteger(tile)) {
     reconcileAbyssMarks(r);
@@ -2348,6 +2357,24 @@ function askUpgrade(r, p, where) {
   ask(r, p.id, 'upgrade', `${where}に到着 ─ ${where === '自領地' ? '領地を強化／マーローを移動' : '強化する領地を選ぶ'}`, opts);
   r.pending[p.id].where = where;
 }
+// Project every level with the same rules used by payment and combat.
+function landUpgradeUi(r, p, tile) {
+  const o=r.owners[tile], original=o.level, bid=baseId(o.creature), c=CREATURES[bid];
+  const snapshot=()=>({level:o.level,toll:tollOf(r,tile),...landDefenseStats(r,tile),
+    evolved:!!c.evo && isEvolved(o)});
+  const before=snapshot(),levels=[];
+  try {
+    for(let level=original+1;level<=RULES.maxLevel;level++) {
+      o.level=original;
+      const cost=upCostRange(r,p,tile,level);
+      o.level=level;
+      levels.push({...snapshot(),cost,canPay:cost<=p.gold,
+        evolves:!before.evolved && !!c.evo && level>=RULES.evoLevel});
+    }
+  } finally { o.level=original; }
+  return {tile,actor:p.id,element:tileElem(r,tile),creature:bid,name:c.name,evoName:c.evo,
+    owner:{...o},before,levels,discount:upgradeDiscountRate(r,p,tile)};
+}
 function startDraft(r, p, resume, availableAt) {
   refillDeck(r);
   if (r.deck.length < 3) {
@@ -2829,11 +2856,17 @@ function resolveBattle(r) {
   }
   r.battleAfter = { winner: bWinner.id, attacker: atk.id, defender: def.id, tile: b.tile,
     invasionWon: !!win, mermaidDone: false, recoveryDone: false };
+  // Let a newly placed Jomagia search the weapon just acquired as its battle reward.
+  const rewardSearch=win&&!mvSrc&&!corridor&&baseId(b.atkCreature)==='joma'&&isEvolved(r.owners[b.tile]);
+  if(rewardSearch){
+    r.owners[b.tile].evolutionAbilityUsed=true;
+    r.battleAfter.rewardSearch={tile:b.tile};
+  }
   if (win && mvSrc) {
     grantWindSupply(r, atk, b.windSupplyProviders, [{ from: b.moveFrom, to: b.tile }]);
     if (pauseWindSupply(r, { type: 'battle_placement', player: atk.id, creature: b.atkCreature, tile: b.tile, winner: bWinner.id })) return;
   }
-  if (win && !mvSrc && !corridor && onCreatureSummoned(r, atk, b.atkCreature, 'battle', b.tile)) {
+  if (win && !mvSrc && !corridor && !rewardSearch && onCreatureSummoned(r, atk, b.atkCreature, 'battle', b.tile)) {
     Object.assign(r.pending[atk.id], { battleWinner: bWinner.id });
     return;
   }
@@ -2903,7 +2936,9 @@ function continuePostBattle(r) {
   r.battleAfter = null;
   r.effectResume = null;
   log(r, `戦${state.invasionWon ? '勝' : '果'}の報酬 ─ ${winner.name}は3枚のカードから1枚を選ぶ`);
-  return startDraft(r, winner, 'battle');
+  startDraft(r, winner, 'battle');
+  if(state.rewardSearch)r.draft.rewardSearch=state.rewardSearch;
+  return;
 }
 
 // ===== アクションハンドラ =====
@@ -3663,12 +3698,13 @@ function handleChoose(r, playerId, optionId) {
       r.deck.push(...r.draft.cards);
       log(r, `${p.name}はカードを加えなかった`);
       const resume0 = r.draft.resume;
+      const search=r.draft.rewardSearch;
       r.draft = null;
       if (resume0 === 'cavern_move') return advanceCavernMove(r,p);
       if (resume0 === 'tile') return resolveTile(r, p);
       if (resume0 === 'villa_recover') return startVillaRecovery(r, p);
       if (resume0 === 'market') return askMarket(r, p);
-      if (resume0 === 'battle') return settleAll(r);  // 戦勝ドラフト後は精算→手番終了へ(v0.74)
+      if (resume0 === 'battle') return finishBattleReward(r,p,search);
       return endTurn(r);
     }
     const c = optionId.slice(5);
@@ -3680,12 +3716,13 @@ function handleChoose(r, playerId, optionId) {
     gainToDeck(r, p, [c], 'draft');  // v0.61: 獲得カードは山札へ(シャッフル)
     log(r, `${p.name}はカードを1枚獲得し、山札に加えた(中身は非公開)`);
     const resume = r.draft.resume;
+    const search=r.draft.rewardSearch;
     r.draft = null;
     if (resume === 'cavern_move') return advanceCavernMove(r,p);
     if (resume === 'tile') return resolveTile(r, p);
     if (resume === 'villa_recover') return startVillaRecovery(r, p);
     if (resume === 'market') return askMarket(r, p);
-    if (resume === 'battle') return settleAll(r);  // 戦勝ドラフト後は精算→手番終了へ(v0.74)
+    if (resume === 'battle') return finishBattleReward(r,p,search);
     return endTurn(r);
   }
 
@@ -3776,6 +3813,7 @@ function handleChoose(r, playerId, optionId) {
       opts.push({ id: 'ul:cancel', label: '今回は強化しない' });
       ask(r, p.id, 'upgrade_lv', `${ELEM_JA[tileElem(r, i)] || ''}属性の土地(${CREATURES[o.creature].name}) ─ どのレベルまで上げる?`, opts);
       r.pending[p.id].where = pend.where || '自領地';
+      r.pending[p.id].upgrade = landUpgradeUi(r,p,i);
       return;
     }
     return endTurn(r);
@@ -3788,6 +3826,10 @@ function handleChoose(r, playerId, optionId) {
       const o = r.owners[i];
       const cost = upCostRange(r, p, i, target);
       if (o && o.player === p.id && target > o.level && target <= RULES.maxLevel && cost <= p.gold) {
+        const upgrade=landUpgradeUi(r,p,i),result=upgrade.levels.find(x=>x.level===target);
+        r.lastUpgrade={...upgrade,target,at:stamp(r)};
+        if(r.boardSeen)r.turnReadyAt=Date.now()+presentationMs(r,p.id,
+          GAME_TIMING.upgradeDuration(target-upgrade.before.level,result.evolves));
         markMatchCause(r, 'upgrade', { actor: p.id, tile: i, amount: cost });
         const wasBelow = o.level < RULES.evoLevel;
         p.gold -= cost;
@@ -4227,6 +4269,7 @@ function publicState(r, viewerId) {
     landCombat: r.owners.map((o, i) => o ? landCombatUi(r, i) : null),
     enemyLand: enemyLandUi(r),
     landStop: landStopUi(r),
+    lastUpgrade: r.lastUpgrade || null,
     abyssMarks: activeAbyssMarks(r),
     tileFx: r.tileFx,
     owners: r.owners, market: r.market, shopVisit: r.shopVisit || null, log: r.log,
@@ -4265,7 +4308,10 @@ function publicState(r, viewerId) {
             ? [k, { type: v.type, prompt: v.prompt, options: [], selectedCount: (v.selected || []).length }]
           : v.type === 'support' && k !== viewerId
             ? [k, { type: v.type, prompt: 'ウェポンを選択中', options: [] }]
-            : [k, v])),
+            : [k, v.type==='upgrade_lv'&&!v.upgrade
+              ? {...v,upgrade:(()=>{const tile=Number(v.options.find(o=>o.id.startsWith('ul:')&&o.id.split(':').length===3)?.id.split(':')[1]);
+                  return Number.isInteger(tile)&&r.owners[tile]?.player===k?landUpgradeUi(r,pById(r,k),tile):null;})()}
+              : v])),
     windSupply: windSupplyPublic(r, viewerId),
     lastDraw: r.lastDraw ? Object.assign({}, r.lastDraw,
       r.lastDraw.player === viewerId && Array.isArray(r.lastDraw.cards)
@@ -4350,6 +4396,7 @@ const ROOM_PERSIST_KEYS = new Set([                                            /
   'cardEffectNotices', 'placementQueue', 'placementResume',
 ]);
 ROOM_RUNTIME_KEYS.add('stateInstanceId');
+ROOM_RUNTIME_KEYS.add('lastUpgrade');
 function serializeRoom(r) {
   reconcileAbyssMarks(r);
   const room = {};
@@ -4454,6 +4501,11 @@ function validateSave(save) {
   }
   if (d.battle != null && (!ids.has(d.battle.attacker) || !ids.has(d.battle.defender))) return '戦闘データが不正です';
   if (d.draft != null && !ids.has(d.draft.player)) return 'ドラフトデータが不正です';
+  for(const holder of [d.draft,d.battleAfter])if(holder?.rewardSearch!=null){
+    const search=holder.rewardSearch,player=holder.player||holder.winner,o=d.owners[search.tile];
+    if(!validTile(search.tile)||!ids.has(player)||holder===d.draft&&holder.resume!=='battle'||
+       o?.player!==player||baseId(o.creature)!=='joma'||!isEvolved(o))return '戦闘報酬後のサーチ情報が不正です';
+  }
   if (d.windSupply != null) {
     const e = d.windSupply;
     if (typeof e.id !== 'string' || !ids.has(e.player) || ![0,1].includes(e.count) ||
@@ -4774,7 +4826,7 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const p = url.pathname;
   if(p === '/game-cards.js'){res.writeHead(200,{'Content-Type':'text/javascript; charset=utf-8','Cache-Control':'no-cache'});return res.end(gameCardSource);}
-  if(['/phone-player-target.js','/phone-player-target.css','/phone-land.js','/phone-land.css','/phone-enemy-choice.js','/phone-enemy-choice.css','/phone-summoners.js','/phone-summoners.css','/board-audio-settings.js','/board-settings.js','/board-settings.css','/board-flow-notices.js','/board-flow-notices.css','/board-route.js','/board-route.css','/board-finale.js','/board-finale.css','/board-goal-notice.js','/board-goal-notice.css','/board-land-stop.js','/board-land-stop.css','/board-next-notices.js','/board-next-notices.css','/board-enemy-land.js','/board-enemy-land.css','/board-actor.js','/board-actor.css','/board-effects.js','/board-notice.js','/board-notice.css','/board-milestones.js','/board-milestones.css','/result-review.js','/result-review.css','/rare-draw.css','/battle-external.css','/phone-card-picker.js','/phone-card-picker.css','/phone-deck.css','/hud-rank.js','/hud-rank.css'].includes(p))return serveFile(res,p.slice(1));
+  if(['/upgrade-ui.js','/phone-upgrade.js','/phone-upgrade.css','/board-upgrade.js','/board-upgrade.css','/phone-player-target.js','/phone-player-target.css','/phone-land.js','/phone-land.css','/phone-enemy-choice.js','/phone-enemy-choice.css','/phone-summoners.js','/phone-summoners.css','/board-audio-settings.js','/board-settings.js','/board-settings.css','/board-flow-notices.js','/board-flow-notices.css','/board-route.js','/board-route.css','/board-finale.js','/board-finale.css','/board-goal-notice.js','/board-goal-notice.css','/board-land-stop.js','/board-land-stop.css','/board-next-notices.js','/board-next-notices.css','/board-enemy-land.js','/board-enemy-land.css','/board-actor.js','/board-actor.css','/board-effects.js','/board-notice.js','/board-notice.css','/board-milestones.js','/board-milestones.css','/result-review.js','/result-review.css','/rare-draw.css','/battle-external.css','/phone-card-picker.js','/phone-card-picker.css','/phone-deck.css','/hud-rank.js','/hud-rank.css'].includes(p))return serveFile(res,p.slice(1));
   if (p === '/') return serveFile(res, 'site/index.html');
   if (p === '/news') return serveFile(res, 'site/news-index.html', url.searchParams.get('category'));
   if (p === '/news/2026-10-04-noir-update') return serveFile(res, 'site/news-2026-10-04-noir-update.html');

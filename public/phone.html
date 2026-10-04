@@ -959,7 +959,7 @@
 <link rel="stylesheet" href="/map-ui.css?v=159-3">
 <script src="/map-definitions.js?v=159-3"></script>
 <script src="/map-ui.js?v=158"></script>
-<script src="/game_timing.js?release=164"></script>
+<script src="/game_timing.js?release=164&upgrade=20261005"></script>
 <script src="/vendor/phaser.min.js"></script>
 <script src="/ult_fx_world.js"></script>
 <link rel="stylesheet" href="/phone-card-picker.css?v=20260928-draw5&release=164&noir=166">
@@ -971,6 +971,9 @@
 <script src="/phone-enemy-choice.js?v=20261001-1&release=165"></script>
 <link rel="stylesheet" href="/phone-player-target.css?v=20261004-1&release=166">
 <script src="/phone-player-target.js?v=20261004-1&release=166"></script>
+<link rel="stylesheet" href="/phone-upgrade.css?v=20261004-1">
+<script src="/upgrade-ui.js?v=20261004-1"></script>
+<script src="/phone-upgrade.js?v=20261004-1"></script>
 <link rel="stylesheet" href="/phone-land.css?v=20261002-3&release=165">
 <script src="/phone-land.js?v=20261002-3&release=165&noir=166"></script>
 <script>
@@ -1421,6 +1424,13 @@ if (typeof ResizeObserver !== 'undefined') new ResizeObserver(layoutDeckOverview
 let sharedCardPicker = null;
 let enemyChoice = null;
 let playerTarget = null;
+let phoneUpgrade = null;
+function getPhoneUpgrade(){
+ if(!phoneUpgrade)phoneUpgrade=new PhoneUpgrade({state:()=>state,playerId:()=>pid,choose:id=>choose(id),
+  ready:p=>!p.availableAt||Date.now()+serverClockOffset>=p.availableAt,cancelGesture:cancelHandGesture,
+  handAccess:blocked=>{$('hdr').inert=blocked;$('handWrap').inert=blocked;}});
+ return phoneUpgrade;
+}
 function getPlayerTarget() {
   if (!playerTarget) playerTarget = new PhonePlayerTarget({
     state:()=>state, playerId:()=>pid, choose:id=>choose(id),
@@ -2784,6 +2794,7 @@ function setContextActions(title, options) {
 
 function render() {
   playerTarget?.sync();
+  phoneUpgrade?.sync();
   if (!state) return;
   MM_GEO = SummonsMapUI.get(state).geo;
   document.body.dataset.mapId = SummonsMapUI.get(state).id;
@@ -2982,6 +2993,8 @@ function render() {
     closeActionOverlay(true);
     A.innerHTML = '';
     getEnemyChoice().show();
+  } else if (p.type === 'upgrade_lv' && p.upgrade) {
+    closeActionOverlay(true);A.innerHTML='';getPhoneUpgrade().show();
   } else if (p.type === 'pick_draw') {
     $('msg').textContent=taskPrompt(p); A.innerHTML=''; $('pickOv').classList.remove('on');
     getCardPicker().show({title:'カードを選ぶ',drawOverlay:true,center:true,sections:[{name:'候補',entries:p.options.map(o=>({card:o.card,pickId:o.id}))}],action:'手札に加える'});
