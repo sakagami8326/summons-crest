@@ -20,7 +20,7 @@ module.exports = function createStandardBot(A) {
   const handledPending = new Set(('creature_effect abyss_mark curse_target daitekkan_recover direction draft forge forget gate market '
     +'marlow_dest marlow_src mermaid_heal move_a move_b overflow pick_creature pick_draw quake_target roll route_choice '
     +'samurai_elem select_char select_wait sell spell_target spell_evolve frontline_swap step_a step_b support swap_land swap_pick tile toxy_target '
-    +'ult_grease ult_lia ult_mio ult_nerasio_elem ult_nerasio_land ult_resolve ult_villa_recover upgrade upgrade_lv gaust_exile fatal_exile').split(' '));
+    +'ult_grease ult_lia ult_mio ult_nerasio_elem ult_nerasio_land ult_resolve ult_villa_recover upgrade upgrade_lv gaust_exile fatal_exile card_search inkcrow_discard censor_pick censor_target gate_pass_evolve').split(' '));
 
   function view(raw, me, pending) {
     const r = {};
@@ -267,6 +267,7 @@ module.exports = function createStandardBot(A) {
     };
     if(sid==='sp_gold') add(Math.max(1,p.lap)*100);
     else if(sid==='sp_insight') add(Math.min(2,Math.max(0,7-p.hand.length+1))*50);
+    else if(sid==='sp_censor') add(r.players.some(q=>q.id!==p.id&&!q.bankrupt&&q.handCount>0)?110:0);
     else if(sid==='sp_evolve') {
       p.hand.forEach((id,i)=>{if(C[id]?.evo && C[id+'_f'])
         add((C[id].evoSt-C[id].st+C[id].evoHp-C[id].hp)*3+30,{i});});
@@ -317,6 +318,7 @@ module.exports = function createStandardBot(A) {
   function ultimatePlan(r,p) {
     const own=ownLands(r,p), out={score:-Infinity,reason:'有効な必殺技対象なし'};
     const baseline=()=>expectedMove(r,p);
+    if(p.charId==='noir')return {score:Math.min(3,7-p.hand.length)*50+r.players.filter(q=>q.id!==p.id&&!q.bankrupt&&q.handCount>0).length*45-35,reason:'ドローと各対戦相手の手札干渉'};
     if(p.charId==='redani')return {score:expectedMove(r,p,3)-baseline()-50,reason:'3個ダイスの期待到着評価'};
     if(p.charId==='mio') {
       const choices=tilesOf(r).map((_,tile)=>({tile,value:teleportValue(r,p,tile)})).sort((a,b)=>b.value-a.value||a.tile-b.tile);
@@ -487,6 +489,13 @@ module.exports = function createStandardBot(A) {
       for(const o of opts){const i=numberTile(o);if(i!==null)add(o.id,abyssMarkBonusFor(r.owners[pd.sourceTile],r.owners[i])*(1+traffic(r,p,i)*2),'標の増額と到達される可能性');}
     } else if(pd.type==='mermaid_heal') {
       for(const o of opts){const i=numberTile(o);if(i!==null)add(o.id,healValue(r,p,i,10),'実回復量と回復収入');}
+    } else if(['card_search','inkcrow_discard','censor_pick'].includes(pd.type)) {
+      for(const o of opts){const value=botCardScore(r,p,o.card);
+        add(o.id,pd.type==='inkcrow_discard'?-value:value,'選択候補のカード価値');}
+    } else if(pd.type==='gate_pass_evolve') {
+      for(const o of opts){const c=C[o.card];add(o.id,c?(c.evoSt-c.st+c.evoHp-c.hp)*3-RULES.forgeCost+30:0,'門通過時の進化');}
+    } else if(pd.type==='censor_target') {
+      for(const o of opts){const target=player(r,o.player);add(o.id,target?target.handCount*20+points(r,target)*.02:0,'公開された手札枚数から対象を選ぶ');}
     } else if(pd.type==='toxy_target') {
       for(const o of opts){const target=player(r,o.player||o.id.slice(3));if(target)add(o.id,target.handCount*20+points(r,target)*.02,'公開された手札枚数と資産から妨害対象を選ぶ');}
     } else if(pd.type==='samurai_elem') {

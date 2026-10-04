@@ -134,7 +134,7 @@ for (const creature of ['mermaid','night_jelly','samurai_saga','kamadoma_f','nom
   G.handleChoose(r,a.id,'sup:none'); G.handleChoose(r,d.id,'sup:none');
   const promptType = Object.values(r.pending)[0]?.type;
   if (creature === 'mermaid') ok(promptType === 'mermaid_heal','Move triggers heal choice');
-  if (creature === 'night_jelly') ok(promptType === 'abyss_mark','Move triggers mark choice');
+  if (creature === 'night_jelly') ok(promptType !== 'abyss_mark','land-to-land movement does not replay placement mark choice');
   if (creature === 'kamadoma_f') ok(promptType === 'daitekkan_recover','Move triggers weapon recovery');
   finishChoices(r,true);
   ok(r.players[r.turn].id === a.id && r.pending[a.id]?.type === 'roll', `${creature}: all post-battle effects resume roll`);

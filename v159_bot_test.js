@@ -1,6 +1,9 @@
 const fs=require('fs'), path=require('path'), assert=require('assert/strict');
 const source=fs.readFileSync(path.join(__dirname,'server.js'),'utf8').replace(/server\.listen\([\s\S]*?\}\);\s*$/,'');
-const reference=fs.readFileSync(path.join(__dirname,'test/fixtures/v158-battle-reference.txt'),'utf8').replace('function resolveBattle(r)','function referenceBattle(r)');
+// v1.66: moving an already placed creature does not replay placement abilities.
+// Keep the frozen combat calculation, adapting only that explicitly changed post-battle trigger.
+const reference=fs.readFileSync(path.join(__dirname,'test/fixtures/v158-battle-reference.txt'),'utf8').replace('function resolveBattle(r)','function referenceBattle(r)')
+  .replace("if (win && onCreatureSummoned(r, atk, b.atkCreature, 'battle', b.tile))", "if (win && !mvSrc && !corridor && onCreatureSummoned(r, atk, b.atkCreature, 'battle', b.tile))");
 const legacy=fs.readFileSync(path.join(__dirname,'test/fixtures/v158-bot-reference.txt'),'utf8').replace(/\bbot(?=[A-Z])/g,'legacyBot').replace(/\bBOT_CANCEL_IDS\b/g,'LEGACY_CANCEL_IDS');
 let captureTimers=false,timers=[];
 const G=new Function('require','__dirname','setInterval','setTimeout',source+'\n'+reference+'\n'+legacy+`
@@ -23,7 +26,8 @@ try {
  // Differential fixture is frozen before the extraction, not another call to the new calculator.
  const base=game();base.p.gold=base.enemy.gold=3000;
  // Evol's new victory income is covered by v162_evol_test; the frozen resolver predates it.
- const forms=Object.keys(G.CREATURES).filter(id=>!['evol','evol_f'].includes(id)), opponents=['gaston','pakawata','avalanche','ludi','mimic','valk_f','beruf_f'];
+ // Noir's new hand-scaled attack and placement effects have their own v1.66 regression tests.
+ const forms=Object.keys(G.CREATURES).filter(id=>!['evol','inkcrow','joma','yomiga','kagetsuzuri'].includes(id.replace(/_f$/,''))), opponents=['gaston','pakawata','avalanche','ludi','mimic','valk_f','beruf_f'];
  for(const [cid,defender] of forms.flatMap(c=>opponents.flatMap(d=>[[c,d],[d,c]])))for(const level of [1,3]) {
    const r=copy(base.r),p=r.players[0],enemy=r.players[1];
    p.hand=[cid,'weapon','gshield'];enemy.hand=[defender,'shield','jinx'];
@@ -43,7 +47,7 @@ try {
    if(level===3 && G.CREATURES[cid].evo)old.battle.atkCreature=cid+'_f';
    seed=10;G.referenceBattle(old);seed=10;G.resolveBattle(next);
    // The frozen resolver predates result-only counters; compare all combat state.
-   const combatOnly=r=>{const c=copy(r);if(c.lastBattle){delete c.lastBattle.externalModifiers;delete c.lastBattle.moneyEvents;delete c.lastBattle.tollWaived;}c.players.forEach(p=>{delete p.cardsCollected;delete p.tollCollected;});return c;};
+   const combatOnly=r=>{const c=copy(r);if(c.lastBattle){delete c.lastBattle.externalModifiers;delete c.lastBattle.moneyEvents;delete c.lastBattle.tollWaived;}c.players.forEach(p=>{delete p.cardsCollected;delete p.tollCollected;});c.owners.forEach(o=>{if(o)delete o.evolutionAbilityUsed;});return c;};
    eq(combatOnly(next),combatOnly(old),`full combat unchanged: ${cid}/${defender}/Lv${level}`);
    for(const [a,b] of [['atkDmg','st'],['effHp','hp'],['defDF','df'],['dealt','dealt'],['win','win'],['atkSurvived','atkSurvived'],['counterDealt','counterDealt']])eq(q[a],next.lastBattle[b],'prediction matches actual '+b);
  }

@@ -10,7 +10,7 @@ const crypto = require('crypto');
 const SITE_NEWS = require('./site-news');
 const START_DEVICE = require('./public/assets/start-guide/device');
 
-const VERSION = '1.65';
+const VERSION = '1.66';
 const MAPS = require('./public/map-definitions');
 const mapOf = r => MAPS[r.mapId || 'starting_corridor'];
 const tilesOf = r => mapOf(r).tiles;
@@ -50,6 +50,8 @@ const CHAR_DECKS = {
   nerasio:['komao', 'komao', 'nome', 'nome', 'fugorm', 'cleo',
            'sp_gold', 'sp_insight', 'sp_earth_mother_stone',
            'shield', 'shield', 'jinx'],
+  noir:   ['cleo', 'cleo', 'inkcrow', 'joma', 'yomiga', 'kagetsuzuri',
+           'sp_gold', 'sp_insight', 'sp_censor', 'shield', 'shield', 'jinx'],
 };
 // 廃棄スペル(使用後ゲームから除外)
 let EXILE_SPELLS = new Set();
@@ -153,7 +155,7 @@ const CREATURES = {
              evoSt: 30, evoHp: 50, fx: '【瘴気連鎖】配置中、自分のカード廃棄時、敵1人の手札を1枚捨てる', rarity: 'R' },
   kamadoma:{ name: 'カマドーマ', evo: 'ダイテッカン', elem: 'fire', st: 20, hp: 40, cost: 60,
              evoSt: 30, evoHp: 60, fx: '【武具錬成】配置時、ソード1枚を手札に加える',
-             evoFx: '【武具錬成】配置時にソードを得る。【再鍛造】戦闘勝利時、廃棄のウェポン1枚を回収', rarity: 'N' },
+             evoFx: '【再鋳造】戦闘勝利時、廃棄のウェポン1枚を回収', rarity: 'N' },
   swordgear:{ name: 'ソードギア', evo: 'イグニスナイト', elem: 'fire', st: 40, hp: 30, cost: 100,
              evoSt: 40, evoHp: 50, fx: '【武装熟練】ソード／ヘビーアックスのAT補正をさらに+10',
              evoFx: '【武装熟練】ソード／ヘビーアックスのAT補正をさらに+20', rarity: 'R' },
@@ -186,9 +188,23 @@ const CREATURES = {
   jaki:    { name: 'ジャキ', evo: 'アシュラカン', elem: 'earth', st: 40, hp: 30, cost: 90,
              evoSt: 60, evoHp: 60,
              fx: '【戦線交代】戦闘勝利時、召喚コストを払い手札のクリーチャーと交代できる', rarity: 'R' },
+  inkcrow: { name:'インクロウ', evo:'ヤタバルカン', elem:null, st:20, hp:40, cost:80, evoSt:40, evoHp:80,
+    fx:'【インクの選別】配置時、2枚引き、手札1枚を選んで捨てる',
+    evoFx:'【インクの選別】配置時・領地進化時、3枚引き、手札1枚を選んで捨てる', rarity:'R' },
+  joma: { name:'ジョーマ', evo:'ジョーマギア', elem:null, st:10, hp:40, cost:90, evoSt:30, evoHp:90,
+    fx:'【武庫の鍵】配置時、山札・捨て札からウェポン1枚を選び手札へ',
+    evoFx:'【武庫の鍵】配置時・領地進化時、山札・捨て札からウェポン1枚を選び手札へ', rarity:'R' },
+  yomiga: { name:'ヨミガ', evo:'モスグリフ', elem:null, st:20, hp:35, cost:100, evoSt:40, evoHp:80,
+    fx:'【禁書の頁】配置時、山札・捨て札からスペル1枚を選び手札へ',
+    evoFx:'【禁書の頁】配置時・領地進化時、山札・捨て札からスペル1枚を選び手札へ', rarity:'R' },
+  kagetsuzuri: { name:'カゲツヅリ', evo:'ツヅラガント', elem:null, st:30, hp:45, cost:110, evoSt:60, evoHp:75,
+    fx:'【紙片の軍勢】侵略時、残りの手札1枚につきAT+5（最大+20）',
+    evoFx:'【紙片の軍勢】侵略時、残りの手札1枚につきAT+5（最大+30）', rarity:'R' },
 };
 const ITEMS = {}; // v0.34: 呪いアイテムは廃止(スペル「衰弱の呪文」に移行)
 const SPELLS = {
+  sp_censor: { name:'禁書検閲', rarity:'R', cost:120,
+    desc:'敵1人の手札からランダムな2枚を自分だけ確認し、1枚を選んで捨てさせる。その後1枚引く' },
   sp_gold:   { name: 'ゴールド', rarity: 'N', cost: 0,
                desc: '現在の周回数×100Gを得る' },
   sp_weaken: { name: '衰弱の呪文', rarity: 'N', cost: 200, hp: 20,
@@ -267,8 +283,11 @@ const CHARS = {
             style: '廃棄・墓守戦術', deckNote: '廃棄を蓄え、魂喰らいと墓守の協奏曲で再利用する', selectable: true, upcoming: false },
   nerasio:{ name: 'ネラシオ', color: '#C49545', elem: 'earth',
             style: '地脈・属性連鎖', deckNote: '土地属性を再構成し、連鎖と地形補正を組み替える', selectable: true, upcoming: false },
+  noir: { name:'ノワール', color:'#AAA3BF', elem:null, style:'手札操作・コントロール',
+    deckNote:'サーチで手札を整え、敵の手札に干渉。進化で領地を育てて侵略する', selectable:true, upcoming:false },
 };
 const ULTS = {
+  noir: { name:'漆黒の審判', desc:'各対戦相手の手札をランダムに1枚捨てさせ、自分は3枚引く', art:'/assets/ult_noir.webp' },
   redani: { name: '烈火の進軍', desc: 'ヘビーアックス（AT＋40）を手札に1枚加え、ダイスを3個振って移動する' },
   linnei: { name: '水鏡の大商談', desc: '現在のマスでショップを開き、全品半額で買い物' },
   grease: { name: '進化の胎動', desc: '手札と自分の領地から未進化クリーチャーを各1体まで選び、進化させる', art: '/assets/ult_grease-evolution-v1.webp' },
@@ -282,7 +301,7 @@ for (const [cid, c] of Object.entries({ ...CREATURES }))
   if (c.evo) CREATURES[cid + '_f'] = { name: c.evo, elem: c.elem, st: c.evoSt, hp: c.evoHp,
     cost: c.cost, fx: c.evoFx || c.fx, rarity: c.rarity, forged: true };
 
-const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral','mermaid','bunnyhop','strauk','samurai_saga','marlow','shuterio','gaust','alter','toxy','kamadoma','swordgear','komao','mist_jelly','night_jelly','wakatama','emeri','valk','jaki','evol','poponga'];
+const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral','mermaid','bunnyhop','strauk','samurai_saga','marlow','shuterio','gaust','alter','toxy','kamadoma','swordgear','komao','mist_jelly','night_jelly','wakatama','emeri','valk','jaki','evol','poponga','inkcrow','joma','yomiga','kagetsuzuri'];
 // アートが存在するクリーチャーID(assetsのc_*.pngを起動時に走査 ─ v0.82)。
 // クライアントはcatalog.artIds経由で受け取る。手書きリストの二重管理はしない
 // (新クリーチャーはIDとファイル名を一致させて置くだけで盤面・カード・戦闘に反映される)
@@ -293,6 +312,7 @@ const ART_IDS = (() => {
   } catch (e) { return []; }
 })();
 const PUBLIC_SPELL_ART = {
+  sp_censor: '/assets/cards/spell-censor-art-v2.webp',
   sp_evolve: '/assets/cards/spell-evolve-art-v8.webp',
   sp_gold: '/assets/cards/spell-gold-art-v1.webp',
   sp_weaken: '/assets/cards/spell-weaken-art-v1.webp',
@@ -391,7 +411,7 @@ function publicCardCatalog() {
   }));
   publicCatalogCache = {
     version: VERSION,
-    updatedAt: '2026-09-02',
+    updatedAt: '2026-10-04',
     counts: {
       total: creatures.length + spells.length + weapons.length,
       creatures: creatures.length,
@@ -629,6 +649,7 @@ const CREATURE_EFFECT_CONTEXT = Object.freeze({
   shuterio:'battle', gaust:'placement', alter:'battle', toxy:'exile', kamadoma:'other',
   swordgear:'battle', komao:'other', mermaid:'battle', mist_jelly:'other', night_jelly:'toll',
   wakatama:'other', emeri:'battle', valk:'battle', jaki:'battle', evol:'other', poponga:'other',
+  inkcrow:'placement', joma:'placement', yomiga:'placement', kagetsuzuri:'battle',
 });
 function terrainBreakdown(r, tile, attackerCreature = null) {
   const o = r.owners[tile];
@@ -677,9 +698,11 @@ function creatureEffectUi(r, creatureId, tile, role, context = 'battle', result 
       turn:'ターン開始時のみ', land:'自領地停止時のみ', exile:'カード廃棄時のみ', other:'この戦闘では発動しない' };
     // 進化後だけ戦闘効果を持つカードを個別に扱う。
     if (bid === 'trooper' || (bid === 'bunnyhop' && evolved)) return inactive('スペル使用時のみ');
-    if (bid === 'kamadoma' && evolved && role === 'attacker') {
+    if (bid === 'kamadoma' && evolved && ['attacker', 'defender'].includes(role)) {
       if (!result) return conditional('戦闘勝利時');
-      return result.win ? active('戦闘勝利で発動') : inactive('侵略失敗');
+      const won = role === 'attacker' ? result.win : !result.win;
+      const survived = role === 'attacker' ? result.atkSurvived : !result.win;
+      return won && survived ? active('生存勝利で発動') : inactive('生存勝利時のみ');
     }
     if (bid === 'komao' && evolved) {
       const owner = o ? pById(r, o.player) : null;
@@ -693,6 +716,7 @@ function creatureEffectUi(r, creatureId, tile, role, context = 'battle', result 
     ? pById(r, r.battle.attacker)
     : (o ? pById(r, o.player) : null);
   switch (bid) {
+    case 'kagetsuzuri': return role==='attacker' ? active('残りの手札でAT補正') : inactive('侵略時のみ');
     case 'gecko': return role === 'attacker' ? active('攻撃時に発動') : inactive('攻撃時のみ');
     case 'nome': return role === 'defender'
       ? (terrain && terrain.baseBonus ? active('地形補正に加算') : inactive('領地属性不一致'))
@@ -879,19 +903,29 @@ function askMandatoryHandExile(r, p, type, prompt, extra = {}) {
   return true;
 }
 function resumeAfterPlacement(r, p, pend) {
+  if (pend.after === 'evolution') return processPlacementQueue(r);
   if (pend.after === 'swap') return askRoll(r, p);
   if (pend.after === 'battle' || pend.after === 'frontline') return continuePostBattle(r);
   return endTurn(r);
 }
 function onCreatureSummoned(r, p, creatureId, reason, tile) {
-  if (!['summon', 'swap', 'battle', 'frontline'].includes(reason)) return false;
+  if (!['summon', 'swap', 'battle', 'frontline', 'evolution'].includes(reason)) return false;
+  const owner = r.owners?.[tile];
+  const evolved = owner?.player === p.id ? isEvolved(owner) : /_f$/.test(creatureId);
+  creatureId = evolved && CREATURES[baseId(creatureId)+'_f'] ? baseId(creatureId)+'_f' : creatureId;
+  // This marker belongs to the placed individual, and follows land-to-land movement.
+  if (owner?.player === p.id) owner.evolutionAbilityUsed = evolved || !!owner.evolutionAbilityUsed;
+  if (baseId(creatureId) === 'fugorm') {
+    gainToDeck(r, p, ['weapon'], 'fugorm');
+    log(r, `【鍛冶】${cardName(creatureId)}がソード1枚を山札へ加えた`);
+  }
   if (baseId(creatureId) === 'komao' && Number.isInteger(tile)) {
     const before = tileElem(r, tile);
     if (tilesOf(r)[tile]?.e === 'earth') delete r.elemOv[tile];
     else r.elemOv[tile] = 'earth';
     log(r, `【地脈転成】${CREATURES.komao.name}が土地${tile}を${before === 'earth' ? '土属性に固定した' : '土属性へ変えた'}`);
   }
-  if (baseId(creatureId) === 'cresteria' && reason !== 'battle') {
+  if (baseId(creatureId) === 'cresteria') {
     gainToDeck(r, p, ['shield'], 'cresteria');
     log(r, `【真珠】${CREATURES.cresteria.name}の召喚でウェポン「シールド」1枚を山札へ加えた`);
   }
@@ -899,14 +933,16 @@ function onCreatureSummoned(r, p, creatureId, reason, tile) {
     gainToDeck(r, p, ['sp_flame_vortex'], 'trooper');
     log(r, `【火種】${CREATURES.trooper.name}の配置で「炎の渦」1枚を山札へ加えた`);
   }
-  if (baseId(creatureId) === 'kamadoma') {
+  const placedKamadoma = r.owners?.[tile];
+  const evolvedKamadoma = isEvolved({ creature: creatureId }) ||
+    (placedKamadoma?.player === p.id && baseId(placedKamadoma.creature) === 'kamadoma' && isEvolved(placedKamadoma));
+  if (baseId(creatureId) === 'kamadoma' && !evolvedKamadoma) {
     p.hand.push('weapon');
     recordCardAcquisition(p, 1);
     r.lastGain = { player: p.id, n: 1, cards: ['weapon'], reason: 'kamadoma', at: stamp(r) };
     // The fixed Sword reward is public; keep it separate from private/random lastGain cards.
     r.kamadomaNotices = [...(r.kamadomaNotices || []), { player:p.id, count:1, tile, reason,
-      creature:isEvolved({creature:creatureId}) || (r.owners[tile]?.player===p.id &&
-        baseId(r.owners[tile].creature)==='kamadoma' && isEvolved(r.owners[tile])) ? 'kamadoma_f' : 'kamadoma', at:r.lastGain.at }].slice(-32);
+      creature:'kamadoma', at:r.lastGain.at }].slice(-32);
     log(r, `【武具錬成】${CREATURES.kamadoma.name}の配置で${p.name}はソード1枚を手札に加えた`);
   }
   if (baseId(creatureId) === 'gaust') {
@@ -915,6 +951,28 @@ function onCreatureSummoned(r, p, creatureId, reason, tile) {
     log(r, `【魂の選別】${CREATURES.gaust.name}の配置で${got ? 'カードを1枚引いた' : '引けるカードがなかった'}`);
     if (askMandatoryHandExile(r, p, 'gaust_exile', '【魂の選別】廃棄する手札を1枚選ぶ', { after: reason, tile }))
       return true;
+  }
+  if (baseId(creatureId) === 'inkcrow') {
+    const count = drawCards(r, p, evolved ? 3 : 2);
+    if (count) r.lastDraw = {player:p.id,n:count,reason:'inkcrow',at:stamp(r)};
+    cardEffectNotice(r, p, {kind:'draw',creature:creatureId,count});
+    if (p.hand.length) {
+      ask(r,p.id,'inkcrow_discard','【インクの選別】捨てる手札を1枚選ぶ',
+        p.hand.map((card,index)=>({id:'ic:'+index,card,index,label:cardName(card)})));
+      Object.assign(r.pending[p.id],{after:reason,tile});
+      return true;
+    }
+  }
+  if (['joma','yomiga'].includes(baseId(creatureId))) {
+    const kind = baseId(creatureId)==='joma' ? 'weapon' : 'spell';
+    const options = ['deck','discard'].flatMap(zone => p[zone].flatMap((card,index) =>
+      (kind==='weapon' ? SUPPORTS[card] : SPELLS[card])
+        ? [{id:`search:${zone}:${index}`,card,zone,index,label:cardName(card)}] : []));
+    if (options.length) {
+      ask(r,p.id,'card_search',kind==='weapon'?'【武庫の鍵】ウェポンを1枚選ぶ':'【禁書の頁】スペルを1枚選ぶ',options);
+      Object.assign(r.pending[p.id],{after:reason,tile,creature:creatureId,kind});
+      return true;
+    }
   }
   if (baseId(creatureId) === 'night_jelly' && Number.isInteger(tile)) {
     reconcileAbyssMarks(r);
@@ -939,6 +997,57 @@ function onCreatureSummoned(r, p, creatureId, reason, tile) {
     { id: 'se:none', label: '変更しない' },
   ]);
   Object.assign(r.pending[p.id], { tile, after: reason });
+  return true;
+}
+function cardEffectNotice(r,p,data) {
+  r.cardEffectNotices = [...(r.cardEffectNotices||[]),{player:p.id,...data,at:stamp(r)}].slice(-32);
+}
+function queueLandEvolution(r,p,tile) {
+  const o = r.owners[tile];
+  if (!o || o.player!==p.id || o.evolutionAbilityUsed || !isEvolved(o) || !CREATURES[baseId(o.creature)]?.evo) return;
+  o.evolutionAbilityUsed = true;
+  r.placementQueue ||= [];
+  r.placementQueue.push({player:p.id,tile,creature:movingCreatureId(o)});
+}
+function processPlacementQueue(r,resume) {
+  if (resume) r.placementResume=resume;
+  while ((r.placementQueue||[]).length) {
+    const job=r.placementQueue.shift(),p=pById(r,job.player),o=r.owners[job.tile];
+    if (p && !p.bankrupt && o?.player===p.id && movingCreatureId(o)===job.creature &&
+        onCreatureSummoned(r,p,job.creature,'evolution',job.tile)) return true;
+  }
+  const next=r.placementResume;delete r.placementResume;
+  if (next?.type==='roll') return askRoll(r,pById(r,next.player));
+  if (next?.type==='end') return endTurn(r);
+  return false;
+}
+function censorTargets(r,p) { return r.players.filter(q=>q.id!==p.id&&!q.bankrupt&&q.hand.length); }
+function askCensor(r,p) {
+  const opts=censorTargets(r,p).map(q=>({id:'censor:'+q.id,player:q.id,label:q.name}));
+  if (!opts.length) return askRoll(r,p);
+  opts.push({id:'censor:cancel',label:'やめる'});
+  return ask(r,p.id,'censor_target','禁書検閲 ─ 相手を選ぶ',opts);
+}
+function finishCensor(r,p,pend,selected) {
+  const target=pById(r,pend.target);
+  let count=0;
+  if (target && !target.bankrupt && selected && target.hand[selected.index]===selected.card) {
+    target.discard.push(target.hand.splice(selected.index,1)[0]);count=1;
+  }
+  const drawn=drawCards(r,p,1);
+  if(drawn)r.lastDraw={player:p.id,n:drawn,reason:'censor',at:stamp(r)};
+  cardEffectNotice(r,p,{kind:'censor',target:pend.target,count,drawn});
+  log(r,`${p.name}の禁書検閲：${target?.name||'相手'}の手札${count}枚を捨てさせ、${drawn}枚引いた`);
+  return askRoll(r,p);
+}
+function gatePassEvolution(r,p,mioUlt=false) {
+  if(p.gateEvolutionEpoch!==(r.turnEpoch||0)||p.gateEvolutionUsedEpoch===(r.turnEpoch||0)||
+     tilesOf(r)[p.pos]?.t==='gate'||p.gold<RULES.forgeCost||r.winner||!p.hand.some(canEvolveHandCard)) return false;
+  const options=p.hand.flatMap((card,index)=>canEvolveHandCard(card)
+    ? [{id:'gp:'+index,card,index,cost:RULES.forgeCost,label:cardName(card)}] : []);
+  options.push({id:'gp:skip',label:'進化しない'});
+  ask(r,p.id,'gate_pass_evolve','門の刻印 ─ 手札を1枚進化（150G）',options);
+  r.pending[p.id].mioUlt=mioUlt;
   return true;
 }
 function abyssMarkBonusFor(source, target) {
@@ -1361,12 +1470,26 @@ function resolveUltSequence(r) {
       else {
         const o = r.owners[t.tile];
         o.creature = t.card + '_f'; // Keep level, damage, terrain, and existing statuses.
+        queueLandEvolution(r,p,t.tile);
         lands.push({ tile: t.tile, owner: { ...o } });
       }
     }
     reconcileAbyssMarks(r);
     spellFx(r, 'ult_grease', lands.map(t => t.tile), p.id, { targets: lands, handCount });
     log(r, `✨ ${p.name}の進化の胎動：手札${handCount}体・領地${lands.length}体が進化した`);
+    r.ultSequence=null;
+    return processPlacementQueue(r,{type:'roll',player:p.id});
+  } else if (seq.charId === 'noir') {
+    const targets=[];
+    for(const target of censorTargets(r,p)) {
+      const index=Math.floor(Math.random()*target.hand.length);
+      target.discard.push(target.hand.splice(index,1)[0]);
+      targets.push({target:target.id,count:1});
+    }
+    const drawn=drawCards(r,p,3);
+    if(drawn)r.lastDraw={player:p.id,n:drawn,reason:'ult_noir',at:stamp(r)};
+    for(const target of targets)cardEffectNotice(r,p,{kind:'judgment',...target});
+    log(r,`${p.name}の漆黒の審判：敵${targets.length}人の手札を1枚ずつ捨てさせ、自分は${drawn}枚引いた`);
   } else if (seq.charId === 'adel') {
     const targets = [];
     for (const i of d.targets || []) {
@@ -1450,6 +1573,7 @@ function askRoll(r, p) {
     const spellCost = effectiveSpellCost(r, p, sid);
     if (spellCost > p.gold) continue;
     if (sid === 'sp_evolve' && !p.hand.some(canEvolveHandCard)) continue;
+    if (sid === 'sp_censor' && !censorTargets(r,p).length) continue;
     if (sid === 'sp_weaken' &&
         !r.owners.some(o => o && o.player !== p.id)) continue;
     if (sid === 'sp_quake' &&
@@ -1557,7 +1681,7 @@ function startPickDraw(r, p, n = 2, after = 'roll') {
     // 山札+捨て札の合計が1枚以下: 選択画面を出さず自動処理(進行を止めない)
     if (cards.length === 1) {
       p.hand.push(cards[0]);
-      r.lastDraw = { player: p.id, n: 1, reason: 'pick', at: stamp(r) };
+      r.lastDraw = { player: p.id, n: 1, reason: 'pick_auto', cards:cards.slice(), at: stamp(r) };
       log(r, `${p.name}がカードを1枚引いた`);
     }
     return done();
@@ -1790,6 +1914,7 @@ function cavernGate(r,p,events,step=0) {
   if(p.gatesVisited.includes(p.pos)) return;
   const beforeGold=p.gold;
   p.gatesVisited.push(p.pos); p.gold+=map.gateBonus;
+  if(!r.movement?.meta?.teleport)p.gateEvolutionEpoch=r.turnEpoch||0;
   p.seal=map.gates.every(i=>p.gatesVisited.includes(i));
   const ev={type:'gate',player:p.id,tile:p.pos,gold:map.gateBonus,step,beforeGold,afterGold:p.gold,gatesVisited:[...p.gatesVisited],at:stamp(r)}; events.push(ev);
   r.lastSeal={...ev};
@@ -1899,7 +2024,7 @@ function performMove(r, p, steps, meta, moveLabel) {
   for (let s2 = 0; s2 < steps; s2++) {
     p.pos = (p.pos + dir + tilesOf(r).length) % tilesOf(r).length;
     movedSteps = s2 + 1;
-    if (p.pos === GATE_TILE && !p.seal) { p.seal = true; gotSeal = true; gateStep = movedSteps; }
+    if (p.pos === GATE_TILE && !p.seal) { p.seal = true; gotSeal = true; gateStep = movedSteps; p.gateEvolutionEpoch=r.turnEpoch||0; }
     if (p.pos === 0) {
       castleStep = s2 + 1;
       p.lap = (p.lap || 1) + 1;  // 刻印の有無に関わらず周回は進む
@@ -2015,6 +2140,7 @@ function doRoll(r, p) {
   performMove(r, p, dice, { value: dice }, `${dice}を出した`);
 }
 function resolveTile(r, p, mioUlt = false) {
+  if (gatePassEvolution(r,p,mioUlt)) return;
   const i = p.pos, tile = tilesOf(r)[i];
   if (tile.t === 'castle') { log(r, `${p.name}は城に到着`); return askUpgrade(r, p, '城'); }
   if (tile.t === 'gate') { log(r, `${p.name}は門に到着`); return askGate(r, p); }
@@ -2052,9 +2178,14 @@ function resolveTile(r, p, mioUlt = false) {
   if (mioUlt) r.pending[p.id].mioUlt = true;
 }
 
+function upgradeDiscountRate(r, p, i) {
+  const summoner = CHARS[p.charId];
+  if (!summoner) return 0;
+  if (summoner.elem == null || summoner.elem === 'neutral') return 0.1;
+  return tileElem(r, i) === summoner.elem ? 0.2 : 0;
+}
 function upCost(r, p, i) {
-  const base = RULES.levelCost[r.owners[i].level + 1];
-  return tileElem(r, i) === CHARS[p.charId].elem ? Math.round(base * 0.8) : base;
+  return upCostTo(r, p, i, r.owners[i].level + 1);
 }
 // ムーブ: マスiの隣で移動可能な行き先(空き属性地 or 結界のない敵属性地)
 function stepDests(r, p, i) {
@@ -2078,7 +2209,8 @@ function stepSources(r, p) {
 // Lv l→l+1 単段の費用(親和込み)
 function upCostTo(r, p, i, lv) {
   const base = RULES.levelCost[lv];
-  return tileElem(r, i) === CHARS[p.charId].elem ? Math.round(base * 0.8) : base;
+  const discount = upgradeDiscountRate(r, p, i);
+  return discount ? Math.round(base * (1 - discount)) : base;
 }
 // cur+1..target までの累計費用
 function upCostRange(r, p, i, target) {
@@ -2182,9 +2314,6 @@ function finishWindSupply(r, id) {
   const p = pById(r, resume.player);
   if (resume.type === 'end') { if (!checkVictory(r)) endTurn(r); return; }
   if (resume.type === 'battle_placement') {
-    if (onCreatureSummoned(r, p, resume.creature, 'battle', resume.tile)) {
-      Object.assign(r.pending[p.id], { battleWinner: resume.winner }); return;
-    }
     return continuePostBattle(r);
   }
   return finishEffectResume(r, resume);
@@ -2207,9 +2336,9 @@ function askUpgrade(r, p, where) {
   const opts = [];
   r.owners.forEach((o, i) => {
     if (o && o.player === p.id && o.level < RULES.maxLevel && p.gold >= upCostRange(r, p, i, o.level + 1)) {
-      const aff = tileElem(r, i) === CHARS[p.charId].elem;
+      const discount = upgradeDiscountRate(r, p, i);
       opts.push({ id: 'up:' + i, label:
-        `${ELEM_JA[tileElem(r, i)] || ''} Lv${o.level}: ${CREATURES[o.creature].name}の土地${aff ? '(親和-20%)' : ''}`, tile: i });
+        `${ELEM_JA[tileElem(r, i)] || ''} Lv${o.level}: ${CREATURES[o.creature].name}の土地${discount === 0.1 ? '(無属性-10%)' : discount === 0.2 ? '(親和-20%)' : ''}`, tile: i });
     }
   });
   if (where === '自領地' && marlowSources(r, p).length && marlowDests(r).length)
@@ -2435,6 +2564,11 @@ function calculateBattle(r, b = r.battle) {
   const atkWeaponMastery = weaponMasteryBonus(b.atkCreature, atkEvolved, aEff);
   const defWeaponMastery = weaponMasteryBonus(o.creature, defEvolved, dEff);
   let st = aBase.st + (aEff ? aEff.st : 0) + atkWeaponMastery;
+  const remainingHand = Math.max(0,atk.hand.length - (!mvSrc&&!corridor?1:0) - (supportChoice(b.supports[atk.id]).kind!=='none'?1:0));
+  if(baseId(b.atkCreature)==='kagetsuzuri') {
+    const bonus=Math.min(atkEvolved?30:20,remainingHand*5);
+    st+=bonus;notes.push(`【紙片の軍勢】残りの手札${remainingHand}枚で侵略AT+${bonus}`);
+  }
   if (b.mioUlt) { st += 20; notes.push('【追い風の導き】移動先への侵略でAT+20!'); }
   const atkSoul = baseId(b.atkCreature) === 'alter' ? (atk.exile || []).length * 5 : 0;
   const defSoul = baseId(o.creature) === 'alter' ? (def.exile || []).length * 5 : 0;
@@ -2616,7 +2750,7 @@ function resolveBattle(r) {
     }
     r.owners[b.tile] = (mvSrc || corridor)
       ? Object.assign({ player: atk.id, level: o.level, creature: b.atkCreature, dmg: atkCarried,
-          shade: (mvSrc && mvSrc.shade) || b.atkShade || 0 },
+          shade: (mvSrc && mvSrc.shade) || b.atkShade || 0, evolutionAbilityUsed:!!mvSrc?.evolutionAbilityUsed },
           mvSrc && Number.isInteger(mvSrc.abyssMarkTarget) ? { abyssMarkTarget: mvSrc.abyssMarkTarget } : null)  // 移動侵略は負傷・死影・深淵標を維持
       : { player: atk.id, level: o.level, creature: b.atkCreature };  // 手札からの占領は全快
     atk.battleWins++;
@@ -2699,7 +2833,7 @@ function resolveBattle(r) {
     grantWindSupply(r, atk, b.windSupplyProviders, [{ from: b.moveFrom, to: b.tile }]);
     if (pauseWindSupply(r, { type: 'battle_placement', player: atk.id, creature: b.atkCreature, tile: b.tile, winner: bWinner.id })) return;
   }
-  if (win && onCreatureSummoned(r, atk, b.atkCreature, 'battle', b.tile)) {
+  if (win && !mvSrc && !corridor && onCreatureSummoned(r, atk, b.atkCreature, 'battle', b.tile)) {
     Object.assign(r.pending[atk.id], { battleWinner: bWinner.id });
     return;
   }
@@ -2749,7 +2883,7 @@ function continuePostBattle(r) {
       const opts = (winner.exile || []).map((card, i) => SUPPORTS[card]
         ? { id: 'dr:' + i, card, label: `${cardName(card)}を手札に戻す` } : null).filter(Boolean);
       if (opts.length) {
-        ask(r, winner.id, 'daitekkan_recover', '【再鍛造】廃棄されたウェポン1枚を選ぶ', opts);
+        ask(r, winner.id, 'daitekkan_recover', '【再鋳造】廃棄されたウェポン1枚を選ぶ', opts);
         return;
       }
     }
@@ -2780,6 +2914,45 @@ function handleChoose(r, playerId, optionId) {
   const pend = r.pending[playerId];
   if (!p || !pend || !pend.options.some(o => o.id === optionId)) return;
   delete r.pending[playerId];
+  if(pend.type==='inkcrow_discard') {
+    const selected=pend.options.find(o=>o.id===optionId);
+    if(selected && p.hand[selected.index]===selected.card)p.discard.push(p.hand.splice(selected.index,1)[0]);
+    return resumeAfterPlacement(r,p,pend);
+  }
+  if(pend.type==='card_search') {
+    const selected=pend.options.find(o=>o.id===optionId),zone=p[selected.zone];
+    if(['deck','discard'].includes(selected.zone)&&zone?.[selected.index]===selected.card) {
+      zone.splice(selected.index,1);p.hand.push(selected.card);
+      if(selected.zone==='deck')shuffle(p.deck);
+      r.lastGain={player:p.id,n:1,cards:[selected.card],reason:'search',at:stamp(r)};
+      cardEffectNotice(r,p,{kind:'search',creature:pend.creature,count:1});
+    }
+    return resumeAfterPlacement(r,p,pend);
+  }
+  if(pend.type==='censor_target') {
+    if(optionId==='censor:cancel')return askRoll(r,p);
+    const target=pById(r,optionId.slice(7)),cost=effectiveSpellCost(r,p,'sp_censor');
+    if(!target||target.id===p.id||target.bankrupt||!target.hand.length||p.spellCast||!p.hand.includes('sp_censor')||p.gold<cost)return askRoll(r,p);
+    p.discard.push(p.hand.splice(p.hand.indexOf('sp_censor'),1)[0]);p.gold-=cost;p.spellCast=true;onSpellCast(r,p,'sp_censor');
+    const indexes=shuffle(target.hand.map((_,index)=>index)).slice(0,2);
+    ask(r,p.id,'censor_pick','禁書検閲 ─ 捨てさせるカードを1枚選ぶ',indexes.map((index,n)=>({id:'cp:'+n,index,card:target.hand[index],label:cardName(target.hand[index])})));
+    r.pending[p.id].target=target.id;
+    return;
+  }
+  if(pend.type==='censor_pick')return finishCensor(r,p,pend,pend.options.find(o=>o.id===optionId));
+  if(pend.type==='gate_pass_evolve') {
+    p.gateEvolutionUsedEpoch=r.turnEpoch||0;
+    const selected=pend.options.find(o=>o.id===optionId);
+    let evolved=false;
+    if(optionId!=='gp:skip'&&selected?.card&&p.hand[selected.index]===selected.card&&p.gold>=RULES.forgeCost&&evolveHandCard(p,selected.index)) {
+      evolved=true;
+      p.gold-=RULES.forgeCost;
+      r.lastEvent={type:'gate_pass_evolve',player:p.id,at:stamp(r)};
+      log(r,`${p.name}は門の刻印で手札1枚を進化させた（150G）`);
+    }
+    cardEffectNotice(r,p,{kind:evolved?'gate_evolve':'gate_skip',count:evolved?1:0,cost:evolved?RULES.forgeCost:0});
+    return resolveTile(r,p,!!pend.mioUlt);
+  }
   if (pend.type === 'route_choice') {
     const tile=Number(optionId.slice(6));
     return advanceCavernMove(r,p,tile);
@@ -2824,10 +2997,6 @@ function handleChoose(r, playerId, optionId) {
     markMatchCause(r, 'placement', { actor:p.id, tile:pend.tile, amount:info.cost });
     r.lastEvent = { type:'frontline_swap', player:p.id, tile:pend.tile, from:returned, creature:card, cost:info.cost, at:stamp(r) };
     log(r, `【戦線交代】${p.name}の${cardName(returned)}が手札へ戻り、${cardName(card)}を配置した(−${info.cost}G)`);
-    if (baseId(card) === 'fugorm') {
-      gainToDeck(r, p, ['weapon'], 'fugorm');
-      log(r, `【鍛冶】${p.name}はウェポン「ソード」を山札に得た`);
-    }
     if (onCreatureSummoned(r, p, card, 'frontline', pend.tile)) return;
     return continuePostBattle(r);
   }
@@ -2839,7 +3008,7 @@ function handleChoose(r, playerId, optionId) {
       p.exile.splice(i, 1);
       p.hand.push(card);
       r.lastGain = { player: p.id, n: 1, cards: [card], reason: 'daitekkan', at: stamp(r) };
-      log(r, `【再鍛造】${p.name}のダイテッカンが廃棄から「${cardName(card)}」を手札に戻した`);
+      log(r, `【再鋳造】${p.name}のダイテッカンが廃棄から「${cardName(card)}」を手札に戻した`);
     }
     return continuePostBattle(r);
   }
@@ -2983,6 +3152,7 @@ function handleChoose(r, playerId, optionId) {
     if (p.charId === 'linnei') {
       return beginUltSequence(r, p);
     }
+    if (p.charId === 'noir') return beginUltSequence(r,p);
     if (p.charId === 'grease') return askGreaseUlt(r, p);
     if (p.charId === 'villa' && (p.exile || []).length)
       return beginUltSequence(r, p, { steps: p.exile.length });
@@ -3062,6 +3232,7 @@ function handleChoose(r, playerId, optionId) {
     const spellCost = effectiveSpellCost(r, p, sid);
     if (p.spellCast || !p.hand.includes(sid) || spellCost > p.gold) return askRoll(r, p);
     if (sid === 'sp_evolve') return askSpellEvolve(r, p);
+    if (sid === 'sp_censor') return askCensor(r,p);
     const castLog = () => {
       p.hand.splice(p.hand.indexOf(sid), 1);
       if (EXILE_SPELLS.has(sid)) { exileCard(r, p, sid, 'spell'); }
@@ -3404,8 +3575,7 @@ function handleChoose(r, playerId, optionId) {
         const oldC = o.creature;
         p.discard.push(oldC);                 // 元のクリーチャーは捨て札へ
         p.hand.splice(p.hand.indexOf(c), 1);
-        o.creature = c; o.dmg = 0; o.shade = 0; delete o.iceWard; delete o.abyssMarkTarget;  // 新クリーチャーは全快で配置
-        if (baseId(c) === 'fugorm') { gainToDeck(r, p, ['weapon'], 'fugorm'); log(r, `【鍛冶】${p.name}はウェポン「ソード」を山札に得た`); }
+        o.creature = c; o.dmg = 0; o.shade = 0; delete o.iceWard; delete o.abyssMarkTarget; delete o.evolutionAbilityUsed;  // 新クリーチャーは全快で配置
         p.hand.splice(p.hand.indexOf('sp_swap'), 1);
         p.discard.push('sp_swap');
         p.gold -= spellCost + CREATURES[c].cost;
@@ -3626,6 +3796,10 @@ function handleChoose(r, playerId, optionId) {
           (wasBelow && target >= RULES.evoLevel && CREATURES[o.creature].evo && !/_f$/.test(o.creature)
             ? ` ─ ${CREATURES[o.creature].name}が${CREATURES[o.creature].evo}に進化!` : ''));
         if (checkVictory(r)) return;
+        if(wasBelow && target>=RULES.evoLevel) {
+          queueLandEvolution(r,p,i);
+          return processPlacementQueue(r,{type:'end',player:p.id});
+        }
       }
     }
     return endTurn(r);
@@ -3642,7 +3816,6 @@ function handleChoose(r, playerId, optionId) {
       p.hand.splice(p.hand.indexOf(c), 1);
       r.owners[i] = { player: p.id, level: 1, creature: c };
       log(r, `${p.name}は${CREATURES[c].name}を召喚し、土地を領地化!`);
-      if (baseId(c) === 'fugorm') { gainToDeck(r, p, ['weapon'], 'fugorm'); log(r, `【鍛冶】${p.name}はウェポン「ソード」を山札に得た`); }
       const summonPaused = onCreatureSummoned(r, p, c, 'summon', i);
       updateTitles(r); if (checkVictory(r)) return; if (summonPaused) return; return endTurn(r);
     }
@@ -3800,6 +3973,7 @@ function startGame(r) {
   }
   r.phase = 'playing';
   r.goalProgress = {}; r.goalNotices = []; r.toxyNotices = []; r.kamadomaNotices = [];
+  r.cardEffectNotices = []; r.placementQueue = []; r.placementResume = null;
   r.pending = {};
   const order = r.players.slice().sort(() => Math.random() - 0.5);
   r.players = order;
@@ -3809,6 +3983,7 @@ function startGame(r) {
     p.deck = shuffle(CHAR_DECKS[p.charId].slice());
     p.discard = []; p.exile = []; p.resolving = []; p.hand = [];
     p.bonusRollPending = false;
+    delete p.gateEvolutionEpoch; delete p.gateEvolutionUsedEpoch;
     p.battleWins = 0; p.shrineVisits = 0; p.ultUsed = false;
     p.cardsCollected = 0; p.tollCollected = 0;
     p.color = CHARS[p.charId].color;
@@ -4060,6 +4235,7 @@ function publicState(r, viewerId) {
       count:e.count,beforeCount:e.beforeCount,afterCount:e.afterCount,at:e.at})),
     kamadomaNotices: (r.kamadomaNotices || []).map(e => ({player:e.player,creature:e.creature,
       count:e.count,tile:e.tile,reason:e.reason,at:e.at})),
+    cardEffectNotices: (r.cardEffectNotices||[]).map(e=>({player:e.player,target:e.target,kind:e.kind,creature:e.creature,count:e.count,drawn:e.drawn,cost:e.cost,at:e.at})),
     barrier: r.barrier || {}, lastUlt: r.lastUlt || null,
     turnTransition: r.turnTransition ? {
       id: r.turnTransition.id, fromPlayer: r.turnTransition.fromPlayer,
@@ -4085,13 +4261,15 @@ function publicState(r, viewerId) {
             resume: r.draft ? r.draft.resume : null, promptId:v.promptId, turnEpoch:v.turnEpoch }]
         : v.type === 'pick_draw' && k !== viewerId
           ? [k, { type: v.type, prompt: v.prompt, options: [], until: v.until }]  // 候補カードは本人だけに見せる
-          : ['gaust_exile', 'fatal_exile', 'ult_villa_recover', 'daitekkan_recover', 'spell_evolve', 'frontline_swap', 'ult_grease'].includes(v.type) && k !== viewerId
+          : ['gaust_exile', 'fatal_exile', 'ult_villa_recover', 'daitekkan_recover', 'spell_evolve', 'frontline_swap', 'ult_grease', 'card_search', 'inkcrow_discard', 'censor_pick', 'gate_pass_evolve'].includes(v.type) && k !== viewerId
             ? [k, { type: v.type, prompt: v.prompt, options: [], selectedCount: (v.selected || []).length }]
           : v.type === 'support' && k !== viewerId
             ? [k, { type: v.type, prompt: 'ウェポンを選択中', options: [] }]
             : [k, v])),
     windSupply: windSupplyPublic(r, viewerId),
-    lastDraw: r.lastDraw || null,
+    lastDraw: r.lastDraw ? Object.assign({}, r.lastDraw,
+      r.lastDraw.player === viewerId && Array.isArray(r.lastDraw.cards)
+        ? {cards:r.lastDraw.cards.slice()} : {cards:undefined}) : null,
     lastGain: r.lastGain ? Object.assign({}, r.lastGain,
       r.lastGain.player === viewerId && Array.isArray(r.lastGain.cards)
         ? { cards: r.lastGain.cards.slice() } : { cards: undefined }) : null,
@@ -4169,6 +4347,7 @@ const ROOM_PERSIST_KEYS = new Set([                                            /
   'lastBarrierHit', 'lastSpellFx', 'botMode', 'presentationSpeed', 'turnEpoch', 'promptSeq', 'stateRev', 'turnTransition',
   'matchAnalytics', 'matchResult', 'resultReview', 'mapId', 'movement', 'windSupply',
   'goalProgress', 'goalNotices', 'toxyNotices', 'kamadomaNotices',
+  'cardEffectNotices', 'placementQueue', 'placementResume',
 ]);
 ROOM_RUNTIME_KEYS.add('stateInstanceId');
 function serializeRoom(r) {
@@ -4224,6 +4403,8 @@ function validateSave(save) {
       if (q[nk] != null && (typeof q[nk] !== 'number' || !isFinite(q[nk]))) return `数値(${nk})が不正です`;
     for (const nk of ['cardsCollected', 'tollCollected'])
       if (q[nk] != null && (!Number.isSafeInteger(q[nk]) || q[nk] < 0)) return `数値(${nk})が不正です`;
+    for (const nk of ['gateEvolutionEpoch', 'gateEvolutionUsedEpoch'])
+      if (q[nk] != null && (!Number.isSafeInteger(q[nk]) || q[nk] < 0)) return '門通過進化の記録が不正です';
     if (q.pos != null && (q.pos < 0 || q.pos >= tilesOf(d).length)) return 'プレイヤー位置が不正です';
     if (isCavern(d) && d.phase !== 'lobby' && d.phase !== 'select') {
       if(!validTile(q.pos)) return 'プレイヤー位置が不正です';
@@ -4254,10 +4435,14 @@ function validateSave(save) {
     if (!ids.has(o.player)) return '領地の所有者が不正です';
     if (!VALID_CARD(o.creature)) return `盤面に不明なカードID: ${o.creature}`;
     if (typeof o.level !== 'number' || o.level < 1 || o.level > RULES.maxLevel) return '領地レベルが不正です';
+    if (o.evolutionAbilityUsed != null && typeof o.evolutionAbilityUsed !== 'boolean') return '進化能力の記録が不正です';
     if (o.abyssMarkTarget != null && (!Number.isInteger(o.abyssMarkTarget) || o.abyssMarkTarget < 0 ||
         o.abyssMarkTarget >= tilesOf(d).length)) return '深淵標の対象マスが不正です';
   }
   if (!Array.isArray(d.deck) || d.deck.length > 500) return '共通山札が不正です';
+  if (d.placementQueue != null && (!Array.isArray(d.placementQueue) || d.placementQueue.length > tilesOf(d).length ||
+      d.placementQueue.some(e=>!e||!ids.has(e.player)||!validTile(e.tile)||!CREATURES[e.creature]))) return '進化能力の待機情報が不正です';
+  if (d.placementResume != null && (!ids.has(d.placementResume.player)||!['end','roll'].includes(d.placementResume.type))) return '進化能力の再開情報が不正です';
   for (const c of d.deck) if (!VALID_SAVE_CARD(c)) return `共通山札に不明なカードID: ${c}`;
   if (d.market != null && (!Array.isArray(d.market) || d.market.some(c => !VALID_SAVE_CARD(c)))) return '市場データが不正です';
   if (d.pending != null) {
@@ -4371,6 +4556,11 @@ function restoreRoom(save) {
     }]));
   }
   if (!room.goalNotices) room.goalNotices = [];
+  // Existing evolved creatures in older saves have already completed placement.
+  for (const o of room.owners) if (o && o.evolutionAbilityUsed == null)
+    o.evolutionAbilityUsed = isEvolved(o);
+  if (!Array.isArray(room.placementQueue)) room.placementQueue = [];
+  if (!Array.isArray(room.cardEffectNotices)) room.cardEffectNotices = [];
   reconcileAbyssMarks(room);
   if (room.turnTransition) {
     if (room.turnTransition.deadline <= Date.now()) completeTurnTransition(room, room.turnTransition.id, 'timeout');
@@ -4584,9 +4774,10 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const p = url.pathname;
   if(p === '/game-cards.js'){res.writeHead(200,{'Content-Type':'text/javascript; charset=utf-8','Cache-Control':'no-cache'});return res.end(gameCardSource);}
-  if(['/phone-land.js','/phone-land.css','/phone-enemy-choice.js','/phone-enemy-choice.css','/phone-summoners.js','/phone-summoners.css','/board-audio-settings.js','/board-settings.js','/board-settings.css','/board-flow-notices.js','/board-flow-notices.css','/board-route.js','/board-route.css','/board-finale.js','/board-finale.css','/board-goal-notice.js','/board-goal-notice.css','/board-land-stop.js','/board-land-stop.css','/board-next-notices.js','/board-next-notices.css','/board-enemy-land.js','/board-enemy-land.css','/board-actor.js','/board-actor.css','/board-effects.js','/board-notice.js','/board-notice.css','/board-milestones.js','/board-milestones.css','/result-review.js','/result-review.css','/rare-draw.css','/battle-external.css','/phone-card-picker.js','/phone-card-picker.css','/phone-deck.css','/hud-rank.js','/hud-rank.css'].includes(p))return serveFile(res,p.slice(1));
+  if(['/phone-player-target.js','/phone-player-target.css','/phone-land.js','/phone-land.css','/phone-enemy-choice.js','/phone-enemy-choice.css','/phone-summoners.js','/phone-summoners.css','/board-audio-settings.js','/board-settings.js','/board-settings.css','/board-flow-notices.js','/board-flow-notices.css','/board-route.js','/board-route.css','/board-finale.js','/board-finale.css','/board-goal-notice.js','/board-goal-notice.css','/board-land-stop.js','/board-land-stop.css','/board-next-notices.js','/board-next-notices.css','/board-enemy-land.js','/board-enemy-land.css','/board-actor.js','/board-actor.css','/board-effects.js','/board-notice.js','/board-notice.css','/board-milestones.js','/board-milestones.css','/result-review.js','/result-review.css','/rare-draw.css','/battle-external.css','/phone-card-picker.js','/phone-card-picker.css','/phone-deck.css','/hud-rank.js','/hud-rank.css'].includes(p))return serveFile(res,p.slice(1));
   if (p === '/') return serveFile(res, 'site/index.html');
   if (p === '/news') return serveFile(res, 'site/news-index.html', url.searchParams.get('category'));
+  if (p === '/news/2026-10-04-noir-update') return serveFile(res, 'site/news-2026-10-04-noir-update.html');
   if (p === '/news/2026-09-29-ui-update') return serveFile(res, 'site/news-2026-09-29-ui-update.html');
   if (p === '/news/2026-09-20-mio-update') return serveFile(res, 'site/news-2026-09-20-mio-update.html');
   if (p === '/news/2026-09-17-player-feedback') return serveFile(res, 'site/news-2026-09-17-player-feedback.html');

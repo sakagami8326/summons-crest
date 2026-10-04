@@ -159,7 +159,8 @@
       elem: carousel.querySelector('[data-summoner-elem]'),
       style: carousel.querySelector('[data-summoner-style]'),
       ult: carousel.querySelector('[data-summoner-ult]'),
-      desc: carousel.querySelector('[data-summoner-desc]')
+      desc: carousel.querySelector('[data-summoner-desc]'),
+      affinity: carousel.querySelector('[data-summoner-affinity]')
     };
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     let active = 0;
@@ -205,6 +206,7 @@
       info.style.textContent = slide.dataset.style;
       info.ult.textContent = `固有スキル「${slide.dataset.ult}」`;
       info.desc.textContent = slide.dataset.desc;
+      if (info.affinity) info.affinity.textContent = slide.dataset.elem === '無属性' ? '全属性の領地 強化費用10％OFF' : '同属性の領地 強化費用20％OFF';
     };
 
     const stop = () => { window.clearInterval(timer); timer = 0; };

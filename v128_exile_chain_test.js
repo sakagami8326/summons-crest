@@ -7,7 +7,7 @@ src = src.replace(/server\.listen\([\s\S]*?\}\);\s*$/, '');
 const G = new Function('require', '__dirname', 'process', 'console', 'setInterval',
   src + '\n;return { VERSION, CREATURES, SUPPORTS, CHAR_DECKS, MARKET_POOL,' +
   ' makeDeck, makeRoom, startGame, handleChoose, onCreatureSummoned, resolveBattle,' +
-  ' exileCard, resumeAfterExileEffects, publicState, serializeRoom, restoreRoom, rooms };')(
+  ' exileCard, resumeAfterExileEffects, creatureEffectUi, publicState, serializeRoom, restoreRoom, rooms };')(
   require, __dirname, process, console, () => {});
 
 let pass = 0;
@@ -31,6 +31,8 @@ eq([G.CREATURES.kamadoma.name, G.CREATURES.kamadoma.evo, G.CREATURES.kamadoma.el
   G.CREATURES.kamadoma.rarity, G.CREATURES.kamadoma.cost, G.CREATURES.kamadoma.st,
   G.CREATURES.kamadoma.hp, G.CREATURES.kamadoma.evoSt, G.CREATURES.kamadoma.evoHp],
   ['カマドーマ', 'ダイテッカン', 'fire', 'N', 60, 20, 40, 30, 60], 'Kamadoma catalog');
+eq(G.CREATURES.kamadoma.evoFx, '【再鋳造】戦闘勝利時、廃棄のウェポン1枚を回収', 'evolution replaces forging with recovery');
+eq(G.CREATURES.kamadoma_f.fx, G.CREATURES.kamadoma.evoFx, 'generated evolved card displays only recovery');
 const market = G.makeDeck();
 eq([count(market, 'toxy'), count(market, 'kamadoma')], [2, 3], 'market copies are R2/N3');
 eq(G.CHAR_DECKS.redani, ['kamadoma','kamadoma','swordgear','gecko','gecko','cleo',
@@ -81,16 +83,16 @@ eq(G.CHAR_DECKS.redani, ['kamadoma','kamadoma','swordgear','gecko','gecko','cleo
   G.rooms.delete(r.code);
 }
 
-// Weapon forging applies only to placement reasons and is retained after evolution.
+// Weapon forging applies only to unevolved placement; evolution replaces the ability.
 {
   const r = game(['redani','villa']), p = r.players[0];
   p.hand = [];
   eq(G.onCreatureSummoned(r, p, 'kamadoma', 'summon', 1), false, 'base placement does not pause');
   eq(G.onCreatureSummoned(r, p, 'kamadoma_f', 'swap', 1), false, 'evolved placement does not pause');
   G.onCreatureSummoned(r, p, 'kamadoma', 'move', 2);
-  eq(p.hand, ['weapon', 'weapon'], 'summon/swap forge weapons but simple movement does not');
+  eq(p.hand, ['weapon'], 'only unevolved placement forges a weapon');
   eq(r.kamadomaNotices.map(e=>[e.creature,e.reason,e.count]),
-    [['kamadoma','summon',1],['kamadoma_f','swap',1]],'placement notices record base/evolved source and exclude simple moves');
+    [['kamadoma','summon',1]],'evolved placement and simple moves produce no Sword notice');
   const notices=JSON.stringify(r.kamadomaNotices);
   r.lastGain={player:p.id,n:1,cards:['sp_quake'],reason:'draft',at:999};
   require('assert/strict').deepEqual(G.publicState(r,null).kamadomaNotices,JSON.parse(notices),'subsequent private gain cannot erase Sword notice');
@@ -99,7 +101,18 @@ eq(G.CHAR_DECKS.redani, ['kamadoma','kamadoma','swordgear','gecko','gecko','cleo
   G.rooms.delete(r.code);
 }
 
-// Soul Eater changes DF only on both sides and keeps explicit compatibility payload fields.
+for (const reason of ['summon', 'swap', 'battle', 'frontline']) {
+  for (const [creature, level, expected] of [['kamadoma',1,1], ['kamadoma_f',1,0], ['kamadoma',3,0], ['kamadoma',4,0]]) {
+    const r = game(['redani','adel']), p = r.players[0];
+    p.hand = [];
+    r.owners[21] = { player:p.id, creature, level };
+    G.onCreatureSummoned(r,p,creature,reason,21);
+    eq(count(p.hand,'weapon'),expected,`${reason}: ${creature} Lv${level} grants only its current ability`);
+    eq(r.kamadomaNotices.length,expected,`${reason}: Sword notice matches actual acquisition`);
+    G.rooms.delete(r.code);
+  }
+}
+
 // Actual invasion resolution, rather than calling the placement hook directly.
 for(const cid of ['kamadoma','kamadoma_f']){
   for(const wins of [true,false]){
@@ -111,13 +124,39 @@ for(const cid of ['kamadoma','kamadoma_f']){
       supports:{[atk.id]:{kind:'none'},[def.id]:{kind:'none'}},startedAt:1};
     G.resolveBattle(r);
     eq(r.owners[21].player,wins?atk.id:def.id,`${cid} invasion outcome`);
-    eq(count(atk.hand,'weapon'),wins?1:0,`${cid} invasion victory grants exactly one sword; defeat grants none`);
-    if(wins)eq(r.lastGain.reason,'kamadoma','sword reward comes from Kamadoma placement');
-    eq(r.kamadomaNotices.length,wins?1:0,'only actual victory produces board reward notice');
-    if(wins)eq([r.kamadomaNotices[0].creature,r.kamadomaNotices[0].reason],[cid,'battle'],'battle source and evolution recorded');
+    const forges = wins && cid === 'kamadoma';
+    eq(count(atk.hand,'weapon'),forges?1:0,`${cid} invasion forges only before evolution and on victory`);
+    if(forges)eq(r.lastGain.reason,'kamadoma','sword reward comes from Kamadoma placement');
+    eq(r.kamadomaNotices.length,forges?1:0,'only actual unevolved victory produces board reward notice');
+    if(forges)eq([r.kamadomaNotices[0].creature,r.kamadomaNotices[0].reason],[cid,'battle'],'battle source recorded');
+    eq(G.creatureEffectUi(r,cid,21,'attacker','battle',{win:wins,atkSurvived:true}).state,
+      cid==='kamadoma_f' && wins?'active':'inactive','battle effect presentation matches evolved victory');
     G.rooms.delete(r.code);
   }
 }
+
+// A winning evolved invader recovers an existing weapon without creating a Sword.
+// The land level also evolves a base card placed on the conquered territory.
+for (const [cid, level] of [['kamadoma_f',1], ['kamadoma',3]]) {
+  const r=game(['redani','adel']), atk=r.players[0], def=r.players[1];
+  atk.hand=[cid]; atk.exile=['gshield']; def.hand=[]; def.exile=[];
+  r.owners[21]={player:def.id,level,creature:'gecko',dmg:(level>=3?G.CREATURES.gecko.evoHp:G.CREATURES.gecko.hp)-1};
+  r.elemOv[21]='water';
+  r.battle={tile:21,attacker:atk.id,defender:def.id,atkCreature:cid,
+    supports:{[atk.id]:{kind:'none'},[def.id]:{kind:'none'}},startedAt:1};
+  G.resolveBattle(r);
+  eq(r.owners[21].player,atk.id,`${cid} conquers Lv${level}`);
+  eq(count(atk.hand,'weapon'),0,'evolved invasion does not forge a Sword');
+  eq(r.kamadomaNotices.length,0,'evolved invasion has no Sword acquisition notice');
+  eq(r.pending[atk.id].type,'daitekkan_recover','recovery is offered to the evolved winning invader');
+  G.handleChoose(r,atk.id,r.pending[atk.id].options[0].id);
+  eq(atk.hand,['gshield'],'exactly the selected exiled weapon returns');
+  eq(atk.exile,[],'recovery moves rather than duplicates the weapon');
+  eq(r.pending[atk.id].type,'draft','battle draft follows recovery');
+  G.rooms.delete(r.code);
+}
+
+// Soul Eater changes DF only on both sides and keeps explicit compatibility payload fields.
 
 {
   const r = game(['villa','adel']), atk = r.players[0], def = r.players[1];
@@ -168,6 +207,9 @@ for(const cid of ['kamadoma','kamadoma_f']){
     supports: { [atk.id]: {kind:'none'}, [def.id]: {kind:'none'} }, startedAt: 4 };
   G.resolveBattle(r);
   ok(r.pending[def.id].type === 'daitekkan_recover', 'Daitekkan recovery precedes the battle draft');
+  ok(r.pending[def.id].prompt.includes('再鋳造'), 'recovery uses the approved ability name');
+  eq(G.creatureEffectUi(r,'kamadoma_f',21,'defender','battle',{win:false,atkSurvived:true}).state,
+    'active','defending Daitekkan shows its victory recovery as active');
   ok(G.publicState(r, atk.id).pending[def.id].options.length === 0, 'recovery card candidates stay private');
   G.handleChoose(r, def.id, 'dr:1');
   ok(def.hand.length === 8 && def.hand.includes('weapon') && count(def.exile, 'weapon') === 1,

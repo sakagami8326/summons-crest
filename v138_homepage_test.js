@@ -98,7 +98,7 @@ ok(!/<iframe|<video|gameplay-video-v1\.webm/.test(html), 'homepage does not load
 ok(/youtube-nocookie\.com\/embed\/\$\{videoId\}\?autoplay=1/.test(js) && /replaceChildren\(frame\)/.test(js), 'privacy-enhanced YouTube iframe is created only after playback is requested');
 ok(exists('public/assets/site/gameplay-youtube-pv-20260917.jpg') && fs.statSync(path.join(__dirname, 'public/assets/site/gameplay-youtube-pv-20260917.jpg')).size < 300000, 'local YouTube PV poster is present and lightweight');
 ok(!exists('public/assets/site/gameplay-video-v1.webm'), 'obsolete 9.8MB gameplay WebM is removed');
-ok((html.match(/class="summoner-slide"/g) || []).length === 8, 'all eight summoners are present');
+ok((html.match(/class="summoner-slide"/g) || []).length === 9, 'all nine summoners are present');
 ok(/setInterval\(\(\) => show\(active \+ 1\), 5000\)/.test(js), 'summoner carousel advances every five seconds');
 ok(/document\.hidden/.test(js) && /prefers-reduced-motion/.test(js), 'carousel pauses for hidden tab and reduced motion');
 ok(/mouseenter/.test(js) && /focusin/.test(js) && /pointerdown/.test(js), 'carousel pauses for hover focus and touch');

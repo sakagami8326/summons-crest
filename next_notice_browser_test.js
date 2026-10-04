@@ -32,5 +32,5 @@ const G=new Function('require','__dirname','setInterval','setTimeout',src+';retu
  }}
  await p.evaluate(()=>{window.noticeRun=BoardNext.present('ultimate',{player:state.players[0].id},state);BoardNotice.reset()});await p.evaluate(()=>noticeRun);assert.equal(await p.locator('#nextUltSplash.on').count(),0);assert.equal(await p.locator('#boardNotice:not([hidden])').count(),0);
  await p.emulateMedia({reducedMotion:'reduce'});await p.evaluate(()=>{window.noticeRun=BoardNext.present('rare',{player:state.players[0].id},state,{ms:n=>n*.3})});assert.equal(await p.locator('.rareHalo').evaluate(e=>getComputedStyle(e).animationName),'none');await p.evaluate(()=>noticeRun);
- assert.deepEqual(errors,[]);console.log('PASS eight summoners, two viewport sizes, cancellation, reduced motion, no browser errors');
+ assert.deepEqual(errors,[]);console.log('PASS nine summoners, two viewport sizes, cancellation, reduced motion, no browser errors');
 }finally{await browser?.close();G.server.closeAllConnections();G.server.close()}})().catch(e=>{console.error(e);process.exit(1)});

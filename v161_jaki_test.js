@@ -27,8 +27,8 @@ eq([j.name,j.evo,j.elem,j.rarity,j.cost,j.st,j.hp,j.evoSt,j.evoHp],['ジャキ',
 eq(G.CREATURES.bedebero.st,20,'Bedebero AT balance');
 eq(G.CREATURES.jaki_f.fx,j.fx,'ability shared by both forms');
 for(const pool of [G.makeDeck(),G.shopRandomPool()])eq([pool.filter(c=>c==='jaki').length,pool.includes('jaki_f')],[2,false],'two base cards only');
-eq(G.makeDeck().length,158,'common deck total');
-eq(G.publicCardCatalog().counts,{total:77,creatures:47,evolutions:40,spells:25,weapons:5},'public counts');
+eq(G.makeDeck().length,168,'common deck total');
+eq(G.publicCardCatalog().counts,{total:82,creatures:51,evolutions:44,spells:26,weapons:5},'public counts');
 eq(G.CHAR_DECKS.grease,['nome','nome','nome','jaki','jaki','cleo','sp_gold','sp_insight','sp_evolve','shield','shield','jinx'],'approved starter');
 for(const form of ['jaki','jaki_f'])for(const defense of [false,true]){
  const g=battle({form,defense,hand:['nome','nome']});
@@ -37,7 +37,7 @@ for(const form of ['jaki','jaki_f'])for(const defense of [false,true]){
  eq(g.r.lastBattle.effectStates[defense?'defender':'attacker'].state,'active','victory UI marks ability active');
  const costBefore=g.p.gold,handBefore=g.p.hand.length,option=g.r.pending[g.p.id].options.filter(o=>o.card==='nome')[1];
  choose(g,option.id);
- eq(g.r.owners[21],{player:g.p.id,level:1,creature:'nome'},'replacement starts fresh on same land');
+ eq(g.r.owners[21],{player:g.p.id,level:1,creature:'nome',evolutionAbilityUsed:false},'replacement starts fresh on same land');
  eq(g.p.hand,['nome',form],'only chosen duplicate leaves; Jaki returns to hand');
  eq(g.p.gold,costBefore-G.CREATURES.nome.cost,'pay exactly replacement summon cost');
  eq(g.p.hand.length,handBefore,'swap preserves hand size');
@@ -49,7 +49,7 @@ for(const form of ['jaki','jaki_f'])for(const defense of [false,true]){
 {
  const g=battle({defense:true,hand:['nome_f'],level:3});
  g.r.owners[21].shade=20;g.r.owners[21].iceWard=true;
- pick(g,'nome_f');eq(g.r.owners[21],{player:g.p.id,level:3,creature:'nome_f'},'land level preserved, creature buffs cleared');
+ pick(g,'nome_f');eq(g.r.owners[21],{player:g.p.id,level:3,creature:'nome_f',evolutionAbilityUsed:true},'land level preserved, creature buffs cleared');
  eq(g.r.elemOv[21],'earth','land element preserved');eq(g.p.hand,['jaki'],'level evolution ends on return');
 }
 {
@@ -97,7 +97,7 @@ for(const [card,type,id]of [['samurai_saga','samurai_elem','se:none'],['night_je
 }
 {
  const g=battle({hand:['kamadoma_f']});g.p.exile=['gshield'];pick(g,'kamadoma_f');
- ok(g.p.hand.includes('weapon'),'replacement Daitekkan placement gives sword');
+ ok(!g.p.hand.includes('weapon'),'replacement Daitekkan has recovery instead of Sword forging');
  eq(g.p.exile,['gshield'],'replacement Daitekkan cannot claim victory recovery');
 }
 {

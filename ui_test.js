@@ -75,6 +75,7 @@ const timingSrc = fs.readFileSync('public/game_timing.js', 'utf8');
 const scripts = 'class MutationObserver { observe() {} disconnect() {} }\nconst SummonsMaps = ' + JSON.stringify(require('./public/map-definitions')) + ';\n' +
   fs.readFileSync('public/map-ui.js','utf8') + '\nconst SummonsMapUI=window.SummonsMapUI;\n' + timingSrc + '\n' +
   fs.readFileSync('public/phone-enemy-choice.js','utf8') + '\nconst PhoneEnemyChoice=window.PhoneEnemyChoice;\n' +
+  fs.readFileSync('public/phone-player-target.js','utf8') + '\nconst PhonePlayerTarget=window.PhonePlayerTarget;\n' +
   [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n');
 
 // ===== レイアウト不変条件 =====
@@ -261,13 +262,15 @@ if (els.contextBtn.style.display !== 'inline-flex' || els.contextBtn.textContent
 function clearDom() {
   for (const el of Object.values(els)) {
     // Dedicated component retains its own render cache and DOM across state notifications.
-    if (['phoneEnemyChoice','ecHandToggle'].includes(el.id)) continue;
+    if (['phoneEnemyChoice','ecHandToggle','phonePlayerTarget'].includes(el.id)) continue;
     el.innerHTML = ''; el.textContent = ''; el.onclick = null;
     for (const k of Object.keys(el.dataset)) delete el.dataset[k];  // 再描画キャッシュも毎フレーム破棄
   }
   qsaCalls.clear();
 }
 function affordance(pid2, st) {
+  if(els.phonePlayerTarget&&!els.phonePlayerTarget.hidden&&['censor_target','toxy_target'].includes(st.pending[pid2]?.type)&&
+    st.pending[pid2]?.options.some(o=>o.player&&(els.phonePlayerTarget.innerHTML||'').includes(`data-player="${o.player}"`)))return 'player-target-choice';
   if(els.phoneEnemyChoice&&!els.phoneEnemyChoice.hidden&&st.enemyLand?.player===pid2&&
     st.pending[pid2]?.options.some(o=>(els.phoneEnemyChoice.innerHTML||'').includes(`data-action="${o.id}"`)))return 'enemy-land-choice';
   if(st.phase==='select'&&summonerPending===st.pending[pid2]&&summonerPending?.options.length)return 'summoner-selection';

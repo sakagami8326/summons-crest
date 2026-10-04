@@ -15,7 +15,7 @@ const G = new Function('require', '__dirname', 'process', 'console', 'setInterva
 let pass = 0;
 const ok = (value, name) => { if (!value) throw new Error('FAIL: ' + name); pass++; };
 
-ok(G.VERSION === '1.65' && pkg.version === '1.65.0', 'release version is v1.65');
+ok(G.VERSION === '1.66' && pkg.version === '1.66.0', 'release version is v1.66');
 ok(/\.dkCard\s*\{[\s\S]*?width:calc\(\(100% - 2dvh\) \/ 3\)/.test(css),
   'deck and choice cards use container-based three columns');
 ok(/\.gCard\s*\{[\s\S]*?width:calc\(\(100% - 3\.2dvh\) \/ 3\)/.test(css),
@@ -42,8 +42,8 @@ ok(/cardTextOverflow[\s\S]*cardDetailHint/.test(css) &&
 
 ok(/id="cardZoomStage"/.test(phone) && /id="cardZoomDetail"/.test(phone) &&
   /#cardZoomDetail\s*\{[^}]*overflow-y:auto/.test(css), 'tap detail has a separate scrollable full-text pane');
-ok(/function cardZoomDetailHTML\(c\)/.test(phone) &&
-  /\$\('cardZoomDetail'\)\.innerHTML = cardZoomDetailHTML\(c\)/.test(phone), 'tap detail populates full card text');
+ok(/function cardZoomDetailHTML\(c[,)]/.test(phone) &&
+  /\$\('cardZoomDetail'\)\.innerHTML = cardZoomDetailHTML\(zoomCardId,zoomPreviewEvo\)/.test(phone), 'tap detail populates full card text for the selected preview');
 ok(/\.galAbilityText\s*\{[^}]*font-size:max\(2\.65dvh,15px\)/.test(css), 'full detail keeps readable text');
 
 ok(/revealT = setTimeout\(advanceReveal, 1800\)/.test(phone), 'direct draw remains 1.8 seconds');
@@ -54,9 +54,9 @@ ok(phone.includes("face.closest('#uxPicker,#uxPickDialog')"), 'shared selection 
 
 const baseCreatures = Object.entries(G.CREATURES).filter(([id]) => !id.endsWith('_f'));
 const evolvedForms = baseCreatures.filter(([, card]) => card.evo).length;
-ok(baseCreatures.length + evolvedForms === 87, 'all 87 creature forms are covered by the common card renderer');
-ok(Object.keys(G.SPELLS).length === 25 && Object.keys(G.SUPPORTS).length === 5,
-  'all 25 spells and 5 weapons are covered by the common card renderer');
+ok(baseCreatures.length + evolvedForms === 95, 'all 95 creature forms are covered by the common card renderer');
+ok(Object.keys(G.SPELLS).length === 26 && Object.keys(G.SUPPORTS).length === 5,
+  'all 26 spells and 5 weapons are covered by the common card renderer');
 
 const focusCards = ['beruf','beruf_f','samurai_saga','marlow','mist_jelly','mist_jelly_f','night_jelly_f','poponga','poponga_f'];
 for (const id of focusCards) ok(G.CREATURES[id], `${id} remains in the overflow regression set`);

@@ -9,6 +9,7 @@ window.BoardNext=(()=>{
  function ultimate(s,p){const actor=p.charId;
   const tiles=(e,n)=>`<div class="ultTiles">${Array.from({length:n},(_,i)=>land(e,i)).join('')}</div>`;
   const content={
+   noir:`<div class="ultMetrics">${stat('ic_hand.png','敵それぞれの手札','−1','枚')}${stat('ic_hand.png','自分はドロー','3','枚')}</div>`,
    redani:`<div class="ultRedani"><div class="ultAxe">${img('cards/support-heavy-axe-v1.webp')}<span>手札に <b>1</b> 枚</span><small>ヘビーアックス・AT＋40</small></div><div><div class="diceTriplet">${img('ic_dice.png')}${img('ic_dice.png')}${img('ic_dice.png')}</div><p class="nextBrief">ダイス <strong>3</strong> 個で移動</p></div></div>`,
    linnei:`${img('struct_market.png','ultFacility')}<p class="nextBrief">全品 <strong>半額</strong></p><small class="nextSub">このマスでショップを開く</small>`,
    grease:`<p class="ultEvolution">進化</p><div class="ultMetrics">${stat('ic_hand.png','手札','1','体まで')}${stat('land','領地','1','体まで')}</div>`,

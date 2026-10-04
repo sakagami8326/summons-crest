@@ -33,7 +33,7 @@ const G=new Function('require','__dirname','setInterval','console',source+`;retu
  await page.locator('.reviewDeckCard').first().click();await page.waitForSelector('.reviewCardDialog[open]');await page.keyboard.press('Escape');await page.setViewportSize({width:1280,height:720});await page.screenshot({path:'output/rarity-result-preview/implemented-deck-720.png'});
  // Cover every summoner, including characters absent from the default four-player fixture.
  const chars=await page.evaluate(()=>Object.keys(state.catalog.CHARS));
- assert.equal(chars.length,8);
+ assert.equal(chars.length,9);
  const portraitChecks=[];
  for(let offset=0;offset<chars.length;offset+=4){
   const group=chars.slice(offset,offset+4);

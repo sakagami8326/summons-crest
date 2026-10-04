@@ -1,6 +1,6 @@
 /* Shared, display-only actor treatment. Dedicated art can be replaced per character. */
 window.BoardActor = (() => {
-  const ids = ['redani','linnei','grease','mio','lia','adel','villa','nerasio'];
+  const ids = ['redani','linnei','grease','mio','lia','adel','villa','nerasio','noir'];
   const dedicated = Object.fromEntries(ids.map(id=>[id,`/assets/board-actors/${id}.png`]));
   const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let shade, timer;

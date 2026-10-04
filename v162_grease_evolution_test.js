@@ -32,7 +32,7 @@ for(const ids of [['gh:2'],['gl:1'],['gh:2','gl:1']]) {
  eq(pending(g).type,'ult_resolve','input locked');
  choose(g,'gu:confirm');G.resolveUltSequence(g.r);G.resolveUltSequence(g.r);
  eq(g.p.hand,ids.includes('gh:2')?['jaki','nome','nome_f']:['jaki','nome','nome'],'exact hand copy evolves');
- eq(g.r.owners[1],{...landBefore,creature:ids.includes('gl:1')?'jaki_f':'jaki'},'only land creature identity changes');
+ eq(g.r.owners[1],{...landBefore,creature:ids.includes('gl:1')?'jaki_f':'jaki',...(ids.includes('gl:1')?{evolutionAbilityUsed:true}:{})},'land evolves once; existing state preserved');
  eq([g.p.gold,g.p.spellCast,G.tollOf(g.r,1),g.r.elemOv[1]],[500,false,toll,'earth'],'no cost, cast trigger, land level/terrain/toll change');
  ok(!g.r.barrier[g.p.id],'does not grant obsolete barrier');
  eq(pending(g).type,'roll','returns to pre-roll');

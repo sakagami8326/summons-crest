@@ -20,7 +20,7 @@ function grant(g,src,dst) {const before=G.windSupplyProviders(g.r,g.p);g.r.owner
 eq([G.CREATURES.poponga.cost,G.CREATURES.poponga.st,G.CREATURES.poponga.hp],[80,20,40],'base');
 eq([G.CREATURES.poponga_f.cost,G.CREATURES.poponga_f.st,G.CREATURES.poponga_f.hp],[80,35,60],'evolved');
 for(const pool of [G.makeDeck(),G.shopRandomPool()])eq([pool.filter(x=>x==='poponga').length,pool.includes('poponga_f')],[2,false],'two R base copies');
-eq(G.publicCardCatalog().counts,{total:77,creatures:47,evolutions:40,spells:25,weapons:5},'catalog');
+eq(G.publicCardCatalog().counts,{total:82,creatures:51,evolutions:44,spells:26,weapons:5},'catalog');
 eq(Object.entries(G.CHAR_DECKS).filter(([,deck])=>deck.includes('poponga')).map(([id,deck])=>[id,deck.filter(c=>c==='poponga').length]),[['mio',1]],'one Poponga in Mio starter only');
 for(const map of ['starting_corridor','twin_gate_cavern']){
  const g=game(map),[a,b,c]=g.lands;g.put(a);g.put(b,'marlow');

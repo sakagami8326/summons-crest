@@ -12,7 +12,7 @@ window.BoardNotice = (() => {
     host.innerHTML='<section class="messageWindow" role="status" aria-live="polite"><div class="lineDecor" aria-hidden="true">'+['tl','tr','bl','br'].map(c=>`<i class="corner ${c}"></i>`).join('')+'<i class="crest top"></i><i class="crest bottom"></i></div><div class="noticeContent"></div></section>';document.body.append(host);
     arrows=document.createElementNS('http://www.w3.org/2000/svg','svg');arrows.id='boardDirectionRoutes';arrows.setAttribute('aria-label','進行方向の候補');arrows.setAttribute("hidden","");document.body.append(arrows);
   }
-  function art(p){const id=/^(redani|linnei|grease|mio|lia|adel|villa|nerasio)$/.test(p?.charId)?p.charId:null;return id?`<img class="flowPortrait" src="/assets/pawn_${id}.${id==='adel'?'webp':'png'}" alt="">`:'';}
+  function art(p){const id=/^(redani|linnei|grease|mio|lia|adel|villa|nerasio|noir)$/.test(p?.charId)?p.charId:null;return id?`<img class="flowPortrait" src="/assets/pawn_${id}.${id==='adel'?'webp':'png'}" alt="">`:'';}
   function creature(cid,s){const c=s.catalog.CREATURES[cid],base=String(cid).replace(/_f$/,'');if(!c||!/^[a-z0-9_]+$/.test(base))return '';return `<img src="/assets/${String(cid).endsWith('_f')?'e':'c'}_${base}.png" alt="${esc(c.name)}">`;}
   function reveal(flow,html,kind=''){mount();hideInspection();window.BoardActor?.clear(host);host.dataset.flow=flow;host.dataset.kind=kind;host.querySelector('.noticeContent').innerHTML=html;host.hidden=false;host.classList.remove('enter','leaving','moneyMoving','settled','illuminated');void host.offsetWidth;host.classList.add('enter');}
   function hideDirection(){directionKey='';routeKey='';if(arrows){arrows.setAttribute("hidden","");arrows.innerHTML='';}if(host?.dataset.flow==='direction')host.hidden=true;}

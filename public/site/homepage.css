@@ -486,3 +486,5 @@ img { max-width: 100%; }
   .reveal { opacity: 1; transform: none; transition: none; }
   .summoner-slide { transition: none; }
 }
+
+.summoner-info .summoner-affinity { color:var(--sc-gold-300); font-size:.86rem; letter-spacing:.03em; }

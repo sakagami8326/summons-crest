@@ -40,7 +40,7 @@ for (const text of ['ムーブ', 'サーベイ', 'ザシャック', 'シュテ�
 ok(newsHtml.includes('href="/#feedback"') && newsHtml.includes('href="/news"'), 'article links to feedback and news');
 ok(!/src="[^"]*(cards|rules)\.js/.test(newsHtml), 'article avoids unrelated page scripts');
 
-ok(/const VERSION = '1\.65'/.test(serverSource) && require('./package.json').version === '1.65.0', 'v1.54 site pages remain covered by v1.65');
+ok(/const VERSION = '1\.66'/.test(serverSource) && require('./package.json').version === '1.66.0', 'v1.54 site pages remain covered by v1.66');
 ok(/if \(p === '\/cards'\).*site\/cards\.html/.test(serverSource), '/cards is a formal route');
 ok(/if \(p === '\/rules'\).*site\/rules\.html/.test(serverSource), '/rules is a formal route');
 ok(/p === '\/api\/catalog' && req\.method === 'GET'/.test(serverSource), 'read-only catalog endpoint exists');
@@ -140,11 +140,11 @@ const waitFor = async (url, attempts = 60) => {
     await waitFor(`${base}/api/catalog`);
     const catalogResponse = await fetch(`${base}/api/catalog`);
     const catalog = await catalogResponse.json();
-    ok(catalog.version === '1.65', 'catalog identifies current release');
-    ok(catalog.counts.total === 77 && catalog.cards.length === 77, 'catalog contains all 77 base card types');
-    ok(catalog.counts.creatures === 47 && catalog.counts.spells === 25 && catalog.counts.weapons === 5, 'catalog category counts are 47/25/5');
-    ok(catalog.counts.evolutions === 40, 'catalog contains all 40 evolution pairs');
-    ok(new Set(catalog.cards.map(card => card.id)).size === 77, 'catalog IDs are unique');
+    ok(catalog.version === '1.66', 'catalog identifies current release');
+    ok(catalog.counts.total === 82 && catalog.cards.length === 82, 'catalog contains all 82 base card types');
+    ok(catalog.counts.creatures === 51 && catalog.counts.spells === 26 && catalog.counts.weapons === 5, 'catalog category counts are 51/26/5');
+    ok(catalog.counts.evolutions === 44, 'catalog contains all 44 evolution pairs');
+    ok(new Set(catalog.cards.map(card => card.id)).size === 82, 'catalog IDs are unique');
     ok(catalog.cards.every(card => ['id','kind','name','element','rarity','cost','at','hp','effect','imageId','artPath','evolution'].every(key => key in card)), 'catalog exposes the complete public card shape');
     ok(catalog.cards.every(card => !['hand','deck','owner','player','supports'].some(key => key in card)), 'catalog excludes game-private state');
     ok(catalog.cards.filter(card => card.kind === 'creature').every(card => card.artPath && exists(`public${card.artPath}`)), 'all creature art references resolve');

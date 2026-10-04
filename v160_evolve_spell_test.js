@@ -17,7 +17,7 @@ const begin=g=>choose(g,'sp:sp_evolve');
 eq([G.SPELLS.sp_evolve.cost,G.SPELLS.sp_evolve.rarity,!!G.SPELLS.sp_evolve.exileAfterUse],[150,'R',false],'150G rare reusable spell');
 eq(G.makeDeck().filter(c=>c==='sp_evolve').length,2,'two copies in common deck');
 eq(G.shopRandomPool().filter(c=>c==='sp_evolve').length,2,'available in shop');
-eq(G.publicCardCatalog().counts.spells,25,'catalog includes new spell');
+eq(G.publicCardCatalog().counts.spells,26,'catalog includes new spell');
 eq(G.CHAR_DECKS.grease,['nome','nome','nome','jaki','jaki','cleo','sp_gold','sp_insight','sp_evolve','shield','shield','jinx'],'current starter keeps three Gnomes and two Jaki');
 for(const [hand,index,after]of [
  [['sp_evolve','nome','nome'],2,['nome','nome_f']],

@@ -32,6 +32,18 @@ window.BoardEffects = (() => {
       title='武具錬成';left=source(e.creature||'kamadoma',s);
       body='<div class="forgeReward"><div class="sourceCard"><review-game-card card-id="weapon"></review-game-card></div>'
         +metric('ic_hand.png','手札に追加',n(e.count),'枚')+'</div>';duration=3500;
+    }else if(kind==='card_operation'){
+      if(e.kind==='gate_evolve'||e.kind==='gate_skip'){
+        scene='shrine';title='門通過ボーナス';left=`<div class="effectSource facility">${img('struct_gate.png','sourceArt')}</div>`;
+        body=e.kind==='gate_evolve'?metric('ic_hand.png','進化完了',n(e.count),'枚')+metric('ic_gold.png','費用','−'+n(e.cost),'G'):text('進化を見送り');
+      }else{
+      const victim=s.players.find(p=>p.id===e.target);
+      title={draw:'インクの選別',search:e.creature?.startsWith('joma')?'武庫の鍵':'禁書の頁',censor:'禁書検閲',judgment:'漆黒の審判'}[e.kind]||'カード効果';
+      left=e.creature?source(e.creature,s):'';
+      body=victim?`<div class="discardTarget">${img('pawn_'+victim.charId+'.'+(victim.charId==='adel'?'webp':'png'),'discardPawn')}<b>${esc(victim.name)}</b></div>`+metric('ic_hand.png','手札を捨てる',n(e.count),'枚'):
+        metric('ic_hand.png',e.kind==='draw'?'ドロー':'手札に加える','+'+n(e.count),'枚');
+      if(e.drawn)body+=metric('ic_hand.png','自分はドロー','+'+n(e.drawn),'枚');
+      }
     }else if(kind==='toxy'){
       title='瘴気連鎖';left=source(e.creature||'toxy',s);
       const victim=s.players.find(p=>p.id===e.target);
@@ -82,5 +94,6 @@ window.BoardEffects = (() => {
   }
   const observeToxy=noticeObserver('toxy','toxyNotices');
   const observeKamadoma=noticeObserver('kamadoma','kamadomaNotices');
-  return {present,model,observeToxy,observeKamadoma};
+  const observeCardOperations=noticeObserver('card_operation','cardEffectNotices');
+  return {present,model,observeToxy,observeKamadoma,observeCardOperations};
 })();

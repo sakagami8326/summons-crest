@@ -962,15 +962,17 @@
 <script src="/game_timing.js?release=164"></script>
 <script src="/vendor/phaser.min.js"></script>
 <script src="/ult_fx_world.js"></script>
-<link rel="stylesheet" href="/phone-card-picker.css?v=20260928-draw5&release=164">
+<link rel="stylesheet" href="/phone-card-picker.css?v=20260928-draw5&release=164&noir=166">
 <link rel="stylesheet" href="/phone-deck.css?release=164">
 <link rel="stylesheet" href="/phone-summoners.css?v=20261001-1&release=165">
-<script src="/phone-summoners.js?v=20261001-1&release=165"></script>
-<script src="/phone-card-picker.js?v=20260928-draw5&release=164"></script>
+<script src="/phone-summoners.js?neutral-discount=1&v=20261001-1&release=165"></script>
+<script src="/phone-card-picker.js?v=20260928-draw5&release=164&noir=166"></script>
 <link rel="stylesheet" href="/phone-enemy-choice.css?v=20261001-1&release=165">
 <script src="/phone-enemy-choice.js?v=20261001-1&release=165"></script>
+<link rel="stylesheet" href="/phone-player-target.css?v=20261004-1&release=166">
+<script src="/phone-player-target.js?v=20261004-1&release=166"></script>
 <link rel="stylesheet" href="/phone-land.css?v=20261002-3&release=165">
-<script src="/phone-land.js?v=20261002-3&release=165"></script>
+<script src="/phone-land.js?v=20261002-3&release=165&noir=166"></script>
 <script>
 const $ = id => document.getElementById(id);
 const REMOVE_CARD_HTML = '<div class="face removeCard"><div class="removeTitle">カードを削除</div><img src="/assets/cards/shop-remove-v2.webp" alt="カード削除"></div>';
@@ -1050,11 +1052,12 @@ const supportArt = cid => SUPPORT_ART[cid]
   ? `<img src="${SUPPORT_ART[cid]}" alt="">`
   : (GLYPH[cid] ? GLYPH[cid]() : sic('sword', '7.5dvh'));
 // アートが存在するスペル(無いものは呪文アイコンで代用)
-const SPELL_ART = new Set(['sp_gold','sp_weaken','sp_gale','sp_quake','sp_volcanic_core','sp_abyssal_pearl',
+const SPELL_ART = new Set(['sp_censor','sp_gold','sp_weaken','sp_gale','sp_quake','sp_volcanic_core','sp_abyssal_pearl',
   'sp_earth_mother_stone','sp_sky_crystal','sp_flame_vortex','sp_bloodstained_blade',
   'sp_bedrock_uplift','sp_wind_shift','sp_ward','sp_step','sp_move','sp_insight','sp_swap',
   'sp_evolve','sp_fatal_reward','sp_dice_1','sp_dice_2','sp_dice_3','sp_dice_4','sp_dice_5','sp_dice_6']);
 const DEDICATED_SPELL_ART = {
+  sp_censor:'/assets/cards/spell-censor-art-v2.webp',
   sp_evolve:'/assets/cards/spell-evolve-art-v8.webp',
   sp_gold:'/assets/cards/spell-gold-art-v1.webp',
   sp_weaken:'/assets/cards/spell-weaken-art-v1.webp',
@@ -1417,6 +1420,16 @@ if (typeof ResizeObserver !== 'undefined') new ResizeObserver(layoutDeckOverview
 // ピックモード: 所持カード全体を見せつつ、選べるカードだけ点灯させる全画面UI
 let sharedCardPicker = null;
 let enemyChoice = null;
+let playerTarget = null;
+function getPlayerTarget() {
+  if (!playerTarget) playerTarget = new PhonePlayerTarget({
+    state:()=>state, playerId:()=>pid, choose:id=>choose(id),
+    ready:p=>!p.availableAt || Date.now()+serverClockOffset>=p.availableAt,
+    cancelGesture:cancelHandGesture,
+    handAccess:blocked=>{ $('hdr').inert=blocked; $('handWrap').inert=blocked; },
+  });
+  return playerTarget;
+}
 function getEnemyChoice() {
   if (!enemyChoice) enemyChoice = new PhoneEnemyChoice({
     state:()=>state, playerId:()=>pid, choose:id=>choose(id),
@@ -1434,6 +1447,7 @@ function getCardPicker() {
     state:()=>state, identity:()=>[room,pid], player:()=>me(), pending:()=>pend(), cancelGesture:()=>cancelHandGesture(),
     card:(c,i,e)=>e.html ? '<div class="card"><div class="flip">'+e.html+'</div></div>' : cardHTML(c,i),
     bigCard:(c,e)=>e.html || bigCardHTML(c), name:c=>dkInfo(c).nm,
+    evolution:c=>cardEvolution(c),
     decoration:c=>pend()?.type==='draft'?rareDrawDecoration(c):'',
     effect:c=>{const C=state.catalog,cr=C.CREATURES[c],sp=C.SPELLS[c],su=C.SUPPORTS[c];return cr?cr.fx||'効果なし':sp?sp.desc:su?su.fx||supportDescription(su):'';},
     fit:fitCreatureNames, choose:id=>choose(id),
@@ -1443,20 +1457,28 @@ function getCardPicker() {
 }
 function buildPickOv(title, sections, cancelId) {
   const p=pend(), type=p.type;
-  const names={frontline_swap:'戦線交代',overflow:'手札上限',swap_pick:'チェンジ',spell_evolve:'エヴォルヴ',forge:'鍛錬',gaust_exile:'魂の選別',fatal_exile:'フェイタルリワード',ult_grease:'進化の胎動',ult_villa_recover:'墓守の協奏曲',daitekkan_recover:'再鍛造',forget:'忘却'};
+  const names={frontline_swap:'戦線交代',overflow:'手札上限',swap_pick:'チェンジ',spell_evolve:'エヴォルヴ',forge:'鍛錬',gaust_exile:'魂の選別',fatal_exile:'フェイタルリワード',ult_grease:'進化の胎動',ult_villa_recover:'墓守の協奏曲',daitekkan_recover:'再鋳造',forget:'忘却'};
   const action={frontline_swap:'交代する',swap_pick:'交代する',spell_evolve:'進化させる',forge:'進化させる',overflow:'捨てる',gaust_exile:'廃棄する',fatal_exile:'廃棄する',forget:'廃棄する',daitekkan_recover:'回収する',ult_grease:'選択する',ult_villa_recover:'選択する'};
-  const paid=['frontline_swap','swap_pick','spell_evolve','forge','forget'].includes(type);
+  Object.assign(names,{card_search:'サーチ',inkcrow_discard:'インクの選別',censor_pick:'禁書検閲',gate_pass_evolve:'門通過ボーナス'});
+  Object.assign(action,{card_search:'手札に加える',inkcrow_discard:'捨てる',censor_pick:'捨てさせる',gate_pass_evolve:'進化させる'});
+  const paid=['frontline_swap','swap_pick','spell_evolve','forge','forget','gate_pass_evolve'].includes(type);
   const multi=type==='ult_grease' || type==='ult_villa_recover';
   const confirmId=multi?p.options.find(o=>/^(gu|vr):confirm$/.test(o.id))?.id:null;
   const entries=sections.map(sec=>({...sec,entries:sec.entries.map(e=>{
     const option=p.options.find(o=>o.id===e.pickId);
     return {...e, cost:e.pickId && paid?(option?.cost ?? p.cost ?? state.catalog.CREATURES[e.card]?.cost):undefined,
-      location:option?.zone==='land'?'土地 '+option.tile:null};
+      location:option?.zone==='land'?'土地 '+option.tile:(e.location || null)};
   })}));
   $('deckOv').classList.remove('on');
   getCardPicker().show({title:names[type] || title,sections:entries,cancelId,action:action[type] || '選択する',danger:['overflow','gaust_exile','fatal_exile','forget'].includes(type),showGold:paid,
     count:type==='overflow'?me().hand.length+' → 7':multi?(p.selected||[]).length+' / '+(type==='ult_grease'?2:3):null,
-    confirmId,confirmLabel:type==='ult_grease'?'進化を確定':'回収する'});
+    confirmId,confirmLabel:type==='ult_grease'?'進化を確定':'回収する',
+    ...(type==='gate_pass_evolve'?{
+      evolutionPreview:true,evolutionGuide:`${p.options.find(o=>o.card)?.cost ?? p.cost}Gで進化させる手札を1枚選択`,
+      confirmCancel:true,cancelLabel:'進化を見送る',cancelTitle:'進化させずに進みますか？',
+      cancelBackLabel:'カード選択に戻る',cancelSubmitLabel:'進化せずに進む'
+    }:type==='inkcrow_discard'?{purpose:'捨てる手札を1枚選択',showCount:false}:
+      type==='card_search'?{purpose:'手札に加えるカードを1枚選択'}:{})});
 }
 function pickOvChoose(id) {
   const ov = $('deckOv');
@@ -2156,7 +2178,12 @@ $('galZoomClose').onclick = () => $('galZoom').classList.remove('on');
 // ===== カード長押し拡大(効果全文の確認用) =====
 let lpFired = false;
 let zoomCardId = null;
+let zoomPreviewEvo = false;
 let cardActionSubmitting = false;
+function cardEvolution(c) {
+  const base=c.replace(/_f$/, ''), cr=state.catalog.CREATURES[base];
+  return cr?.evo && state.catalog.CREATURES[base+'_f'] ? {base,evolved:base+'_f',creature:cr} : null;
+}
 function cardActionLabel(c) {
   const C = state.catalog;
   if (C.CREATURES[c]) return pend() && pend().type === 'pick_creature' ? '侵略に使う' : '召喚する';
@@ -2169,25 +2196,41 @@ function refreshCardZoomAction() {
   const optionId = $('cardZoom').dataset.readOnly === 'true' ? null : cardOption(zoomCardId), btn = $('cardZoomAction');
   const p = pend(), opt = optionId && p && p.options.find(o => o.id === optionId);
   const cost = opt && Number(opt.cost) > 0 ? Number(opt.cost) : 0;
-  btn.innerHTML = `<span class="cardActionText">${cardActionLabel(zoomCardId)}</span>${cost ? `<span class="cardActionCost">−${cost}G</span>` : ''}`;
+  const previewOnly = !!cardEvolution(zoomCardId) && zoomPreviewEvo !== /_f$/.test(zoomCardId);
+  const label = `${previewOnly ? dkInfo(zoomCardId).nm+'を' : ''}${cardActionLabel(zoomCardId)}`;
+  btn.innerHTML = `<span class="cardActionText">${label}</span>${cost ? `<span class="cardActionCost">−${cost}G</span>` : ''}`;
   btn.disabled = !optionId || cardActionSubmitting;
   btn.dataset.option = optionId || '';
-  $('cardZoomReason').textContent = cardActionSubmitting ? '送信中…' : optionId ? 'ボタンをタップするとすぐに使用します' : '現在の手順では使用できません';
+  $('cardZoomReason').textContent = cardActionSubmitting ? '送信中…' : optionId ? (previewOnly ? `手札の${dkInfo(zoomCardId).nm}を使用します` : 'ボタンをタップするとすぐに使用します') : '現在の手順では使用できません';
 }
 function openCardZoom(c, readOnly = false) {
   if (enemyChoice?.handView) { readOnly = true; $('cardZoom').dataset.enemyHand = 'true'; }
   $('cardZoom').dataset.readOnly = String(readOnly);
   cancelHandGesture();
   zoomCardId = c;
-  $('cardZoomCard').innerHTML = bigCardHTML(c);
-  $('cardZoomDetail').innerHTML = cardZoomDetailHTML(c);
-  refreshCardZoomAction();
+  zoomPreviewEvo = /_f$/.test(c);
+  renderCardZoom();
   openBlockingOverlay('cardZoom');
+}
+function renderCardZoom() {
+  const evolution=cardEvolution(zoomCardId);
+  const displayId=evolution ? (zoomPreviewEvo?evolution.evolved:evolution.base) : zoomCardId;
+  $('cardZoomCard').innerHTML = bigCardHTML(displayId);
+  $('cardZoomDetail').innerHTML = cardZoomDetailHTML(zoomCardId,zoomPreviewEvo);
+  $('cardZoomDetail').querySelectorAll('.galModeBtn').forEach(button=>{
+    if(button.dataset.mode==='base')button.textContent='進化前';
+    button.setAttribute('aria-pressed',String(button.dataset.mode===(zoomPreviewEvo?'evo':'base')));
+    button.onclick=()=>{if(cardActionSubmitting)return;zoomPreviewEvo=button.dataset.mode==='evo';renderCardZoom();};
+  });
+  refreshCardZoomAction();
   afterUiPaint(() => fitCreatureNames($('cardZoomCard')));
 }
-function cardZoomDetailHTML(c) {
+function cardZoomDetailHTML(c, previewEvo = /_f$/.test(c)) {
   const C = state.catalog, cr = C.CREATURES[c], spl = C.SPELLS && C.SPELLS[c], sup = C.SUPPORTS && C.SUPPORTS[c];
-  if (cr) return creatureDetailInfoHTML(c, cr, false, false);
+  if (cr) {
+    const evolution=cardEvolution(c);
+    return evolution ? creatureDetailInfoHTML(evolution.base,evolution.creature,previewEvo,true) : creatureDetailInfoHTML(c,cr,false,false);
+  }
   if (spl) return `<div class="galDetailScroll"><h2 class="galDetailName">${spl.name}</h2>
     <div class="galMeta"><span class="galBadge">スペル</span><span class="galBadge">${spl.rarity || 'N'}</span><span class="galBadge">${spl.cost || 0}G</span></div>
     <h3 class="galAbilityName">効果</h3><p class="galAbilityText">${spl.desc || '効果なし'}</p>
@@ -2740,6 +2783,7 @@ function setContextActions(title, options) {
 }
 
 function render() {
+  playerTarget?.sync();
   if (!state) return;
   MM_GEO = SummonsMapUI.get(state).geo;
   document.body.dataset.mapId = SummonsMapUI.get(state).id;
@@ -2836,7 +2880,9 @@ function render() {
   const handKey = (m.hand || []).join(',');
   if (state.lastDraw && state.lastDraw.player === pid && state.lastDraw.at !== lastDrawSeen) {
     lastDrawSeen = state.lastDraw.at;
-    if (state.lastDraw.reason !== 'pick' && prevHandKey) {  // 選択ドローは選択画面自体で確認済み
+    if (Array.isArray(state.lastDraw.cards) && state.lastDraw.cards.length) {
+      enqueueCardReveal(state.lastDraw.cards, 'draw');
+    } else if (state.lastDraw.reason !== 'pick' && prevHandKey) {  // 選択ドローは選択画面自体で確認済み
       const prevArr = prevHandKey.split(','), nowArr = m.hand.slice();
       for (const c of prevArr) { const k = nowArr.indexOf(c); if (k >= 0) nowArr.splice(k, 1); }
       if (nowArr.length) {
@@ -2917,7 +2963,7 @@ function render() {
   $('msg').textContent = p ? taskPrompt(p) : waitingTaskPrompt();
 
   const pnow = pend();
-  if (!pnow || !['forget', 'overflow', 'forge', 'spell_evolve', 'frontline_swap', 'ult_grease', 'swap_pick'].includes(pnow.type)) closePickOv();
+  if (!pnow || !['forget', 'overflow', 'forge', 'spell_evolve', 'frontline_swap', 'ult_grease', 'swap_pick', 'card_search', 'inkcrow_discard', 'censor_pick', 'gate_pass_evolve'].includes(pnow.type)) closePickOv();
   if (m.bankrupt) {
     $('msg').textContent = '破産 ─ 観戦中';
     A.innerHTML = '';
@@ -2966,6 +3012,16 @@ function render() {
     buildPickOv(`手札上限 ─ 捨てるカードをタップ(現在${m.hand.length}枚 → 7枚まで)`, [
       { name: '手札', entries: p.options.map(o => ({ card: o.card, pickId: o.id, n: ovCnt[o.card] || 1 })) },
     ], null);
+  } else if (['card_search','inkcrow_discard','censor_pick','gate_pass_evolve'].includes(p.type)) {
+    $('msg').textContent = taskPrompt(p); A.innerHTML='';
+    const sections=p.type==='card_search' ? [{name:'サーチ対象',
+      entries:p.options.filter(o=>o.card).map(o=>({card:o.card,pickId:o.id,location:o.zone==='deck'?'山札':'捨て札'}))
+    }] : [{name:p.type==='censor_pick'?'相手の手札': '手札',
+      entries:p.options.filter(o=>o.card).map(o=>({card:o.card,pickId:o.id}))}];
+    buildPickOv(p.prompt,sections,p.type==='gate_pass_evolve'?'gp:skip':null);
+  } else if (p.type === 'censor_target') {
+    $('msg').textContent=taskPrompt(p); A.innerHTML='';
+    closeActionOverlay(true); getPlayerTarget().show();
   } else if (p.type === 'gaust_exile' || p.type === 'fatal_exile') {
     $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';
@@ -2992,15 +3048,13 @@ function render() {
   } else if (p.type === 'daitekkan_recover') {
     $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';
-    buildPickOv('再鍛造 ─ 廃棄から戻すウェポンを1枚選ぶ', [
+    buildPickOv('再鋳造 ─ 廃棄から戻すウェポンを1枚選ぶ', [
       { name:'廃棄', entries:p.options.map(o => ({ card:o.card, pickId:o.id, zone:'手札に戻す' })) },
     ], null);
   } else if (p.type === 'toxy_target') {
     $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';
-    showActionOverlay('瘴気連鎖 ─ 手札を捨てさせる敵を選ぶ',
-      p.options.map(o => ({ id:o.id, label:iconize(o.label), desc:'対象の手札からランダムに1枚捨てさせます' })),
-      { key:`toxy|${p.options.map(o => o.id).join(',')}` });
+    closeActionOverlay(true); getPlayerTarget().show();
   } else if (p.type === 'ult_nerasio_elem') {
     $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';

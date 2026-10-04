@@ -1580,18 +1580,19 @@ const QR = (() => {
 <script src="/result-graph-audio.js?v=3&release=164"></script>
 <script src="/fx_manifest.js"></script>
 <script src="/vendor/phaser.min.js"></script>
-<script src="/board_world.js?release=164"></script>
+<script src="/assets/board-tiles.js?v=1"></script>
+<script src="/board_world.js?release=164&tiles=1"></script>
 <link rel="stylesheet" href="/board-notice.css?v=2&release=164">
 <link rel="stylesheet" href="/board-actor.css?v=1&release=165">
-<script src="/board-actor.js?v=2&release=164"></script>
-<script src="/board-effects.js?v=1&release=165"></script>
-<script src="/board-notice.js?v=4&release=164"></script>
+<script src="/board-actor.js?v=2&release=164&noir=166"></script>
+<script src="/board-effects.js?v=1&release=165&noir=166"></script>
+<script src="/board-notice.js?v=4&release=164&noir=166"></script>
 <link rel="stylesheet" href="/board-enemy-land.css?v=1&release=164">
 <script src="/board-enemy-land.js?v=1&release=164"></script>
 <link rel="stylesheet" href="/board-land-stop.css?v=1&release=164">
 <script src="/board-land-stop.js?v=1&release=164"></script>
 <link rel="stylesheet" href="/board-next-notices.css?v=1&release=164">
-<script src="/board-next-notices.js?v=1&release=164"></script>
+<script src="/board-next-notices.js?v=1&release=164&noir=166"></script>
 <link rel="stylesheet" href="/board-milestones.css?v=1&release=164">
 <script src="/board-milestones.js?v=1&release=164"></script>
 <link rel="stylesheet" href="/board-goal-notice.css?v=1&release=164">
@@ -2839,7 +2840,7 @@ async function boot(mode = 'normal', mapId = 'starting_corridor') {
   window.SummonsAnalytics?.track('room_created', { room_mode: mode === 'bot' ? 'bot' : 'normal' });
   enterRoom(c.code, c.phoneUrl, c.boardToken);
 }
-['redani','linnei','grease','mio','lia','adel','villa','nerasio'].forEach(c => {
+['redani','linnei','grease','mio','lia','adel','villa','nerasio','noir'].forEach(c => {
   new Image().src = '/assets/full_' + c + '.png';
   new Image().src = '/assets/p_' + c + '.png';
   new Image().src = '/assets/summoner-still-' + c + '.webp';
@@ -3436,6 +3437,7 @@ function artHTML(cid, lv, w) {
 // タイル1枚ぶんのSVG(DOM描画とPhaserテクスチャで共有 ─ 見た目の単一ソース)
 // pad: 縁の余白(Phaser側は影切れ防止に使う) / stoneHref: 石目テクスチャのURL(SVG-as-imageでは外部参照不可のためdataURL差替可)
 function buildTileSVG(i, t, o, ownColor, barrier, pad, stoneHref) {
+  if (window.BoardTiles?.loaded) return BoardTiles.svg(i, t, o, ownColor, barrier, pad, {DW,DH,THICK,TW,TH,ELEM});
   const rise = o ? (o.level - 1) * 7 : 0;
   const THK = THICK + rise;
   const rnd = n => { const v = Math.sin(i * 127.1 + n * 311.7) * 43758.5453; return (v - Math.floor(v)) * 2 - 1; };
@@ -3523,8 +3525,11 @@ function renderBoard() {
   if (renderModeActive === 'phaser') return PW.syncBoard(state);
   renderBoardDom();
 }
+window.BoardTiles?.ready.then(loaded => {
+  if (loaded && state?.catalog) { ownersCache = ''; renderBoard(); }
+});
 function renderBoardDom() {
-  const key = JSON.stringify(state.owners) + JSON.stringify(state.tolls || []) + JSON.stringify(state.curses || {}) + JSON.stringify(state.abyssMarks || []) + JSON.stringify(state.barrier || {}) + state.players.map(p => p.id + p.color).join('') + state.tiles.map(t => t.e || t.t).join('');
+  const key = (window.BoardTiles?.revision || '') + JSON.stringify(state.owners) + JSON.stringify(state.tolls || []) + JSON.stringify(state.curses || {}) + JSON.stringify(state.abyssMarks || []) + JSON.stringify(state.barrier || {}) + state.players.map(p => p.id + p.color).join('') + state.tiles.map(t => t.e || t.t).join('');
   if (key === ownersCache) return;
   ownersCache = key;
   const st = $('stage');
@@ -3808,6 +3813,7 @@ async function playEvolvePresentation(tile, owner) {
 }
 
 const DEDICATED_SPELL_ART = {
+  sp_censor:'/assets/cards/spell-censor-art-v2.webp',
   sp_evolve:'/assets/cards/spell-evolve-art-v8.webp',
   sp_gold:'/assets/cards/spell-gold-art-v1.webp',
   sp_weaken:'/assets/cards/spell-weaken-art-v1.webp',
@@ -5221,6 +5227,7 @@ function render() {
   }
   BoardEffects.observeToxy(state,{queue:queueFx,current:()=>state,ms:presentationMs});
   BoardEffects.observeKamadoma(state,{queue:queueFx,current:()=>state,ms:presentationMs});
+  BoardEffects.observeCardOperations(state,{queue:queueFx,current:()=>state,ms:presentationMs});
   BoardGoal.observe(state,{queue:queueFx,current:()=>state,ms:presentationMs});
   // 全演出はPromise完了まで待つ統合キューで直列再生する。
   if (presentationQueue.length && !presentationRunning) {
@@ -5389,7 +5396,7 @@ function render() {
   scheduleTurnTransitionCompletion();
 }
 fitWorld();
-['redani','linnei','grease','mio','lia','adel','villa','nerasio'].forEach(c => {
+['redani','linnei','grease','mio','lia','adel','villa','nerasio','noir'].forEach(c => {
   new Image().src = '/assets/full_' + c + '.png';
   new Image().src = '/assets/p_' + c + '.png';
   new Image().src = '/assets/summoner-still-' + c + '.webp';

@@ -31,7 +31,7 @@ const summoners = fs.readFileSync(path.join(root,'public','phone-summoners.js'),
 const summonerStyles = fs.readFileSync(path.join(root,'public','phone-summoners.css'),'utf8');
 ok(summoners.includes('/assets/board-actors/${id}.png'), 'phone summoner shelf uses approved dedicated actor art');
 ok(summonerStyles.includes('#phoneSummoners .tileArt') && summonerStyles.includes('mask-image:linear-gradient'), 'phone summoner portraits fade at the edge');
-ok(summonerStyles.includes('#phoneSummoners .tileName') && summoners.includes('${icon(C.CHARS[id].elem)}'), 'phone summoner shelf preserves name and element identification');
+ok(summonerStyles.includes('#phoneSummoners .tileName') && summoners.includes('${icon(element(id))}'), 'phone summoner shelf preserves name and normalized element identification');
 ok(summonerStyles.includes('width:min(100%,80dvh)') && summonerStyles.includes('height:auto'), 'phone detail retains portrait proportions');
 ok(!/CHAR_SELECT_FOCUS/.test(phone) && !/--cs-scale/.test(phone), 'phone summoner shelf has no legacy per-character crop offsets');
 

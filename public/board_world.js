@@ -925,13 +925,15 @@ const PW = (() => {
   function init(opts) {
     failCb = opts.onFail; readyCb = opts.onReady;
     if (typeof Phaser === 'undefined') return fail('phaser-load');
-    const wd = setTimeout(() => { if (!ready) fail('timeout'); }, 4000);
+    let wd;
     // stone.jpgはSVGテクスチャ内から外部参照できないためdataURL化して埋め込む
-    fetch('/assets/stone.jpg').then(r => r.blob())
+    const stoneReady = fetch('/assets/stone.jpg').then(r => r.blob())
       .then(b => new Promise(res => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(b); }))
-      .catch(() => null)
-      .then(dataUrl => {
+      .catch(() => null);
+    Promise.all([stoneReady, window.BoardTiles?.ready || Promise.resolve(false)])
+      .then(([dataUrl]) => {
         if (failed) return;
+        wd = setTimeout(() => { if (!ready) fail('timeout'); }, 4000);
         stoneDataUrl = dataUrl;
         try {
           // ?gl=0: 非推奨Canvas Rendererの診断用(Phaser 4ではCanvasは製品保証外。
@@ -972,7 +974,7 @@ const PW = (() => {
     if (failed) return;
     if (!ready) { pendingState = st; return; }
     if(displayedMapId!==st.mapId){displayedMapId=st.mapId;computeFit();resetCamera();boardKey='';}
-    const key = JSON.stringify(st.owners) + JSON.stringify(st.tolls || []) + JSON.stringify(st.curses || {}) + JSON.stringify(st.abyssMarks || []) + JSON.stringify(st.barrier || {}) +
+    const key = (window.BoardTiles?.revision || '') + JSON.stringify(st.owners) + JSON.stringify(st.tolls || []) + JSON.stringify(st.curses || {}) + JSON.stringify(st.abyssMarks || []) + JSON.stringify(st.barrier || {}) +
       st.players.map(p => p.id + p.color).join('') + st.tiles.map(t => t.e || t.t).join('');
     if (key === boardKey) return;
     boardKey = key;

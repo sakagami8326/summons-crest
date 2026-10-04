@@ -14,16 +14,16 @@ const G=new Function('require','__dirname','setInterval','setTimeout',source+';r
   const second=await post('/api/join',{room,name:'他のプレイヤー'});
   await post('/api/action',{room,type:'start_select'});
   await page.locator('#phoneSummoners .summonerTile').first().waitFor();
-  assert.equal(await page.locator('#phoneSummoners .summonerTile').count(),8);
-  await page.locator('[data-filter=neutral]').click();assert.equal(await page.locator('#phoneSummoners .summonerTile').count(),0);assert(await page.locator('.rosterEmpty').isVisible());
+  assert.equal(await page.locator('#phoneSummoners .summonerTile').count(),9);
+  await page.locator('[data-filter=neutral]').click();assert.equal(await page.locator('#phoneSummoners .summonerTile').count(),1);assert.equal(await page.locator('[data-id=noir]').count(),1);
   assert(await page.locator('[data-filter=neutral]').evaluate(e=>e.getBoundingClientRect().bottom<=innerHeight));
   await page.locator('[data-filter=all]').click();
   for(const el of ['fire','water','earth','wind']){await page.locator(`[data-filter=${el}]`).click();assert.equal(await page.locator('#phoneSummoners .summonerTile').count(),2);}await page.locator('[data-filter=all]').click();
   await page.waitForTimeout(650);await page.screenshot({path:path.join(out,`list-${width}.png`)});
   await page.locator('[data-id=redani]').click();await page.waitForTimeout(750);
-  for(let i=0;i<8;i++){
+  for(let i=0;i<9;i++){
    const name=await page.locator('.detailHeading h1').innerText();
-   assert.match(await page.locator('.affinityBenefit').innerText(),/同属性の領地 強化費用 20％OFF/);
+   if(name==='ノワール'){assert.match(await page.locator('.affinityBenefit').innerText(),/全属性.*10％OFF/);await page.screenshot({path:path.join(out,`noir-${width}.png`)});}else assert.match(await page.locator('.affinityBenefit').innerText(),/同属性の領地 強化費用 20％OFF/);
    assert.equal(await page.locator('img.ornateArrow').count(),3);
    assert.equal(await page.locator('#phoneSummoners .starterCard').count(),12);
    const check=await page.evaluate(async()=>{const root=document.querySelector('#phoneSummoners');await Promise.all([...root.querySelectorAll('img')].map(i=>i.decode().catch(()=>{})));return {broken:[...root.querySelectorAll('img')].filter(i=>!i.naturalWidth).map(i=>i.src),fit:[...root.querySelectorAll('.starterCard')].every(e=>{const b=e.getBoundingClientRect();return b.height>24&&b.bottom<innerHeight;})};});

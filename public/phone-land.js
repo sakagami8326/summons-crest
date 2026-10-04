@@ -86,7 +86,7 @@ function renderAll(){
 return {
  show(s,pid,p,locked=false){
   const next=[s.code,s.stateInstanceId,pid,s.turnEpoch,p?.type||'view',p?.promptId||''].join('|');
-  if(next!==key){const keep=p&&pending&&p.type===pending.type&&['ult_lia','ult_nerasio_land'].includes(p.type)&&pid===playerId&&s.turnEpoch===data?.turnEpoch&&s.code===data?.code&&s.stateInstanceId===data?.stateInstanceId;error='';if(!keep){selected=null;filter=null;}key=next;}
+  if(next!==key){const keep=p&&pending&&p.type===pending.type&&['ult_lia','ult_nerasio_land'].includes(p.type)&&pid===playerId&&s.turnEpoch===data?.turnEpoch&&s.code===data?.code&&s.stateInstanceId===data?.stateInstanceId;error='';if(!keep){selected=null;filter=p?.type==='upgrade'?pid:null;}key=next;}
   data=s;playerId=pid;pending=p||null;mode=p?.type||'view';busy=locked;
   if(selected==null||!s.tiles[selected])selected=Number(Object.keys(tileTargets(p))[0]??s.owners.findIndex(o=>o?.player===pid));
   if(selected<0)selected=s.players.find(x=>x.id===pid)?.pos||0;

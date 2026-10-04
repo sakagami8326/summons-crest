@@ -68,7 +68,7 @@ const deckBefore = p.deck.filter(x => x === 'shield').length;
 G.onCreatureSummoned(r, p, 'cresteria', 'summon', 1);
 eq(p.deck.filter(x => x === 'shield').length, deckBefore + 1, 'Cresteria summon adds shield');
 G.onCreatureSummoned(r, p, 'cresteria', 'battle', 1);
-eq(p.deck.filter(x => x === 'shield').length, deckBefore + 1, 'Cresteria invasion does not add shield');
+eq(p.deck.filter(x => x === 'shield').length, deckBefore + 2, 'Cresteria invasion placement adds shield');
 
 p.gems = 9; p.treasures = 4;
 const pub = G.publicState(r, p.id).players[0];

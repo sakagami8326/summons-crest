@@ -1,0 +1,21 @@
+.noir-release .release-toc{display:flex;flex-wrap:wrap;gap:.65rem 1.2rem;padding:1rem 0;border-block:1px solid #efd98f33}
+.noir-release .release-hero{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:2rem;align-items:start}
+.noir-release .release-hero .news-shot{margin-top:0}
+.noir-release .release-hero img{max-height:38rem;object-fit:cover;object-position:top}
+.noir-release .release-costs,.noir-release .release-deck{margin:1rem 0 1.4rem;padding:1rem 1.3rem;background:#111423;border:1px solid #efd98f33}
+.noir-release .release-costs>div{display:flex;justify-content:space-between;gap:.8rem;flex-wrap:wrap}
+.noir-release dd{margin:0}.noir-release dt{color:#efd98f}
+.noir-release .release-deck>div+div{margin-top:.9rem}
+.noir-release .release-creatures{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.5rem}
+.noir-release .release-creature{padding:1.1rem;border:1px solid #efd98f33;background:#10131f;min-width:0}
+.noir-release .release-creature h3{font-size:1rem;line-height:1.8;margin-bottom:.6rem}
+.noir-release .release-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem}
+.noir-release .release-pair figure{margin:0;min-width:0}
+.noir-release .release-pair img{width:100%;height:auto;display:block;aspect-ratio:1;object-fit:contain}
+.noir-release .release-pair figcaption{text-align:center;font-size:.86rem;line-height:1.7;color:#efd98f}
+.noir-release .release-pair small{display:block;font-size:.74rem;color:#d5d4df}
+.noir-release .release-card-cost{margin:.9rem 0 .4rem;font-size:.85rem;color:#efd98f}
+.noir-release .release-creature p:last-child{margin-bottom:0;font-size:.9rem;line-height:1.9}
+.noir-release .release-spell{display:grid;grid-template-columns:minmax(0,.75fr) minmax(0,1.25fr);gap:2rem;align-items:center;margin-block:2rem}
+.noir-release .release-spell .news-shot{margin:0}
+@media(max-width:40rem){.noir-release .release-hero,.noir-release .release-creatures,.noir-release .release-spell{grid-template-columns:minmax(0,1fr);gap:1.1rem}.noir-release .release-hero .news-shot,.noir-release .release-spell .news-shot{max-width:20rem;margin-inline:auto}.noir-release .release-pair img{max-height:13rem}.noir-release .release-toc{font-size:.9rem}}

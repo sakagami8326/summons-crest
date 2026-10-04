@@ -9,9 +9,10 @@ window.PhoneCardPicker = class {
     document.body.append(this.host);
     this.dialog = document.createElement('dialog'); this.dialog.id = 'uxPickDialog';
     this.dialog.setAttribute('aria-labelledby', 'uxPickName');
-    this.dialog.innerHTML = `<button class="uxDialogClose" aria-label="戻る">${close}</button><div id="uxPickFace"></div><div class="uxPickActions"><h2 id="uxPickName"></h2><div id="uxPickCost"></div><p id="uxPickEffect"></p><button id="uxConfirm"></button><button id="uxBack">戻る</button></div>`;
+    this.dialog.innerHTML = `<button class="uxDialogClose" aria-label="戻る">${close}</button><div id="uxPickFace"></div><div class="uxPickActions"><div id="uxDetailModes" class="uxEvolutionTabs" hidden></div><h2 id="uxPickName"></h2><div id="uxPickCost"></div><p id="uxPickEffect"></p><button id="uxConfirm"></button><button id="uxBack">戻る</button></div>`;
     document.body.append(this.dialog);
     this.$ = id => document.getElementById(id);
+    const purpose=document.createElement('p');purpose.id='uxPurpose';purpose.hidden=true;this.$('uxZones').before(purpose);
     this.rail = this.$('uxRail');
     const swap = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h15m-4-4 4 4-4 4M20 17H5m4-4-4 4 4 4"/></svg>';
     this.$('uxBrowseHand').innerHTML=swap+'<span>手札を確認する</span>';
@@ -86,6 +87,9 @@ window.PhoneCardPicker = class {
     if(this.busy || this.contextKey!==this.context() || !this.config.cancelId)return;
     if(!this.config.confirmCancel)return this.submit(this.config.cancelId);
     this.cancelChoice=this.config.cancelId;
+    this.$('uxCancelTitle').textContent=this.config.cancelTitle || 'カードを獲得せずに進みますか？';
+    this.$('uxCancelBack').textContent=this.config.cancelBackLabel || '選び直す';
+    this.$('uxCancelSubmit').textContent=this.config.cancelSubmitLabel || '獲得せず進む';
     this.$('uxCancelError').textContent='';
     if(!this.cancelDialog.open)this.cancelDialog.showModal();
   }
@@ -95,14 +99,19 @@ window.PhoneCardPicker = class {
     this.config = config;
     this.setDrawMode(!!config.drawOverlay);
     if (!this.host.hidden && signature === this.signature) return;
-    const changed = this.lastType !== this.api.pending()?.type || (['draft','pick_draw'].includes(this.api.pending()?.type) && this.contextKey !== context);
+    const changed = this.lastType !== this.api.pending()?.type || (['draft','pick_draw','gate_pass_evolve'].includes(this.api.pending()?.type) && this.contextKey !== context);
     this.lastType = this.api.pending()?.type;
     this.signature=signature; this.contextKey=context;
-    if (changed) { this.zone=0; this.setHandView(false); }
+    if (changed) { this.zone=0; this.listEvolved=false; this.setHandView(false); }
     this.zone=Math.min(this.zone,Math.max(0,config.sections.length-1));
     this.chosen=null; this.dialog.close(); this.cancelDialog.close(); this.api.cancelGesture();
     this.host.hidden=false;
     this.$('uxTitle').textContent=config.title;
+    this.$('uxCount').hidden=config.showCount===false;
+    this.$('uxPurpose').textContent=config.purpose || '';
+    this.$('uxPurpose').hidden=!config.purpose;
+    this.host.classList.toggle('hasPurpose',!!config.purpose);
+    this.host.classList.toggle('isEvolutionChoice',!!config.evolutionPreview);
     this.$('uxClose').hidden=!config.cancelId || !!config.drawOverlay;
     this.$('uxClose').setAttribute('aria-label',config.cancelLabel || 'やめる');
     this.$('uxGold').innerHTML=config.showGold ? `<img src="/assets/ic_gold.png" alt="G"> ${Number(this.api.player().gold).toLocaleString('ja-JP')}` : '';
@@ -116,18 +125,26 @@ window.PhoneCardPicker = class {
     const left=preserve?this.rail.scrollLeft:0;
     this.$('uxCount').textContent=cfg.count || `${sec.entries.reduce((n,e)=>n+(e.n||1),0)}枚`;
     this.$('uxZones').replaceChildren();
+    if(cfg.evolutionPreview){
+      const guide=document.createElement('p');guide.className='uxEvolutionGuide';
+      const coin=document.createElement('img');coin.src='/assets/ic_gold.png';coin.alt='';
+      guide.append(coin,document.createTextNode(cfg.evolutionGuide));
+      const modes=document.createElement('div');modes.className='uxEvolutionTabs';
+      this.modeButtons(modes,!!this.listEvolved,evolved=>{this.listEvolved=evolved;this.paint(true);});
+      this.$('uxZones').append(guide,modes);
+    }
     if(sections.length>1) sections.forEach((s,i)=>{
       const button=document.createElement('button');button.textContent=`${s.name} ${s.entries.reduce((n,e)=>n+(e.n||1),0)}`;
       button.setAttribute('aria-pressed',i===this.zone);button.onclick=()=>{if(this.busy)return;this.zone=i;this.paint();};this.$('uxZones').append(button);
     });
-    this.rail.innerHTML=sec.entries.map((e,i)=>this.api.card(e.card,i,e)).join('') || '<div class="uxEmpty">0枚</div>';
+    this.rail.innerHTML=sec.entries.map((e,i)=>this.api.card(this.displayCard(e.card,this.listEvolved),i,e)).join('') || '<div class="uxEmpty">0枚</div>';
     this.rail.querySelectorAll(':scope > .card').forEach((el,i)=>{
       const e=sec.entries[i], disabled=e.disabled || e.cost > this.api.player().gold;
       const decoration=e.pickId ? this.api.decoration?.(e.card) : '';
       if(decoration){el.classList.add('rarity-UR');el.insertAdjacentHTML('beforeend',decoration);}
       el.classList.toggle('uxUnaffordable',!!disabled);el.classList.toggle('uxSelected',!!e.selected);
       el.setAttribute('role','button');el.tabIndex=0;
-      el.setAttribute('aria-label',e.name || this.api.name(e.card));el.dataset.selectable=String(!disabled && !!e.pickId);
+      el.setAttribute('aria-label',e.name || this.api.name(this.displayCard(e.card,this.listEvolved)));el.dataset.selectable=String(!disabled && !!e.pickId);
       if(e.pickId)el.dataset.optionId=e.pickId;
       if(e.selected)el.setAttribute('aria-pressed','true');
       if(e.n>1){const badge=document.createElement('span');badge.className='uxMultiplicity';badge.textContent='×'+e.n;el.append(badge);}
@@ -141,17 +158,38 @@ window.PhoneCardPicker = class {
   }
   open(entry) {
     this.chosen=entry;
-    this.$('uxPickFace').innerHTML=this.api.bigCard(entry.card,entry);
-    this.$('uxPickName').textContent=(entry.name || this.api.name(entry.card))+(entry.location?' ／ '+entry.location:'');
-    this.$('uxPickEffect').textContent=entry.effect ?? this.api.effect(entry.card);
+    this.detailEvolved=!!this.listEvolved;
+    this.renderDetail();
+    if(!this.dialog.open)this.dialog.showModal();
+    this.api.preview?.(entry);
+  }
+  displayCard(card,evolved) {
+    return this.config?.evolutionPreview && evolved ? (this.api.evolution?.(card)?.evolved || card) : card;
+  }
+  modeButtons(host,evolved,onChange) {
+    host.replaceChildren();host.setAttribute('role','group');host.setAttribute('aria-label','進化前後の表示');
+    for(const [value,label] of [[false,'進化前'],[true,'進化後']]){
+      const button=document.createElement('button');button.textContent=label;
+      button.dataset.mode=value?'evo':'base';button.setAttribute('aria-pressed',String(value===evolved));
+      button.onclick=()=>{if(!this.busy && this.contextKey===this.context())onChange(value);};
+      host.append(button);
+    }
+  }
+  renderDetail() {
+    const entry=this.chosen;if(!entry)return;
+    const card=this.displayCard(entry.card,this.detailEvolved),modes=this.$('uxDetailModes');
+    modes.hidden=!this.config.evolutionPreview || !this.api.evolution?.(entry.card);
+    if(!modes.hidden)this.modeButtons(modes,!!this.detailEvolved,evolved=>{this.detailEvolved=evolved;this.renderDetail();});
+    this.dialog.classList.toggle('isEvolutionChoice',!modes.hidden);
+    this.$('uxPickFace').innerHTML=this.api.bigCard(card,entry);
+    this.$('uxPickName').textContent=(entry.name || this.api.name(card))+(entry.location?' ／ '+entry.location:'');
+    this.$('uxPickEffect').textContent=entry.effect ?? this.api.effect(card);
     this.$('uxPickCost').innerHTML=entry.cost!=null?`<img src="/assets/ic_gold.png" alt="G"> ${entry.cost}`:'';
     const confirm=this.$('uxConfirm');confirm.hidden=!entry.pickId;
     confirm.disabled=!!entry.disabled || entry.cost>this.api.player().gold;
     confirm.textContent=entry.disabled ? (entry.disabledLabel || '選択できません') : entry.cost>this.api.player().gold?'ゴールド不足':entry.selected?'選択を外す':this.config.action;
     confirm.classList.toggle('danger',!!this.config.danger);
-    if(!this.dialog.open)this.dialog.showModal();
     requestAnimationFrame(()=>this.api.fit(this.$('uxPickFace')));
-    this.api.preview?.(entry);
   }
   async submit(id) {
     if(!id||this.handView||this.busy||this.contextKey!==this.context())return;
