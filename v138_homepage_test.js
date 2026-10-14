@@ -113,7 +113,7 @@ ok(/name="twitter:image" content="https:\/\/summonscode\.jp\/assets\/site\/og-su
 ok(/rel="canonical" href="https:\/\/summonscode\.jp\/"/.test(html) && /name="description"/.test(html), 'canonical uses the official domain and description metadata is present');
 ok(/class="skip-link"/.test(html) && /aria-live="polite"/.test(html), 'skip navigation and live carousel information are present');
 ok(/SUMMONS CODEは個人開発ゲームです。/.test(html), 'footer identifies SUMMONS CODE as an independently developed game');
-ok(/<dt>SAVE DATA<\/dt><dd>テレビ側のブラウザに保存<small>PCへ書き出して保管可能<\/small>/.test(html), 'save data description includes PC export');
+ok(/<dt>SAVE DATA<\/dt><dd>盤面を表示するブラウザに保存<small>PCへ書き出して保管可能<\/small>/.test(html), 'save data description includes PC export');
 ok(/href="https:\/\/x\.com\/gamitestman"/.test(html) && /site-footer__social/.test(html) && /<svg/.test(html),
   'footer links to the developer X account with an icon');
 ok(/最新情報はこちら/.test(html) && /href="https:\/\/www\.youtube\.com\/@SUMMONSCODE"/.test(html),

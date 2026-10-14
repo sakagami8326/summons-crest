@@ -23,7 +23,7 @@ const G=new Function('require','__dirname','setInterval','setTimeout',source+';r
   await page.locator('[data-id=redani]').click();await page.waitForTimeout(750);
   for(let i=0;i<9;i++){
    const name=await page.locator('.detailHeading h1').innerText();
-   if(name==='ノワール'){assert.match(await page.locator('.affinityBenefit').innerText(),/全属性.*10％OFF/);await page.screenshot({path:path.join(out,`noir-${width}.png`)});}else assert.match(await page.locator('.affinityBenefit').innerText(),/同属性の領地 強化費用 20％OFF/);
+   if(name==='ノワール'){assert.match(await page.locator('.affinityBenefit').innerText(),/スペルを1ターンに2回まで使える/);await page.screenshot({path:path.join(out,`noir-${width}.png`)});}else assert((await page.locator('.affinityBenefit').innerText()).length>0);
    assert.equal(await page.locator('img.ornateArrow').count(),3);
    assert.equal(await page.locator('#phoneSummoners .starterCard').count(),12);
    const check=await page.evaluate(async()=>{const root=document.querySelector('#phoneSummoners');await Promise.all([...root.querySelectorAll('img')].map(i=>i.decode().catch(()=>{})));return {broken:[...root.querySelectorAll('img')].filter(i=>!i.naturalWidth).map(i=>i.src),fit:[...root.querySelectorAll('.starterCard')].every(e=>{const b=e.getBoundingClientRect();return b.height>24&&b.bottom<innerHeight;})};});

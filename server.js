@@ -10,7 +10,7 @@ const crypto = require('crypto');
 const SITE_NEWS = require('./site-news');
 const START_DEVICE = require('./public/assets/start-guide/device');
 
-const VERSION = '1.66';
+const VERSION = '1.67';
 const MAPS = require('./public/map-definitions');
 const mapOf = r => MAPS[r.mapId || 'starting_corridor'];
 const tilesOf = r => mapOf(r).tiles;
@@ -203,7 +203,7 @@ const CREATURES = {
 };
 const ITEMS = {}; // v0.34: 呪いアイテムは廃止(スペル「衰弱の呪文」に移行)
 const SPELLS = {
-  sp_censor: { name:'禁書検閲', rarity:'R', cost:120,
+  sp_censor: { name:'禁書検閲', rarity:'R', cost:80,
     desc:'敵1人の手札からランダムな2枚を自分だけ確認し、1枚を選んで捨てさせる。その後1枚引く' },
   sp_gold:   { name: 'ゴールド', rarity: 'N', cost: 0,
                desc: '現在の周回数×100Gを得る' },
@@ -268,28 +268,28 @@ const SUPPORTS = {
 EXILE_SPELLS = new Set(Object.entries(SPELLS).filter(([, sp]) => sp.exileAfterUse).map(([id]) => id));
 const CHARS = {
   redani: { name: 'レダーニ', color: '#D85A30', elem: 'fire',
-            style: 'ウェポン・火力侵略', deckNote: 'カマドーマ2+ソードギア ─ ウェポンを鍛えて攻める' },
+            style: 'ウェポンによる戦闘強化', deckNote: 'カマドーマ2+ソードギア ─ ウェポンを鍛えて攻める' },
   linnei: { name: 'リンネイ', color: '#378ADD', elem: 'water',
-            style: '経済・通行料', deckNote: 'オルフェ2+黄金2 ─ 資金と収入を伸ばす' },
+            style: 'ショップで戦力を揃え、通行料で稼ぐ', deckNote: 'オルフェ2+黄金2 ─ 資金と収入を伸ばす' },
   grease: { name: 'グリース', color: '#C69A32', elem: 'earth',
-            style: '進化・戦線交代', deckNote: '進化で力を引き出し、戦線交代で攻めと守りを切り替える' },
+            style: '進化を活かした領地拡大', deckNote: '進化で力を引き出し、戦線交代で攻めと守りを切り替える' },
   mio:    { name: 'ミオ',     color: '#4FA69C', elem: 'wind',
-            style: '移動・機動侵略', deckNote: 'ガストン2・マーロー2・ガーブル・ポポンガ ─ 移動で攻め、手札を補給する' },
+            style: 'ダイスを操り、狙った場所へ移動して侵略', deckNote: 'ガストン2・マーロー2・ガーブル・ポポンガ ─ 移動で攻め、手札を補給する' },
   lia:    { name: 'リーア',   color: '#E6868F', elem: 'fire',
-            style: '負傷・火力侵略', deckNote: '炎の渦で傷を刻み、追撃で侵略する' },
+            style: 'ダメージスペルで削り、追撃で奪う', deckNote: '炎の渦で傷を刻み、追撃で侵略する' },
   adel:   { name: 'アーデル', color: '#9DDFF2', elem: 'water',
-            style: '回復・クリーチャーウェポン', deckNote: '水連鎖を築き、ウェポンと回復で守り抜く', selectable: true, upcoming: false },
+            style: '回復と防衛で領地を守る', deckNote: '水連鎖を築き、ウェポンと回復で守り抜く', selectable: true, upcoming: false },
   villa:  { name: 'ヴィラ',   color: '#42B875', elem: 'wind',
-            style: '廃棄・墓守戦術', deckNote: '廃棄を蓄え、魂喰らいと墓守の協奏曲で再利用する', selectable: true, upcoming: false },
+            style: 'カードの廃棄と再利用', deckNote: '廃棄を蓄え、魂喰らいと墓守の協奏曲で再利用する', selectable: true, upcoming: false },
   nerasio:{ name: 'ネラシオ', color: '#C49545', elem: 'earth',
-            style: '地脈・属性連鎖', deckNote: '土地属性を再構成し、連鎖と地形補正を組み替える', selectable: true, upcoming: false },
-  noir: { name:'ノワール', color:'#AAA3BF', elem:null, style:'手札操作・コントロール',
+            style: '属性連鎖', deckNote: '土地属性を再構成し、連鎖と地形補正を組み替える', selectable: true, upcoming: false },
+  noir: { name:'ノワール', color:'#AAA3BF', elem:null, style:'手札操作で戦況をコントロール',
     deckNote:'サーチで手札を整え、敵の手札に干渉。進化で領地を育てて侵略する', selectable:true, upcoming:false },
 };
 const ULTS = {
   noir: { name:'漆黒の審判', desc:'各対戦相手の手札をランダムに1枚捨てさせ、自分は3枚引く', art:'/assets/ult_noir.webp' },
   redani: { name: '烈火の進軍', desc: 'ヘビーアックス（AT＋40）を手札に1枚加え、ダイスを3個振って移動する' },
-  linnei: { name: '水鏡の大商談', desc: '現在のマスでショップを開き、全品半額で買い物' },
+  linnei: { name: '水鏡の大商談', desc: '現在のマスでショップを開き、全品半額で買い物。終了後も行動できる。' },
   grease: { name: '進化の胎動', desc: '手札と自分の領地から未進化クリーチャーを各1体まで選び、進化させる', art: '/assets/ult_grease-evolution-v1.webp' },
   mio:    { name: '追い風の導き', desc: '好きなマスへ移動して止まる。移動先で侵略する場合、その戦闘中AT+20' },
   lia:    { name: '紅蓮の方程式', desc: '敵領地を最大3か所選び、炎の渦を発生させる' },
@@ -516,6 +516,7 @@ function makeRoom(mode = 'normal', mapId = 'starting_corridor') {
   if (!Object.hasOwn(MAPS, mapId)) throw new Error('不明なマップです');
   const deck = makeDeck();
   const room = {
+    passiveVersion: 1, passiveNotices: [],
     code: code4(), phase: 'lobby', clients: new Set(), players: [], mapId,
     movement: null, routePreview: null,
     botMode: mode === 'bot', botTimer: null, botActionSeq: 0, presentationSpeed: 1,
@@ -617,15 +618,26 @@ function grigorCount(r, playerId) {
   return r.owners.reduce((n, o) => n + (o && o.player === playerId &&
     baseId(o.creature) === 'trooper' && isEvolved(o) ? 1 : 0), 0);
 }
+function hasPassive(r, p, id) { return r.passiveVersion === 1 && p?.charId === id; }
+function spellLimitReached(r, p) {
+  return hasPassive(r,p,'noir') ? (p.spellCount || 0) >= 2 : !!p.spellCast;
+}
+function passiveNotice(r,p,extra={}) {
+  const at=stamp(r),notice={id:'passive-'+at,at,player:p.id,charId:p.charId,...extra};
+  r.passiveNotices=(r.passiveNotices||[]).concat(notice).slice(-24);
+  return notice;
+}
 function effectiveSpellCost(r, p, sid) {
   const sp = SPELLS[sid];
-  return sp ? Math.max(0, sp.cost - grigorCount(r, p.id) * 20) : Infinity;
+  return sp ? Math.max(0, sp.cost - grigorCount(r, p.id) * 20) + (hasPassive(r,p,'noir') && (p.spellCount||0) >= 1 ? 100 : 0) : Infinity;
 }
 function roadbumpCount(r, playerId) {
   return r.owners.reduce((n, o) => n + (o && o.player === playerId &&
     baseId(o.creature) === 'bunnyhop' && isEvolved(o) ? 1 : 0), 0);
 }
 function onSpellCast(r, p, sid) {
+  p.spellCount=(p.spellCount||0)+1;
+
   markMatchCause(r, 'spell', { actor: p.id, spell: sid || null });
   const count = roadbumpCount(r, p.id);
   if (!count) return;
@@ -822,7 +834,8 @@ function landDefenseStats(r, tile) {
   const ownDf=(bid==='bonerex'?(evolved?20:10):0)+(bid==='beruf'?(o.shade||0)*10:0)+
     (bid==='alter'?(def.exile||[]).length*5:0)+(bid==='komao'&&evolved?chainCount(r,def.id,'earth')*5:0)+
     (bid==='valk'?earthLandBattleBonus(r,def.id).bonus:0);
-  const df=terrain+queen+ownDf+(r.tileFx[tile]?.uplift?10:0)+(o.iceWard?10:0);
+  const passiveDF=hasPassive(r,def,'adel') && !(o.dmg>0) && !(bid!=='beruf' && r.curses[tile]?.hp>0) ? 10 : 0;
+  const df=passiveDF+terrain+queen+ownDf+(r.tileFx[tile]?.uplift?10:0)+(o.iceWard?10:0);
   const hp=Math.max(1,maxHp-(o.dmg||0)-(bid!=='beruf'?(r.curses[tile]?.hp||0):0));
   return {maxHp,hp,df,total:hp+df,at:at+(bid==='emeri'?earthLandBattleBonus(r,def.id).bonus:0)};
 }
@@ -852,6 +865,7 @@ function placedToxyCount(r, playerId) {
 function exileCard(r, p, cardId, source = 'effect', battle = false) {
   if (!Array.isArray(p.exile)) p.exile = [];
   p.exile.push(cardId);
+  if(hasPassive(r,p,'villa'))p.passiveExiled=true;
   if (!Array.isArray(r.effectQueue)) r.effectQueue = [];
   const triggers = placedToxyCount(r, p.id);
   const providers = r.owners.filter(o => o && o.player === p.id && baseId(o.creature) === 'toxy');
@@ -903,7 +917,7 @@ function askMandatoryHandExile(r, p, type, prompt, extra = {}) {
   return true;
 }
 function resumeAfterPlacement(r, p, pend) {
-  if (pend.after === 'battle_reward') return settleAll(r);
+  if (pend.after === 'battle_reward') return finishGreaseReward(r,p);
   if (pend.after === 'evolution') return processPlacementQueue(r);
   if (pend.after === 'swap') return askRoll(r, p);
   if (pend.after === 'battle' || pend.after === 'frontline') return continuePostBattle(r);
@@ -918,11 +932,24 @@ function askCardSearch(r,p,creatureId,kind,after,tile) {
   Object.assign(r.pending[p.id],{after,tile,creature:creatureId,kind});
   return true;
 }
+function finishGreaseReward(r,p) {
+  const tile=p.passiveGreaseTile;
+  delete p.passiveGreaseTile;
+  const o=r.owners[tile];
+  if(!hasPassive(r,p,'grease') || !o || o.player!==p.id || o.level>=RULES.maxLevel ||
+     p.gold<upCostRange(r,p,tile,o.level+1))return settleAll(r);
+  const upgrade=landUpgradeUi(r,p,tile);
+  ask(r,p.id,'upgrade_lv','グリースの固有能力 ─ 奪った領地を強化',
+    upgrade.levels.filter(x=>x.canPay).map(x=>({id:`ul:${tile}:${x.level}`,label:`Lv${x.level} −${x.cost}G`}))
+      .concat({id:'ul:cancel',label:'強化しない'}));
+  Object.assign(r.pending[p.id],{upgrade,passiveGrease:true,fixedTile:tile});
+  passiveNotice(r,p,{kind:'captured_upgrade',tile});
+}
 function finishBattleReward(r,p,search) {
   const o=search&&r.owners[search.tile];
   if(o?.player===p.id&&baseId(o.creature)==='joma'&&isEvolved(o)&&
       askCardSearch(r,p,'joma_f','weapon','battle_reward',search.tile))return;
-  return settleAll(r);
+  return finishGreaseReward(r,p);
 }
 function onCreatureSummoned(r, p, creatureId, reason, tile) {
   if (!['summon', 'swap', 'battle', 'frontline', 'evolution'].includes(reason)) return false;
@@ -1037,11 +1064,15 @@ function askCensor(r,p) {
   opts.push({id:'censor:cancel',label:'やめる'});
   return ask(r,p.id,'censor_target','禁書検閲 ─ 相手を選ぶ',opts);
 }
+function notifyHandLoss(r,target,card,reason) {
+  r.handLossNotices=[...(r.handLossNotices||[]),{player:target.id,card,reason,at:stamp(r)}].slice(-64);
+}
 function finishCensor(r,p,pend,selected) {
   const target=pById(r,pend.target);
   let count=0;
   if (target && !target.bankrupt && selected && target.hand[selected.index]===selected.card) {
-    target.discard.push(target.hand.splice(selected.index,1)[0]);count=1;
+    const card=target.hand.splice(selected.index,1)[0];target.discard.push(card);count=1;
+    notifyHandLoss(r,target,card,'censor');
   }
   const drawn=drawCards(r,p,1);
   if(drawn)r.lastDraw={player:p.id,n:drawn,reason:'censor',at:stamp(r)};
@@ -1448,6 +1479,11 @@ function beginUltSequence(r, p, data = {}) {
   armUltSequence(r);
 }
 function resolveUltSequence(r) {
+  const before=earthCounts(r);
+  try{return resolveUltSequenceAction(r);}
+  finally{rewardEarthGrowth(r,before);}
+}
+function resolveUltSequenceAction(r) {
   const seq = r.ultSequence;
   if (!seq || seq.resolved) return;
   seq.resolved = true;
@@ -1492,12 +1528,13 @@ function resolveUltSequence(r) {
     const targets=[];
     for(const target of censorTargets(r,p)) {
       const index=Math.floor(Math.random()*target.hand.length);
-      target.discard.push(target.hand.splice(index,1)[0]);
+      const card=target.hand.splice(index,1)[0];target.discard.push(card);
+      notifyHandLoss(r,target,card,'ult_noir');
       targets.push({target:target.id,count:1});
     }
     const drawn=drawCards(r,p,3);
     if(drawn)r.lastDraw={player:p.id,n:drawn,reason:'ult_noir',at:stamp(r)};
-    for(const target of targets)cardEffectNotice(r,p,{kind:'judgment',...target});
+    cardEffectNotice(r,p,{kind:'judgment',count:targets.length,drawn});
     log(r,`${p.name}の漆黒の審判：敵${targets.length}人の手札を1枚ずつ捨てさせ、自分は${drawn}枚引いた`);
   } else if (seq.charId === 'adel') {
     const targets = [];
@@ -1578,7 +1615,7 @@ function askRoll(r, p) {
   if (!p.fixedDice && !p.ultUsed && ULTS[p.charId] && ultAvailable)
     opts.push({ id: 'ult', label: `固有スキル【${ULTS[p.charId].name}】` });
   // v0.60: 呪文は1ターンに1回まで(黄金+ひらめきの無限ループ対策)
-  for (const sid of p.spellCast ? [] : [...new Set(p.hand.filter(c => SPELLS[c]))]) {
+  for (const sid of spellLimitReached(r,p) ? [] : [...new Set(p.hand.filter(c => SPELLS[c]))]) {
     const spellCost = effectiveSpellCost(r, p, sid);
     if (spellCost > p.gold) continue;
     if (sid === 'sp_evolve' && !p.hand.some(canEvolveHandCard)) continue;
@@ -1724,6 +1761,13 @@ function beginTurn(r, { gameStart=false } = {}) {
   r.turnReadyAt = Date.now() + presentationMs(r,p.id,GAME_TIMING.turnNotice+GAME_TIMING.turnNoticeBuffer+
     (gameStart?GAME_TIMING.gameNotice+GAME_TIMING.startNoticeGap:0))+
     (gameStart?GAME_TIMING.gameEntryReturn+GAME_TIMING.gameEntryCameraReturn:0);
+  if(r.passiveVersion!==1) {
+    r.passiveVersion=1;
+    r.players.forEach(q=>{q.passiveExiled=false;q.spellCount=0;});
+  }
+  p.spellCount=0;
+  p.passiveRerolled=false;
+  p.passiveLiaLanding=false;
   p.spellCast = false;  // 呪文は1ターンに1回まで
   p.gale = false;
   p.fixedDice = null;
@@ -1746,6 +1790,19 @@ function beginTurn(r, { gameStart=false } = {}) {
     if (healed.length) recordHeal(r, p, 'palecoral', healed);
   }
   log(r, `▶ ${p.name}の手番(ラウンド${r.round})`);
+  if(hasPassive(r,p,'villa') && p.passiveExiled) {
+    p.passiveExiled=false;
+    refillDeck(r);
+    if(!r.deck.length)r.deck.push(...makeDeck());
+    const card=r.deck.shift();
+    p.hand.push(card);recordCardAcquisition(p,1);
+    passiveNotice(r,p,{kind:'exile_reward'});
+    r.lastGain={player:p.id,n:1,cards:[card],reason:'passive_villa',availableAt:r.turnReadyAt+presentationMs(r,p.id,GAME_TIMING.passiveNotice),at:stamp(r)};
+    const availableAt=r.turnReadyAt+presentationMs(r,p.id,GAME_TIMING.passiveNotice+GAME_TIMING.passiveCardReveal);
+    ask(r,p.id,'passive_reward','ヴィラの固有能力',[]);
+    r.pending[p.id].availableAt=availableAt;
+    return;
+  }
   startPickDraw(r, p);  // v0.61: 選択ドロー(完了後にaskRollへ)
 }
 // 所持金がマイナスの人がいれば強制売却→それでも負なら破産。全員0以上ならendTurnへ
@@ -1955,6 +2012,7 @@ function finishCavernMove(r,p) {
   const m=r.movement, wait=r.lastDice.segment.availableAt+presentationMs(r,p.id,GAME_TIMING.arriveBuf);
   r.movement=null; r.routePreview=null;
   r.turnReadyAt=Math.max(r.turnReadyAt||0,wait);
+  p.passiveLiaLanding=!!m.meta.normalDice && !r.lastDice.forcedStop;
   if(m.meta.villaUlt) return startVillaRecovery(r,p,wait);
   resolveTile(r,p,!!m.meta.mioUlt);
   if(r.pending[p.id]) r.pending[p.id].availableAt=Math.max(r.pending[p.id].availableAt||0,wait);
@@ -2050,6 +2108,7 @@ function performMove(r, p, steps, meta, moveLabel) {
     }
   }
   r.lastDice.resolvedSteps = movedSteps;
+  p.passiveLiaLanding=!!meta.normalDice && !forcedStop;
   if (forcedStop) {
     const initial = presentationMs(r, p.id, meta && meta.multi ? GAME_TIMING.moveStartDelayMulti : GAME_TIMING.moveStartDelay);
     forcedStop.availableAt = r.lastDice.at + initial + movedSteps * presentationMs(r, p.id, GAME_TIMING.stepMs) +
@@ -2133,23 +2192,61 @@ function performMove(r, p, steps, meta, moveLabel) {
   if (forcedStop && r.pending[p.id]) r.pending[p.id].availableAt = forcedStop.availableAt;
   if (r.lastDice.gateReadyAt && r.pending[p.id]) r.pending[p.id].availableAt = Math.max(r.pending[p.id].availableAt||0, r.lastDice.gateReadyAt);
 }
+function offerDice(r,p,dice) {
+  if(hasPassive(r,p,'mio') && !p.passiveRerolled) {
+    ask(r,p.id,'passive_mio','ミオの固有能力 ─ 出目を選ぶ',[
+      {id:'dice:accept',label:'この出目で進む'},{id:'dice:reroll',label:'振り直す'}]);
+    passiveNotice(r,p,{kind:'dice_choice'});
+    r.pending[p.id].dice=dice;
+    r.lastDice={player:p.id,at:stamp(r),value:dice[0],...(dice.length>1?{multi:dice}:{}),noMove:true};
+    r.pending[p.id].availableAt=Date.now()+presentationMs(r,p.id,dice.length>1?GAME_TIMING.moveStartDelayMulti:GAME_TIMING.moveStartDelay);
+    const first=isCavern(r)?cavernNeighbors(r,p):p.dir?[(p.pos+p.dir+tilesOf(r).length)%tilesOf(r).length]:mapOf(r).neighbors[p.pos];
+    r.pending[p.id].arrivals=[...new Set(first.flatMap(next=>botWalkEndpoints(r,p,next,dice.reduce((a,b)=>a+b,0))))];
+    return;
+  }
+  return adoptDice(r,p,dice);
+}
+function adoptDice(r,p,dice,suppressPresentation=false) {
+  const sum=dice.reduce((a,b)=>a+b,0);
+  return performMove(r,p,sum,{value:dice[0],...(dice.length>1?{multi:dice}:{}),normalDice:true,suppressPresentation},`${sum}を出した`);
+}
+function liaTargets(r,p) {
+  if(!hasPassive(r,p,'lia') || !p.hand.some(c=>CREATURES[c] && CREATURES[c].cost<=p.gold))return [];
+  return mapOf(r).neighbors[p.pos].filter(tile=>{
+    const o=r.owners[tile];
+    return o && o.player!==p.id && !r.barrier[o.player] &&
+      ((o.dmg||0)>0 || (baseId(o.creature)!=='beruf' && (r.curses[tile]?.hp||0)>0));
+  });
+}
+function offerLia(r,p) {
+  if(!p.passiveLiaLanding)return false;
+  p.passiveLiaLanding=false;
+  const targets=liaTargets(r,p);
+  if(!targets.length)return false;
+  ask(r,p.id,'passive_lia','リーアの固有能力 ─ 侵略する領地を選ぶ',
+    targets.map(tile=>({id:'lia:'+tile,tile,label:'侵略する'})).concat({id:'lia:cancel',label:'侵略しない'}));
+  r.pending[p.id].origin=p.pos;
+  passiveNotice(r,p,{kind:'adjacent_invasion'});
+  return true;
+}
 function doRoll(r, p) {
   if (p.fixedDice) {
     const dice = p.fixedDice;
     p.fixedDice = null;
-    return performMove(r, p, dice, { value: dice, fixed: true }, `呪文で${dice}に固定した`);
+    return performMove(r, p, dice, { value: dice, fixed: true, normalDice:true }, `呪文で${dice}に固定した`);
   }
   if (p.gale) {
     p.gale = false;
     const d = [0, 0].map(() => 1 + Math.floor(Math.random() * 6));
     const sum = d[0] + d[1];
-    return performMove(r, p, sum, { value: d[0], multi: d }, `疾風に乗って2つのダイスで${sum}を出した!(${d.join('+')})`);
+    return offerDice(r,p,d);
   }
   const dice = 1 + Math.floor(Math.random() * 6);
-  performMove(r, p, dice, { value: dice }, `${dice}を出した`);
+  return offerDice(r,p,[dice]);
 }
 function resolveTile(r, p, mioUlt = false) {
   if (gatePassEvolution(r,p,mioUlt)) return;
+  if(offerLia(r,p))return;
   const i = p.pos, tile = tilesOf(r)[i];
   if (tile.t === 'castle') { log(r, `${p.name}は城に到着`); return askUpgrade(r, p, '城'); }
   if (tile.t === 'gate') { log(r, `${p.name}は門に到着`); return askGate(r, p); }
@@ -2188,6 +2285,7 @@ function resolveTile(r, p, mioUlt = false) {
 }
 
 function upgradeDiscountRate(r, p, i) {
+  if(r.passiveVersion===1)return 0;
   const summoner = CHARS[p.charId];
   if (!summoner) return 0;
   if (summoner.elem == null || summoner.elem === 'neutral') return 0.1;
@@ -2438,6 +2536,7 @@ function askForge(r, p) {
 }
 function askMarket(r, p) {
   if (!r.shopVisit || r.shopVisit.player !== p.id) makeShopVisit(r, p);
+  if(hasPassive(r,p,'linnei')&&!r.shopVisit.passiveNotified){r.shopVisit.passiveNotified=true;passiveNotice(r,p,{kind:'shop_hand'});}
   const opts = r.shopVisit.items.filter(x => !x.sold).map(x => ({
     id: 'buy:' + x.slotId, slotId: x.slotId, card: x.card || null, kind: x.kind,
     price: x.price, label: x.kind === 'remove' ? 'カード削除' : (CREATURES[x.card] || SPELLS[x.card] || SUPPORTS[x.card]).name,
@@ -2532,11 +2631,19 @@ function battleAttackerId(r, battle) {
 }
 // Public external sources only: never inspect or expose unrevealed support choices.
 // Participating creatures and weapons explain their own effects in their own UI.
-function battleExternalModifiers(r, b) {
+function battleExternalModifiers(r, b, revealed=false) {
   const out = { attacker: [], defender: [] };
   if (!b) return out;
   const o = r.owners[b.tile], atk = pById(r, b.attacker), fx = r.tileFx[b.tile] || {};
   const add = (side, source, stat, amount) => out[side].push({ ...source, stat, amount });
+  if(hasPassive(r,pById(r,b.defender),'adel') && o && !(o.dmg>0) &&
+      !(baseId(o.creature)!=='beruf' && r.curses[b.tile]?.hp>0))
+    add('defender',{charId:'adel',passive:true},'df',10);
+  if(revealed) {
+    const a=supportStats(b.supports[b.attacker]),d=supportStats(b.supports[b.defender]);
+    if(hasPassive(r,atk,'redani') && a && !d?.jinx && baseId(o.creature)!=='ludi')add('attacker',{charId:'redani',passive:true},'at',10);
+    if(hasPassive(r,pById(r,b.defender),'redani') && d && !a?.jinx)add('defender',{charId:'redani',passive:true},'at',10);
+  }
   if (atk?.blade) add('attacker', {cardId:'sp_bloodstained_blade'}, 'at', 10);
   if (b.mioUlt) add('attacker', {charId:'mio'}, 'at', 20);
   if (fx.vortex) add('attacker', fx.vortexSource || {cardId:'sp_flame_vortex'}, 'at', 10);
@@ -2590,7 +2697,9 @@ function calculateBattle(r, b = r.battle) {
   const atkEvolved = aEvo || /_f$/.test(b.atkCreature);
   const atkWeaponMastery = weaponMasteryBonus(b.atkCreature, atkEvolved, aEff);
   const defWeaponMastery = weaponMasteryBonus(o.creature, defEvolved, dEff);
-  let st = aBase.st + (aEff ? aEff.st : 0) + atkWeaponMastery;
+  const atkPassiveAT=hasPassive(r,atk,'redani') && aEff ? 10 : 0;
+  const defPassiveAT=hasPassive(r,def,'redani') && dEff ? 10 : 0;
+  let st = aBase.st + (aEff ? aEff.st : 0) + atkWeaponMastery + atkPassiveAT;
   const remainingHand = Math.max(0,atk.hand.length - (!mvSrc&&!corridor?1:0) - (supportChoice(b.supports[atk.id]).kind!=='none'?1:0));
   if(baseId(b.atkCreature)==='kagetsuzuri') {
     const bonus=Math.min(atkEvolved?30:20,remainingHand*5);
@@ -2679,7 +2788,7 @@ function calculateBattle(r, b = r.battle) {
   const atkDF = (aEff ? aEff.hp : 0) + atkShadeDF + atkSoul + atkEarthChain + atkEarthDfBonus;
   const atkCarried = mvSrc ? (mvSrc.dmg || 0) : (corridor ? (b.atkCarry || 0) : 0);
   const atkEffHp = Math.max(1, aBase.hp - atkCarried);
-  const defSt = dBase.st + (dEff ? dEff.st : 0) + defWeaponMastery + defEarthAtBonus;
+  const defSt = dBase.st + (dEff ? dEff.st : 0) + defWeaponMastery + defEarthAtBonus + defPassiveAT;
 
   // ===== v0.57 戦闘シーケンス: 戦闘耐久値 = 現在HP + DF =====
   const hits = baseId(b.atkCreature) === 'avalanche' ? 2 : 1;      // 【双撃】侵略時のみ2回
@@ -2706,7 +2815,7 @@ function calculateBattle(r, b = r.battle) {
     atkSurvived = counterDealt < atkEffHp;
   }
 
-  return { b, atk, def, o, tile, ac, dc, defEvolved, notes, aSup, dSup, aEff, dEff, mvSrc, corridor, carried, atkEvolved, atkWeaponMastery, defWeaponMastery, atkSoul, defSoul, atkEarthChain, defEarthChain, atkEarthLand, defEarthLand, atkEarthAtBonus, defEarthAtBonus, atkEarthDfBonus, defEarthDfBonus, aBase, dBase, atkDmg, effHp, defDF, dealt, atkEffHp, atkDF, defSt, counterSt, counterDealt, atkSurvived, atkShadeDF, hitsDone, preempt, terrain, terrainUi, curse, win, iceWard, atkCarried };
+  return { b, atk, def, o, tile, ac, dc, defEvolved, notes, aSup, dSup, aEff, dEff, mvSrc, corridor, carried, atkEvolved, atkWeaponMastery, defWeaponMastery, atkPassiveAT, defPassiveAT, atkSoul, defSoul, atkEarthChain, defEarthChain, atkEarthLand, defEarthLand, atkEarthAtBonus, defEarthAtBonus, atkEarthDfBonus, defEarthDfBonus, aBase, dBase, atkDmg, effHp, defDF, dealt, atkEffHp, atkDF, defSt, counterSt, counterDealt, atkSurvived, atkShadeDF, hitsDone, preempt, terrain, terrainUi, curse, win, iceWard, atkCarried };
 }
 
 function resolveBattle(r) {
@@ -2719,7 +2828,7 @@ function resolveBattle(r) {
       from:payer.id, to:receiver.id, fromBefore, fromAfter:payer.gold, toBefore, toAfter:receiver.gold });
     return paid;
   };
-  const { b, atk, def, o, tile, ac, dc, defEvolved, notes, aSup, dSup, aEff, dEff, mvSrc, corridor, carried, atkEvolved, atkWeaponMastery, defWeaponMastery, atkSoul, defSoul, atkEarthChain, defEarthChain, atkEarthLand, defEarthLand, atkEarthAtBonus, defEarthAtBonus, atkEarthDfBonus, defEarthDfBonus, aBase, dBase, atkDmg, effHp, defDF, dealt, atkEffHp, atkDF, defSt, counterSt, counterDealt, atkSurvived, atkShadeDF, hitsDone, preempt, terrain, terrainUi, curse, win, iceWard, atkCarried } = calculateBattle(r);
+  const { b, atk, def, o, tile, ac, dc, defEvolved, notes, aSup, dSup, aEff, dEff, mvSrc, corridor, carried, atkEvolved, atkWeaponMastery, defWeaponMastery, atkPassiveAT, defPassiveAT, atkSoul, defSoul, atkEarthChain, defEarthChain, atkEarthLand, defEarthLand, atkEarthAtBonus, defEarthAtBonus, atkEarthDfBonus, defEarthDfBonus, aBase, dBase, atkDmg, effHp, defDF, dealt, atkEffHp, atkDF, defSt, counterSt, counterDealt, atkSurvived, atkShadeDF, hitsDone, preempt, terrain, terrainUi, curse, win, iceWard, atkCarried } = calculateBattle(r);
   // Older saved battles have no snapshot; capture before any resolution changes.
   b.evolutionPrayerProviders ||= evolutionPrayerProviders(r);
   b.windSupplyProviders ||= windSupplyProviders(r, atk);
@@ -2729,7 +2838,7 @@ function resolveBattle(r) {
 
   const battleResultUi = { win, atkSurvived, atkSupport: aSup, defSupport: dSup, attacker: atk.id };
   r.lastBattle = { battleKey: b.startedAt || null, tile: b.tile, attacker: atk.id, defender: def.id,
-    externalModifiers: battleExternalModifiers(r, b),
+    externalModifiers: battleExternalModifiers(r, b, true),
     terrainElem: tileElem(r, b.tile),
     atkCreature: b.atkCreature, defCreature: o.creature,
     defLevel: o.level,
@@ -2738,10 +2847,10 @@ function resolveBattle(r) {
     atkBaseAt: aBase.st, atkBaseHp: atkEffHp,
     defBaseAt: dBase.st, defBaseHp: effHp, defSt,
     atkHp: atkEffHp, atkDf: atkDF, counterSt, counterDealt, atkSurvived,
-    atkPreAt: atkDmg - (aEff ? aEff.st : 0) - atkWeaponMastery, atkPostAt: atkDmg,
+    atkPreAt: atkDmg - (aEff ? aEff.st : 0) - atkWeaponMastery - atkPassiveAT, atkPostAt: atkDmg,
     atkPreHp: atkEffHp, atkPostHp: atkEffHp,
     atkPreDf: atkSoul + atkShadeDF + atkEarthChain + atkEarthDfBonus, atkPostDf: atkDF,
-    defPreAt: defSt - (dEff ? dEff.st : 0) - defWeaponMastery, defPostAt: defSt,
+    defPreAt: defSt - (dEff ? dEff.st : 0) - defWeaponMastery - defPassiveAT, defPostAt: defSt,
     defPreHp: effHp, defPostHp: effHp,
     defPreDf: Math.max(0, defDF - (dEff ? dEff.hp : 0)), defPostDf: defDF,
     atkExileCount: (atk.exile || []).length, defExileCount: (def.exile || []).length,
@@ -2854,6 +2963,7 @@ function resolveBattle(r) {
       toBefore:prayer.beforeGold, toAfter:prayer.afterGold, providers:prayer.providers });
     r.lastBattle.notes.push(`【進化の祈り】${bWinner.name} +${prayer.gold}G（配置${prayer.providers.length}体分）`);
   }
+  if(win && hasPassive(r,atk,'grease') && atkEvolved)atk.passiveGreaseTile=b.tile;
   r.battleAfter = { winner: bWinner.id, attacker: atk.id, defender: def.id, tile: b.tile,
     invasionWon: !!win, mermaidDone: false, recoveryDone: false };
   // Let a newly placed Jomagia search the weapon just acquired as its battle reward.
@@ -2942,13 +3052,76 @@ function continuePostBattle(r) {
 }
 
 // ===== アクションハンドラ =====
+function earthCounts(r) {
+  return new Map(r.players.filter(p=>hasPassive(r,p,'nerasio')).map(p=>[p.id,
+    r.owners.reduce((n,o,i)=>n+Number(o?.player===p.id && tileElem(r,i)==='earth'),0)]));
+}
+function rewardEarthGrowth(r,before) {
+  for(const [id,count] of earthCounts(r)) {
+    if(!before.has(id))continue;
+    const previous=before.get(id),gain=Math.max(0,Math.max(0,count-1)-Math.max(0,previous-1))*200;
+    if(gain){const p=pById(r,id);p.gold+=gain;passiveNotice(r,p,{kind:'earth_chain',before:previous,after:count,gold:gain});}
+  }
+}
 function handleChoose(r, playerId, optionId) {
+  const before=r.passiveEarthBaseline ? new Map(r.passiveEarthBaseline) : earthCounts(r);
+  try {return handleChooseAction(r,playerId,optionId);}
+  finally {
+    if(Object.values(r.pending).some(pd=>pd.type==='samurai_elem'))r.passiveEarthBaseline=[...before];
+    else {delete r.passiveEarthBaseline;rewardEarthGrowth(r,before);}
+  }
+}
+function committingSpell(p,pend,id) {
+  if(/:cancel$/.test(id))return null;
+  if(pend.type==='roll' && id.startsWith('sp:')) {
+    const sid=id.slice(3);
+    return ['sp_gold','sp_insight','sp_gale','sp_ward','sp_bloodstained_blade','sp_wind_shift','sp_fatal_reward'].includes(sid)||SPELLS[sid]?.fixedDice ? sid : null;
+  }
+  return ({censor_target:'sp_censor',curse_target:'sp_weaken',quake_target:'sp_quake',spell_target:p.pendSpell,
+    step_b:'sp_step',move_b:'sp_move',swap_pick:'sp_swap',spell_evolve:'sp_evolve'})[pend.type]||null;
+}
+function advancePassiveResolution(r,now=Date.now()) {
+  for(const [pid,pending] of Object.entries(r.pending)) {
+    if(pending.availableAt>now)continue;
+    if(pending.type==='passive_reward'){delete r.pending[pid];startPickDraw(r,pById(r,pid));return true;}
+    if(pending.type!=='passive_resolve')continue;
+    r.pending[pid]={...pending.original,passiveAcknowledged:true};
+    handleChoose(r,pid,pending.optionId);
+    return true;
+  }
+  return false;
+}
+setInterval(()=>{for(const r of rooms.values())if(r.phase==='playing' && advancePassiveResolution(r)){touch(r);broadcast(r);}},100);
+function handleChooseAction(r, playerId, optionId) {
   // 強化候補プレビューは本人の何らかの決定で解除(発注書v0.75 §6.3)
   if (r.upgradePreview && r.upgradePreview.player === playerId) r.upgradePreview = null;
   const p = pById(r, playerId);
   const pend = r.pending[playerId];
   if (!p || !pend || !pend.options.some(o => o.id === optionId)) return;
+  const committing=committingSpell(p,pend,optionId);
+  if(hasPassive(r,p,'noir') && p.spellCount===1 && committing && !pend.passiveAcknowledged &&
+     p.hand.includes(committing) && effectiveSpellCost(r,p,committing)<=p.gold) {
+    passiveNotice(r,p,{kind:'second_spell'});
+    ask(r,p.id,'passive_resolve','ノワールの固有能力',[]);
+    Object.assign(r.pending[p.id],{original:pend,optionId,availableAt:Date.now()+presentationMs(r,p.id,GAME_TIMING.passiveNotice)});
+    return;
+  }
   delete r.pending[playerId];
+  if(pend.type==='passive_mio') {
+    if(optionId==='dice:reroll') {
+      p.passiveRerolled=true;
+      passiveNotice(r,p,{kind:'reroll'});
+      return adoptDice(r,p,pend.dice.map(()=>1+Math.floor(Math.random()*6)));
+    }
+    return adoptDice(r,p,pend.dice,true);
+  }
+  if(pend.type==='passive_lia') {
+    if(optionId==='lia:cancel')return resolveTile(r,p);
+    const tile=Number(optionId.slice(4));
+    if(p.pos!==pend.origin || !liaTargets(r,p).includes(tile))return resolveTile(r,p);
+    p.pos=tile;
+    return startBattle(r,p,tile);
+  }
   if(pend.type==='inkcrow_discard') {
     const selected=pend.options.find(o=>o.id===optionId);
     if(selected && p.hand[selected.index]===selected.card)p.discard.push(p.hand.splice(selected.index,1)[0]);
@@ -2967,7 +3140,7 @@ function handleChoose(r, playerId, optionId) {
   if(pend.type==='censor_target') {
     if(optionId==='censor:cancel')return askRoll(r,p);
     const target=pById(r,optionId.slice(7)),cost=effectiveSpellCost(r,p,'sp_censor');
-    if(!target||target.id===p.id||target.bankrupt||!target.hand.length||p.spellCast||!p.hand.includes('sp_censor')||p.gold<cost)return askRoll(r,p);
+    if(!target||target.id===p.id||target.bankrupt||!target.hand.length||spellLimitReached(r,p)||!p.hand.includes('sp_censor')||p.gold<cost)return askRoll(r,p);
     p.discard.push(p.hand.splice(p.hand.indexOf('sp_censor'),1)[0]);p.gold-=cost;p.spellCast=true;onSpellCast(r,p,'sp_censor');
     const indexes=shuffle(target.hand.map((_,index)=>index)).slice(0,2);
     ask(r,p.id,'censor_pick','禁書検閲 ─ 捨てさせるカードを1枚選ぶ',indexes.map((index,n)=>({id:'cp:'+n,index,card:target.hand[index],label:cardName(target.hand[index])})));
@@ -3004,6 +3177,7 @@ function handleChoose(r, playerId, optionId) {
       const i = Math.floor(Math.random() * target.hand.length);
       const card = target.hand.splice(i, 1)[0];
       target.discard.push(card);
+      notifyHandLoss(r,target,card,'toxy');
       // Keep chained triggers separate even when multiple choices arrive before the next board render.
       // Card identities are not needed for the public notice.
       r.toxyNotices = [...(r.toxyNotices || []), { player:p.id, target:target.id,
@@ -3265,7 +3439,7 @@ function handleChoose(r, playerId, optionId) {
   if (pend.type === 'roll' && optionId.startsWith('sp:')) {
     const sid = optionId.slice(3);
     const spellCost = effectiveSpellCost(r, p, sid);
-    if (p.spellCast || !p.hand.includes(sid) || spellCost > p.gold) return askRoll(r, p);
+    if (spellLimitReached(r,p) || !p.hand.includes(sid) || spellCost > p.gold) return askRoll(r, p);
     if (sid === 'sp_evolve') return askSpellEvolve(r, p);
     if (sid === 'sp_censor') return askCensor(r,p);
     const castLog = () => {
@@ -3740,7 +3914,7 @@ function handleChoose(r, playerId, optionId) {
     const selected = pend.options.find(o => o.id === optionId);
     const cost = effectiveSpellCost(r, p, sid);
     // Revalidate the exact selected card before charging or removing anything.
-    if (p.spellCast || !p.hand.includes(sid) || p.gold < cost ||
+    if (spellLimitReached(r,p) || !p.hand.includes(sid) || p.gold < cost ||
         !selected?.card || p.hand[i] !== selected.card || !evolveHandCard(p, i)) return askRoll(r, p);
     p.hand.splice(p.hand.indexOf(sid), 1);
     p.discard.push(sid);
@@ -3916,8 +4090,9 @@ function handleChoose(r, playerId, optionId) {
     if (!visit || visit.player !== p.id || pend.shopId !== visit.id) return endTurn(r);
     if (optionId === 'done') {
       r.shopVisit = null;
+      const resume=hasPassive(r,p,'linnei') && r.halfMarket===p.id;
       if (r.halfMarket === p.id) r.halfMarket = null;
-      return endTurn(r);
+      return resume ? askRoll(r,p) : endTurn(r);
     }
     const slotId = optionId.startsWith('buy:') ? optionId.slice(4) : '';
     const item = visit.items.find(x => x.slotId === slotId);
@@ -3934,9 +4109,12 @@ function handleChoose(r, playerId, optionId) {
     }
     p.gold -= item.price;
     item.sold = true;
-    gainToDeck(r, p, [item.card], 'market');
+    if(hasPassive(r,p,'linnei')) {
+      p.hand.push(item.card);recordCardAcquisition(p,1);
+      r.lastGain={player:p.id,n:1,cards:[item.card],reason:'passive_linnei',at:stamp(r)};
+    } else gainToDeck(r, p, [item.card], 'market');
     const card = CREATURES[item.card] || SPELLS[item.card] || SUPPORTS[item.card];
-    log(r, `${p.name}は「${card.name}」を${item.price}Gで購入(山札へ)`);
+    log(r, `${p.name}は「${card.name}」を${item.price}Gで購入(${hasPassive(r,p,'linnei')?'手札':'山札'}へ)`);
     return askMarket(r, p);
   }
 }
@@ -4015,7 +4193,7 @@ function startGame(r) {
   }
   r.phase = 'playing';
   r.goalProgress = {}; r.goalNotices = []; r.toxyNotices = []; r.kamadomaNotices = [];
-  r.cardEffectNotices = []; r.placementQueue = []; r.placementResume = null;
+  r.handLossNotices = []; r.cardEffectNotices = []; r.placementQueue = []; r.placementResume = null;
   r.pending = {};
   const order = r.players.slice().sort(() => Math.random() - 0.5);
   r.players = order;
@@ -4256,6 +4434,7 @@ function publicState(r, viewerId) {
   return {
     ver: VERSION, code: r.code, mapId: r.mapId || 'starting_corridor', mapName:mapOf(r).name,
     routePreview:r.routePreview || null,
+    passiveNotices:r.passiveNotices||[],
     goalNotices:r.goalNotices || [],
     phase: r.phase, evoLevel: RULES.evoLevel, turn: r.turn, round: r.round, target: ASSET_GOAL, reachAt: ASSET_REACH,
     stateRev: r.stateRev || 0, stateInstanceId: r.stateInstanceId, turnEpoch: r.turnEpoch || 0, serverNow: Date.now(),
@@ -4299,12 +4478,13 @@ function publicState(r, viewerId) {
     matchResult: r.phase === 'ended' ? (r.matchResult || null) : null,
     resultReview: r.phase === 'ended' ? (r.resultReview || null) : null,
     pending: Object.fromEntries(Object.entries(r.pending).map(([k, v]) =>
-      v.type === 'draft' && k !== viewerId
+      v.type==='passive_resolve' ? [k,{type:v.type,prompt:v.prompt,options:[],availableAt:v.availableAt}]
+      : v.type === 'draft' && k !== viewerId
         ? [k, { type: v.type, prompt: v.prompt, options: [], aura: r.draft ? displayRarity(r.draft.aura) : null,
             resume: r.draft ? r.draft.resume : null, promptId:v.promptId, turnEpoch:v.turnEpoch }]
         : v.type === 'pick_draw' && k !== viewerId
           ? [k, { type: v.type, prompt: v.prompt, options: [], until: v.until }]  // 候補カードは本人だけに見せる
-          : ['gaust_exile', 'fatal_exile', 'ult_villa_recover', 'daitekkan_recover', 'spell_evolve', 'frontline_swap', 'ult_grease', 'card_search', 'inkcrow_discard', 'censor_pick', 'gate_pass_evolve'].includes(v.type) && k !== viewerId
+          : ['roll', 'tile', 'pick_creature', 'overflow', 'forget', 'gaust_exile', 'fatal_exile', 'ult_villa_recover', 'daitekkan_recover', 'spell_evolve', 'frontline_swap', 'ult_grease', 'card_search', 'inkcrow_discard', 'censor_pick', 'gate_pass_evolve'].includes(v.type) && k !== viewerId
             ? [k, { type: v.type, prompt: v.prompt, options: [], selectedCount: (v.selected || []).length }]
           : v.type === 'support' && k !== viewerId
             ? [k, { type: v.type, prompt: 'ウェポンを選択中', options: [] }]
@@ -4313,13 +4493,14 @@ function publicState(r, viewerId) {
                   return Number.isInteger(tile)&&r.owners[tile]?.player===k?landUpgradeUi(r,pById(r,k),tile):null;})()}
               : v])),
     windSupply: windSupplyPublic(r, viewerId),
+    handLossNotices: (r.handLossNotices||[]).filter(e=>e.player===viewerId).map(e=>({...e})),
     lastDraw: r.lastDraw ? Object.assign({}, r.lastDraw,
       r.lastDraw.player === viewerId && Array.isArray(r.lastDraw.cards)
         ? {cards:r.lastDraw.cards.slice()} : {cards:undefined}) : null,
     lastGain: r.lastGain ? Object.assign({}, r.lastGain,
       r.lastGain.player === viewerId && Array.isArray(r.lastGain.cards)
         ? { cards: r.lastGain.cards.slice() } : { cards: undefined }) : null,
-    catalog: { CREATURES:displayCardGroup(CREATURES), SUPPORTS:displayCardGroup(SUPPORTS), ITEMS, CHARS, ULTS, SPELLS:displayCardGroup(SPELLS), STARTER_DECKS: CHAR_DECKS, artIds: ART_IDS },
+    catalog: { PASSIVES:require('./public/summoner-passives'), CREATURES:displayCardGroup(CREATURES), SUPPORTS:displayCardGroup(SUPPORTS), ITEMS, CHARS, ULTS, SPELLS:displayCardGroup(SPELLS), STARTER_DECKS: CHAR_DECKS, artIds: ART_IDS },
     players: r.players.map(p => ({
       id: p.id, name: p.name, charId: p.charId || null, confirmed: !!p.confirmed,
       isBot: !!p.isBot,
@@ -4334,6 +4515,7 @@ function publicState(r, viewerId) {
       deckCount: (p.deck || []).length,
       discardCount: (p.discard || []).length,
       exileCount: (p.exile || []).length,
+      passiveStatus: p.id===viewerId ? {enabled:r.passiveVersion===1, spellsRemaining:Math.max(0,(hasPassive(r,p,'noir')?2:1)-(p.spellCount||Number(!!p.spellCast))),rerolled:!!p.passiveRerolled} : undefined,
       effectiveSpellCosts: p.id === viewerId
         ? Object.fromEntries(Object.keys(SPELLS).map(sid => [sid, effectiveSpellCost(r, p, sid)]))
         : undefined,
@@ -4385,6 +4567,7 @@ const SAVE_VER = 1;
 // (save_testが未分類キーを検出して失敗する)
 const ROOM_RUNTIME_KEYS = new Set(['clients', 'lastActivity', 'routePreview', 'upgradePreview', 'botTimer', 'botActionSeq', 'ultTimer', 'processedActions', 'turnReadyAt', 'turnTransitionTimer', 'boardSeen', 'matchCause', 'windSupplyTimer']);  // 保存しない
 const ROOM_PERSIST_KEYS = new Set([                                            // 保存する
+  'passiveVersion', 'passiveNotices', 'passiveEarthBaseline',
   'code', 'phase', 'players', 'owners', 'deck', 'market', 'turn', 'round', 'log',
   'pending', 'titles', 'duel', 'lastBattle', 'winner', 'barrier', 'elemOv', 'tileFx',
   'curses', 'boardToken', 'atSeq', 'saveRev', 'battle', 'draft',
@@ -4393,7 +4576,7 @@ const ROOM_PERSIST_KEYS = new Set([                                            /
   'lastBarrierHit', 'lastSpellFx', 'botMode', 'presentationSpeed', 'turnEpoch', 'promptSeq', 'stateRev', 'turnTransition',
   'matchAnalytics', 'matchResult', 'resultReview', 'mapId', 'movement', 'windSupply',
   'goalProgress', 'goalNotices', 'toxyNotices', 'kamadomaNotices',
-  'cardEffectNotices', 'placementQueue', 'placementResume',
+  'handLossNotices', 'cardEffectNotices', 'placementQueue', 'placementResume',
 ]);
 ROOM_RUNTIME_KEYS.add('stateInstanceId');
 ROOM_RUNTIME_KEYS.add('lastUpgrade');
@@ -4429,6 +4612,17 @@ function validateSave(save) {
   if (!d || typeof d !== 'object') return 'セーブデータが壊れています';
   if (d.mapId != null && (typeof d.mapId !== 'string' || !Object.hasOwn(MAPS,d.mapId))) return 'マップが不正です';
   const validTile = n => Number.isInteger(n) && n>=0 && n<tilesOf(d).length;
+  if(d.passiveVersion!=null && ![0,1].includes(d.passiveVersion))return '固有能力のバージョンが不正です';
+  for(const p of d.players||[]) {
+    if(p.spellCount!=null && (!Number.isInteger(p.spellCount)||p.spellCount<0||p.spellCount>2))return 'スペル使用回数が不正です';
+    if(p.passiveGreaseTile!=null&&!validTile(p.passiveGreaseTile))return '戦後強化の対象が不正です';
+  }
+  for(const pd of Object.values(d.pending||{})) {
+    if(pd.type==='passive_mio' && (!Array.isArray(pd.dice)||![1,2].includes(pd.dice.length)||pd.dice.some(v=>!Number.isInteger(v)||v<1||v>6)))return '振り直しの出目が不正です';
+    if(pd.type==='passive_resolve' && (!Number.isFinite(pd.availableAt)||!pd.original||pd.original.type==='passive_resolve'||!Array.isArray(pd.original.options)||!pd.original.options.some(o=>o.id===pd.optionId)))return '固有能力の再開状態が不正です';
+    if(pd.type==='passive_reward'&&!Number.isFinite(pd.availableAt))return 'カード獲得の再開状態が不正です';
+  }
+
   if (typeof d.code !== 'string' || !/^[A-Z0-9]{4}$/.test(d.code)) return 'ルームコードが不正です';
   if (typeof d.boardToken !== 'string' || d.boardToken.length < 16) return '権限トークンが不正です';
   if (!['lobby', 'select', 'playing', 'ended'].includes(d.phase)) return 'フェーズが不正です';
@@ -4829,6 +5023,7 @@ const server = http.createServer(async (req, res) => {
   if(['/upgrade-ui.js','/phone-upgrade.js','/phone-upgrade.css','/board-upgrade.js','/board-upgrade.css','/phone-player-target.js','/phone-player-target.css','/phone-land.js','/phone-land.css','/phone-enemy-choice.js','/phone-enemy-choice.css','/phone-summoners.js','/phone-summoners.css','/board-audio-settings.js','/board-settings.js','/board-settings.css','/board-flow-notices.js','/board-flow-notices.css','/board-route.js','/board-route.css','/board-finale.js','/board-finale.css','/board-goal-notice.js','/board-goal-notice.css','/board-land-stop.js','/board-land-stop.css','/board-next-notices.js','/board-next-notices.css','/board-enemy-land.js','/board-enemy-land.css','/board-actor.js','/board-actor.css','/board-effects.js','/board-notice.js','/board-notice.css','/board-milestones.js','/board-milestones.css','/result-review.js','/result-review.css','/rare-draw.css','/battle-external.css','/phone-card-picker.js','/phone-card-picker.css','/phone-deck.css','/hud-rank.js','/hud-rank.css'].includes(p))return serveFile(res,p.slice(1));
   if (p === '/') return serveFile(res, 'site/index.html');
   if (p === '/news') return serveFile(res, 'site/news-index.html', url.searchParams.get('category'));
+  if (p === '/news/2026-10-13-summoner-passives') return serveFile(res, 'site/news-2026-10-13-summoner-passives.html');
   if (p === '/news/2026-10-04-noir-update') return serveFile(res, 'site/news-2026-10-04-noir-update.html');
   if (p === '/news/2026-09-29-ui-update') return serveFile(res, 'site/news-2026-09-29-ui-update.html');
   if (p === '/news/2026-09-20-mio-update') return serveFile(res, 'site/news-2026-09-20-mio-update.html');
@@ -4837,6 +5032,7 @@ const server = http.createServer(async (req, res) => {
   if (p === '/news/2026-08-31-feedback') return serveFile(res, 'site/news-2026-08-31-feedback.html');
   if (p === '/news/2026-08-31-release') return serveFile(res, 'site/news-2026-08-31-release.html');
   if (p === '/cards') return serveFile(res, 'site/cards.html');
+  if (p === '/summoners') return serveFile(res, 'site/summoners.html');
   if (p === '/rules') return serveFile(res, 'site/rules.html');
   if (p === '/about') return serveFile(res, 'site/about.html');
   if (p === '/news/2026-09-08-bug-fixes') return serveFile(res, 'site/news-bug-fixes-20260908.html');
@@ -4852,6 +5048,7 @@ const server = http.createServer(async (req, res) => {
   }
   if (p === '/board') { res.writeHead(302, { Location: '/play' }); return res.end(); }
   if (p === '/site') { res.writeHead(302, { Location: '/' }); return res.end(); }
+  if (['/summoner-passives.js','/board-passives.js'].includes(p))return serveFile(res,p.slice(1));
   if (p === '/phone') return serveFile(res, 'phone.html');
   if (p.startsWith('/assets/')) return serveFile(res, p.slice(1));
   if (p.startsWith('/site/')) return serveFile(res, p.slice(1));
@@ -4866,6 +5063,10 @@ const server = http.createServer(async (req, res) => {
   if (p === '/api/catalog' && req.method === 'GET') {
     res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=3600');
     return json(res, publicCardCatalog());
+  }
+  if (p === '/api/summoners' && req.method === 'GET') {
+    return json(res, { chars: CHARS, ults: ULTS, decks: CHAR_DECKS,
+      passives: require('./public/summoner-passives'), cards: publicCardCatalog().cards });
   }
 
   if (p === '/api/feedback' && req.method === 'POST') {

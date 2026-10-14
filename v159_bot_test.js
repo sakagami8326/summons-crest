@@ -8,7 +8,7 @@ const legacy=fs.readFileSync(path.join(__dirname,'test/fixtures/v158-bot-referen
 let captureTimers=false,timers=[];
 const G=new Function('require','__dirname','setInterval','setTimeout',source+'\n'+reference+'\n'+legacy+`
 return {standardBot,calculateBattle,referenceBattle,resolveBattle,botChooseOption,legacyBotChooseOption,makeRoom,startGame,
- askRoll,askUpgrade,askSupports,performMove,handleChoose,completeTurnTransition,resolveUltSequence,
+ advancePassiveResolution,askRoll,askUpgrade,askSupports,performMove,handleChoose,completeTurnTransition,resolveUltSequence,
  CREATURES,SPELLS,SUPPORTS,MAPS,CHARS,rooms,publicState,ask,scheduleBotAction,serializeRoom,restoreRoom};`)(require,__dirname,()=>{},fn=>{if(captureTimers)timers.push(fn);return 0;});
 let checks=0;const eq=(a,b,m)=>{assert.deepEqual(a,b,m);checks++;},ok=(a,m)=>{assert.ok(a,m);checks++;};
 const copy=x=>JSON.parse(JSON.stringify(x));
@@ -24,7 +24,7 @@ let seed=159;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;ret
 Math.random=random;Date.now=()=>1800000000000;
 try {
  // Differential fixture is frozen before the extraction, not another call to the new calculator.
- const base=game();base.p.gold=base.enemy.gold=3000;
+ const base=game();base.r.passiveVersion=0; // Frozen pre-passive combat reference.base.p.gold=base.enemy.gold=3000;
  // Evol's new victory income is covered by v162_evol_test; the frozen resolver predates it.
  // Noir's new hand-scaled attack and placement effects have their own v1.66 regression tests.
  const forms=Object.keys(G.CREATURES).filter(id=>!['evol','inkcrow','joma','yomiga','kagetsuzuri'].includes(id.replace(/_f$/,''))), opponents=['gaston','pakawata','avalanche','ludi','mimic','valk_f','beruf_f'];
@@ -162,6 +162,7 @@ try {
    while(!r.winner&&actions++<20000){
      if(r.turnTransition){G.completeTurnTransition(r,r.turnTransition.id,'board');continue;}
      if(r.ultSequence){G.resolveUltSequence(r);continue;}
+     if(G.advancePassiveResolution(r,Date.now()+60000))continue;
      const entry=Object.entries(r.pending).find(([,pd])=>pd.options?.length);ok(entry,'game retains actionable pending');
      const [id,pending]=entry,p=r.players.find(x=>x.id===id),t=performance.now();
      ok(G.standardBot.handledPending.has(pending.type),'all encountered pending types are covered');

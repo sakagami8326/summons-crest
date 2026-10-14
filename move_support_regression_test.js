@@ -61,7 +61,7 @@ for (const mapId of ['starting_corridor','twin_gate_cavern']) {
         G.handleChoose(r,aid,'sd:2');
         ok(r.pending[aid].promptId === before, 'duplicate destination cannot apply Move again');
         G.handleChoose(r,aid,'roll');
-        ok(r.pending[aid]?.type === (mapId === 'twin_gate_cavern' ? 'route_choice' : 'direction') || !!r.lastDice,
+        ok(r.pending[aid]?.type==='passive_mio' || r.pending[aid]?.type === (mapId === 'twin_gate_cavern' ? 'route_choice' : 'direction') || !!r.lastDice,
           `${mapId}: dice action is accepted after Move`);
       }
       G.rooms.delete(r.code);

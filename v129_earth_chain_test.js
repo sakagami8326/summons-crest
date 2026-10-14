@@ -18,6 +18,7 @@ function game(chars = ['redani', 'adel']) {
   const r = G.makeRoom();
   r.players = chars.map((charId, i) => ({ id: 'p' + i, name: 'P' + i, charId, confirmed: true }));
   G.startGame(r);
+  r.passiveVersion=0; // Creature-only regression; summoner modifiers have separate coverage.
   return r;
 }
 

@@ -20,11 +20,11 @@ module.exports = function createStandardBot(A) {
   const handledPending = new Set(('creature_effect abyss_mark curse_target daitekkan_recover direction draft forge forget gate market '
     +'marlow_dest marlow_src mermaid_heal move_a move_b overflow pick_creature pick_draw quake_target roll route_choice '
     +'samurai_elem select_char select_wait sell spell_target spell_evolve frontline_swap step_a step_b support swap_land swap_pick tile toxy_target '
-    +'ult_grease ult_lia ult_mio ult_nerasio_elem ult_nerasio_land ult_resolve ult_villa_recover upgrade upgrade_lv gaust_exile fatal_exile card_search inkcrow_discard censor_pick censor_target gate_pass_evolve').split(' '));
+    +'passive_resolve passive_reward passive_mio passive_lia ult_grease ult_lia ult_mio ult_nerasio_elem ult_nerasio_land ult_resolve ult_villa_recover upgrade upgrade_lv gaust_exile fatal_exile card_search inkcrow_discard censor_pick censor_target gate_pass_evolve').split(' '));
 
   function view(raw, me, pending) {
     const r = {};
-    for (const key of ['mapId','phase','turn','turnEpoch','round','owners','elemOv','tileFx','curses','barrier','titles','duel','dirPend'])
+    for (const key of ['passiveVersion','mapId','phase','turn','turnEpoch','round','owners','elemOv','tileFx','curses','barrier','titles','duel','dirPend'])
       if (raw[key] !== undefined) r[key] = clone(raw[key]);
     r.players = raw.players.map(src => {
       const p = {};
@@ -38,7 +38,7 @@ module.exports = function createStandardBot(A) {
         p[zone] = self ? (src[zone] || []).slice() : Array(p[zone+'Count']).fill(null);
         if (self && zone === 'deck') p[zone].sort();
       }
-      if (self) for (const key of ['spellCast','fixedDice','pendSpell','stepI','swapI','moveA','windSupplyEpoch'])
+      if (self) for (const key of ['spellCount','passiveRerolled','spellCast','fixedDice','pendSpell','stepI','swapI','moveA','windSupplyEpoch'])
         if (src[key] !== undefined) p[key] = clone(src[key]);
       return p;
     });
@@ -470,6 +470,13 @@ module.exports = function createStandardBot(A) {
     } else if(pd.type==='marlow_src'||pd.type==='marlow_dest') {
       const plans=relocationPlans(r,p);
       for(const o of opts.filter(o=>!cancelled(o.id))){const tile=numberTile(o),v=plans.find(x=>pd.type==='marlow_src'?x.a===tile:x.a===pd.source&&x.b===tile);if(v)add(o.id,v.score,'移動元と移動先を一組で評価');}
+    } else if(pd.type==='passive_mio') {
+      const score=n=>average(walkOutcomes(r,p,n).map(x=>botLandingScore(r,p,x.tile ?? x)));
+      add('dice:accept',score(pd.dice.reduce((a,b)=>a+b,0)),'現在の出目の到着候補');
+      add('dice:reroll',[...diceDistribution(pd.dice.length)].reduce((n,[value,chance])=>n+score(value)*chance,0),'振り直しの到着候補');
+    } else if(pd.type==='passive_lia') {
+      add('lia:cancel',botLandingScore(r,p,p.pos),'現在のマスに留まる');
+      for(const o of opts.filter(o=>Number.isInteger(o.tile)))add(o.id,(invasion(r,p,o.tile)?.score??-10000),'負傷した敵への侵略');
     } else if(pd.type==='ult_mio') {
       for(const o of opts.filter(o=>!cancelled(o.id))){const v=teleportValue(r,p,numberTile(o));add(o.id,v,'瞬間移動の実到着利益',{priority:v>=99900?2:0});}
     } else if(pd.type==='ult_grease') {

@@ -42,6 +42,7 @@ window.BoardEffects = (() => {
       left=e.creature?source(e.creature,s):'';
       body=victim?`<div class="discardTarget">${img('pawn_'+victim.charId+'.'+(victim.charId==='adel'?'webp':'png'),'discardPawn')}<b>${esc(victim.name)}</b></div>`+metric('ic_hand.png','手札を捨てる',n(e.count),'枚'):
         metric('ic_hand.png',e.kind==='draw'?'ドロー':'手札に加える','+'+n(e.count),'枚');
+      if(e.kind==='judgment')body=metric('ic_hand.png','敵'+n(e.count)+'人の手札を1枚ずつ捨てる','−1','枚');
       if(e.drawn)body+=metric('ic_hand.png','自分はドロー','+'+n(e.drawn),'枚');
       }
     }else if(kind==='toxy'){
@@ -70,7 +71,8 @@ window.BoardEffects = (() => {
       else if(sid==='sp_flame_vortex')body=(cid?target(cid,s):'')+text('次の侵略者 AT +10');
       else body=text(sp?.desc||'効果発動');
     }
-    return {actor,scene,kind,duration,html:`<header class="effectHeading"><h2>${esc(title)}</h2></header><div class="effectLayout">${left}<div class="effectResult">${body}</div></div>${foot?`<div class="effectFooter">${esc(foot)}</div>`:''}`};
+    const discard=kind==='toxy'||(kind==='card_operation'&&['censor','judgment'].includes(e.kind));
+    return {actor,scene,kind,duration,html:`<header class="effectHeading"><h2>${esc(title)}</h2></header><div class="effectLayout${discard?' handDiscard '+(left?'hasSource':'noSource'):''}">${left}<div class="effectResult">${body}</div></div>${foot?`<div class="effectFooter">${esc(foot)}</div>`:''}`};
   }
   async function present(kind,e,s,options={}){
     window.mountExistingGameCards?.(s);

@@ -22,6 +22,7 @@ function game() {
     { id: 'p1', name: 'Defender', charId: 'adel', confirmed: true }
   ];
   G.startGame(r);
+  r.passiveVersion=0; // Isolate historical creature stats from summoner bonuses.
   r.owners.fill(null);
   return r;
 }

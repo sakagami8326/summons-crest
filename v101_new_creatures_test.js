@@ -95,7 +95,7 @@ for (const file of ['c_bunnyhop.webp', 'e_bunnyhop.webp', 'c_strauk.webp', 'c_sa
 const phone = fs.readFileSync(path.join(__dirname, 'public', 'phone.html'), 'utf8');
 ok(phone.includes("p.type === 'ult_lia'") && !phone.includes("p.type === 'lia_ult'"),
   'Lia ultimate uses server pending name');
-ok(phone.includes('showUltConfirm()') && phone.includes('固有スキルは1ゲームに1回'),
+ok(phone.includes('showUltConfirm()') && phone.includes('必殺技は1試合に1回'),
   'ultimate confirmation explains once-per-game skill');
 const board = fs.readFileSync(path.join(__dirname, 'public', 'board.html'), 'utf8');
 ok(board.includes('durabilityHp') && board.includes('durabilityDf') && board.includes('animateDurability'),

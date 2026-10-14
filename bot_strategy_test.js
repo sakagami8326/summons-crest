@@ -1,7 +1,7 @@
 // Regression for deliberate routing and marginal-value shopping. No live rooms.
 const fs = require('fs'), path = require('path'), assert = require('assert/strict');
 const source = fs.readFileSync(path.join(__dirname, 'server.js'), 'utf8').replace(/server\.listen\([\s\S]*?\}\);\s*$/, '');
-const G = new Function('require', '__dirname', 'setInterval', 'setTimeout', source + '\nreturn {makeRoom,startGame,askRoll,askMarket,performMove,handleChoose,botChooseOption,botCashReserve,botPurchaseScore,botLandingScore,botTollRisk,botInventory,botWalkEndpoints,publicState,tollOf,rooms,MAPS,CREATURES,SPELLS,SUPPORTS,completeTurnTransition,resolveUltSequence};')
+const G = new Function('require', '__dirname', 'setInterval', 'setTimeout', source + '\nreturn {makeRoom,startGame,askRoll,askMarket,performMove,handleChoose,botChooseOption,botCashReserve,botPurchaseScore,botLandingScore,botTollRisk,botInventory,botWalkEndpoints,publicState,tollOf,rooms,MAPS,CREATURES,SPELLS,SUPPORTS,completeTurnTransition,advancePassiveResolution,resolveUltSequence};')
   (require, __dirname, () => {}, () => ({ unref() {} }));
 let checks = 0;
 const equal = (a, b, label) => { assert.deepEqual(a, b, label); checks++; };
@@ -152,6 +152,7 @@ try {
     let actions = 0, buys = 0, routes = 0, outerEntries = 0;
     while (!r.winner && actions++ < 20000) {
       if (r.turnTransition) { G.completeTurnTransition(r, r.turnTransition.id, 'board'); continue; }
+      if(G.advancePassiveResolution(r,Date.now()+60000))continue;
       if (r.ultSequence) { G.resolveUltSequence(r); continue; }
       const entry = Object.entries(r.pending).find(([,pd]) => pd.options?.length);
       ok(entry, 'pending exists'); const [id, pd] = entry, actor = r.players.find(p => p.id === id);

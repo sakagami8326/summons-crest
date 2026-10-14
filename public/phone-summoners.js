@@ -6,11 +6,13 @@ window.PhoneSummonerSelection={create(root,{card:bigCardHTML,icon:sic,send,onOpe
  const available=id=>pending()?.type==='select_char'&&pending().options.some(o=>o.id===id)&&!snapshot.players.some(p=>p.id!==playerId&&p.confirmed&&p.charId===id)&&C.CHARS[id]?.selectable!==false&&!C.CHARS[id]?.upcoming;
  const canUnpick=()=>pending()?.options?.some(o=>o.id==='unpick');
 
+ const difficulty={redani:1,linnei:1,grease:2,mio:3,lia:2,adel:2,villa:3,nerasio:1,noir:3};
+ const englishNames={redani:'Redani',linnei:'Linnei',grease:'Grease',mio:'Mio',lia:'Lia',adel:'Adel',villa:'Villa',nerasio:'Nerasio',noir:'Noir'};
  const preferred=['redani','linnei','grease','mio','lia','adel','villa','nerasio','noir'];
  const element=id=>C.CHARS[id].elem||'neutral';
  let ids=[];
  const colors={fire:'#ed875b',water:'#78bfef',earth:'#d8b756',wind:'#6cddc7',neutral:'#d8d1e4'},names={fire:'火',water:'水',earth:'土',wind:'風',neutral:'無'};
- let filter='all',active=null,busy=false,scroll=0;
+ let filter='all',active=null,busy=false,scroll=0,inspecting=false;
  const icon=e=>`<span class="elementIcon" role="img" aria-label="${names[e]}属性" style="background:${colors[e]};mask:url(/assets/element-${e==='water'?'water-v2':e}.svg) center/contain no-repeat"></span>`;
  const navArrow=()=>'<img class="ornateArrow" src="/assets/ui/arrow-ornate.svg" alt="" aria-hidden="true">';
  const art=id=>`/assets/board-actors/${id}.png`;
@@ -25,8 +27,9 @@ window.PhoneSummonerSelection={create(root,{card:bigCardHTML,icon:sic,send,onOpe
  }
  function detail(id){active=id;root.dataset.view='detail';const c={...C.CHARS[id],elem:element(id)},u=C.ULTS[id]||{name:'必殺技',desc:'準備中'},deck=C.STARTER_DECKS[id]||[];
  const ultimateDescription=id==='lia'?'敵領地を最大<b>3</b>か所選び、配置クリーチャーに<b>10ダメージ</b>。<br>次にその領地へ侵略するクリーチャーは<b>AT+10</b>。':esc(id==='villa'?u.desc.replace(/。その後ダイスを振る[。]?$/,'。'):u.desc);
- root.innerHTML=`<section class="summonerDetail" style="${vars(id)}"><div class="detailBackground"></div><img class="detailCrest" src="/assets/element-${c.elem==='water'?'water-v2':c.elem}.svg" alt=""><button class="backList" aria-label="召喚士一覧に戻る">${navArrow()}<span>一覧</span></button><div class="portraitStage"><img class="portrait" src="${art(id)}" alt="${c.name}"></div><button class="summonerArrow previous" aria-label="前の召喚士">${navArrow()}</button><button class="summonerArrow next" aria-label="次の召喚士">${navArrow()}</button><article class="summonerInfo"><header class="detailHeading">${icon(c.elem)}<h1>${c.name}</h1><span class="index">${String(ids.indexOf(id)+1).padStart(2,'0')}<small> / ${String(ids.length).padStart(2,'0')}</small></span></header><p class="concept">${esc(c.style)}${'<span class="affinityBenefit">'+icon(c.elem)+'<span>'+(c.elem==='neutral'?'全属性の領地 強化費用 <b>10％OFF</b>':'同属性の領地 強化費用 <b>20％OFF</b>')+'</span></span>'}</p><section class="ultimateInfo"><h2><span>${u.name}</span><span class="ultimateLimit" aria-label="必殺技は1試合1回"><span class="limitCaption">1試合に</span><span class="limitCount"><b>1</b><span>回</span></span></span></h2><p>${ultimateDescription}</p></section><section class="starter"><header><h2>${sic('draft')}初期デッキ</h2></header><div class="starterGrid">${deck.map(cid=>`<button class="starterCard" data-card="${cid}" aria-label="${esc((C.CREATURES[cid]||C.SPELLS[cid]||C.SUPPORTS[cid]).name)}"><div class="cardCanvas">${bigCardHTML(cid)}</div></button>`).join('')}</div></section><button class="chooseSummoner" ${submitting||(!available(id)&&!(self()?.charId===id&&canUnpick()))?'disabled':''}>${chooseLabel(id)}<svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 6"/></svg></button></article></section>`;
- root.querySelector('.backList').onclick=()=>transition(list,'back');root.querySelector('.previous').onclick=()=>step(-1);root.querySelector('.next').onclick=()=>step(1);
+ root.innerHTML=`<section class="summonerDetail" style="${vars(id)}"><div class="detailBackground"></div><img class="detailCrest" src="/assets/element-${c.elem==='water'?'water-v2':c.elem}.svg" alt=""><button class="backList" aria-label="召喚士一覧に戻る">${navArrow()}<span>一覧</span></button><div class="portraitStage"><img class="portrait" src="${art(id)}" alt="${c.name}"></div><button class="summonerArrow previous" aria-label="前の召喚士">${navArrow()}</button><button class="summonerArrow next" aria-label="次の召喚士">${navArrow()}</button><div class="summonerSignature"><span class="signatureName">${esc(englishNames[id]||id)}</span><span class="signatureConcept">${esc(c.style)}</span></div><article class="summonerInfo"><header class="detailHeading">${icon(c.elem)}<h1>${c.name}</h1><span class="summonerDifficulty level${difficulty[id]}" aria-label="使用難易度 ${difficulty[id]} / 3"><span>使用難易度</span><span class="difficultyStars" aria-hidden="true">${[1,2,3].map(n=>`<span class="${n<=difficulty[id]?'lit':'unlit'}">★</span>`).join('')}</span></span></header><p class="concept">${'<span class="affinityBenefit">'+'<span class="passiveSkillLabel">スキル</span>'+'<span>'+esc(window.SummonerPassives?.[id]||'')+'</span></span>'}</p><section class="ultimateInfo"><h2><span>${u.name}</span><span class="ultimateLimit" aria-label="必殺技は1試合1回"><span class="limitCaption">1試合に</span><span class="limitCount"><b>1</b><span>回</span></span></span></h2><p>${ultimateDescription}</p></section><section class="starter"><header><h2>${sic('draft')}初期デッキ</h2></header><div class="starterGrid">${deck.map(cid=>`<button class="starterCard" data-card="${cid}" aria-label="${esc((C.CREATURES[cid]||C.SPELLS[cid]||C.SUPPORTS[cid]).name)}"><div class="cardCanvas">${bigCardHTML(cid)}</div></button>`).join('')}</div></section><button class="chooseSummoner" ${submitting||(!available(id)&&!(self()?.charId===id&&canUnpick()))?'disabled':''}>${chooseLabel(id)}<svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 6"/></svg></button></article></section>`;
+ root.querySelector('.backList').onclick=()=>inspecting?hide():transition(list,'back');
+ if(inspecting){const back=root.querySelector('.backList');back.setAttribute('aria-label','召喚士詳細を閉じる');back.querySelector('span').textContent='戻る';}root.querySelector('.previous').onclick=()=>step(-1);root.querySelector('.next').onclick=()=>step(1);
  root.querySelectorAll('[data-card]').forEach(b=>b.onclick=()=>showCard(b.dataset.card));
  root.querySelector('.chooseSummoner').onclick=()=>submit(self()?.charId===id&&canUnpick()?'unpick':id);
  fit();
@@ -65,7 +68,7 @@ window.PhoneSummonerSelection={create(root,{card:bigCardHTML,icon:sic,send,onOpe
  catch(e){failure='通信できませんでした。もう一度お試しください';}
  finally{if(token===submission&&!root.hidden){submitting=false;signature='';active?detail(active):list();if(failure){const msg=document.createElement('div');msg.className='selectionFeedback';msg.setAttribute('role','alert');msg.textContent=failure;root.append(msg);}}}
  }
- function hide(){root.hidden=true;transitionId++;submission++;busy=false;submitting=false;active=null;signature='';root.replaceChildren();root.classList.remove('arrive');}
+ function hide(){inspecting=false;root.classList.remove('inspecting');root.hidden=true;transitionId++;submission++;busy=false;submitting=false;active=null;signature='';root.replaceChildren();root.classList.remove('arrive');}
  function update(next,meId){
  if(next?.phase!=='select'){hide();return;}
  const nextScope=[next.code,next.stateInstanceId,meId].join('|');
@@ -78,7 +81,8 @@ window.PhoneSummonerSelection={create(root,{card:bigCardHTML,icon:sic,send,onOpe
  const zoom=root.querySelector('.starterZoom');if(zoom)zoom.remove();
  active?detail(active):list();if(zoom)root.append(zoom);signature=key;
  }
- window.addEventListener('resize',fit);document.addEventListener('keydown',e=>{if(root.hidden)return;if(root.querySelector('.starterZoom')){if(e.key==='Escape')root.querySelector('.zoomClose').click();return;}if(active&&e.key==='ArrowRight')step(1);if(active&&e.key==='ArrowLeft')step(-1);if(active&&e.key==='Escape')transition(list,'back');});
+ window.addEventListener('resize',fit);document.addEventListener('keydown',e=>{if(root.hidden)return;if(root.querySelector('.starterZoom')){if(e.key==='Escape')root.querySelector('.zoomClose').click();return;}if(active&&!inspecting&&e.key==='ArrowRight')step(1);if(active&&!inspecting&&e.key==='ArrowLeft')step(-1);if(active&&e.key==='Escape'){if(inspecting)hide();else transition(list,'back');}});
  new ResizeObserver(fit).observe(root);
- return {update,hide};
+ function inspect(next,meId,id){hide();snapshot=next;playerId=meId;C=next.catalog;ids=Object.keys(C.CHARS);inspecting=true;root.classList.add('inspecting');root.hidden=false;onOpen();detail(id);root.querySelector('.backList').focus();}
+ return {update,hide,inspect,isInspecting:()=>inspecting};
 }};

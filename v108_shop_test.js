@@ -31,7 +31,7 @@ for (const item of r.shopVisit.items.slice(0, 5)) {
 const first = r.shopVisit.items[0], visitId = r.shopVisit.id;
 const before = p.gold;
 G.handleChoose(r, p.id, 'buy:' + first.slotId);
-ok(first.sold && p.deck.includes(first.card), 'purchase sells slot and adds card to deck');
+ok(first.sold && p.hand.includes(first.card), 'purchase sells slot and adds card to hand');
 eq(p.gold, before - first.price, 'purchase charges displayed price');
 G.handleChoose(r, p.id, 'buy:' + first.slotId);
 eq(p.gold, before - first.price, 'sold slot cannot be purchased twice');
@@ -40,7 +40,7 @@ eq(r.shopVisit.id, visitId, 'same visit keeps shelf');
 const jinx = r.shopVisit.items.find(x => x.slotId === 'jinx');
 const goldBeforeJinx = p.gold;
 G.handleChoose(r, p.id, 'buy:jinx');
-ok(jinx.sold && p.deck.includes('jinx'), 'jinx purchase sells slot and adds the support card to deck');
+ok(jinx.sold && p.hand.includes('jinx'), 'jinx purchase sells slot and adds the support card to hand');
 eq(p.gold, goldBeforeJinx - 100, 'jinx purchase charges 100G');
 
 G.handleChoose(r, p.id, 'buy:remove');

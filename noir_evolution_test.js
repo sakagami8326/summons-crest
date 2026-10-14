@@ -47,12 +47,12 @@ for(const id of ['inkcrow','inkcrow_f']){
 for(const n of [0,1,2,5]){
  const g=game();g.p.hand=['sp_censor'];g.p.deck=['sp_insight'];g.q.hand=Array(n).fill('shield');G.askRoll(g.r,g.p);
  eq(g.r.pending.a.options.some(o=>o.id==='sp:sp_censor'),n>0,'empty targets excluded');if(!n)continue;
- choose(g,'sp:sp_censor');eq(g.p.gold,2000,'target selection unpaid');choose(g,'censor:b');eq(g.p.gold,1880,'paid before reveal');eq(g.p.discard,['sp_censor'],'spent spell');
+ choose(g,'sp:sp_censor');eq(g.p.gold,2000,'target selection unpaid');choose(g,'censor:b');eq(g.p.gold,1920,'paid before reveal');eq(g.p.discard,['sp_censor'],'spent spell');
  eq(g.r.pending.a.options.length,Math.min(2,n),'reveal max2');eq(G.publicState(g.r,'b').pending.a.options,[],'target cannot see candidates');eq(G.publicState(g.r,null).pending.a.options,[],'board cannot see candidates');
  ok(!g.r.pending.a.options.some(o=>o.id.includes('cancel')),'cannot cancel after reveal');
  const restored=G.restoreRoom(G.serializeRoom(g.r));ok(!restored.error,'save during reveal');eq(restored.room.pending.a.options,g.r.pending.a.options,'same snapshots after restore');
- const selected=g.r.pending.a.options[0];choose(g,selected.id);eq(g.q.hand.length,n-1,'discard one');eq(g.q.discard,['shield'],'target normal discard');eq(g.p.hand,['sp_insight'],'caster draws one');eq(g.p.gold,1880,'one payment');
- choose(g,selected.id);eq(g.q.hand.length,n-1,'no double discard');eq(g.p.gold,1880,'no double payment');
+ const selected=g.r.pending.a.options[0];choose(g,selected.id);eq(g.q.hand.length,n-1,'discard one');eq(g.q.discard,['shield'],'target normal discard');eq(g.p.hand,['sp_insight'],'caster draws one');eq(g.p.gold,1920,'one payment');
+ choose(g,selected.id);eq(g.q.hand.length,n-1,'no double discard');eq(g.p.gold,1920,'no double payment');
  ok(!g.r.log.some(l=>String(l).includes('シールド')),'hidden card not logged');
 }
 {

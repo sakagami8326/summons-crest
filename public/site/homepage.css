@@ -233,12 +233,16 @@ img { max-width: 100%; }
 .summoner-slide.is-far-prev { z-index: 2; opacity: .22; transform: translateX(-225%) scale(.68); }
 .summoner-slide.is-far-next { z-index: 2; opacity: .22; transform: translateX(125%) scale(.68); }
 .summoner-info { position: relative; z-index: 6; width: min(34rem, 100%); min-height: 10rem; margin: -1rem auto 0; padding: 1.7rem 2rem; border-top: 1px solid rgb(239 217 143 / 26%); text-align: center; background: linear-gradient(90deg, transparent, rgb(11 13 24 / 58%), transparent); }
-.summoner-info > p { display: flex; justify-content: center; align-items: center; gap: .8rem; margin: 0; color: var(--sc-gold-300); font: 600 .64rem/1 var(--sc-font-display); letter-spacing: .12em; }
+.summoner-info > p { margin: 0; color: var(--sc-ivory-50); font: 400 .95rem/1.75 var(--sc-font-display); letter-spacing: .03em; }
+.summoner-info > p:first-child { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: .5rem .8rem; color: var(--sc-gold-300); font-size: .8rem; }
+.summoner-info > p[data-summoner-difficulty] { margin: 0 0 .85rem; color: rgb(241 232 208 / 78%); font-size: .8rem; }
+.summoner-info > p[data-summoner-difficulty] span { margin-left: .5rem; letter-spacing: .1em; }
+.summoner-info > p.summoner-affinity { margin: 0 auto 1.25rem; max-width: 29rem; color: var(--sc-ivory-50); font-size: .95rem; line-height: 1.75; }
 .summoner-info > p i { width: 1px; height: .8rem; background: rgb(239 217 143 / 34%); }
 .summoner-info h3 { margin: .8rem 0; color: var(--sc-ivory-50); font: 600 2rem/1.3 var(--sc-font-display); letter-spacing: .14em; }
 .summoner-info dl { margin: 0; }
-.summoner-info dt { color: var(--sc-gold-300); font-size: .78rem; }
-.summoner-info dd { margin: .6rem 0 0; color: rgb(241 232 208 / 64%); font-size: .78rem; line-height: 1.7; }
+.summoner-info dt { color: var(--sc-gold-300); font-size: .9rem; line-height: 1.6; }
+.summoner-info dd { margin: .5rem 0 0; color: rgb(241 232 208 / 85%); font-size: .9rem; line-height: 1.8; }
 .carousel-arrow { position: absolute; top: 15rem; z-index: 8; width: 3rem; height: 3rem; border: 1px solid rgb(239 217 143 / 28%); border-radius: 50%; background: rgb(11 13 24 / 72%); cursor: pointer; }
 .carousel-arrow::before { content: ""; position: absolute; width: .55rem; height: .55rem; border-top: 1px solid var(--sc-gold-300); border-right: 1px solid var(--sc-gold-300); top: 50%; left: 50%; }
 .carousel-arrow--prev { left: 0; }.carousel-arrow--prev::before { transform: translate(-35%,-50%) rotate(-135deg); }
@@ -492,3 +496,8 @@ img { max-width: 100%; }
 }
 
 .summoner-info .summoner-affinity { color:var(--sc-gold-300); font-size:.86rem; letter-spacing:.03em; }
+.summoner-detail-link{display:inline-block;margin-top:1.2rem;padding:.5rem 1.2rem;border:1px solid rgb(239 217 143 / 35%);color:var(--sc-gold-300);font-size:.85rem;text-decoration:none}.summoner-detail-link:hover{background:rgb(239 217 143 / 8%)}
+/* Homepage review: readable explanation and no phone overlay launcher. */
+.concept__body{font-size:1rem;color:rgb(241 232 208 / 88%);line-height:1.9}
+.summoner-info>p:first-child,.summoner-info>p[data-summoner-difficulty]{font-size:.9rem;line-height:1.8}
+@media(max-width:1150px){.sc-game-launcher{display:none!important}}

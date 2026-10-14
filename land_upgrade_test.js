@@ -7,7 +7,7 @@ function fixture(creature='poponga',level=1,char='mio',element='wind',gold=3000)
  Object.assign(p,{charId:char,gold,hand:['cleo'],pos:21,bankrupt:false});r.elemOv[21]=element;r.owners[21]={player:p.id,creature,level,dmg:7};return {r,p};
 }
 let checks=0;
-for(const [char,element,discount] of [['mio','wind',.2],['mio','fire',0],['noir','earth',.1]])for(const creature of ['poponga','poponga_f','weapon']){
+for(const [char,element,discount] of [['mio','wind',0],['mio','fire',0],['noir','earth',0]])for(const creature of ['poponga','poponga_f','weapon']){
  // Weapons cannot own land; use a non-evolving creature in that slot.
  const {r,p}=fixture(creature==='weapon'?'mimic':creature,1,char,element);
  const original=JSON.stringify(r.owners),d=G.landUpgradeUi(r,p,21);
@@ -20,6 +20,6 @@ for(const [char,element,discount] of [['mio','wind',.2],['mio','fire',0],['noir'
  assert(!('lastUpgrade' in G.serializeRoom(r).room),'a restored game does not replay old upgrade effects');checks++;
 }
 for(const command of ['ul:back','ul:cancel']){const {r,p}=fixture();G.askUpgrade(r,p,'自領地');G.handleChoose(r,p.id,'up:21');G.handleChoose(r,p.id,command);assert.equal(p.gold,3000);assert.equal(r.owners[21].level,1);assert(!r.lastUpgrade);checks++;}
-{const {r,p}=fixture('poponga',1,'mio','wind',80);G.askUpgrade(r,p,'自領地');G.handleChoose(r,p.id,'up:21');const pd=r.pending[p.id];assert.deepEqual(pd.options.filter(o=>o.id.startsWith('ul:21:')).map(o=>o.id),['ul:21:2']);assert.equal(pd.upgrade.levels.filter(t=>t.canPay).length,1);checks++;}
+{const {r,p}=fixture('poponga',1,'mio','wind',100);G.askUpgrade(r,p,'自領地');G.handleChoose(r,p.id,'up:21');const pd=r.pending[p.id];assert.deepEqual(pd.options.filter(o=>o.id.startsWith('ul:21:')).map(o=>o.id),['ul:21:2']);assert.equal(pd.upgrade.levels.filter(t=>t.canPay).length,1);checks++;}
 {const {r,p}=fixture('joma');p.deck=['shield'];p.discard=[];r.boardSeen=true;G.askUpgrade(r,p,'自領地');G.handleChoose(r,p.id,'up:21');G.handleChoose(r,p.id,'ul:21:3');assert(r.turnReadyAt>Date.now());assert.equal(r.pending[p.id]?.type,'card_search');assert.equal(r.pending[p.id].availableAt,r.turnReadyAt,'evolution placement choices wait for the board cinematic');checks++;}
 console.log('PASS upgrade projection, discounts, actual payment, cancellation, affordability, runtime persistence and evolution gating:',checks);

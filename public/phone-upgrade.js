@@ -35,6 +35,7 @@ window.PhoneUpgrade=(()=>{
    this.host.querySelectorAll('[data-level]').forEach(b=>{b.disabled=this.busy||!this.option(m,+b.dataset.level);b.setAttribute('aria-pressed',String(+b.dataset.level===this.selected));});
    const confirm=this.host.querySelector('.upgradeConfirm');confirm.disabled=this.busy||!chosen;confirm.querySelector('span').textContent=this.busy?'送信中…':chosen?'Lv.'+chosen.level+'に強化':'レベルを選択';
    this.host.querySelector('.summary').innerHTML=this.error?U.esc(this.error):chosen?`Lv.${d.before.level}<span>→</span><b>Lv.${chosen.level}</b>${U.gold(chosen.cost)}`:'強化後のレベルを選択';
+   this.host.querySelector('.back').hidden=!!p.passiveGrease;this.host.querySelector('h1').textContent=p.passiveGrease?'グリースの固有能力 ─ 奪った領地を強化':'強化レベルを選択';
    this.host.querySelector('.back').disabled=this.busy||!p.options.some(o=>o.id==='ul:back');this.host.querySelector('.skip').disabled=this.busy||!p.options.some(o=>o.id==='ul:cancel');return true;
   }
   async submit(id){

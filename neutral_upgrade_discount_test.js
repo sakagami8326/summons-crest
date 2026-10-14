@@ -2,6 +2,8 @@
 const fs=require('fs'),path=require('path'),assert=require('assert/strict');
 const source=fs.readFileSync(path.join(__dirname,'server.js'),'utf8').replace(/server\.listen\([\s\S]*?\}\);\s*$/,'');
 const G=new Function('require','__dirname','setInterval','setTimeout',source+';return {CHARS,RULES,makeFixtureRoom,tilesOf,upCost,upCostTo,upCostRange,askUpgrade,handleChoose};')(require,__dirname,()=>0,()=>0);
+// Historical rules regression; new summoner rules are covered by summoner_passives_test.js.
+const originalFixture=G.makeFixtureRoom; G.makeFixtureRoom=(...args)=>{const r=originalFixture(...args);r.passiveVersion=0;return r;};
 let checks=0;const eq=(a,b,label)=>{assert.deepEqual(a,b,label);checks++;};
 G.CHARS.future_neutral={...G.CHARS.noir,elem:'neutral'};
 for(const map of ['starting_corridor','twin_gate_cavern']){

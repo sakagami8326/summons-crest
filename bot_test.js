@@ -6,7 +6,7 @@ let src = fs.readFileSync(path.join(__dirname, 'server.js'), 'utf8');
 // listen部を除去(ポートを占有しない)
 src = src.replace(/server\.listen\([\s\S]*?\}\);\s*$/, '');
 const load = new Function('require', '__dirname', 'process', 'console', 'setInterval',
-  src + '\n;return { makeRoom, startSelect, handleChoose, resolveUltSequence, publicState, startGame, rooms, CHARS };');
+  src + '\n;return { makeRoom, startSelect, handleChoose, advancePassiveResolution,resolveUltSequence, publicState, startGame, rooms, CHARS };');
 const G = load(require, __dirname, process, console, () => {}); // GCタイマーは無効化
 
 function runGame(seed) {
@@ -34,6 +34,7 @@ function runGame(seed) {
       const pend = view.pending[pid];
       if (!pend) continue;
       seen.add(pend.type);
+      if(['passive_resolve','passive_reward'].includes(pend.type)){G.advancePassiveResolution(r,Date.now()+60000);steps++;continue;}
       if (pend.type === 'ult_resolve') { G.resolveUltSequence(r); steps++; continue; }
       if (pend.type === 'pick_creature' || pend.type === 'support') {
         const bp = view.battlePreview;

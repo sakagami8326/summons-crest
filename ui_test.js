@@ -9,7 +9,7 @@ const fs = require('fs');
 // ===== サーバー(in-process) =====
 let ssrc = fs.readFileSync('server.js', 'utf8').replace(/server\.listen\([\s\S]*?\}\);\s*$/, '');
 const S = new Function('require', '__dirname', 'process', 'console', 'setInterval',
-  ssrc + ';return {makeRoom,startSelect,handleChoose,resolveUltSequence,continuePostBattle,publicState,isSelectionReady,startGame,SPELLS,doRoll,CHARS,CHAR_DECKS,ULTS};')(
+  ssrc + ';return {makeRoom,startSelect,handleChoose,advancePassiveResolution,resolveUltSequence,continuePostBattle,publicState,isSelectionReady,startGame,SPELLS,doRoll,CHARS,CHAR_DECKS,ULTS};')(
   require, __dirname, process, { log: () => {}, error: console.error }, () => 0);
 
 // ===== リーア仮実装 =====
@@ -365,7 +365,7 @@ function runGame(g) {
         }
         a = affordance(pid2, st);
       }
-      if ((r.phase === 'playing' || r.phase === 'select') && pend.type !== 'ult_resolve') {
+      if ((r.phase === 'playing' || r.phase === 'select') && !['ult_resolve','passive_resolve','passive_reward'].includes(pend.type)) {
         if (!a) throw new Error(
           `GAME${g} step${steps}: 進行不能を検知! pending=${pend.type} なのに操作可能なUIが存在しない` +
           ` (rolling=${P.getRolling()}, phonePend=${JSON.stringify(P.pend() && P.pend().type)},` +
@@ -379,6 +379,7 @@ function runGame(g) {
       // --- 進行(サーバー直叩き。rollはスマホと同じくrollingを立てて挙動を再現) ---
       if (dbgTypes.length >= 400) dbgTypes.shift();
       dbgTypes.push(pend.type);
+      if(['passive_resolve','passive_reward'].includes(pend.type)){S.advancePassiveResolution(r,Date.now()+60000);steps++;continue;}
       if (pend.type === 'ult_resolve') { S.resolveUltSequence(r); steps++; continue; }
       let opt = pend.options[Math.floor(Math.random() * pend.options.length)];
       // 「キャラを選び直す」は稀にだけ選ぶ(ランダムBOTのライブロック回避。実プレイヤーは任意)

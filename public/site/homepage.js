@@ -202,11 +202,15 @@
       const slide = slides[active];
       if (!slide) return;
       info.name.textContent = slide.dataset.name;
+      const summonerId=slide.querySelector("img").getAttribute("src").match(/still-([a-z]+)/)?.[1];
+      const detailLink=carousel.querySelector("[data-summoner-link]");if(detailLink)detailLink.href="/summoners#"+summonerId;
       info.elem.textContent = slide.dataset.elem;
       info.style.textContent = slide.dataset.style;
-      info.ult.textContent = `固有スキル「${slide.dataset.ult}」`;
-      info.desc.textContent = slide.dataset.desc;
-      if (info.affinity) info.affinity.textContent = slide.dataset.elem === '無属性' ? '全属性の領地 強化費用10％OFF' : '同属性の領地 強化費用20％OFF';
+      const difficulty=carousel.querySelector('[data-summoner-difficulty]');
+      if(difficulty){const n=Number(slide.dataset.difficulty);const stars=document.createElement('span');stars.textContent='★'.repeat(n)+'☆'.repeat(3-n);stars.style.color=['','#8bd59b','#f4d66d','#ff8880'][n];difficulty.replaceChildren('使用難易度',stars);}
+      if(info.ult) info.ult.textContent = `必殺技「${slide.dataset.ult}」`;
+      if(info.desc) info.desc.textContent = slide.dataset.desc;
+      if (info.affinity) info.affinity.textContent = window.SummonerPassives?.[slide.querySelector('img').src.match(/still-([a-z]+)/)?.[1]] || '';
     };
 
     const stop = () => { window.clearInterval(timer); timer = 0; };

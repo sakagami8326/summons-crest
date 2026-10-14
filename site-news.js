@@ -1,5 +1,6 @@
 'use strict';
 const entries = [
+  {date:'2026-10-13',category:'update',title:'召喚士9人に固有スキルを追加！召喚士選択とスマホUIも刷新',slug:'2026-10-13-summoner-passives'},
   {date:'2026-10-04',category:'update',title:'アップデート：新召喚士ノワールと進化機会の追加、盤面・スマホUIの改善',slug:'2026-10-04-noir-update'},
   {date:'2026-09-30',category:'update',title:'アップデート：盤面メッセージ・スマホUIの刷新とレダーニの調整',slug:'2026-09-29-ui-update'},
   {date:'2026-09-20',category:'update',title:'次回アップデート：ミオのリワークと新クリーチャー、リザルト刷新',slug:'2026-09-20-mio-update'},

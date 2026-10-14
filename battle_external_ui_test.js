@@ -1,6 +1,8 @@
 const fs=require('fs'),assert=require('assert/strict');
 const source=fs.readFileSync('server.js','utf8').replace(/server\.listen\([\s\S]*?\}\);\s*$/,'');
 const G=new Function('require','__dirname','setInterval','setTimeout',source+`;return {makeFixtureRoom,publicBattle,battleExternalModifiers,resolveBattle,serializeRoom,restoreRoom};`)(require,__dirname,()=>0,()=>0);
+// Historical rules regression; new summoner rules are covered by summoner_passives_test.js.
+const originalFixture=G.makeFixtureRoom; G.makeFixtureRoom=(...args)=>{const r=originalFixture(...args);r.passiveVersion=0;return r;};
 const r=G.makeFixtureRoom();r.owners.fill(null);r.tileFx={};r.curses={};r.pending={};r.owners[1]={player:'fx1',creature:'nome',level:1};r.elemOv[1]='fire';
 const b=r.battle={tile:1,attacker:'fx0',defender:'fx1',atkCreature:'gecko',supports:{},startedAt:1};r.players[0].hand=['gecko','weapon'];
 assert.deepEqual(G.battleExternalModifiers(r,b),{attacker:[],defender:[]},'own creature abilities have no external mini-card');

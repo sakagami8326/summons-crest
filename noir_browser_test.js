@@ -20,7 +20,7 @@ const counts=list=>list.reduce((a,c)=>(a[c]=(a[c]||0)+1,a),{});
   if(type==='censor'){
    await page.locator('#phonePlayerTarget [data-player="fx1"]').tap();
    await page.locator('#ptConfirm').tap();
-   await page.waitForFunction(()=>pend()?.type==='censor_pick');assert.equal(p.gold,money-120);assert.equal(G.publicState(r,q.id).pending[p.id].options.length,0);
+   await page.waitForFunction(()=>pend()?.type==='censor_pick');assert.equal(p.gold,money-80);assert.equal(G.publicState(r,q.id).pending[p.id].options.length,0);
   }
   await page.locator('#uxRail .card').first().waitFor();await page.waitForTimeout(400);
   assert(await page.locator('#uxPicker').evaluate(e=>e.scrollHeight===e.clientHeight),'picker has no outer overflow');
@@ -35,7 +35,7 @@ const counts=list=>list.reduce((a,c)=>(a[c]=(a[c]||0)+1,a),{});
   await page.screenshot({path:path.join(out,`${type}-detail-${width}.png`)});await page.locator('#uxConfirm').tap();
   await page.waitForFunction(t=>!['card_search','inkcrow_discard','censor_pick','gate_pass_evolve'].includes(pend()?.type),type);
   if(['joma','yomiga','inkcrow'].includes(type)){assert.deepEqual(counts(G.ownedCardSnapshot(r,p)),before);assert.equal(p.cardsCollected,0);assert.equal(p.gold,money);}
-  if(type==='censor'){assert.equal(q.hand.length,otherHand-1);assert.equal(p.gold,money-120);}
+  if(type==='censor'){assert.equal(q.hand.length,otherHand-1);assert.equal(p.gold,money-80);}
   if(type==='gate'){assert(p.hand.includes('joma_f'));assert.equal(p.gold,money-150);}
   const after=counts(G.ownedCardSnapshot(r,p));const repeated=await fetch(base+'/api/action',{method:'POST',body:JSON.stringify({room:r.code,type:'choose',playerId:p.id,optionId,turnEpoch:r.turnEpoch,promptId:'stale-prompt'})});assert.equal(repeated.status,409);assert.deepEqual(counts(G.ownedCardSnapshot(r,p)),after,'repeat request cannot duplicate a card');
   reports.push({width,type,passed:true});await page.close();console.log('PASS real phone selection and API',width,type);

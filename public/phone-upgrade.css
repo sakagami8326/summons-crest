@@ -4,3 +4,5 @@
 
 #phoneUpgrade .discount .upLand{width:15px;height:15px}#phoneUpgrade .discount .upDiamond{inset:2px}#phoneUpgrade .discount .upDiamond i{inset:1px}
 #phoneUpgrade .currentLand .heroArt{height:auto;flex:1;min-height:0;max-height:none}
+
+#phoneUpgrade .back[hidden]{display:none}

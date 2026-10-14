@@ -1287,7 +1287,21 @@
 <script src="/hud-rank.js?v=1&release=164"></script>
 <script src="/board-audio-settings.js?v=1&release=164"></script>
 <link rel="stylesheet" href="/board-settings.css?v=1&release=164">
-</head>
+<script src="/summoner-passives.js"></script>
+<script src="/board-passives.js"></script>
+<style>#boardNotice[data-scene=passive] .effectHeading small{display:block;color:#dbc384;font-size:20px;margin-bottom:10px}#boardNotice[data-scene=passive] .effectHeading h2{font-size:clamp(22px,2.5vw,36px);margin:0}
+body.passiveBattle #boardNotice{top:auto;bottom:12px;left:50%;transform:translateX(-50%);width:650px}body.passiveBattle #boardNotice .messageWindow{padding:12px 25px}body.passiveBattle #boardNotice .effectHeading small{font-size:16px;margin-bottom:3px}body.passiveBattle #boardNotice .effectHeading h2{font-size:24px}body.passiveBattle #boardNotice .boardActor{display:none}
+#boardNotice[data-actor][data-scene=passive]{--stand-w:200px;--stand-h:300px}
+#boardNotice[data-actor][data-owner=g][data-scene=passive] .messageWindow{min-height:150px;padding:22px 24px}
+#boardNotice[data-actor][data-owner=g][data-scene=passive] .effectHeading{display:block;min-height:0;margin:0;text-align:center}
+#boardNotice[data-actor][data-owner=g][data-scene=passive] .effectHeading small{white-space:nowrap;margin-bottom:10px}
+#boardNotice[data-actor][data-owner=g][data-scene=passive] .effectHeading h2{font-size:26px;letter-spacing:.03em;text-align:center}
+#boardNotice[data-scene=passive] .nativeReward{font-size:28px;gap:16px;padding:14px 0 0}#boardNotice[data-scene=passive] .nativeReward strong{font-size:40px}
+body.passiveBattle #boardNotice[data-actor][data-owner=g][data-scene=passive]{top:auto;bottom:16px;left:50%;transform:translateX(-50%);width:600px}
+body.passiveBattle #boardNotice[data-actor][data-owner=g][data-scene=passive] .messageWindow{width:100%;min-height:0;padding:12px 20px}
+body.passiveBattle #boardNotice .actorStand,body.passiveBattle #boardNotice .cutinStage,body.passiveBattle #boardNotice .crestStage{display:none}
+body.passiveBattle #boardNotice[data-actor][data-owner=g][data-scene=passive] .effectHeading h2{font-size:24px}
+#boardNotice .nativeReward{display:flex;align-items:center;justify-content:center;gap:16px}#boardNotice .nativeReward img{width:64px;height:64px;object-fit:contain}</style></head>
 <body>
   <img id="logoImg" src="/assets/summons-code-gold.svg" alt="SUMMONS CODE">
   <div id="connBar" style="display:none; position:fixed; top:0; left:50%; transform:translateX(-50%);
@@ -1583,9 +1597,9 @@ const QR = (() => {
 <script src="/assets/board-tiles.js?v=1"></script>
 <script src="/board_world.js?release=164&tiles=1&upgrade=20261005"></script>
 <link rel="stylesheet" href="/board-notice.css?v=2&release=164">
-<link rel="stylesheet" href="/board-actor.css?v=1&release=165">
+<link rel="stylesheet" href="/board-actor.css?v=3&handdiscard=horizontal">
 <script src="/board-actor.js?v=2&release=164&noir=166"></script>
-<script src="/board-effects.js?v=1&release=165&noir=166"></script>
+<script src="/board-effects.js?v=3&handdiscard=center"></script>
 <script src="/board-notice.js?v=4&release=164&noir=166"></script>
 <link rel="stylesheet" href="/board-enemy-land.css?v=1&release=164">
 <script src="/board-enemy-land.js?v=1&release=164"></script>
@@ -3972,6 +3986,7 @@ function renderHUD() {
       el.className = 'plate'; el.id = 'plate-' + p.id;
       hud.appendChild(el);
     }
+    el.title=(state.catalog.CHARS[p.charId]?.name||'')+'の固有能力：'+(state.catalog.PASSIVES?.[p.charId]||'');
     const rank = ranked.indexOf(p);
     const position = layout.get(p.id);
     el.style.top = position.top + 'px';
@@ -4315,7 +4330,7 @@ function renderBattleExternalModifiers(b) {
     if (rack.dataset.key === key) continue;
     rack.dataset.key = key;
     rack.innerHTML = effects.map((e, i) => {
-      const name = e.cardId ? (state.catalog.CREATURES[e.cardId] || state.catalog.SPELLS[e.cardId])?.name : state.catalog.ULTS[e.charId]?.name;
+      const name = e.cardId ? (state.catalog.CREATURES[e.cardId] || state.catalog.SPELLS[e.cardId])?.name : (e.passive?state.catalog.CHARS[e.charId]?.name+'の固有能力':state.catalog.ULTS[e.charId]?.name);
       const art = e.cardId ? `<review-game-card card-id="${e.cardId}"></review-game-card>`
         : `<img src="/assets/full_${e.charId}.png" alt="">`;
       return `<div class="battleExternalBonus ${e.charId ? 'ultimate' : ''}" style="--delay:${i * .35}s" aria-label="${name} ${e.stat.toUpperCase()} +${e.amount}" title="${name}"><div class="battleExternalArt">${art}<i></i></div><div class="battleExternalValue">${e.stat === 'at' ? '<img src="/assets/cards/stat-at-icon.svg" alt="AT">' : '<span>DF</span>'}<b>+${e.amount}</b></div></div>`;
@@ -4550,7 +4565,7 @@ async function playBattle(b) {
   const C = state.catalog;
   const atk = player(b.attacker), def = player(b.defender);
   renderBattleSummoners(b.attacker, b.defender);
-  renderBattleExternalModifiers(b);
+  renderBattleExternalModifiers({...b,externalModifiers:Object.fromEntries(Object.entries(b.externalModifiers||{}).map(([side,list])=>[side,list.filter(e=>!e.passive)]))});
   const atkElem = C.CREATURES[b.atkCreature.replace(/_f$/, '')].elem || 'neutral';
   const defElem = C.CREATURES[b.defCreature.replace(/_f$/, '')].elem || 'neutral';
   const dLv = b.defLevel || (state.owners[b.tile] ? state.owners[b.tile].level : 1);
@@ -4590,6 +4605,9 @@ async function playBattle(b) {
   await revealBattleSupport(b, 'atk');
   $('bcap').textContent = 'ウェポン ─ 防衛側を公開';
   await revealBattleSupport(b, 'def');
+  renderBattleExternalModifiers(b);
+  for(const side of ['attacker','defender'])for(const effect of b.externalModifiers?.[side]||[])
+    if(effect.passive)await BoardPassives.present({player:b[side],charId:effect.charId,kind:'battle'},state,presentationMs);
   $('bAtkStats').innerHTML = finalStatsHTML(b, 'atk');
   $('bDefStats').innerHTML = finalStatsHTML(b, 'def');
   updateBattleCompare();
@@ -4807,7 +4825,7 @@ function render() {
         ${chosen ? `<div class="scSelectedFace">
           <div class="scPortrait"><img class="scStill" src="/assets/summoner-still-${cid}.webp" alt="${c.name} イメージアート"></div>
           <div class="scChosenMeta"><div class="scPlayerPlate"><span>${playerName}</span>${botBadge}</div><div class="scChosenName">${c.name}</div>
-            <div class="scChosenLine"><span class="scElem">${elemSvg}</span><span>${elemJa[c.elem] || ''}</span><b>─</b><span>${c.style || ''}</span></div></div>
+            <div class="scChosenLine" title="${state.catalog.PASSIVES?.[cid]||''}"><span class="scElem">${elemSvg}</span><span>${elemJa[c.elem] || ''}</span><b>─</b><span>${c.style || ''}</span></div></div>
           <div class="scPawnWrap"><img src="/assets/p_${cid}.png" alt="${c.name} コマ"></div>
           ${contested ? '<div class="scConflictTag">同じ召喚士を選択中</div>' : ''}
         </div>` : `<div class="scSlotStatus">
@@ -5261,6 +5279,7 @@ function render() {
   BoardEffects.observeToxy(state,{queue:queueFx,current:()=>state,ms:presentationMs});
   BoardEffects.observeKamadoma(state,{queue:queueFx,current:()=>state,ms:presentationMs});
   BoardEffects.observeCardOperations(state,{queue:queueFx,current:()=>state,ms:presentationMs});
+  BoardPassives.observe(state,{queue:queuePresentation,ms:presentationMs});
   BoardGoal.observe(state,{queue:queueFx,current:()=>state,ms:presentationMs});
   // 全演出はPromise完了まで待つ統合キューで直列再生する。
   if (presentationQueue.length && !presentationRunning) {

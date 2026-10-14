@@ -19,6 +19,7 @@ function game(chars = ['villa', 'adel']) {
   const r = G.makeRoom();
   r.players = chars.map((charId, i) => ({ id:'p' + i, name:'P' + i, charId, confirmed:true }));
   G.startGame(r);
+  r.passiveVersion=0; // Isolate the historical creature ability from summoner modifiers.
   return r;
 }
 

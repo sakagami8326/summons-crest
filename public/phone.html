@@ -838,9 +838,52 @@
   .tdSub { font-size:max(1.8dvh, 11px); color:rgba(241,232,208,.75); }
   .tdStat { font-family:sans-serif; font-size:max(2dvh, 13px); font-variant-numeric:tabular-nums; }
   .tdStat b { color:#F09B7B; font-weight:600; } .tdStat i { color:#8FD8A8; font-style:normal; }
+
+/* Phone HUD and ultimate inspection use the board portrait and existing summoner detail. */
+#myHud{position:relative;box-sizing:border-box;width:min(38vw,300px);min-width:0;height:28dvh;max-height:114px;padding:7px 8px 17px 70px;display:block;border:1px solid #cbb47a;border-radius:0 25px 0 25px;background-image:linear-gradient(90deg,#080d1855,#080d18ed 48%),var(--hud-bg);background-size:cover;color:#fff3d5;text-align:left;cursor:pointer;box-shadow:inset 0 0 0 3px #080c15,0 4px 12px #0008;overflow:hidden}
+#myHud:focus-visible,#myHud:hover{outline:2px solid #ffe4a6;outline-offset:2px}#myHud:active{filter:brightness(1.25)}
+#myHud #myFace{position:absolute;left:0;bottom:0;top:auto;width:76px;height:100%;border:0;border-radius:0;background:none;object-fit:cover;object-position:50% 20%;mask-image:linear-gradient(90deg,#000 75%,transparent)}
+#myHud .nm{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0}
+#myHud .st{font-size:10px;line-height:1.5;white-space:nowrap}#myHud .st .assetBig{font-size:18px;color:#ffedc5}#myHud .st img{height:12px!important;width:12px!important}
+#myHud .hudOpen{position:absolute;right:10px;bottom:3px;font-size:10px;color:#f5daa0;display:flex;align-items:center;gap:8px}#myHud .hudOpen b{font:20px/12px serif}
+#ultConfirm{background:#060a11e8;backdrop-filter:blur(7px)}
+#ultConfirm .ucBox{position:relative;box-sizing:border-box;width:min(94vw,1040px);height:88dvh;padding:0;border:1px solid #bca36b;border-radius:0;background:radial-gradient(ellipse at 25% 55%,#433b32,transparent 60%),#0b1018;box-shadow:0 12px 50px #000b;overflow:hidden;text-align:left}
+#ucArt{position:absolute;left:0;top:0;width:55%;height:100%;object-fit:contain;mask-image:linear-gradient(90deg,#000 85%,transparent)}
+#ultConfirm .ucContent{position:absolute;left:55%;right:5%;top:17%;bottom:9%;display:flex;flex-direction:column;justify-content:center}
+#ultConfirm .ucn{font-size:clamp(19px,4.8dvh,30px);letter-spacing:.08em;color:#f4dfad}
+#ultConfirm .ucd{font-size:clamp(13px,3.4dvh,19px);line-height:1.65;margin:4dvh 0;white-space:pre-line}
+#ultConfirm #ucReason{font-size:12px;margin:0 0 12px;min-height:0;color:#e7ba87}
+#ultActivate{min-height:42px;width:100%;font-size:18px;border-radius:0;background:linear-gradient(110deg,#d7b15a,#f0d58c);color:#201809;border:1px solid #f6df9d}
+#ultActivate:disabled{opacity:.4}
+#ucClose{position:absolute;right:8px;top:8px;width:42px;height:42px;padding:0;display:grid;place-items:center;border:1px solid #bca36b;background:#0b1018;color:#f4dfad;z-index:2;border-radius:0}
+#ucClose svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+
+
+#myHud{height:26dvh;max-height:104px;padding:6px 19px 6px 70px}
+#myHud .nm{font-size:14px}#myHud .st{font-size:12px;line-height:1.35}#myHud .st .assetBig{font-size:22px}
+#myHud .hudOpen{right:7px;bottom:50%;transform:translateY(50%)}
+#actionOv.mioDiceChoice .mioDiceRow{display:flex;justify-content:center;gap:22px;margin:10px 0 20px}
+#actionOv.mioDiceChoice .mioDie{width:70px;height:70px;padding:12px;box-sizing:border-box;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:4px;border:1px solid #fff0c5;border-radius:10px;background:linear-gradient(135deg,#fff6dc,#d7bf86);box-shadow:3px 5px 0 #82704d,0 8px 20px #0008}
+.mioDie i.pip{background:#242132;border-radius:50%}
+#actionOv.mioDiceChoice .gateBtn{border:1px solid #e9d493;border-radius:0 16px 0 16px;background:linear-gradient(110deg,#e4d3a0,#c9b273);color:#241b09;box-shadow:0 0 14px #efc55045}
+#actionOv.mioDiceChoice #actionOvBtns{width:auto;max-width:100%;grid-template-columns:repeat(2,180px);justify-content:center;gap:16px;margin-inline:auto}
+#actionOv.mioDiceChoice #actionOvBtns.single{grid-template-columns:180px}
+#actionOv.mioDiceChoice .gateBtn{width:180px;min-height:48px;padding:10px 12px;display:grid;place-items:center;text-align:center}
+#actionOv.mioDiceChoice .gateBtn .gbT{color:#241b09;font-size:16px;letter-spacing:.03em;text-align:center}#actionOv.mioDiceChoice .gbD{display:none}
+#actionOv.mioDiceChoice #actionOvHint{order:-1}
 </style>
 <link rel="stylesheet" href="/wind-supply-ui.css?release=164"><script defer src="/wind-supply-ui.js?release=164"></script>
-<link rel="stylesheet" href="/rare-draw.css?release=164"></head>
+<link rel="stylesheet" href="/rare-draw.css?release=164"><script src="/summoner-passives.js"></script>
+<style>
+#liaHandToggle{position:fixed;right:3vw;top:3dvh;z-index:80;display:flex;align-items:center;gap:8px;padding:9px 14px;border:1px solid #d5bd80;background:#101923;color:#f6e8c7;font-size:14px}
+#liaHandToggle svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.5}
+#mapOv.hand-view{opacity:0;pointer-events:none;transform:translateX(-6vw) scale(.96)}
+#mapOv{transition:opacity .32s,transform .4s}
+#phoneLand:has(.tile img[alt="現在地"]) .heading{max-width:70%}
+</style><style>
+#shopPassive{position:absolute;top:2dvh;left:27vw;right:2vw;min-height:9dvh;display:flex;align-items:center;justify-content:center;color:#f2dfad;background:#08111dde;font-size:clamp(12px,3.5dvh,19px);padding:1dvh 2vw;border:1px solid #a28c55}
+#shopPassive[hidden]{display:none}.passiveShop #shopShelf{top:13dvh}.passiveShop .shopProduct .shopCard{height:35dvh}
+</style></head>
 <body>
   <div id="connBar" style="display:none; position:fixed; top:0; left:50%; transform:translateX(-50%);
     z-index:98; background:#5A1512; color:#F5B0A5; font-size:1.8dvh; letter-spacing:2px;
@@ -866,8 +909,8 @@
   </div>
 
   <header style="display:none" id="hdr">
-    <div class="me"><img id="myFace" src=""><div><div class="nm" id="myName"></div>
-      <div class="st" id="myStat"></div></div></div>
+    <button class="me" id="myHud" aria-label="召喚士の詳細を開く"><img id="myFace" src="" alt=""><div><div class="nm" id="myName"></div>
+      <div class="st" id="myStat"></div></div><span class="hudOpen" aria-hidden="true"><b>›</b></span></button>
     <div id="diceDock"></div>
     <div id="topTools"><button class="abtn" id="contextBtn">行動</button>
       <button id="ultBtn" aria-label="必殺技" disabled>必殺技</button>
@@ -896,7 +939,7 @@
     <div id="shopGold" style="position:absolute; left:calc(2vw + env(safe-area-inset-left)); top:3dvh;
       background:rgba(16,13,36,.8); border:1px solid var(--gold); border-radius:999px;
       color:var(--gold-soft); font-size:max(2.4dvh, 14px); letter-spacing:1px; padding:1dvh 2.4dvh;"></div>
-    <div id="shopShelf"></div>
+    <div id="shopPassive" hidden></div><div id="shopShelf"></div>
     <button class="abtn ghost" id="shopExit">市場を出る</button>
   </div>
   <div id="shopDetail"><div id="shopDetailStage"><div id="shopDetailCard"></div>
@@ -944,15 +987,11 @@
     <button class="galNav" id="galNext" aria-label="次のカード">›</button>
     <div id="galZoomPosition"></div>
   </div>
-  <div id="ultConfirm"><div class="ucBox">
-    <div class="ucn" id="ucName"></div>
-    <div class="ucd" id="ucDesc"></div>
-    <div class="ucw">固有スキルは1ゲームに1回しか発動できません</div>
-    <div id="ucReason"></div>
-    <div class="row">
-      <button class="abtn" id="ultActivate">発動する</button>
-      <button class="abtn ghost" onclick="document.getElementById('ultConfirm').classList.remove('on')">やめる</button>
-    </div>
+  <div id="ultConfirm" role="dialog" aria-modal="true" aria-labelledby="ucName"><div class="ucBox">
+    <img id="ucArt" alt="必殺技イラスト">
+    <button id="ucClose" aria-label="必殺技の確認を閉じる"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+    <div class="ucContent"><p class="ucw">必殺技は1試合に1回</p><div class="ucn" id="ucName"></div><div class="ucd" id="ucDesc"></div>
+    <div id="ucReason"></div><button class="abtn" id="ultActivate">発動</button></div>
   </div></div>
   <div id="drawModal"><div id="drawTitle"></div><div id="drawCard"></div><div class="tap">タップで次へ</div></div>
 
@@ -964,8 +1003,8 @@
 <script src="/ult_fx_world.js"></script>
 <link rel="stylesheet" href="/phone-card-picker.css?v=20260928-draw5&release=164&noir=166">
 <link rel="stylesheet" href="/phone-deck.css?release=164">
-<link rel="stylesheet" href="/phone-summoners.css?v=20261001-1&release=165">
-<script src="/phone-summoners.js?neutral-discount=1&v=20261001-1&release=165"></script>
+<link rel="stylesheet" href="/phone-summoners.css?v=20261013-metal-signature">
+<script src="/phone-summoners.js?v=20261013-metal-signature"></script>
 <script src="/phone-card-picker.js?v=20260928-draw5&release=164&noir=166"></script>
 <link rel="stylesheet" href="/phone-enemy-choice.css?v=20261001-1&release=165">
 <script src="/phone-enemy-choice.js?v=20261001-1&release=165"></script>
@@ -975,7 +1014,8 @@
 <script src="/upgrade-ui.js?v=20261004-1"></script>
 <script src="/phone-upgrade.js?v=20261004-1"></script>
 <link rel="stylesheet" href="/phone-land.css?v=20261002-3&release=165">
-<script src="/phone-land.js?v=20261002-3&release=165&noir=166"></script>
+<script src="/phone-land.js?v=20261014-sell"></script>
+<script src="/phone-orientation-fullscreen.js?v=1"></script>
 <script>
 const $ = id => document.getElementById(id);
 const REMOVE_CARD_HTML = '<div class="face removeCard"><div class="removeTitle">カードを削除</div><img src="/assets/cards/shop-remove-v2.webp" alt="カード削除"></div>';
@@ -989,7 +1029,8 @@ let actionOverlayKey = '', actionSubmitting = false, browsingActionHand = false;
 let liaTapLock = false, lastLiaSelectedKey = '';
 // v0.61 選択ドロー・カード追加演出
 let pdLock = false, pickAnimUntil = 0, pickTickT = null;
-let lastDrawSeen = 0, lastGainSeen = 0, gainT = null;
+let lastHandLossSeen = 0;
+let lastDrawSeen = 0, lastGainSeen = 0, gainT = null, gainRevealT = null;
 let revealQueue = [], revealCurrent = null, revealT = null;
 let phoneUltAt = 0, phoneUltT = null;
 function playPhoneUlt(u) {
@@ -1114,8 +1155,9 @@ function applyPhoneSnapshot(next, ctx, { authoritative=false, reconnecting=false
   if (changedInstance) {
     delete $('deckOv').dataset.inventory;
     handListKey = ''; handServerKey = ''; lastPendKey = '';
-    clearTimeout(revealT); revealQueue = []; revealCurrent = null;
+    clearTimeout(gainRevealT); clearTimeout(revealT); revealQueue = []; revealCurrent = null;
     $('drawModal').classList.remove('on');
+    lastHandLossSeen=Math.max(0,...(next.handLossNotices||[]).map(e=>e.at));
     lastGainSeen = next.lastGain?.at || 0; lastDrawSeen = next.lastDraw?.at || 0;
     phoneUltAt = next.lastUlt?.at || 0; lastDiceAt = next.lastDice?.at || 0;
   }
@@ -1288,6 +1330,7 @@ async function toggleFullscreen() {
   try { await document.exitFullscreen(); } catch (e) {}
 }
 $('fsBtn').onclick = toggleFullscreen;
+window.PhoneOrientationFullscreen?.create({enter:enterPhoneFullscreen,button:$('fsBtn')});
 window.addEventListener('blur', () => cancelHandGesture());
 window.addEventListener('pagehide', () => cancelHandGesture({ rerender:false }));
 document.addEventListener('fullscreenchange', () => cancelHandGesture());
@@ -1566,7 +1609,20 @@ function syncMapPendingSelection(p) {
   mmPendingKey = next;
   mmSel = null;
 }
-let phoneLand = null;
+let phoneLand = null,liaHandView=null;
+function syncLiaHandToggle(p) {
+ if(p?.type!=='passive_lia') {
+   if(liaHandView){liaHandView.toggle.remove();liaHandView.host.classList.remove('hand-view');liaHandView.host.inert=false;
+     document.body.classList.remove('enemyChoiceActive','enemyChoiceHandView');$('hdr').inert=$('handWrap').inert=false;liaHandView=null;}
+   return;
+ }
+ if(!liaHandView){const toggle=document.createElement('button');toggle.id='liaHandToggle';document.body.append(toggle);
+   liaHandView={host:$('mapOv'),toggle,active:true,busy:false,viewing:false,api:{cancelGesture:cancelHandGesture,
+     closeHandDetail:()=>{$('cardZoom').classList.remove('on');},handAccess:blocked=>{$('hdr').inert=$('handWrap').inert=blocked;},renderHand},applyView:PhoneEnemyChoice.prototype.applyView};
+   toggle.onclick=()=>{PhoneEnemyChoice.prototype.peek.call(liaHandView,!liaHandView.viewing);toggle.querySelector('span').textContent=liaHandView.viewing?'侵略先選択に戻る':'手札を確認する';};
+   liaHandView.applyView();
+ }
+}
 function getPhoneLand() {
   if (!phoneLand && window.PhoneLandUI) phoneLand=PhoneLandUI.create($('mapOv'),{
     close(){mapView=false;hideMapOv();},
@@ -1578,7 +1634,7 @@ function getPhoneLand() {
 function showPhoneLand(p) {
   const view=getPhoneLand();if(!view)return false;
   $('mapOv').classList.remove('routePicking');$('mapOv').classList.add('landInspect');
-  openBlockingOverlay('mapOv');view.show(state,pid,p,mapChoiceLock);return true;
+  openBlockingOverlay('mapOv');view.show(state,pid,p,mapChoiceLock);syncLiaHandToggle(p);return true;
 }
 function hideMapOv() { phoneLand?.hide();$('mapOv').classList.remove('on','routePicking','landInspect'); }
 let routeSelected=null,routePrompt=null,routeBusy=false,routeError='',routeSequence=0;
@@ -1672,6 +1728,11 @@ function rareDrawDecoration(cid) {
   return c?.rarity==='UR'?'<span class="urShine" aria-hidden="true"></span><span class="urStar s1" aria-hidden="true">✦</span><span class="urStar s2" aria-hidden="true">✦</span>':'';
 }
 function revealHeading(reason) {
+  if(reason==='lost_censor')return '禁書検閲で捨てられたカード';
+  if(reason==='lost_toxy')return '瘴気連鎖で捨てられたカード';
+  if(reason==='lost_ult_noir')return '漆黒の審判で捨てられたカード';
+  if(reason==='passive_villa')return '前ターンカード廃棄により、新カードを獲得';
+  if(reason==='passive_linnei')return 'リンネイの固有能力 ─ 購入カードはすべて手札へ';
   if (reason === 'draw') return 'ドロー';
   if (reason === 'ult_villa') return '廃棄から回収';
   return 'カード獲得';
@@ -1696,7 +1757,8 @@ function showNextReveal() {
   $('drawCard').innerHTML = `<div class="dcOne${shine?' rarity-UR':''}">${bigCardHTML(revealCurrent.card)}${shine}</div>`;
   openBlockingOverlay('drawModal');
   afterUiPaint(() => fitCreatureNames($('drawCard')));
-  revealT = setTimeout(advanceReveal, 1800);
+  if(revealCurrent.reason==='passive_villa')revealT=setTimeout(advanceReveal,GAME_TIMING.passiveCardReveal);
+  else revealT = setTimeout(advanceReveal, 1800);
 }
 function advanceReveal() {
   if (!revealCurrent) return;
@@ -2212,9 +2274,10 @@ function refreshCardZoomAction() {
   btn.disabled = !optionId || cardActionSubmitting;
   btn.dataset.option = optionId || '';
   $('cardZoomReason').textContent = cardActionSubmitting ? '送信中…' : optionId ? (previewOnly ? `手札の${dkInfo(zoomCardId).nm}を使用します` : 'ボタンをタップするとすぐに使用します') : '現在の手順では使用できません';
+  if(optionId&&!cardActionSubmitting&&state.catalog.SPELLS?.[zoomCardId]&&me()?.charId==='noir'&&me()?.passiveStatus?.enabled&&me().passiveStatus.spellsRemaining===1)$('cardZoomReason').textContent='2回目のスペル：追加100G込み';
 }
 function openCardZoom(c, readOnly = false) {
-  if (enemyChoice?.handView) { readOnly = true; $('cardZoom').dataset.enemyHand = 'true'; }
+  if ((enemyChoice?.handView||liaHandView?.viewing)) { readOnly = true; $('cardZoom').dataset.enemyHand = 'true'; }
   $('cardZoom').dataset.readOnly = String(readOnly);
   cancelHandGesture();
   zoomCardId = c;
@@ -2375,7 +2438,7 @@ function selectableKind() {
 }
 // カードを暗くするかの判定(cardHTMLとクラス更新の両方で共用)
 function cardDim(c) {
-  if (enemyChoice?.handView) return false;
+  if ((enemyChoice?.handView||liaHandView?.viewing)) return false;
   const skind = selectableKind();
   if (!skind) return false;
   if (pend() && pend().type === 'support') return !cardOption(c);
@@ -2643,13 +2706,16 @@ function showUltConfirm() {
   const m = me(), u = state.catalog.ULTS[m.charId];
   if (!u) return;
   const us = m.ultimateStatus || { canActivate:false, used:!!m.ultUsed, reason:'現在は発動できません' };
-  $('ucName').innerHTML = sic('ult', '2.6dvh') + '【' + u.name + '】';
-  $('ucDesc').textContent = u.desc;
-  $('ucReason').textContent = us.canActivate ? '現在発動できます' : us.reason;
+  $('ucName').textContent = u.name;
+  $('ucArt').src=u.art||'/assets/ult_'+m.charId+'.webp';
+  $('ucDesc').textContent = u.desc.replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu,'').trim();
+  $('ucReason').textContent = us.canActivate ? '' : us.reason;
   $('ultActivate').disabled = !us.canActivate;
   openBlockingOverlay('ultConfirm');
 }
 $('ultBtn').onclick = showUltConfirm;
+$('ucClose').onclick=()=>{$('ultConfirm').classList.remove('on');$('ultBtn').focus();};
+$('myHud').onclick=()=>{if(!me()?.charId)return;if(!summonerSelection)summonerSelection=PhoneSummonerSelection.create($('phoneSummoners'),{card:bigCardHTML,icon:sic,send:choose,onOpen:()=>cancelHandGesture()});summonerSelection.inspect(state,pid,me().charId);};
 $('ultActivate').onclick = () => {
   const us = me().ultimateStatus;
   if (!us || !us.canActivate) return;
@@ -2760,6 +2826,7 @@ function waitingTaskPrompt() {
   return current ? `${current.name}の行動を待て` : '次の行動を待て';
 }
 function showActionOverlay(title, options, config) {
+  $('actionOv').classList.toggle('mioDiceChoice',pend()?.type==='passive_mio');
   const cfg = config || {}, key = cfg.key || `${pend() ? pend().type : ''}|${options.map(o => o.id).join(',')}`;
   if ($('actionOv').classList.contains('on') && $('actionOv').dataset.key === key) return;
   actionSubmitting = false;
@@ -2828,8 +2895,9 @@ function render() {
   $('ultBtn').title = canUlt ? '必殺技を確認・発動' : `必殺技の効果を確認（${ultStatus.reason || '現在は発動不可'}）`;
   $('msg').classList.toggle('big', !showGui);
   setContextActions('', []);
-  $('myFace').src = m.charId ? '/assets/f_' + m.charId + '.png' : '';
-  $('myName').textContent = m.name + (m.charId ? '(' + C.CHARS[m.charId].name + ')' : '');
+  $('myFace').src = m.charId ? '/assets/hud_' + m.charId + '.png' : '';
+  $('myName').textContent = m.name;
+  $('myHud').style.setProperty('--hud-bg',`url(/assets/cards/bg-${C.CHARS[m.charId]?.elem||'neutral'}.webp)`);
   const elemN = ['fire','water','earth','wind'].map(e => {
     const n = state.owners ? state.owners.filter((o, i) => o && o.player === pid && state.tiles[i].e === e).length : 0;
     return `<span style="color:${RUNE[e]}; display:inline-flex; align-items:center; gap:2px; opacity:${n ? 1 : .4}">
@@ -2859,6 +2927,7 @@ function render() {
   }
   // 方向選択待ちでダイス演出が終わっている(または来ない)場合は描画を止めない
   if (rolling && p && ['direction','route_choice'].includes(p.type) && Date.now() > settleT) rolling = false;
+  if(p?.type==='passive_mio')rolling=false;
   if (rolling) return;
 
   // キャラ選択オーバーレイ
@@ -2866,7 +2935,7 @@ function render() {
     closeActionOverlay(true);
     renderCharSelection(m, C, p);
     return;
-  } else { summonerSelection?.hide(); }
+  } else if(!summonerSelection?.isInspecting?.()){ summonerSelection?.hide(); }
   if (!p || p.type !== 'draft') $('draftOv').classList.remove('on');
   if (!p || p.type !== 'gate') $('gateOv').classList.remove('on');
   // 選択ドロー: 選択後の飛翔演出が終わるまでは閉じない(操作ロック)
@@ -2874,7 +2943,8 @@ function render() {
     const pov = $('pickOv');
     if (pov.classList.contains('on')) { pov.classList.remove('on'); pov.dataset.k = ''; }
   }
-  const MAP_TYPES = ['route_choice','curse_target','quake_target','ult_mio','ult_lia','ult_nerasio_land','move_a','move_b','swap_land','upgrade','marlow_src','marlow_dest','mermaid_heal','abyss_mark',
+  syncLiaHandToggle(p?.type==='passive_lia'&&$('mapOv').classList.contains('on')?p:null);
+  const MAP_TYPES = ['passive_lia','route_choice','curse_target','quake_target','ult_mio','ult_lia','ult_nerasio_land','move_a','move_b','swap_land','upgrade','marlow_src','marlow_dest','mermaid_heal','abyss_mark',
     'sell','step_a','step_b','spell_target'];
   if (!mapView && (!p || !MAP_TYPES.includes(p.type))) hideMapOv();
   const liaSelectedKey = p && (p.type === 'ult_lia' || p.type === 'ult_nerasio_land') ? `${p.type}|${(p.selected || []).join(',')}` : '';
@@ -2887,6 +2957,7 @@ function render() {
   const inMarket = pend() && pend().type === 'market';
   if (!inMarket) { $('shopScene').classList.remove('on'); $('shopDetail').classList.remove('on'); inShopHand = false; }
   else if (inShopHand) $('shopScene').classList.remove('on');
+  for(const loss of state.handLossNotices||[]){if(loss.at>lastHandLossSeen){lastHandLossSeen=loss.at;enqueueCardReveal([loss.card],'lost_'+loss.reason);}}
   // 直接ドロー(祠・戦闘勝利・ひらめき)の開帳: 引いたカードを本人にだけ見せる
   const handKey = (m.hand || []).join(',');
   if (state.lastDraw && state.lastDraw.player === pid && state.lastDraw.at !== lastDrawSeen) {
@@ -2906,7 +2977,8 @@ function render() {
     lastGainSeen = state.lastGain.at;
     if (Array.isArray(state.lastGain.cards) && state.lastGain.cards.length) {
       if (state.lastGain.reason === 'market') $('shopDetail').classList.remove('on');
-      enqueueCardReveal(state.lastGain.cards, state.lastGain.reason);
+      const gain=state.lastGain,delay=Math.max(0,(gain.availableAt||0)-Date.now()-serverClockOffset);
+      if(delay){clearTimeout(gainRevealT);gainRevealT=setTimeout(()=>enqueueCardReveal(gain.cards,gain.reason),delay);}else enqueueCardReveal(gain.cards,gain.reason);
     } else showGainToast(state.lastGain.n);
   }
   prevHandKey = handKey;
@@ -2934,7 +3006,7 @@ function render() {
       return;
     }
     const ld = state.lastDice;
-    if (p && ['tile', 'upgrade', 'market', 'draft', 'gate', 'forge'].includes(p.type) && ld && !ld.segment && ld.player === pid) {
+    if (p && ['tile', 'upgrade', 'market', 'draft', 'gate', 'forge', 'passive_lia'].includes(p.type) && ld && !ld.segment && ld.player === pid) {
       const speed = state.presentationSpeed === 2 && state.players.find(q => q.id === ld.player)?.isBot ? 2 : 1;
       const scale = ms => GAME_TIMING.scaled(ms, speed);
       const GT = GAME_TIMING;  // 盤面と共有の移動タイミング(直書き禁止)
@@ -2999,13 +3071,21 @@ function render() {
     $('msg').textContent=taskPrompt(p); A.innerHTML=''; $('pickOv').classList.remove('on');
     getCardPicker().show({title:'カードを選ぶ',drawOverlay:true,center:true,sections:[{name:'候補',entries:p.options.map(o=>({card:o.card,pickId:o.id}))}],action:'手札に加える'});
     renderHand(); return;
+  } else if (p.type === 'passive_mio') {
+    $('msg').textContent='ミオの固有能力';
+    $('diceDock').innerHTML='<strong style="font-size:7dvh">'+p.dice.join(' ＋ ')+'</strong>';
+    showActionOverlay('ミオの固有スキル',p.options,{closeable:false,key:'mio:'+p.dice.join(',')});
+    const pipPositions={1:[5],2:[1,9],3:[1,5,9],4:[1,3,7,9],5:[1,3,5,7,9],6:[1,3,4,6,7,9]};
+    $('actionOvHint').innerHTML='<div class="mioDiceRow">'+p.dice.map(v=>'<div class="mioDie" role="img" aria-label="出目 '+v+'">'+Array.from({length:9},(_,i)=>'<i class="'+(pipPositions[v].includes(i+1)?'pip':'')+'"></i>').join('')+'</div>').join('')+'</div>';
+
   } else if (p.type === 'roll') {
     const hasSp = p.options.some(o => o.id.startsWith('sp:'));
     const ultIc = sic('ult', '2.4dvh') + ' ';
     const extraOpts = p.options.filter(o => o.id !== 'roll' && o.id !== 'ult' && !o.id.startsWith('sp:')).map(o => ({
       id:o.id, label:(o.id === 'ult' ? '固有スキル ' : '') + iconize(o.label), desc:o.id === 'ult' ? '1ゲームに1度の固有スキルを確認します' : '' }));
     if (!$('diceBtn')) $('diceDock').innerHTML = `<button class="diceImgBtn" id="diceBtn" aria-label="サイコロを振る"><img src="/assets/dice_btn.png" alt=""><span class="diceTapLabel">タップして振る</span></button>`;
-    setContextActions(p.prompt, extraOpts);
+    if(m.charId==='noir'&&m.passiveStatus?.enabled)$('msg').textContent='スペル 残り'+m.passiveStatus.spellsRemaining+'回';
+    setContextActions(m.charId==='noir' && m.passiveStatus?.enabled ? 'スペル 残り'+m.passiveStatus.spellsRemaining+'回' : p.prompt, extraOpts);
     $('diceBtn').onclick = startRoll;
   } else if (p.type === 'forget') {
     $('msg').textContent = taskPrompt(p);
@@ -3075,7 +3155,7 @@ function render() {
       id:o.id, label:iconize(o.label),
       desc:o.elem ? `${ELEM_JA[o.elem]}属性の連鎖・通行料・地形補正へ即時反映します` : '領地の選択へ戻ります'
     })), { key:`nerasio-elem|${(p.selected || []).join(',')}` });
-  } else if (p.type === 'curse_target' || p.type === 'quake_target' || p.type === 'ult_mio' || p.type === 'ult_lia' || p.type === 'ult_nerasio_land' ||
+  } else if (p.type === 'passive_lia' || p.type === 'curse_target' || p.type === 'quake_target' || p.type === 'ult_mio' || p.type === 'ult_lia' || p.type === 'ult_nerasio_land' ||
              p.type === 'move_a' || p.type === 'move_b' || p.type === 'swap_land' || p.type === 'upgrade' ||
               p.type === 'marlow_src' || p.type === 'marlow_dest' || p.type === 'abyss_mark' ||
              p.type === 'sell' || p.type === 'step_a' || p.type === 'step_b' || p.type === 'mermaid_heal' ||
@@ -3142,6 +3222,9 @@ function render() {
     A.innerHTML = '';
     openBlockingOverlay('shopScene');
     $('shopGold').innerHTML = '<img src="/assets/ic_gold.png" style="height:2.4dvh;vertical-align:-0.4dvh"> ' + m.gold + ' G';
+    const linnei=m.charId==='linnei'&&m.passiveStatus?.enabled;
+    $('shopScene').classList.toggle('passiveShop',linnei);$('shopPassive').hidden=!linnei;
+    $('shopPassive').textContent='リンネイの固有能力：購入カードはすべて手札へ';
     const visit = state.shopVisit;
     $('shopShelf').innerHTML = visit ? visit.items.map(item => {
       const insufficient = !item.sold && item.price > m.gold;

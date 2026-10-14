@@ -56,7 +56,7 @@ ok(/function enqueueCardReveal\(cards, reason = 'gain'\)/.test(phone) &&
    /document\.getElementById\('drawModal'\)\.onclick = advanceReveal/.test(phone),
   'reveal queue auto-advances in 1.8 seconds and supports tap advance');
 ok(/enqueueCardReveal\(nowArr, 'draw'\)/.test(phone) &&
-   /enqueueCardReveal\(state\.lastGain\.cards, state\.lastGain\.reason\)/.test(phone),
+   /enqueueCardReveal\(gain\.cards,gain\.reason\)/.test(phone),
   'draws and all lastGain events share the reveal queue');
 ok(/reason === 'ult_villa'\) return '廃棄から回収'/.test(phone) &&
    /reason === 'market'\) \$\('shopDetail'\)\.classList\.remove\('on'\)/.test(phone),

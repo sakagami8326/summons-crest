@@ -1,7 +1,7 @@
 // Map geometry, resumable movement, save compatibility and seeded BOT games.
 const fs=require('fs'),path=require('path'),assert=require('assert/strict');
 const src=fs.readFileSync(path.join(__dirname,'server.js'),'utf8').replace(/server\.listen\([\s\S]*?\}\);\s*$/,'');
-const G=new Function('require','__dirname','process','console','setInterval','setTimeout',src+'\nreturn {MAPS,makeRoom,startGame,performMove,handleChoose,cavernTeleport,cavernNeighbors,cavernRouteProjection,askRoll,publicState,serializeRoom,restoreRoom,validateSave,rooms,botChooseOption,resolveUltSequence,completeTurnTransition,stepDests};')(require,__dirname,process,console,()=>{},()=>({unref(){}}));
+const G=new Function('require','__dirname','process','console','setInterval','setTimeout',src+'\nreturn {MAPS,makeRoom,startGame,performMove,handleChoose,cavernTeleport,cavernNeighbors,cavernRouteProjection,askRoll,publicState,serializeRoom,restoreRoom,validateSave,rooms,botChooseOption,advancePassiveResolution,resolveUltSequence,completeTurnTransition,stepDests};')(require,__dirname,process,console,()=>{},()=>({unref(){}}));
 let checks=0;
 const eq=(a,b,msg)=>{assert.deepEqual(a,b,msg);checks++;};
 const ok=(a,msg)=>{assert.ok(a,msg);checks++;};
@@ -157,6 +157,7 @@ try{
   const r=game(n);G.askRoll(r,r.players[r.turn]);let actions=0;
   while(!r.winner&&actions++<20000){
    if(r.turnTransition){G.completeTurnTransition(r,r.turnTransition.id,'board');continue;}
+   if(G.advancePassiveResolution(r,Date.now()+60000))continue;
    if(r.ultSequence){G.resolveUltSequence(r);continue;}
    const entry=Object.entries(r.pending).find(([,p])=>p.options.length);
    ok(entry,'BOT has pending');const [id,pd]=entry,actor=r.players.find(p=>p.id===id);

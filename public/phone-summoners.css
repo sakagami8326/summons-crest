@@ -179,3 +179,47 @@ to{opacity:.19;transform:none}
   #phoneSummoners#phoneSummoners .starter>header{height:15px}
   #phoneSummoners .chooseSummoner{height:8dvh;min-height:30px}
 }
+
+#phoneSummoners#phoneSummoners.inspecting{z-index:110}
+#phoneSummoners.inspecting .chooseSummoner,#phoneSummoners.inspecting .summonerArrow,#phoneSummoners.inspecting .detailHeading .index{display:none}
+
+#phoneSummoners .affinityBenefit .passiveAbilityIcon{width:20px;height:20px;flex:none;object-fit:contain}
+
+@font-face{font-family:SummonerSignature;src:url('/assets/fonts/metalmania/MetalMania-Regular.ttf') format('truetype');font-display:swap}
+#phoneSummoners .summonerSignature{position:absolute;z-index:4;left:5%;bottom:5%;width:34%;display:flex;flex-direction:column;align-items:center;pointer-events:none;color:#fff5e2;text-shadow:0 2px 5px #000,0 0 18px #000}
+#phoneSummoners .signatureName{font-family:SummonerSignature,cursive!important;font-size:clamp(40px,10dvh,72px);line-height:1.05;font-weight:400;text-transform:uppercase;letter-spacing:.025em}
+#phoneSummoners .signatureConcept{font:clamp(11px,2.7dvh,16px)/1.4 Marudeco,'Yu Mincho',serif;letter-spacing:.08em;margin-top:10px;white-space:nowrap}
+#phoneSummoners .summonerSignature:before{content:'';position:absolute;inset:-16px -10px;z-index:-1;background:radial-gradient(ellipse,#080a1280,transparent 72%)}
+
+#phoneSummoners .passiveSkillLabel{display:grid;place-items:center;flex:0 0 58px;height:22px;background:#9c8963;color:#fff9e9;clip-path:polygon(0 50%,12% 27%,17% 0,83% 0,88% 27%,100% 50%,88% 73%,83% 100%,17% 100%,12% 73%);font-size:11px;font-weight:700;line-height:1;text-shadow:0 1px 2px #56472e}
+#phoneSummoners .affinityBenefit{gap:8px}
+
+@font-face{font-family:SignatureMetal;src:url('/assets/fonts/metalmania/MetalMania-Regular.ttf')}
+@font-face{font-family:SignatureRocker;src:url('/assets/fonts/newrocker/NewRocker-Regular.ttf')}
+@font-face{font-family:SignatureCinzel;src:url('/assets/fonts/cinzeldecorative/CinzelDecorative-Bold.ttf');font-weight:700}
+#phoneSummoners[data-signature-font="metal"] .signatureName{font-family:SignatureMetal,serif!important}
+#phoneSummoners[data-signature-font="rocker"] .signatureName{font-family:SignatureRocker,serif!important}
+#phoneSummoners[data-signature-font="cinzel"] .signatureName{font-family:SignatureCinzel,serif!important;font-size:clamp(32px,8dvh,60px);font-weight:700;letter-spacing:-.03em}
+#phoneSummoners .signatureName{animation:signatureReveal .65s cubic-bezier(.16,1,.3,1) .38s both}
+#phoneSummoners .signatureConcept{animation:signatureCaption .5s ease-out .66s both}
+@keyframes signatureReveal{from{opacity:0;clip-path:inset(0 100% 0 0);transform:translateX(-12px);filter:blur(3px)}to{opacity:1;clip-path:inset(0 -8% 0 -8%);transform:translateX(0);filter:blur(0)}}
+@keyframes signatureCaption{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+#signaturePreviewControls{position:fixed;z-index:9999;top:8px;left:50%;transform:translateX(-50%);display:flex;gap:4px;padding:5px;background:#080b10ee;border:1px solid #9c8963}
+#signaturePreviewControls button{padding:5px 8px;border:1px solid #796d56;background:#171b23;color:#fff3d7;font-size:11px;cursor:pointer}
+#signaturePreviewControls button[aria-pressed="true"]{background:#8d7650}
+@media(prefers-reduced-motion:reduce){#phoneSummoners .signatureName,#phoneSummoners .signatureConcept{animation:none}}
+
+#phoneSummoners .summonerDifficulty{margin-left:auto;display:flex;align-items:center;gap:6px;white-space:nowrap;font-size:10px;color:var(--difficulty-color)}
+#phoneSummoners .summonerDifficulty.level1{--difficulty-color:#8bd59b}
+#phoneSummoners .summonerDifficulty.level2{--difficulty-color:#f4d66d}
+#phoneSummoners .summonerDifficulty.level3{--difficulty-color:#ff8880}
+#phoneSummoners .difficultyStars{display:flex;gap:1px;font-size:19px;line-height:1}
+#phoneSummoners .difficultyStars .lit{font-weight:900;text-shadow:0 0 5px color-mix(in srgb,var(--difficulty-color) 45%,transparent)}
+#phoneSummoners .difficultyStars .unlit{color:#565451;opacity:.65}
+#phoneSummoners .chooseSummoner:not(:disabled){background:linear-gradient(110deg,#ffe9a0,#d9ab39 60%,#ffe8a0);color:#241b09;border:1px solid #fff0b7;box-shadow:0 0 14px #efc55065,inset 0 0 0 2px #ffe9a055;font-weight:700}
+#phoneSummoners .chooseSummoner:not(:disabled):hover{filter:brightness(1.12)}
+#phoneSummoners .signatureConcept{font-size:clamp(10px,2.6dvh,16px);letter-spacing:.02em}
+
+#phoneSummoners .chooseSummoner:not(:disabled){background:linear-gradient(110deg,#e4d3a0,#c9b273);animation:summonerChoiceGlow 2s ease-in-out infinite}
+@keyframes summonerChoiceGlow{0%,100%{box-shadow:0 0 4px #efc55035,0 0 9px #efc55015}50%{box-shadow:0 0 10px #ffe18fcc,0 0 23px #efc55080}}
+@media(prefers-reduced-motion:reduce){#phoneSummoners .chooseSummoner:not(:disabled){animation:none;box-shadow:0 0 12px #efc55080}}

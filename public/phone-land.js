@@ -1,14 +1,14 @@
 /* Shared phone land inspection. Choices and combat values come from the server. */
 window.PhoneLandUI=(()=>{
-const titles={upgrade:'強化する領地を選択',sell:'売却する領地を選択',ult_lia:'炎の渦を放つ領地を選択',ult_nerasio_land:'属性を変える領地を選択',ult_mio:'移動先を選択',move_a:'移動する領地を選択',move_b:'移動先を選択',step_a:'移動する領地を選択',step_b:'移動先を選択',swap_land:'交代する領地を選択',marlow_src:'マーローの領地を選択',marlow_dest:'風渡りの移動先を選択',mermaid_heal:'回復する領地を選択',abyss_mark:'深淵標を置く領地を選択',curse_target:'衰弱を放つ領地を選択',quake_target:'地割れを放つ領地を選択',spell_target:'効果の対象を選択'};
-function tileTargets(p){const out={};for(const o of p?.options||[]){const m=/^(up|ct|qt|mt|mv|mb|sw|sl|st|sd|tg|lu|nu|mh|ms|md|am):(\d+)$/.exec(o.id);if(m)out[+m[2]]=o.id;}return out;}
+const titles={passive_lia:'リーアの固有能力 ─ 侵略先を選ぶ',upgrade:'強化する領地を選択',sell:'売却する領地を選択',ult_lia:'炎の渦を放つ領地を選択',ult_nerasio_land:'属性を変える領地を選択',ult_mio:'移動先を選択',move_a:'移動する領地を選択',move_b:'移動先を選択',step_a:'移動する領地を選択',step_b:'移動先を選択',swap_land:'交代する領地を選択',marlow_src:'マーローの領地を選択',marlow_dest:'風渡りの移動先を選択',mermaid_heal:'回復する領地を選択',abyss_mark:'深淵標を置く領地を選択',curse_target:'衰弱を放つ領地を選択',quake_target:'地割れを放つ領地を選択',spell_target:'効果の対象を選択'};
+function tileTargets(p){const out={};for(const o of p?.options||[]){const m=/^(lia|up|ct|qt|mt|mv|mb|sw|sl|st|sd|tg|lu|nu|mh|ms|md|am):(\d+)$/.exec(o.id);if(m)out[+m[2]]=o.id;}return out;}
 function decisionModel(s,pid,p,tile){
  if(!p)return {hint:'',actions:[]};
  const targets=tileTargets(p),id=targets[tile],multi=['ult_lia','ult_nerasio_land'].includes(p.type),chosen=p.selected||[],max=p.type==='ult_lia'?3:2;
- const label=multi?(chosen.includes(tile)?'選択から外す':'選択に追加'):p.type==='sell'?'この領地を売却':p.type==='upgrade'?'この領地を選択':'ここに決定';
+ const label=multi?(chosen.includes(tile)?'選択から外す':'選択に追加'):p.type==='passive_lia'?'侵略する':p.type==='sell'?'この領地を売却':p.type==='upgrade'?'この領地を選択':'ここに決定';
  const actions=[{id:id||'',label,disabled:!id||(multi&&!chosen.includes(tile)&&chosen.length>=max)}];
  const nonTiles=p.options.filter(o=>!Object.values(targets).includes(o.id));
- for(const o of nonTiles)actions.push({id:o.id,label:o.id.endsWith(':confirm')?'決定 ('+chosen.length+')':o.id==='marlow:move'?'風渡り':/cancel$|^pass$/.test(o.id)?'やめる':o.label,disabled:false});
+ for(const o of nonTiles)actions.push({id:o.id,label:o.id.endsWith(':confirm')?'決定 ('+chosen.length+')':o.id==='marlow:move'?'風渡り':o.id==='lia:cancel'?'侵略しない':/cancel$|^pass$/.test(o.id)?'やめる':o.label,disabled:false});
  let hint=id?(multi?'マスを確認して選択に追加':p.type==='upgrade'?'次に強化レベルを選択':p.type==='sell'?'売却 ＋'+s.landStats?.[tile]?.saleValue+'G':'選択内容を確認して決定'):'このマスは選択対象ではありません';
  if(p.type==='sell')hint=id?'売却 ＋'+s.landStats?.[tile]?.saleValue+'G ／ 不足 '+Math.max(0,-(s.players.find(x=>x.id===pid)?.gold||0))+'G':hint;
  return {hint,actions};
@@ -33,7 +33,7 @@ function renderPlayers(){
 }
 const abyssAt=i=>(data.abyssMarks||[]).find(m=>m.tile===i);
 const landIcon=e=>'<span class="landIcon" style="--tile-bg:url(/assets/cards/bg-'+e+'.webp)">'+icon(e)+'</span>';
-function renderMap(){const map=SummonsMaps[data.mapId]||SummonsMaps.starting_corridor,cell=Math.min((296-(map.width-1)*4)/map.width,(296-(map.height-1)*4)/map.height);$('mapArea').innerHTML='<div class="mapGrid" style="--cols:'+map.width+';--rows:'+map.height+';width:'+(cell*map.width+(map.width-1)*4)+'px;height:'+(cell*map.height+(map.height-1)*4)+'px">'+data.tiles.map((t,i)=>{const c=creature(i),p=owner(i),o=data.owners[i];return '<button class="tile '+(selected===i?'selected ':'')+(filter&&matches(i)?'playerHighlight ':'')+(mode!=='view'&&allowed(i)&&matches(i)?'eligible ':'')+(!matches(i)?'muted':'')+'" data-tile="'+i+'" aria-label="'+(i+1)+'番 '+esc(c?c.name:structures[t.t]||names[t.e]+'属性の空き地')+' '+esc(p?.name||'')+(o?' レベル'+o.level:'')+'" aria-pressed="'+(selected===i)+'" style="grid-column:'+(map.geo[i][0]+1)+';grid-row:'+(map.geo[i][1]+1)+';--element:'+(colors[t.e]||'#b7a78b')+';--owner:'+(p?.color||'#635a44')+'">'+(t.t==='land'?icon(t.e):'')+(c?'<img class="tileArt" src="'+c.art+'" alt="">':t.t!=='land'?'<img class="tileStruct" src="/assets/struct_'+t.t+'.png" alt="">':'')+(o?'<span class="tileLevel"><small>Lv.</small><b>'+o.level+'</b></span>':'')+(abyssAt(i)?'<img class="landAbyss" src="/assets/abyss-mark-v1.webp" alt="深淵標">':'')+(pending?.selected?.includes(i)?'<span class="pickedMark">✓</span>':'')+(i===data.players.find(p=>p.id===playerId)?.pos?'<i class="youDot" title="現在地"></i>':'')+'</button>';}).join('')+'</div>';
+function renderMap(){const map=SummonsMaps[data.mapId]||SummonsMaps.starting_corridor,cell=Math.min((296-(map.width-1)*4)/map.width,(296-(map.height-1)*4)/map.height);$('mapArea').innerHTML='<div class="mapGrid" style="--cols:'+map.width+';--rows:'+map.height+';width:'+(cell*map.width+(map.width-1)*4)+'px;height:'+(cell*map.height+(map.height-1)*4)+'px">'+data.tiles.map((t,i)=>{const c=creature(i),p=owner(i),o=data.owners[i];return '<button class="tile '+(selected===i?'selected ':'')+(filter&&matches(i)?'playerHighlight ':'')+(mode!=='view'&&allowed(i)&&matches(i)?'eligible ':'')+(!matches(i)||(pending?.type==='passive_lia'&&!allowed(i))?'muted':'')+'" data-tile="'+i+'" aria-label="'+(i+1)+'番 '+esc(c?c.name:structures[t.t]||names[t.e]+'属性の空き地')+' '+esc(p?.name||'')+(o?' レベル'+o.level:'')+'" aria-pressed="'+(selected===i)+'" style="grid-column:'+(map.geo[i][0]+1)+';grid-row:'+(map.geo[i][1]+1)+';--element:'+(colors[t.e]||'#b7a78b')+';--owner:'+(p?.color||'#635a44')+'">'+(t.t==='land'?icon(t.e):'')+(c?'<img class="tileArt" src="'+c.art+'" alt="">':t.t!=='land'?'<img class="tileStruct" src="/assets/struct_'+t.t+'.png" alt="">':'')+(o?'<span class="tileLevel"><small>Lv.</small><b>'+o.level+'</b></span>':'')+(abyssAt(i)?'<img class="landAbyss" src="/assets/abyss-mark-v1.webp" alt="深淵標">':'')+(pending?.selected?.includes(i)?'<span class="pickedMark">✓</span>':'')+(i===data.players.find(p=>p.id===playerId)?.pos?(pending?.type==='passive_lia'?'<img class="tileArt" style="width:65%;height:65%;object-fit:contain" src="/assets/pawn_lia.png" alt="現在地">':'<i class="youDot" title="現在地"></i>'):'')+'</button>';}).join('')+'</div>';
  root.querySelectorAll('[data-tile]').forEach(el=>el.onclick=()=>select(Number(el.dataset.tile)));
 }
 const eventInfo={
@@ -86,7 +86,7 @@ function renderAll(){
 return {
  show(s,pid,p,locked=false){
   const next=[s.code,s.stateInstanceId,pid,s.turnEpoch,p?.type||'view',p?.promptId||''].join('|');
-  if(next!==key){const keep=p&&pending&&p.type===pending.type&&['ult_lia','ult_nerasio_land'].includes(p.type)&&pid===playerId&&s.turnEpoch===data?.turnEpoch&&s.code===data?.code&&s.stateInstanceId===data?.stateInstanceId;error='';if(!keep){selected=null;filter=p?.type==='upgrade'?pid:null;}key=next;}
+  if(next!==key){const keep=p&&pending&&p.type===pending.type&&['ult_lia','ult_nerasio_land'].includes(p.type)&&pid===playerId&&s.turnEpoch===data?.turnEpoch&&s.code===data?.code&&s.stateInstanceId===data?.stateInstanceId;error='';if(!keep){selected=null;filter=['upgrade','sell'].includes(p?.type)?pid:null;}key=next;}
   data=s;playerId=pid;pending=p||null;mode=p?.type||'view';busy=locked;
   if(selected==null||!s.tiles[selected])selected=Number(Object.keys(tileTargets(p))[0]??s.owners.findIndex(o=>o?.player===pid));
   if(selected<0)selected=s.players.find(x=>x.id===pid)?.pos||0;

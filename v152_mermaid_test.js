@@ -20,6 +20,7 @@ function game() {
     id: 'p' + i, name: 'P' + i, charId, confirmed: true,
   }));
   G.startGame(r);
+  r.passiveVersion=0; // Isolate historical creature stats from summoner bonuses.
   return r;
 }
 function battle(r, atkCreature, defCreature, defLevel = 1) {
