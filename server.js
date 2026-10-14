@@ -5048,7 +5048,7 @@ const server = http.createServer(async (req, res) => {
   }
   if (p === '/board') { res.writeHead(302, { Location: '/play' }); return res.end(); }
   if (p === '/site') { res.writeHead(302, { Location: '/' }); return res.end(); }
-  if (['/summoner-passives.js','/board-passives.js'].includes(p))return serveFile(res,p.slice(1));
+  if (['/summoner-passives.js','/board-passives.js','/phone-orientation-fullscreen.js'].includes(p))return serveFile(res,p.slice(1));
   if (p === '/phone') return serveFile(res, 'phone.html');
   if (p.startsWith('/assets/')) return serveFile(res, p.slice(1));
   if (p.startsWith('/site/')) return serveFile(res, p.slice(1));
