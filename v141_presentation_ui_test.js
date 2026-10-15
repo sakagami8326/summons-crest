@@ -161,10 +161,10 @@ ok(/\.gateBtns\.single \{[^}]*grid-template-columns:minmax\(280px,min\(56vw,560p
 ok(/\.gateBtns\.reselectOnly \{[^}]*width:clamp\(240px,72vw,320px\)/s.test(phone) &&
   /currentPending\.type === 'select_wait'[\s\S]*options\[0\]\.id === 'unpick'[\s\S]*toggle\('reselectOnly'/.test(phone),
   'only the summoner reselect action receives the narrower width');
-ok(fs.existsSync(path.join(__dirname, 'public/assets/p_lia-outline-v1.png')) &&
-  /p\.charId === 'lia' \? '\/assets\/p_lia-outline-v1\.png'/.test(board) &&
+ok(fs.existsSync(path.join(__dirname, 'public/assets/board-pawns-v2/lia-board.webp')) &&
+  board.includes('/assets/board-pawns-v2/${p.charId}-board.webp') &&
   /pngTexture\(pawnTex, it\.asset/.test(boardWorld),
-  'Lia uses the cache-busted outlined pawn in DOM and Phaser');
+  'Lia uses the versioned outlined pawn in DOM and Phaser');
 
 function checkInlineScripts(html, label) {
   let count = 0;

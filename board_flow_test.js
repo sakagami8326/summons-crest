@@ -15,7 +15,7 @@ assert.equal(G.serializeRoom(r).room.lastRuin.events.length,3);assert.equal(G.va
 for(const [bot,speed]of [[false,1],[true,2]]){
  const room=G.makeRoom();room.players=[{id:'a',name:'甲',charId:'mio',isBot:bot},{id:'b',name:'乙',charId:'redani',isBot:bot}];room.botMode=bot;room.presentationSpeed=speed;
  const before=Date.now();G.startGame(room);const p=room.players[0];
- const expected=GT.gameEntryReturn+GT.gameEntryCameraReturn+GT.scaled(GT.gameNotice+GT.startNoticeGap+GT.turnNotice+GT.turnNoticeBuffer,speed);
+ const expected=GT.gameEntryReveal+GT.scaled(GT.gameEntryPawnsDuration(room.players.length)+GT.gameNotice+GT.startNoticeGap+GT.turnNotice+GT.turnNoticeBuffer,speed);
  assert(Math.abs(room.pending[p.id].availableAt-before-expected)<100,'first input waits for entry and both messages');
  const next=Date.now();G.beginTurn(room);assert(Math.abs(room.pending[p.id].availableAt-next-GT.scaled(GT.turnNotice+GT.turnNoticeBuffer,speed))<100);
  const s=G.publicState(room,null);for(const charId of Object.keys(s.catalog.CHARS)){s.players[0].charId=charId;s.players[0].name='<八文字のテスト>';

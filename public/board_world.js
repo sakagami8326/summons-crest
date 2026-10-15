@@ -1223,7 +1223,8 @@ const PW = (() => {
     if (P.spr) {
       P.spr.setAlpha(opacity);
       const base = it.w / P.spr.width;
-      P.spr.setPosition(x, y).setDepth(it.z);
+      P.spr.setPosition(x, y - (it.entry?.drop || 0)).setRotation(it.entry?.tilt || 0).setDepth(it.z);
+      P.spr.setVisible(!it.entry || it.entry.visible);
       const focus = it.active ? 1.12 : 1;
       P.spr.setScale(base * focus * (d ? d.sx : 1), base * focus * (d ? d.sy : 1));
     }
@@ -1231,6 +1232,8 @@ const PW = (() => {
     P.sh.setPosition(x, y - 5).setDepth(it.zs != null ? it.zs : it.z - 2);
     P.sh.setDisplaySize(40 * (1 - 0.35 * air), 13 * (1 - 0.35 * air));
     P.sh.setAlpha((1 - 0.5 * air)*opacity);
+    P.sh.setVisible(!it.entry || it.entry.visible);
+    if(it.entry)P.sh.setAlpha(opacity*Math.max(.1,1-it.entry.drop/620));
     if(P.aura)P.aura.setAlpha(opacity);
     if(P.marker)P.marker.setAlpha(opacity);
     if (P.aura) P.aura.setPosition(x, y - 6).setDepth(it.active ? it.z - 1 : it.z - 3);

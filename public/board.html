@@ -1590,12 +1590,12 @@ const QR = (() => {
 <script src="/map-ui.js?v=158"></script>
 <link rel="stylesheet" href="/assets/lobby-ticket/lobby-ticket.css?v=2&release=164">
 <script src="/assets/lobby-ticket/lobby-ticket.js?v=2&release=164"></script>
-<script src="/game_timing.js?release=164&upgrade=20261005"></script>
+<script src="/game_timing.js?entry=v2&release=164&upgrade=20261005"></script>
 <script src="/result-graph-audio.js?v=3&release=164"></script>
 <script src="/fx_manifest.js"></script>
 <script src="/vendor/phaser.min.js"></script>
 <script src="/assets/board-tiles.js?v=1"></script>
-<script src="/board_world.js?release=164&tiles=1&upgrade=20261005"></script>
+<script src="/board_world.js?release=pawns-entry-v2"></script>
 <link rel="stylesheet" href="/board-notice.css?v=2&release=164">
 <link rel="stylesheet" href="/board-actor.css?v=3&handdiscard=horizontal">
 <script src="/board-actor.js?v=2&release=164&noir=166"></script>
@@ -3709,17 +3709,17 @@ function pawnLayout() {
     const g = groups[posOf(p)];
     const k = g.indexOf(p);
     const crowd = g.length >= 3;
-    const w = crowd ? 46 : 58;
+    const w = (crowd ? 46 : 58) * 1.5;
     const slots = g.length === 1 ? [[-28, 14]] :
-      g.length === 2 ? [[-32, 12], [30, 16]] : [[-38, 4], [-14, 14], [14, 14], [38, 4]];
+      g.length === 2 ? [[-32, 12], [30, 16]] : [[-65, 8], [-22, 14], [22, 14], [65, 8]];
     const [dx, dy] = slots[Math.min(k, slots.length - 1)];
     const pp = posOf(p);
     const o = BoardUpgrade.view(state).owners[pp];
     const lift = o ? (o.level - 1) * 7 : 0;
     const { x, y } = proj(GEO[pp][0], GEO[pp][1]);
-    const active = state.phase === 'playing' && visualTurnId === p.id;
-    const asset = p.charId === 'lia' ? '/assets/p_lia-outline-v1.png' : `/assets/p_${p.charId}.png`;
-    return { id: p.id, charId: p.charId, asset, color: p.color, active,
+    const active = !gameEntryMotion && state.phase === 'playing' && visualTurnId === p.id;
+    const asset = `/assets/board-pawns-v2/${p.charId}-board.webp`;
+    return { id: p.id, charId: p.charId, asset, color: p.color, active, entry:gameEntryMotion?.[p.id]||null,
              speed:capturedPresentationSpeed(p.id), x: x + dx, y: y - lift + dy, w,
              z: GEO[pp][0] + GEO[pp][1] + 102 + (dy > 8 ? 1 : 0) + (active ? 20 : 0),
              zs: GEO[pp][0] + GEO[pp][1] + 100 };
@@ -3741,6 +3741,9 @@ function renderPawnsDom(layout) {
       layer.appendChild(el);
     }
     el.innerHTML = it.charId ? `<img src="${it.asset}" width="${it.w}" style="display:block">${it.active ? '<span class="pawnTurnTag">TURN</span>' : ''}` : '';
+    const pawnImage=el.querySelector('img');
+    if(pawnImage&&it.entry){pawnImage.style.visibility=it.entry.visible?'visible':'hidden';pawnImage.style.transform='translateY('+(-it.entry.drop)+'px) rotate('+it.entry.tilt+'rad)';pawnImage.style.transformOrigin='50% 100%';}
+    sh.style.visibility=!it.entry||it.entry.visible?'visible':'hidden';
     el.classList.toggle('activeTurn', !!it.active);
     el.style.left = it.x + 'px'; el.style.top = it.y + 'px';
     el.style.zIndex = it.z;
@@ -4039,11 +4042,13 @@ function renderHUD() {
 // ===== テロップ・ダイス・戦闘 =====
 let tcT1 = null, tcT2 = null;
 let gameEntryRunning = false, gameEntrySelectionGone = false;
+let gameEntryMotion = null;
 const gameEntryTimers = [];
 function playGameEntryTransition() {
   if (gameEntryRunning) return;
   gameEntryRunning = true;
   gameEntrySelectionGone = false;
+  gameEntryMotion = Object.fromEntries(state.players.map(p=>[p.id,{drop:0,tilt:0,visible:false}]));
   const sel = $('selectOv'), wipe = $('gameEntry');
   gameEntryTimers.splice(0).forEach(clearTimeout);
   sel.classList.add('on', 'departing');
@@ -4058,20 +4063,56 @@ function playGameEntryTransition() {
     void wipe.offsetWidth;
     wipe.classList.add('reveal');
   }, 560));
-  // 円形ワイプ後は盤面全景を見せてから開始地点の城へ寄る。
-  let gameEntryCameraToken = null;
-  gameEntryTimers.push(setTimeout(() => { gameEntryCameraToken = beginPresentationZoom(state.tiles.findIndex(t=>t.t==='castle'), 'game-entry'); }, 2250));
   gameEntryTimers.push(setTimeout(() => {
     wipe.classList.remove('on', 'reveal');
     gameEntryRunning = false;
     bgmHeal();
-    armTurnStart();
-  }, 3250));
-  gameEntryTimers.push(setTimeout(() => {
-    if (gameEntryCameraToken) endPresentationZoom(gameEntryCameraToken);
-    gameEntryCameraToken = null;
-  }, GAME_TIMING.gameEntryReturn));
+  }, GAME_TIMING.gameEntryReveal));
+  armTurnStart();
 }
+function gameEntryPawnFrame(elapsed,index) {
+  const t=elapsed-index*GAME_TIMING.gameEntryStagger;
+  if(t<0)return {drop:620,tilt:0,visible:false};
+  if(t<GAME_TIMING.gameEntryFall){const k=t/GAME_TIMING.gameEntryFall;return {drop:620*(1-k*k),tilt:0,visible:true};}
+  const k=(t-GAME_TIMING.gameEntryFall)/GAME_TIMING.gameEntrySettle;
+  return {drop:0,tilt:k<1?Math.sin(k*Math.PI*7)*.15*Math.pow(1-k,2):0,visible:true};
+}
+async function playGameEntryPawns(snapshot) {
+  const castle=snapshot.tiles.findIndex(t=>t.t==='castle');
+  let token=null;
+  gameEntryRunning=true;
+  try {
+    token=beginPresentationZoom(castle,'game-entry');
+    await wait(GAME_TIMING.gameEntryZoom);
+    const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+    const duration=presentationMs((snapshot.players.length-1)*GAME_TIMING.gameEntryStagger+GAME_TIMING.gameEntryFall+GAME_TIMING.gameEntrySettle);
+    const started=performance.now();
+    await new Promise(resolve=>{
+      function tick(now){
+        if(state?.phase!=='playing'||state.stateInstanceId!==snapshot.stateInstanceId)return resolve();
+        const progress=Math.min(1,(now-started)/duration);
+        const elapsed=reduce?Infinity:progress*((snapshot.players.length-1)*GAME_TIMING.gameEntryStagger+GAME_TIMING.gameEntryFall+GAME_TIMING.gameEntrySettle);
+        gameEntryMotion=Object.fromEntries(snapshot.players.map((p,i)=>[p.id,gameEntryPawnFrame(elapsed,i)]));
+        renderPawns();
+        if(progress<1)requestAnimationFrame(tick);else resolve();
+      }
+      requestAnimationFrame(tick);
+    });
+    await wait(GAME_TIMING.gameEntryHold);
+    if(cameraOwner?.token===token){
+      cameraOwner.returning=true;zoomTile=null;
+      if(renderModeActive==='phaser')PW.setCamera(null,{force:true,speed:presentationContext?.speed||1,duration:GAME_TIMING.gameEntryCameraReturn,ease:'Sine.easeInOut'});
+      else applyZoom(false,presentationContext?.speed||1);
+      await wait(GAME_TIMING.gameEntryCameraReturn);
+      if(cameraOwner?.token===token)cameraOwner=null;
+    }
+    await wait(GAME_TIMING.gameEntryTail);
+  } finally {
+    if(cameraOwner?.token===token)endPresentationZoom(token);
+    gameEntryMotion=null;gameEntryRunning=false;renderPawns();
+  }
+}
+
 function playTurnCutin(pl) {
   if (!pl || !pl.charId) return Promise.resolve();
   const el = $('turnCutin');
@@ -4826,7 +4867,7 @@ function render() {
           <div class="scPortrait"><img class="scStill" src="/assets/summoner-still-${cid}.webp" alt="${c.name} イメージアート"></div>
           <div class="scChosenMeta"><div class="scPlayerPlate"><span>${playerName}</span>${botBadge}</div><div class="scChosenName">${c.name}</div>
             <div class="scChosenLine" title="${state.catalog.PASSIVES?.[cid]||''}"><span class="scElem">${elemSvg}</span><span>${elemJa[c.elem] || ''}</span><b>─</b><span>${c.style || ''}</span></div></div>
-          <div class="scPawnWrap"><img src="/assets/p_${cid}.png" alt="${c.name} コマ"></div>
+          <div class="scPawnWrap"><img src="/assets/board-pawns-v2/${cid}.webp" alt="${c.name} コマ"></div>
           ${contested ? '<div class="scConflictTag">同じ召喚士を選択中</div>' : ''}
         </div>` : `<div class="scSlotStatus">
           ${pl ? `<div class="scPlayerPlate"><span>${playerName}</span>${botBadge}</div>` : ''}
@@ -5039,7 +5080,7 @@ function render() {
   if (state.phase === 'playing' && prev.phase !== 'playing') {
     if(enteringFromSelect){
       const snapshot=structuredClone(state),actor=snapshot.players[snapshot.turn];
-      queueFx(4,async()=>{playSe(seTelop);await BoardFlow.start('game',snapshot,actor.id,{ms:presentationMs});await wait(GAME_TIMING.startNoticeGap);},
+      queueFx(4,async()=>{playSe(seTelop);await BoardFlow.start('game',snapshot,actor.id,{ms:presentationMs});await wait(GAME_TIMING.startNoticeGap);await playGameEntryPawns(snapshot);},
         {actorId:actor.id,id:presentationId('game-start',snapshot.stateInstanceId),kind:'game-start',stale:()=>state?.phase!=='playing'||state.stateInstanceId!==snapshot.stateInstanceId});
     }
     armTurnStart();

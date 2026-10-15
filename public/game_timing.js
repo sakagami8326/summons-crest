@@ -6,8 +6,14 @@ const GAME_TIMING = {
   passiveCardReveal: 2800,
   ruinNotice: 5200,
   ruinChange: 2100,
-  gameEntryReturn: 4150,
-  gameEntryCameraReturn: 850,
+  gameEntryReveal: 1650,
+  gameEntryZoom: 1200,
+  gameEntryStagger: 510,
+  gameEntryFall: 560,
+  gameEntrySettle: 620,
+  gameEntryHold: 350,
+  gameEntryCameraReturn: 1300,
+  gameEntryTail: 250,
   placementCameraReturn: 1300,
   upgradeZoom: 950,
   upgradeLead: 220,
@@ -42,6 +48,10 @@ const GAME_TIMING = {
   moveWaitMax: 60000,         // 時計ずれ時のスマホ待機上限
 };
 GAME_TIMING.scaled = (ms, speed) => Math.max(1, Math.round(ms / (speed === 2 ? 2 : 1)));
+GAME_TIMING.gameEntryPawnsDuration = count => GAME_TIMING.gameEntryZoom +
+  Math.max(0,count-1)*GAME_TIMING.gameEntryStagger + GAME_TIMING.gameEntryFall +
+  GAME_TIMING.gameEntrySettle + GAME_TIMING.gameEntryHold +
+  GAME_TIMING.gameEntryCameraReturn + GAME_TIMING.gameEntryTail;
 GAME_TIMING.ultimateDuration = GAME_TIMING.ultimateIntro + GAME_TIMING.ultimateNotice;
 GAME_TIMING.upgradeDuration = (steps,evolves) => GAME_TIMING.upgradeZoom + GAME_TIMING.upgradeLead +
   GAME_TIMING.upgradeFade*3 + steps*GAME_TIMING.upgradeStep +

@@ -54,7 +54,7 @@ ok(summoners.includes('Object.keys(C.CHARS)') && summoners.includes("return '準
 ok(/Array\.from\(\{ length:4 \}/.test(board) && board.includes('data-player-slot=') &&
    board.includes('scPortrait') && board.includes('scPawnWrap'),
   'TV selection renders four player slots with portraits and pawns');
-ok(board.includes('/assets/p_${cid}.png') && board.includes('/assets/summoner-still-${cid}.webp'),
+ok(board.includes('/assets/board-pawns-v2/${cid}.webp') && board.includes('/assets/summoner-still-${cid}.webp'),
   'TV selection connects the pawn and still assets');
 
 console.log(`V1.20 VILLA ALL ${pass} CHECKS PASSED`);

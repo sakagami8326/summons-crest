@@ -1760,7 +1760,7 @@ function beginTurn(r, { gameStart=false } = {}) {
   // テレビの手番交代演出が終わる前にスマホが次ターンを開始しないためのサーバーロック。
   r.turnReadyAt = Date.now() + presentationMs(r,p.id,GAME_TIMING.turnNotice+GAME_TIMING.turnNoticeBuffer+
     (gameStart?GAME_TIMING.gameNotice+GAME_TIMING.startNoticeGap:0))+
-    (gameStart?GAME_TIMING.gameEntryReturn+GAME_TIMING.gameEntryCameraReturn:0);
+    (gameStart?GAME_TIMING.gameEntryReveal+presentationMs(r,p.id,GAME_TIMING.gameEntryPawnsDuration(r.players.length)):0);
   if(r.passiveVersion!==1) {
     r.passiveVersion=1;
     r.players.forEach(q=>{q.passiveExiled=false;q.spellCount=0;});

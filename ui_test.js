@@ -126,12 +126,12 @@ const scripts = 'class MutationObserver { observe() {} disconnect() {} }\nconst 
   if (!/summonerSelect/.test(boardHtml) || !/Array\.from\(\{ length:4 \}/.test(boardHtml) ||
       !/data-player-slot/.test(boardHtml) || !/scPortrait/.test(boardHtml) || !/scPawnWrap/.test(boardHtml))
     throw new Error('テレビ召喚士選択検査: 参加者4枠・イメージアート・コマの表示がない');
-  if (!/summoner-still-\$\{cid\}\.webp/.test(boardHtml) || !/assets\/p_\$\{cid\}\.png/.test(boardHtml) ||
+  if (!/summoner-still-\$\{cid\}\.webp/.test(boardHtml) || !/assets\/board-pawns-v2\/\$\{cid\}\.webp/.test(boardHtml) ||
       !/revealedSummoners/.test(boardHtml))
     throw new Error('テレビ召喚士選択検査: 選択確定時のイメージアートまたはコマがない');
   if (!/bgm_select\.mp3/.test(boardHtml) || !/summonerOrbit/.test(boardHtml) ||
       !/function playGameEntryTransition\(\)/.test(boardHtml) ||
-      !/class="entryRing"/.test(boardHtml) || !/beginPresentationZoom\(state\.tiles\.findIndex\(t=>t\.t==='castle'\), 'game-entry'\)/.test(boardHtml))
+      !/class="entryRing"/.test(boardHtml) || !/beginPresentationZoom\(castle,'game-entry'\)/.test(boardHtml))
     throw new Error('ゲーム開始演出検査: 選択BGM・回転リング・円形ワイプ・城ズームが不足');
   if (/id="audioGate"/.test(boardHtml) || /function unlockTitleAudio\(\)/.test(boardHtml) ||
       !/function startTitleBgm\(\)/.test(boardHtml) ||
