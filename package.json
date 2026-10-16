@@ -3,6 +3,7 @@
   "version": "1.67.0",
   "private": true,
   "scripts": {
+    "test:asset-loading-browser": "node asset_loading_browser_test.js",
     "start": "node server.js",
     "test:board-tiles-browser": "node board_tiles_browser_test.js",
     "test:land-upgrade": "node land_upgrade_test.js",

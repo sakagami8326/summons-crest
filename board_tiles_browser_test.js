@@ -10,7 +10,7 @@ async function board(page) {
   await page.waitForFunction(() => PW.cameraState().isFit);
 }
 (async () => {
-  const browser = await chromium.launch({ channel: 'chrome', headless: true });
+  const browser = await chromium.launch({ channel: process.env.PLAYWRIGHT_CHANNEL || 'chrome', headless: true });
   try {
     for (const [width, height] of [[1440,900], [1280,720]]) {
       const page = await browser.newPage({ viewport: {width,height} }), errors = [];
@@ -61,7 +61,7 @@ async function board(page) {
     for(const failure of ['asset','script','slow']){
       const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
       if(failure==='script')await page.route('**/assets/board-tiles.js*',r=>r.abort());
-      else await page.route('**/assets/tiles/land-lv4.png',async r=>{if(failure==='slow'){await new Promise(resolve=>setTimeout(resolve,4500));await r.continue();}else await r.abort();});
+      else await page.route('**/assets/tiles/land-lv4*',async r=>{if(failure==='slow'){await new Promise(resolve=>setTimeout(resolve,4500));await r.continue();}else await r.abort();});
       await board(page);
       assert.equal(await page.evaluate(()=>!!window.BoardTiles?.loaded),failure==='slow');
       assert.equal(await page.locator('#renderError').isVisible(),false);

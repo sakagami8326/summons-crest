@@ -1594,8 +1594,8 @@ const QR = (() => {
 <script src="/result-graph-audio.js?v=3&release=164"></script>
 <script src="/fx_manifest.js"></script>
 <script src="/vendor/phaser.min.js"></script>
-<script src="/assets/board-tiles.js?v=1"></script>
-<script src="/board_world.js?release=pawns-entry-v2"></script>
+<script src="/assets/board-tiles.js?v=2"></script>
+<script src="/board_world.js?release=pawns-entry-v2&loading=v1"></script>
 <link rel="stylesheet" href="/board-notice.css?v=2&release=164">
 <link rel="stylesheet" href="/board-actor.css?v=3&handdiscard=horizontal">
 <script src="/board-actor.js?v=2&release=164&noir=166"></script>
@@ -2857,11 +2857,18 @@ async function boot(mode = 'normal', mapId = 'starting_corridor') {
   window.SummonsAnalytics?.track('room_created', { room_mode: mode === 'bot' ? 'bot' : 'normal' });
   enterRoom(c.code, c.phoneUrl, c.boardToken);
 }
-['redani','linnei','grease','mio','lia','adel','villa','nerasio','noir'].forEach(c => {
-  new Image().src = '/assets/full_' + c + '.png';
-  new Image().src = '/assets/p_' + c + '.png';
-  new Image().src = '/assets/summoner-still-' + c + '.webp';
-});
+const warmedPlayerArt=new Set();
+function warmSelectedPlayerArt(){
+  if(state?.phase!=='select')return;
+  for(const player of state.players){
+    const id=player.charId;
+    if(!id||warmedPlayerArt.has(id))continue;
+    warmedPlayerArt.add(id);
+    for(const src of ['/assets/full_'+id+'.png','/assets/board-pawns-v2/'+id+'-board.webp']){
+      const img=new Image();img.fetchPriority='low';img.src=src;
+    }
+  }
+}
 addEventListener('resize', () => { resetPresentationCamera('resize'); fitWorld(); });
 document.addEventListener('fullscreenchange', () => { resetPresentationCamera('fullscreen-change'); fitWorld(); });
 addEventListener('pagehide', () => { window.SummonsEvolution?.cancel(); resetPresentationCamera('pagehide'); });
@@ -3548,6 +3555,9 @@ function renderBoard() {
 }
 window.BoardTiles?.ready.then(loaded => {
   if (loaded && state?.catalog) { ownersCache = ''; renderBoard(); }
+});
+window.addEventListener('boardtilesready',()=>{
+  if(state?.catalog){ownersCache='';renderBoard();}
 });
 function windowState(){return state;}
 BoardUpgrade.configure({
@@ -4830,6 +4840,7 @@ async function playBattle(b) {
 // ===== メイン描画 =====
 function render() {
   if (!state) return;
+  warmSelectedPlayerArt();
   let upgradeTile=null;
   syncBotSpeedUi();
   syncSelectedMap();
@@ -5489,12 +5500,6 @@ function render() {
   scheduleTurnTransitionCompletion();
 }
 fitWorld();
-['redani','linnei','grease','mio','lia','adel','villa','nerasio','noir'].forEach(c => {
-  new Image().src = '/assets/full_' + c + '.png';
-  new Image().src = '/assets/p_' + c + '.png';
-  new Image().src = '/assets/summoner-still-' + c + '.webp';
-});
-new Image().src = '/assets/p_lia-outline-v1.png';
 </script>
 
 <dialog id="soundPanel" aria-labelledby="soundHeading">

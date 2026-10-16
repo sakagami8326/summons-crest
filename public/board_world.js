@@ -63,15 +63,26 @@ const PW = (() => {
     if (Array.isArray(v)) return v[Math.floor(Math.random() * v.length)] || null;
     return v || null;
   }
-  // 起動時に全素材の読込を試みる(欠損はSceneを失敗させず黙って無視 ─ §3.4)
+  // Visible board images take priority. Warm optional effects with two requests
+  // at a time after the first board is drawn, without blocking gameplay.
+  let fxPreloadStarted=false;
   function preloadFxAssets() {
-    if (typeof FX_ASSETS === 'undefined') return;
+    if (fxPreloadStarted || typeof FX_ASSETS === 'undefined') return;
+    fxPreloadStarted=true;
+    const urls=[];
     for (const m of Object.values(FX_ASSETS))
       for (const v of Object.values(m))
-        for (const url of (Array.isArray(v) ? v : [v])) {
+        for (const url of (Array.isArray(v) ? v : [v])) urls.push(url);
+    const queue=[...new Set(urls)];
+    const warm=async()=>{
+      while(queue.length && scene){
+          const url=queue.shift();
           const tk = 'pwFx_' + url;
-          pngTexture(tk, url).then(k => { if (k) fxTexOk.add(tk); }).catch(() => {});
-        }
+          const k=await pngTexture(tk,url).catch(()=>null);
+          if(k)fxTexOk.add(tk);
+      }
+    };
+    void warm();void warm();
   }
   // 同期参照(読込済みのみ返す)。elemはfire等のゲーム属性、なければneutral/commonを直接指定
   function fxTexKey(group, key) {
@@ -961,7 +972,6 @@ const PW = (() => {
                 makeShadowTex();
                 ready = true;
                 clearTimeout(wd);
-                preloadFxAssets();   // 属性エフェクト素材(未配置は黙って無視 ─ M2 §3.4)
                 // 全景ズームを盤面の実バウンズから算出して即適用
                 // (Canvasは境界で描画が切れるため、端のマスのはみ出し分だけ引いて収める)
                 computeFit();
@@ -1089,6 +1099,7 @@ const PW = (() => {
       tileTexKeys.forEach(k => { if (scene.textures.exists(k)) scene.textures.remove(k); });
       tileTexKeys = newTileTex;
       makers.forEach(fn => { try { fn(); } catch (e) {} });
+      preloadFxAssets();
     });
     return boardReadyPromise;
   }

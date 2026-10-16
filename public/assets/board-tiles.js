@@ -32,28 +32,39 @@ window.BoardTiles=(()=>{
   return {points,angles:[points[0],points[2]].map(v=>Math.atan2(front[1]-v[1],Math.abs(front[0]-v[0]))*180/Math.PI),rise:Math.max(0,level-1)*7};
  }
  let loaded=false;
- // Decode once and embed a render copy; original PNGs and alpha remain unchanged.
+ // The lossless 512px WebPs contain the same browser-scaled artwork. Retain
+ // source coordinates for geometry and use the original PNG only on failure.
  // SVG-as-image cannot load external images, so both renderers share data URLs.
- const ready=(async()=>{
-  let timer;
-  const load=Promise.all([1,2,3,4].map(level=>new Promise((resolve,reject)=>{
-   const img=new Image();
-   img.onload=()=>{
-    try{
+ async function loadTile(level){
+  for(const optimized of [true,false]){
+   try{
+    const response=await fetch('/assets/tiles/land-lv'+level+(optimized?'-render-v1.webp':'.png'));
+    if(!response.ok)throw new Error('Tile HTTP '+response.status);
+    const blob=await response.blob();
+    let href=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});
+    const img=new Image();
+    await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=href;});
+    if(!optimized){
      const canvas=document.createElement('canvas'),scale=Math.min(1,512/Math.max(img.naturalWidth,img.naturalHeight));
      canvas.width=Math.round(img.naturalWidth*scale);canvas.height=Math.round(img.naturalHeight*scale);
      const ctx=canvas.getContext('2d');ctx.imageSmoothingQuality='high';ctx.drawImage(img,0,0,canvas.width,canvas.height);
-     images[level]={width:img.naturalWidth,height:img.naturalHeight,href:canvas.toDataURL('image/png')};resolve(true);
-    }catch(error){reject(error);}
-   };
-   img.onerror=()=>reject(new Error('Tile asset unavailable: '+level));
-   img.src='/assets/tiles/land-lv'+level+'.png';
-  })));
-  try{
-   loaded=await Promise.race([load.then(()=>true),new Promise(resolve=>{timer=setTimeout(()=>resolve(false),10000);})]);
-  }catch(error){loaded=false;console.warn('Board tiles: using fallback.',error.message);}
+     href=canvas.toDataURL('image/png');
+    }
+    images[level]={width:1254,height:1254,href};return;
+   }catch(error){if(!optimized)throw new Error('Tile asset unavailable: '+level);}
+  }
+ }
+ const load=Promise.all([1,2,3,4].map(loadTile)).then(()=>{
+  loaded=true;
+  // The initial wait can expire on a slow TV. Completion must still replace
+  // the temporary tiles after the remaining images finish loading.
+  window.dispatchEvent(new Event('boardtilesready'));
+  return true;
+ }).catch(error=>{console.warn('Board tiles: using fallback.',error.message);return false;});
+ const ready=(async()=>{
+  let timer;
+  try{return await Promise.race([load,new Promise(resolve=>{timer=setTimeout(()=>resolve(false),10000);})]);}
   finally{clearTimeout(timer);}
-  return loaded;
  })();
  function svg(i,t,o,ownColor,barrier,pad,geometry){
   const {DW,DH,THICK,ELEM}=geometry;
