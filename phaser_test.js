@@ -76,7 +76,7 @@ ok(/sf\.sequence && Array\.isArray\(sf\.results\)/.test(board),
 ok(/旧クリーチャーを炎演出中だけ復元する/.test(world) && /ghostOf\(ev\.cid, x, y\)/.test(world),
   'board_world.js: 炎の渦撃破時も対象を炎演出中に表示する');
 ok(/battlePreview/.test(board), 'board.html: 公開戦闘プレビューを描画へ接続している');
-ok(/攻撃クリーチャー選択中/.test(board), 'board.html: 攻撃側未選択時のカード裏面がある');
+ok(/battleCardBack/.test(board) && /aria-label="侵略クリーチャー選択中"/.test(board) && /card-back-v1\.webp/.test(board), 'board.html: 攻撃側未選択時のカード裏面がある');
 ok(/await revealBattleSupport\(b, 'atk'\)[\s\S]*await revealBattleSupport\(b, 'def'\)/.test(board),
   'board.html: 攻撃側から防衛側の順に支援カードを公開する');
 ok(/const bwOn = false/.test(board), 'board.html: 通常侵略で旧BattleWorldを起動しない');

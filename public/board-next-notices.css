@@ -57,10 +57,12 @@
 #boardNotice .chainMultiplier b{font-size:29px;color:#f1d38f;font-weight:500}
 #boardNotice .decreased .chainValues>strong,#boardNotice .decreased .chainMultiplier b{color:#dba28b}
 #boardNotice .rareBody{min-height:270px;isolation:isolate}
-#boardNotice .rareHand{position:relative;width:250px;height:230px;display:grid;place-items:center;z-index:1}
-#boardNotice .rareHand>img{width:244px;height:244px;filter:none;animation:none;opacity:1}
+#boardNotice .rareHand{position:relative;width:250px;height:250px;z-index:1}
+#boardNotice .rareHand>img{position:absolute;left:50%;top:50%;width:150px;height:235px;background:#070707;border-radius:5.5% / 3.5%;object-fit:contain;filter:none;animation:none;opacity:1;transform:translate(-50%,-50%)}
+#boardNotice .rareHand>img:nth-child(1){transform:translate(-77%,-46%) rotate(-17deg)}
+#boardNotice .rareHand>img:nth-child(2){transform:translate(-23%,-46%) rotate(17deg)}
 #boardNotice .rareHalo{position:absolute;z-index:0;width:244px;height:244px;filter:blur(10px);opacity:0;transform:scale(1.1);animation:nextRainbow 1.35s 1s both}
-#boardNotice .rareHalo>i{display:block;width:100%;height:100%;background:linear-gradient(115deg,#6bdfff 5%,#b89aff 30%,#ffa5be 52%,#ffe296 72%,#82f4cf 95%);mask:url('/assets/ui/rare-hand-hd.png') center/contain no-repeat}
+#boardNotice .rareHalo>i{display:block;width:100%;height:100%;background:linear-gradient(115deg,#6bdfff 5%,#b89aff 30%,#ffa5be 52%,#ffe296 72%,#82f4cf 95%);mask:url('/assets/cards/card-back-v1.webp') center/contain no-repeat}
 #boardNotice .rareGleam{position:absolute;right:1px;top:30px;width:34px;height:34px;background:#f8e7ae;clip-path:polygon(50% 0,58% 40%,100% 50%,58% 58%,50% 100%,42% 58%,0 50%,42% 40%);opacity:0;animation:nextGlint .85s 1.5s both}
 @keyframes nextRainbow{0%,100%{opacity:0}24%{opacity:.9}52%{opacity:.5}78%{opacity:.16}}
 @keyframes nextGlint{0%,100%{opacity:0;scale:.3}35%{opacity:1;scale:1}}

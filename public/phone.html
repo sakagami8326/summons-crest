@@ -871,6 +871,15 @@
 #actionOv.mioDiceChoice .gateBtn{width:180px;min-height:48px;padding:10px 12px;display:grid;place-items:center;text-align:center}
 #actionOv.mioDiceChoice .gateBtn .gbT{color:#241b09;font-size:16px;letter-spacing:.03em;text-align:center}#actionOv.mioDiceChoice .gbD{display:none}
 #actionOv.mioDiceChoice #actionOvHint{order:-1}
+
+  #drawCard .dcOne.normalDraw{animation:normalDrawEnter .25s ease-out both;perspective:1000px}
+  .drawRevealFlip{position:absolute;inset:0;transform-style:preserve-3d;animation:normalDrawFlip var(--draw-flip-ms,900ms) ease-in-out both}
+  .drawRevealBack,.drawRevealFront{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+  .drawRevealBack{background:#070707 url('/assets/cards/card-back-v1.webp') center/100% 100% no-repeat;border-radius:5.5% / 3.5%}
+  .drawRevealFront{transform:rotateY(180deg)}
+  @keyframes normalDrawEnter{from{opacity:0;translate:0 3dvh}to{opacity:1;translate:0 0}}
+  @keyframes normalDrawFlip{0%,25%{transform:rotateY(0deg)}100%{transform:rotateY(180deg)}}
+  @media(prefers-reduced-motion:reduce){#drawCard .dcOne.normalDraw{animation:none}.drawRevealFlip{animation:none;transform:rotateY(180deg)}}
 </style>
 <link rel="stylesheet" href="/wind-supply-ui.css?release=164"><script defer src="/wind-supply-ui.js?release=164"></script>
 <link rel="stylesheet" href="/rare-draw.css?release=164"><script src="/summoner-passives.js"></script>
@@ -998,7 +1007,7 @@
 <link rel="stylesheet" href="/map-ui.css?v=159-3">
 <script src="/map-definitions.js?v=159-3"></script>
 <script src="/map-ui.js?v=158"></script>
-<script src="/game_timing.js?entry=v2&release=164&upgrade=20261005"></script>
+<script src="/game_timing.js?normaldraw=20261019&entry=v2&release=164&upgrade=20261005"></script>
 <script src="/vendor/phaser.min.js"></script>
 <script src="/ult_fx_world.js"></script>
 <link rel="stylesheet" href="/phone-card-picker.css?v=20260928-draw5&release=164&noir=166">
@@ -1006,15 +1015,15 @@
 <link rel="stylesheet" href="/phone-summoners.css?v=20261013-metal-signature">
 <script src="/phone-summoners.js?v=20261013-metal-signature"></script>
 <script src="/phone-card-picker.js?v=20260928-draw5&release=164&noir=166"></script>
-<link rel="stylesheet" href="/phone-enemy-choice.css?v=20261001-1&release=165">
-<script src="/phone-enemy-choice.js?v=20261001-1&release=165"></script>
+<link rel="stylesheet" href="/phone-enemy-choice.css?v=20261001-1&release=169">
+<script src="/phone-enemy-choice.js?v=20261001-1&release=169"></script>
 <link rel="stylesheet" href="/phone-player-target.css?v=20261004-1&release=166">
 <script src="/phone-player-target.js?v=20261004-1&release=166"></script>
 <link rel="stylesheet" href="/phone-upgrade.css?v=20261004-1">
 <script src="/upgrade-ui.js?v=20261004-1"></script>
 <script src="/phone-upgrade.js?v=20261004-1"></script>
-<link rel="stylesheet" href="/phone-land.css?v=20261002-3&release=165">
-<script src="/phone-land.js?v=20261016-lia"></script>
+<link rel="stylesheet" href="/phone-land.css?v=20261002-3&release=165&charcoal=169">
+<script src="/phone-land.js?v=20261016-lia&charcoal=169"></script>
 <script src="/phone-orientation-fullscreen.js?v=1"></script>
 <script>
 const $ = id => document.getElementById(id);
@@ -1754,10 +1763,15 @@ function showNextReveal() {
   }
   $('drawTitle').textContent = revealCurrent.title;
   const shine=revealCurrent.reason==='draft'?rareDrawDecoration(revealCurrent.card):'';
-  $('drawCard').innerHTML = `<div class="dcOne${shine?' rarity-UR':''}">${bigCardHTML(revealCurrent.card)}${shine}</div>`;
+  const normalDraw=revealCurrent.reason==='draw';
+  const face=bigCardHTML(revealCurrent.card);
+  $('drawCard').innerHTML = normalDraw
+    ? `<div class="dcOne normalDraw" style="--draw-flip-ms:${GAME_TIMING.normalDrawFlip}ms"><div class="drawRevealFlip"><div class="drawRevealBack" role="img" aria-label="カード裏面"></div><div class="drawRevealFront">${face}</div></div></div>`
+    : `<div class="dcOne${shine?' rarity-UR':''}">${face}${shine}</div>`;
   openBlockingOverlay('drawModal');
   afterUiPaint(() => fitCreatureNames($('drawCard')));
-  if(revealCurrent.reason==='passive_villa')revealT=setTimeout(advanceReveal,GAME_TIMING.passiveCardReveal);
+  if(normalDraw)revealT=setTimeout(advanceReveal,GAME_TIMING.normalDrawReveal);
+  else if(revealCurrent.reason==='passive_villa')revealT=setTimeout(advanceReveal,GAME_TIMING.passiveCardReveal);
   else revealT = setTimeout(advanceReveal, 1800);
 }
 function advanceReveal() {
@@ -1875,7 +1889,7 @@ function tileDetailHTML(i) {
       <div><b style="font-size:max(2.3dvh,14px)">${pl.name || '?'}の領地</b>
       <span class="tdSub" style="display:block">Lv${o.level} ｜ 通行料 ${state.tolls ? state.tolls[i] : '?'}G</span></div></div>
     <div class="tdRow">${art}<div><b style="font-size:max(2.2dvh,13px)">${nm}</b>${evo ? '<span class="tdSub">(進化)</span>' : ''}
-      <span class="tdStat" style="display:block"><img class="inlineStatSymbol" src="/assets/cards/stat-at-icon.svg" alt="">AT <b>${at}</b> ／ <img class="inlineStatSymbol" src="/assets/cards/stat-hp-icon.svg" alt="">HP <i>${curHp}</i>/${maxHp}${o.shade ? ` ｜ 死影${o.shade}` : ''}</span>
+      <span class="tdStat" style="display:block"><img class="inlineStatSymbol" src="/assets/cards/stat-at-icon.svg" alt="">AT <b>${at}</b> ／ <img class="inlineStatSymbol" src="/assets/cards/stat-hp-icon.svg" alt="">HP <i>${curHp}</i>/${maxHp}${o.charcoalDf ? ` ｜ 炭鎧 DF +${o.charcoalDf}` : ''}${o.shade ? ` ｜ 死影${o.shade}` : ''}</span>
       <span class="tdSub" style="display:block">${elemJaIc(t.e)}</span></div></div>
     ${fxLine ? `<div class="tdSub">継続効果: ${fxLine}</div>` : ''}
     ${abyss ? `<div class="tdSub" style="color:#8cddff"><img src="/assets/abyss-mark-v1.webp" alt="" style="width:2.2dvh;height:2.2dvh;vertical-align:-.5dvh;object-fit:contain"> 深淵標 +${abyss.bonus}G ｜ 合計通行料 ${state.tolls ? state.tolls[i] : '?'}G</div>` : ''}
@@ -2030,7 +2044,7 @@ function creatureFaceBody(cid, cr, evolved) {
     : `<span class="ccElem none">◇</span>`;
   return `<img class="ccBg" src="/assets/cards/bg-${elem}.webp" alt="">
     <div class="ccHeader">${elemIcon}<div class="ccName" data-card-name>${name}</div></div>
-    <div class="ccCost"><img class="ccCostFrame" src="/assets/cards/cost-frame.svg" alt=""><img class="ccCoin" src="/assets/cards/cost-coin.svg" alt=""><span class="ccCostValue">${cr.cost || 0}G</span></div>
+    <div class="ccCost"><img class="ccCostFrame" src="/assets/cards/cost-frame.svg" alt=""><img class="ccCoin" src="/assets/cards/cost-coin.svg" alt=""><span class="ccCostValue">${(isEvo ? cr.evoCost ?? cr.cost : cr.cost) || 0}G</span></div>
     ${art}<div class="ccBrush"></div>
     <div class="ccInfo"><div class="ccStats">
       <div class="ccStat"><i class="statIconDisk"><img src="/assets/cards/stat-at-icon.svg" alt="AT"></i><span>${at}</span></div>
@@ -2171,7 +2185,7 @@ function creatureDetailInfoHTML(cid, cr, evo, includeModes) {
     </div>` : '';
   return `${tabs}<div class="galDetailScroll">
       <h2 class="galDetailName">${v.name}</h2>
-      <div class="galMeta">${elem}<span class="galBadge">${cr.rarity || 'N'}</span><span class="galBadge">${cr.cost || 0}G</span></div>
+      <div class="galMeta">${elem}<span class="galBadge">${cr.rarity || 'N'}</span><span class="galBadge">${(evo ? cr.evoCost ?? cr.cost : cr.cost) || 0}G</span></div>
       <div class="galStats"><div class="galStat"><i class="statIconDisk"><img src="/assets/cards/stat-at-icon.svg" alt="AT"></i><small>AT</small>${v.at}</div>
         <div class="galStat"><i class="statIconDisk"><img src="/assets/cards/stat-hp-icon.svg" alt="HP"></i><small>HP</small>${v.hp}</div></div>
       <h3 class="galAbilityName">${abilityTitle}</h3>

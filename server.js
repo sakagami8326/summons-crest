@@ -10,7 +10,7 @@ const crypto = require('crypto');
 const SITE_NEWS = require('./site-news');
 const START_DEVICE = require('./public/assets/start-guide/device');
 
-const VERSION = '1.67';
+const VERSION = '1.69';
 const MAPS = require('./public/map-definitions');
 const mapOf = r => MAPS[r.mapId || 'starting_corridor'];
 const tilesOf = r => mapOf(r).tiles;
@@ -110,6 +110,8 @@ const CREATURES = {
   // マーケット
   magado:  { name: 'マガドー', evo: 'マグナガルム', elem: 'fire', st: 55, hp: 35, cost: 120, evoSt: 75, evoHp: 55, rarity: 'R' },
   qbaby:   { name: 'クイーンベビー', evo: 'クイーン', elem: 'fire', st: 35, hp: 30, cost: 120, evoSt: 55, evoHp: 50, fx: '【女王の威光】自分の火領地の防衛DF+10(進化+20)', rarity: 'L' },
+  hibami:  { name: 'ヒバミ', evo: 'エンラージャ', elem: 'fire', st: 20, hp: 40, cost: 80, evoSt: 30, evoHp: 60, fx: '【炎威】防衛時、この戦闘中、侵略側のAT−10（最低0）。', evoFx: '【炎威】防衛時、この戦闘中、侵略側のAT−20（最低0）。', rarity: 'R' },
+  suminoko: { name:'スミノコ', evo:'クロムクロ', elem:'fire', st:10, hp:50, cost:85, evoSt:20, evoHp:70, evoCost:100, rarity:'R', fx:'【炭鎧】防衛で生存するとDF+5を蓄積。上限なし、移動・進化で維持', evoFx:'【炭鎧】防衛で生存するとDF+10を蓄積。上限なし、移動・進化で維持' },
   cresteria:{ name: 'クレステリア',    elem: 'water', st: 20, hp: 50, cost: 90, fx: '【真珠】召喚時、ウェポン「シールド」1枚をデッキに加える', rarity: 'N' },
   kbaby:   { name: 'キングベビー', evo: 'キング', elem: 'water', st: 30, hp: 40, cost: 120, evoSt: 50, evoHp: 60, fx: '【王の徴収】配置土地の通行料1.5倍(進化後2倍)', rarity: 'L' },
   ludi:    { name: 'ルディ', evo: 'シンルー', elem: 'wind', st: 25, hp: 40, cost: 120, evoSt: 45, evoHp: 60, fx: '【雲隠れ】防衛時、相手のウェポンを無効化', rarity: 'R' },
@@ -299,9 +301,9 @@ const ULTS = {
 };
 for (const [cid, c] of Object.entries({ ...CREATURES }))
   if (c.evo) CREATURES[cid + '_f'] = { name: c.evo, elem: c.elem, st: c.evoSt, hp: c.evoHp,
-    cost: c.cost, fx: c.evoFx || c.fx, rarity: c.rarity, forged: true };
+    cost: c.evoCost ?? c.cost, fx: c.evoFx || c.fx, rarity: c.rarity, forged: true };
 
-const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral','mermaid','bunnyhop','strauk','samurai_saga','marlow','shuterio','gaust','alter','toxy','kamadoma','swordgear','komao','mist_jelly','night_jelly','wakatama','emeri','valk','jaki','evol','poponga','inkcrow','joma','yomiga','kagetsuzuri'];
+const MARKET_POOL = ['magado','detropas','qbaby','cresteria','goagoa','kbaby','bedebero','fugorm','zati','pakawata','mimic','beruf','ludi','garble','barbaro','avalanche','bonerex','morbill','grayble','trooper','survey','palecoral','mermaid','bunnyhop','strauk','samurai_saga','marlow','shuterio','gaust','alter','toxy','kamadoma','swordgear','komao','mist_jelly','night_jelly','wakatama','emeri','valk','jaki','evol','poponga','inkcrow','joma','yomiga','kagetsuzuri','hibami','suminoko'];
 // アートが存在するクリーチャーID(assetsのc_*.pngを起動時に走査 ─ v0.82)。
 // クライアントはcatalog.artIds経由で受け取る。手書きリストの二重管理はしない
 // (新クリーチャーはIDとファイル名を一致させて置くだけで盤面・カード・戦闘に反映される)
@@ -371,6 +373,7 @@ function publicCardCatalog() {
     evolution: card.evo ? {
       id: `${id}_f`,
       name: card.evo,
+      cost: card.evoCost ?? card.cost,
       at: card.evoSt || 0,
       hp: card.evoHp || 0,
       effect: card.evoFx || card.fx || '',
@@ -653,7 +656,7 @@ function universalTerrain(creatureId) {
 // 新しいクリーチャーはここへ分類し、未登録時は誤って無効表示せずconditionalへ退避する。
 const CREATURE_EFFECT_CONTEXT = Object.freeze({
   gecko:'battle', orphe:'toll', nome:'battle', gaston:'battle', cleo:'battle', magado:'none',
-  qbaby:'battle', cresteria:'placement', kbaby:'toll', ludi:'battle', garble:'battle',
+  qbaby:'battle', hibami:'battle', suminoko:'battle', cresteria:'placement', kbaby:'toll', ludi:'battle', garble:'battle',
   barbaro:'battle', detropas:'battle', goagoa:'battle', fugorm:'placement', bedebero:'spell',
   zati:'battle', pakawata:'battle', avalanche:'battle', bonerex:'battle', morbill:'battle',
   mimic:'battle', beruf:'battle', grayble:'battle', trooper:'other', survey:'battle',
@@ -689,6 +692,16 @@ function terrainBreakdown(r, tile, attackerCreature = null) {
 }
 function effectUi(state, reason, text) {
   return { state, reason: reason || '', text: text || '' };
+}
+// The defending creature's own ability; never an external aura or a stored AT change.
+function charcoalArmor(o) {
+  return o && baseId(o.creature)==='suminoko' && Number.isSafeInteger(o.charcoalDf) && o.charcoalDf>0 ? o.charcoalDf : 0;
+}
+function reconcileCharcoalArmor(r) {
+  for (const o of r.owners) if(o && 'charcoalDf' in o && !charcoalArmor(o)) delete o.charcoalDf;
+}
+function flameIntimidation(creatureId, evolved = /_f$/.test(creatureId || '')) {
+  return baseId(creatureId) === 'hibami' ? (evolved ? 20 : 10) : 0;
 }
 function creatureEffectUi(r, creatureId, tile, role, context = 'battle', result = null) {
   const bid = baseId(creatureId);
@@ -728,6 +741,13 @@ function creatureEffectUi(r, creatureId, tile, role, context = 'battle', result 
     ? pById(r, r.battle.attacker)
     : (o ? pById(r, o.player) : null);
   switch (bid) {
+    case 'suminoko': {
+      const source=role==='attacker'?r.owners[r.battle?.moveFrom]:o;
+      const amount=charcoalArmor(source);
+      return role==='defender'?active(`蓄積 DF +${amount} ／ 防衛後 +${evolved?10:5}`):amount?active(`蓄積 DF +${amount}`):inactive('防衛後に蓄積');
+    }
+    case 'hibami': return role === 'defender'
+      ? active(`侵略側 AT −${flameIntimidation(creatureId, evolved)}`) : inactive('防衛時のみ');
     case 'kagetsuzuri': return role==='attacker' ? active('残りの手札でAT補正') : inactive('侵略時のみ');
     case 'gecko': return role === 'attacker' ? active('攻撃時に発動') : inactive('攻撃時のみ');
     case 'nome': return role === 'defender'
@@ -819,6 +839,8 @@ function landCombatUi(r, tile) {
   const terrain = terrainBreakdown(r, tile);
   return Object.assign({}, terrain, {
     tile,
+    attackReduction: flameIntimidation(o.creature, isEvolved(o)),
+    ...(baseId(o.creature)==='suminoko' ? {charcoalDf:charcoalArmor(o),charcoalGain:isEvolved(o)?10:5} : {}),
     effect: creatureEffectUi(r, o.creature, tile, 'defender', 'land_stop'),
   });
 }
@@ -831,7 +853,7 @@ function landDefenseStats(r, tile) {
   let queen=0;
   if(tileElem(r,tile)==='fire') for(const other of r.owners)
     if(other&&other.player===def.id&&baseId(other.creature)==='qbaby')queen=Math.max(queen,isEvolved(other)?20:10);
-  const ownDf=(bid==='bonerex'?(evolved?20:10):0)+(bid==='beruf'?(o.shade||0)*10:0)+
+  const ownDf=charcoalArmor(o)+(bid==='bonerex'?(evolved?20:10):0)+(bid==='beruf'?(o.shade||0)*10:0)+
     (bid==='alter'?(def.exile||[]).length*5:0)+(bid==='komao'&&evolved?chainCount(r,def.id,'earth')*5:0)+
     (bid==='valk'?earthLandBattleBonus(r,def.id).bonus:0);
   const passiveDF=hasPassive(r,def,'adel') && !(o.dmg>0) && !(bid!=='beruf' && r.curses[tile]?.hp>0) ? 10 : 0;
@@ -1011,7 +1033,8 @@ function onCreatureSummoned(r, p, creatureId, reason, tile) {
     if(askCardSearch(r,p,creatureId,kind,reason,tile))return true;
   }
   if (baseId(creatureId) === 'night_jelly' && Number.isInteger(tile)) {
-    reconcileAbyssMarks(r);
+    reconcileCharcoalArmor(r);
+  reconcileAbyssMarks(r);
     const occupiedTargets = new Set(activeAbyssMarks(r).map(mark => mark.tile));
     const opts = r.owners.map((owner, i) => owner && owner.player === p.id && tilesOf(r)[i]?.t === 'land' && !occupiedTargets.has(i)
       ? { id: `am:${i}`, tile: i,
@@ -1519,7 +1542,8 @@ function resolveUltSequenceAction(r) {
         lands.push({ tile: t.tile, owner: { ...o } });
       }
     }
-    reconcileAbyssMarks(r);
+    reconcileCharcoalArmor(r);
+  reconcileAbyssMarks(r);
     spellFx(r, 'ult_grease', lands.map(t => t.tile), p.id, { targets: lands, handCount });
     log(r, `✨ ${p.name}の進化の胎動：手札${handCount}体・領地${lands.length}体が進化した`);
     r.ultSequence=null;
@@ -2743,7 +2767,11 @@ function calculateBattle(r, b = r.battle) {
   if (atk.blade) { st += 10; notes.push('血染めの刃が侵略者のATを10高めた!'); }
   if (bFx.vortex) { st += 10; notes.push('炎の渦が侵略者を後押し!(AT+10)'); }
   st += atkEarthAtBonus;
-  st = Math.max(0, st);
+  const atkBeforeIntimidation = Math.max(0, st);
+  const intimidation = flameIntimidation(o.creature, defEvolved);
+  const intimidationApplied = Math.min(atkBeforeIntimidation, intimidation);
+  st = Math.max(0, st - intimidation);
+  if (intimidation) notes.push(`【炎威】${defEvolved ? dc.evo || dc.name : dc.name}が侵略側のATを${intimidationApplied}下げた!（最低0）`);
 
   // --- 防衛側HP(地形・女王・呪い) ---
   const tElem = tileElem(r, b.tile);
@@ -2772,6 +2800,7 @@ function calculateBattle(r, b = r.battle) {
   const corrosion = baseId(b.atkCreature) === 'morbill' ? (atkEvolved ? 20 : 10) : 0;
   const iceWard = o.iceWard ? 10 : 0;
   if (iceWard) notes.push('【氷晶の勅令】防衛DF+10!');
+  if (charcoalArmor(o)) notes.push('【炭鎧】蓄積した防衛DF+'+charcoalArmor(o));
   const shadeDF = baseId(o.creature) === 'beruf' ? (o.shade || 0) * 10 : 0;
   if (shadeDF) notes.push(`【死影】蓄えた影が防衛DFを${shadeDF}高める!`);
   let defDF = landDefenseStats(r,b.tile).df - terrainUi.potentialBonus + terrain + (dEff ? dEff.hp : 0);
@@ -2785,7 +2814,9 @@ function calculateBattle(r, b = r.battle) {
   const atkShadeDF = baseId(b.atkCreature) === 'beruf'
     ? ((mvSrc && mvSrc.shade) || b.atkShade || 0) * 10 : 0;
   if (atkShadeDF) notes.push(`【死影】蓄えた影が侵略側DFを${atkShadeDF}高める!`);
-  const atkDF = (aEff ? aEff.hp : 0) + atkShadeDF + atkSoul + atkEarthChain + atkEarthDfBonus;
+  const atkCharcoalDF = charcoalArmor(mvSrc);
+  if (atkCharcoalDF) notes.push('【炭鎧】蓄積した侵略側DF+'+atkCharcoalDF);
+  const atkDF = atkCharcoalDF + (aEff ? aEff.hp : 0) + atkShadeDF + atkSoul + atkEarthChain + atkEarthDfBonus;
   const atkCarried = mvSrc ? (mvSrc.dmg || 0) : (corridor ? (b.atkCarry || 0) : 0);
   const atkEffHp = Math.max(1, aBase.hp - atkCarried);
   const defSt = dBase.st + (dEff ? dEff.st : 0) + defWeaponMastery + defEarthAtBonus + defPassiveAT;
@@ -2815,7 +2846,7 @@ function calculateBattle(r, b = r.battle) {
     atkSurvived = counterDealt < atkEffHp;
   }
 
-  return { b, atk, def, o, tile, ac, dc, defEvolved, notes, aSup, dSup, aEff, dEff, mvSrc, corridor, carried, atkEvolved, atkWeaponMastery, defWeaponMastery, atkPassiveAT, defPassiveAT, atkSoul, defSoul, atkEarthChain, defEarthChain, atkEarthLand, defEarthLand, atkEarthAtBonus, defEarthAtBonus, atkEarthDfBonus, defEarthDfBonus, aBase, dBase, atkDmg, effHp, defDF, dealt, atkEffHp, atkDF, defSt, counterSt, counterDealt, atkSurvived, atkShadeDF, hitsDone, preempt, terrain, terrainUi, curse, win, iceWard, atkCarried };
+  return { b, atk, def, o, tile, ac, dc, defEvolved, notes, aSup, dSup, aEff, dEff, mvSrc, corridor, carried, atkEvolved, atkWeaponMastery, defWeaponMastery, atkPassiveAT, defPassiveAT, atkSoul, defSoul, atkEarthChain, defEarthChain, atkEarthLand, defEarthLand, atkEarthAtBonus, defEarthAtBonus, atkEarthDfBonus, defEarthDfBonus, aBase, dBase, atkDmg, effHp, defDF, dealt, atkEffHp, atkDF, defSt, counterSt, counterDealt, atkSurvived, atkShadeDF, hitsDone, preempt, terrain, terrainUi, curse, win, iceWard, atkCarried, atkCharcoalDF, atkBeforeIntimidation, intimidation, intimidationApplied };
 }
 
 function resolveBattle(r) {
@@ -2828,7 +2859,9 @@ function resolveBattle(r) {
       from:payer.id, to:receiver.id, fromBefore, fromAfter:payer.gold, toBefore, toAfter:receiver.gold });
     return paid;
   };
-  const { b, atk, def, o, tile, ac, dc, defEvolved, notes, aSup, dSup, aEff, dEff, mvSrc, corridor, carried, atkEvolved, atkWeaponMastery, defWeaponMastery, atkPassiveAT, defPassiveAT, atkSoul, defSoul, atkEarthChain, defEarthChain, atkEarthLand, defEarthLand, atkEarthAtBonus, defEarthAtBonus, atkEarthDfBonus, defEarthDfBonus, aBase, dBase, atkDmg, effHp, defDF, dealt, atkEffHp, atkDF, defSt, counterSt, counterDealt, atkSurvived, atkShadeDF, hitsDone, preempt, terrain, terrainUi, curse, win, iceWard, atkCarried } = calculateBattle(r);
+  const { b, atk, def, o, tile, ac, dc, defEvolved, notes, aSup, dSup, aEff, dEff, mvSrc, corridor, carried, atkEvolved, atkWeaponMastery, defWeaponMastery, atkPassiveAT, defPassiveAT, atkSoul, defSoul, atkEarthChain, defEarthChain, atkEarthLand, defEarthLand, atkEarthAtBonus, defEarthAtBonus, atkEarthDfBonus, defEarthDfBonus, aBase, dBase, atkDmg, effHp, defDF, dealt, atkEffHp, atkDF, defSt, counterSt, counterDealt, atkSurvived, atkShadeDF, hitsDone, preempt, terrain, terrainUi, curse, win, iceWard, atkCarried, atkCharcoalDF, atkBeforeIntimidation, intimidation, intimidationApplied } = calculateBattle(r);
+  // Calculate visible starting values before consuming either secret weapon.
+  const withoutWeapons=calculateBattle(r,{...b,supports:{}});
   // Older saved battles have no snapshot; capture before any resolution changes.
   b.evolutionPrayerProviders ||= evolutionPrayerProviders(r);
   b.windSupplyProviders ||= windSupplyProviders(r, atk);
@@ -2845,14 +2878,15 @@ function resolveBattle(r) {
     atkSupport: aSup, defSupport: dSup,
     st: atkDmg, hp: effHp, df: defDF, dealt,
     atkBaseAt: aBase.st, atkBaseHp: atkEffHp,
+    ...(intimidation ? { intimidation, intimidationApplied } : {}),
     defBaseAt: dBase.st, defBaseHp: effHp, defSt,
     atkHp: atkEffHp, atkDf: atkDF, counterSt, counterDealt, atkSurvived,
-    atkPreAt: atkDmg - (aEff ? aEff.st : 0) - atkWeaponMastery - atkPassiveAT, atkPostAt: atkDmg,
+    atkPreAt: withoutWeapons.atkDmg, atkPostAt: atkDmg,
     atkPreHp: atkEffHp, atkPostHp: atkEffHp,
-    atkPreDf: atkSoul + atkShadeDF + atkEarthChain + atkEarthDfBonus, atkPostDf: atkDF,
-    defPreAt: defSt - (dEff ? dEff.st : 0) - defWeaponMastery - defPassiveAT, defPostAt: defSt,
+    atkPreDf: withoutWeapons.atkDF, atkPostDf: atkDF,
+    defPreAt: withoutWeapons.defSt, defPostAt: defSt,
     defPreHp: effHp, defPostHp: effHp,
-    defPreDf: Math.max(0, defDF - (dEff ? dEff.hp : 0)), defPostDf: defDF,
+    defPreDf: withoutWeapons.defDF, defPostDf: defDF,
     atkExileCount: (atk.exile || []).length, defExileCount: (def.exile || []).length,
     // v1.28: 旧フィールド名は保存・旧UI互換のため残し、値はDF補正として扱う。
     atkSoulBonus: atkSoul, defSoulBonus: defSoul,
@@ -2863,6 +2897,7 @@ function resolveBattle(r) {
     atkWeaponMastery, defWeaponMastery,
     hits: hitsDone, preempt,
     moveFrom: b.moveFrom,
+    ...(corridor ? {corridor:true} : {}),
     remainHp: win ? 0 : effHp - dealt,
     terrain, terrainBreakdown: terrainUi,
     effectStates: battleEffectStates(r, b, battleResultUi),
@@ -2887,6 +2922,7 @@ function resolveBattle(r) {
     r.owners[b.tile] = (mvSrc || corridor)
       ? Object.assign({ player: atk.id, level: o.level, creature: b.atkCreature, dmg: atkCarried,
           shade: (mvSrc && mvSrc.shade) || b.atkShade || 0, evolutionAbilityUsed:!!mvSrc?.evolutionAbilityUsed },
+          mvSrc && charcoalArmor(mvSrc) ? {charcoalDf:charcoalArmor(mvSrc)} : null,
           mvSrc && Number.isInteger(mvSrc.abyssMarkTarget) ? { abyssMarkTarget: mvSrc.abyssMarkTarget } : null)  // 移動侵略は負傷・死影・深淵標を維持
       : { player: atk.id, level: o.level, creature: b.atkCreature };  // 手札からの占領は全快
     atk.battleWins++;
@@ -2898,6 +2934,13 @@ function resolveBattle(r) {
   } else {
     // 防衛成功(削られたHPは土地に引き継ぐ)+反撃
     o.dmg = carried + dealt;
+    if (baseId(o.creature)==='suminoko') {
+      const before=charcoalArmor(o), gain=defEvolved?10:5;
+      o.charcoalDf=before+gain;
+      r.lastBattle.charcoalGrowth={before,after:o.charcoalDf,gain,tile:b.tile,creature:o.creature};
+      const message='【炭鎧】'+dc.name+'のDF+'+gain+'（蓄積DF+'+o.charcoalDf+'）';
+      r.lastBattle.notes.push(message);log(r,message);
+    }
     if (baseId(o.creature) === 'goagoa' && o.dmg > 0) {
       const beforeHeal = o.dmg;
       o.dmg = Math.max(0, o.dmg - 10);
@@ -3202,7 +3245,8 @@ function handleChooseAction(r, playerId, optionId) {
     p.gold -= info.cost;
     // Land level/element remain; creature-specific damage and buffs leave with the old creature.
     r.owners[pend.tile] = { player: p.id, level: o.level, creature: card };
-    reconcileAbyssMarks(r);
+    reconcileCharcoalArmor(r);
+  reconcileAbyssMarks(r);
     markMatchCause(r, 'placement', { actor:p.id, tile:pend.tile, amount:info.cost });
     r.lastEvent = { type:'frontline_swap', player:p.id, tile:pend.tile, from:returned, creature:card, cost:info.cost, at:stamp(r) };
     log(r, `【戦線交代】${p.name}の${cardName(returned)}が手札へ戻り、${cardName(card)}を配置した(−${info.cost}G)`);
@@ -3300,7 +3344,8 @@ function handleChooseAction(r, playerId, optionId) {
     const tile = +optionId.slice(3);
     const source = r.owners[sourceTile];
     const target = r.owners[tile];
-    reconcileAbyssMarks(r);
+    reconcileCharcoalArmor(r);
+  reconcileAbyssMarks(r);
     const alreadyMarked = activeAbyssMarks(r).some(mark => mark.tile === tile && mark.sourceTile !== sourceTile);
     if (source && source.player === p.id && baseId(source.creature) === 'night_jelly' &&
         target && target.player === p.id && tilesOf(r)[tile]?.t === 'land' && !alreadyMarked) {
@@ -3743,6 +3788,8 @@ function handleChooseAction(r, playerId, optionId) {
       if (a !== bI && oa && ob && oa.player === p.id && ob.player === p.id) {
         const providers = windSupplyProviders(r, p);
         [oa.creature, ob.creature] = [ob.creature, oa.creature];
+        [oa.charcoalDf, ob.charcoalDf] = [ob.charcoalDf, oa.charcoalDf];
+        reconcileCharcoalArmor(r);
         [oa.dmg, ob.dmg] = [ob.dmg || 0, oa.dmg || 0];
         [oa.abyssMarkTarget, ob.abyssMarkTarget] = [ob.abyssMarkTarget, oa.abyssMarkTarget];
         if (!Number.isInteger(oa.abyssMarkTarget)) delete oa.abyssMarkTarget;
@@ -3784,7 +3831,7 @@ function handleChooseAction(r, playerId, optionId) {
         const oldC = o.creature;
         p.discard.push(oldC);                 // 元のクリーチャーは捨て札へ
         p.hand.splice(p.hand.indexOf(c), 1);
-        o.creature = c; o.dmg = 0; o.shade = 0; delete o.iceWard; delete o.abyssMarkTarget; delete o.evolutionAbilityUsed;  // 新クリーチャーは全快で配置
+        o.creature = c; o.dmg = 0; o.shade = 0; delete o.charcoalDf; delete o.iceWard; delete o.abyssMarkTarget; delete o.evolutionAbilityUsed;  // 新クリーチャーは全快で配置
         p.hand.splice(p.hand.indexOf('sp_swap'), 1);
         p.discard.push('sp_swap');
         p.gold -= spellCost + CREATURES[c].cost;
@@ -4224,6 +4271,8 @@ function botCardScore(r, p, id) {
   if (SPELLS[id]) score += id === 'sp_gold' ? 38 : id === 'sp_insight' ? 32 : 18;
   if (id === 'sp_fatal_reward') score += p.charId === 'villa' ? 34 : 10;
   if (baseId(id) === 'alter') score += Math.min(60, (p.exile || []).length * 6);
+  if (baseId(id) === 'suminoko') score += 18;
+  if (baseId(id) === 'hibami') score += flameIntimidation(id) * 1.5;
   if (baseId(id) === 'gaust' && p.charId === 'villa') score += 24;
   if (baseId(id) === 'poponga') score += (p.charId === 'mio' ? 24 : 0) + (r.owners.some(o => o?.player === p.id && baseId(o.creature) === 'marlow') ? 18 : 0);
   if (baseId(id) === 'evol') score += (p.charId === 'grease' ? 30 : 0) + Math.min(36, r.owners.filter(o => o && o.player === p.id && isEvolved(o)).length * 12);
@@ -4418,7 +4467,7 @@ function publicBattle(r) {
     previewStats: preview ? {
       attacker:{at:preview.atkDmg,hp:preview.atkEffHp,df:preview.atkDF},
       defender:{at:preview.defSt,hp:preview.effHp,df:preview.defDF},
-    } : null,
+    } : owner ? {attacker:null,defender:landDefenseStats(r,b.tile)} : null,
     defCreature: owner ? owner.creature : null,
     defLevel: owner ? owner.level : 1,
     defDamage: owner ? (owner.dmg || 0) : 0,
@@ -4549,6 +4598,7 @@ function collectGoalNotices(r) {
   }
 }
 function broadcast(r) {
+  reconcileCharcoalArmor(r);
   reconcileAbyssMarks(r);
   captureMatchFrame(r);
   collectGoalNotices(r);
@@ -4581,6 +4631,7 @@ const ROOM_PERSIST_KEYS = new Set([                                            /
 ROOM_RUNTIME_KEYS.add('stateInstanceId');
 ROOM_RUNTIME_KEYS.add('lastUpgrade');
 function serializeRoom(r) {
+  reconcileCharcoalArmor(r);
   reconcileAbyssMarks(r);
   const room = {};
   for (const k of Object.keys(r)) {
@@ -4676,6 +4727,7 @@ function validateSave(save) {
     if (!ids.has(o.player)) return '領地の所有者が不正です';
     if (!VALID_CARD(o.creature)) return `盤面に不明なカードID: ${o.creature}`;
     if (typeof o.level !== 'number' || o.level < 1 || o.level > RULES.maxLevel) return '領地レベルが不正です';
+    if (o.charcoalDf != null && (!Number.isSafeInteger(o.charcoalDf) || o.charcoalDf<0)) return '炭鎧の蓄積DFが不正です';
     if (o.evolutionAbilityUsed != null && typeof o.evolutionAbilityUsed !== 'boolean') return '進化能力の記録が不正です';
     if (o.abyssMarkTarget != null && (!Number.isInteger(o.abyssMarkTarget) || o.abyssMarkTarget < 0 ||
         o.abyssMarkTarget >= tilesOf(d).length)) return '深淵標の対象マスが不正です';
@@ -4807,6 +4859,7 @@ function restoreRoom(save) {
     o.evolutionAbilityUsed = isEvolved(o);
   if (!Array.isArray(room.placementQueue)) room.placementQueue = [];
   if (!Array.isArray(room.cardEffectNotices)) room.cardEffectNotices = [];
+  reconcileCharcoalArmor(room);
   reconcileAbyssMarks(room);
   if (room.turnTransition) {
     if (room.turnTransition.deadline <= Date.now()) completeTurnTransition(room, room.turnTransition.id, 'timeout');

@@ -15,7 +15,7 @@ const G = new Function('require', '__dirname', 'process', 'console', 'setInterva
 let pass = 0;
 const ok = (value, name) => { if (!value) throw new Error('FAIL: ' + name); pass++; };
 
-ok(G.VERSION === '1.67' && pkg.version === '1.67.0', 'release version is v1.67');
+ok(G.VERSION === '1.69' && pkg.version === '1.69.0', 'release version is v1.69');
 ok(/\.dkCard\s*\{[\s\S]*?width:calc\(\(100% - 2dvh\) \/ 3\)/.test(css),
   'deck and choice cards use container-based three columns');
 ok(/\.gCard\s*\{[\s\S]*?width:calc\(\(100% - 3\.2dvh\) \/ 3\)/.test(css),
@@ -54,7 +54,7 @@ ok(phone.includes("face.closest('#uxPicker,#uxPickDialog')"), 'shared selection 
 
 const baseCreatures = Object.entries(G.CREATURES).filter(([id]) => !id.endsWith('_f'));
 const evolvedForms = baseCreatures.filter(([, card]) => card.evo).length;
-ok(baseCreatures.length + evolvedForms === 95, 'all 95 creature forms are covered by the common card renderer');
+ok(baseCreatures.length + evolvedForms === 99, 'all 99 creature forms are covered by the common card renderer');
 ok(Object.keys(G.SPELLS).length === 26 && Object.keys(G.SUPPORTS).length === 5,
   'all 26 spells and 5 weapons are covered by the common card renderer');
 

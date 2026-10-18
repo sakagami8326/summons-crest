@@ -173,4 +173,11 @@
 #boardNotice[data-scene=enemy][data-owner=g]{transform:scale(var(--inspect-scale,1));transform-origin:top left}
 #boardNotice[data-scene=enemy] .actorStand *{animation:none!important}
 #boardNotice[data-scene=enemy] .elGroupBadges{flex-wrap:wrap;row-gap:10px}
+#boardNotice[data-scene=enemy] .elIntimidation{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#f2c198}
+#boardNotice[data-scene=enemy] .elIntimidation>span:last-child{display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:15px}
+#boardNotice[data-scene=enemy] .elIntimidation img{width:24px;height:24px;object-fit:contain}
+#boardNotice[data-scene=enemy] .elIntimidation b{font:500 32px/1 Georgia;color:#ffb59f}
 #boardNotice[data-scene=enemy] .elEffectBadge{width:64px}
+
+#boardNotice[data-scene=enemy] .elCharcoal{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#edc793}
+#boardNotice[data-scene=enemy] .elCharcoal b{font:500 30px/1 Georgia}

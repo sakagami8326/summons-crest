@@ -2,6 +2,9 @@
 // スマホはこの数値を前提に「到着UIをいつ出すか」を計算しているため、
 // 盤面・スマホへの直書きは禁止。変更は必ずこのファイルで行う(timing_testが直書き再発を検出する)。
 const GAME_TIMING = {
+  normalDrawFlip: 900,
+  normalDrawReveal: 2700,
+  battleOutcome: 4200,
   passiveNotice: 1800,
   passiveCardReveal: 2800,
   ruinNotice: 5200,

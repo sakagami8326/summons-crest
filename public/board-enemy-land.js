@@ -28,7 +28,10 @@ window.EnemyLand=(()=>{
    '<div class="elAt">'+img('cards/stat-at-icon.svg')+'<small>AT</small><b>'+at+'</b></div></div></div>'+
    '<h2 class="elCreatureName">'+element(ui.creatureElem)+name+'</h2>'+
    '<div class="elTerrain '+(match?'':'mismatch')+'" style="--affinity-color:'+(RUNE[ui.tileElem]||'#b998de')+'"><div class="elAffinity">'+landIcon(ui.tileElem)+'<span class="elMatchMark">'+(match?'✓':'×')+'</span>'+element(ui.creatureElem)+'<small>'+(ui.affinity==='universal'?'適応':match?'一致':'不一致')+'</small></div><div>'+shield+'<span>地形</span><strong>DF +'+ui.appliedBonus+'</strong></div></div>'+
-   '<div class="elAbility '+(ability?.state||'')+'"><div>'+(soul!==null?'<span class="elSoul">'+img('ic_hand.png')+'廃棄 '+soul+'枚 <b>DF +'+soul*5+'</b></span>':'<span class="elAbilityLabel">固有能力</span>')+'<small>'+(ability&&soul===null?esc(ability.reason||{active:'発動',inactive:'不発動',conditional:'条件成立時'}[ability.state]):'')+'</small></div><p>'+esc(description)+'</p></div>'+effects};
+   '<div class="elAbility '+(ability?.state||'')+'">'+(ui.attackReduction>0
+    ? '<div class="elIntimidation"><span>【炎威】</span><span>侵略側 '+img('cards/stat-at-icon.svg','','AT')+'<b>−'+ui.attackReduction+'</b></span></div>'
+    : ui.charcoalGain ? '<div class="elCharcoal"><span>【炭鎧】</span><span>蓄積 DF <b>+'+ui.charcoalDf+'</b></span></div><p>防衛後 DF +'+ui.charcoalGain+'</p>'
+    : '<div>'+(soul!==null?'<span class="elSoul">'+img('ic_hand.png')+'廃棄 '+soul+'枚 <b>DF +'+soul*5+'</b></span>':'<span class="elAbilityLabel">固有能力</span>')+'<small>'+(ability&&soul===null?esc(ability.reason||{active:'発動',inactive:'不発動',conditional:'条件成立時'}[ability.state]):'')+'</small></div><p>'+esc(description)+'</p>')+'</div>'+effects};
  }
 
 let key='',cameraToken=null,hooks=null,host=null,geometry='';

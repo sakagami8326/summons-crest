@@ -164,7 +164,7 @@
   .bside.dead { animation:dead .7s forwards; }
   @keyframes dead { 55% { filter:brightness(2.2); opacity:.8; }
     to { opacity:.42; filter:grayscale(.85) brightness(.55); } }
-  .battleCreatureCard { position:relative; width:100%; aspect-ratio:2/3; overflow:hidden; isolation:isolate;
+  .battleCreatureCard { position:relative; width:100%; aspect-ratio:300/470; overflow:hidden; isolation:isolate;
       border-radius:1.5vh; background:#18233e; box-shadow:0 2vh 4vh rgba(0,0,0,.65);
       transform-style:preserve-3d; transition:transform .65s cubic-bezier(.2,.85,.25,1),opacity .35s; }
   .battleCreatureCard.reveal { animation:bCreatureReveal .75s cubic-bezier(.16,.86,.2,1) both; }
@@ -199,7 +199,7 @@
   .battleCreatureCard .scEffect h3 { margin:0 0 1%; font:700 1.4vh/1.1 Marudeco,sans-serif; }
   .battleCreatureCard .scEffect h3::before{content:'【'} .battleCreatureCard .scEffect h3::after{content:'】'}
   .battleCreatureCard .scEffect p { margin:0; font-size:1vh; line-height:1.35; font-weight:700; }
-  .battleCardBack { position:relative; width:100%; aspect-ratio:2/3; border-radius:1.5vh;
+  .battleCardBack { position:relative; width:100%; aspect-ratio:300/470; border-radius:1.5vh;
       display:grid; place-items:center; color:#e8c55a; font-size:7vh; border:2px solid #c9a227;
       background:repeating-linear-gradient(45deg,#17152c 0 10px,#252140 10px 20px);
       box-shadow:0 2vh 4vh rgba(0,0,0,.65),inset 0 0 0 7px #17152c,inset 0 0 0 9px #9b7920; }
@@ -269,6 +269,15 @@
       background:linear-gradient(90deg,color-mix(in srgb,var(--terrain-color,#777) 35%,#080818),color-mix(in srgb,var(--terrain-color,#777) 72%,#101020),color-mix(in srgb,var(--terrain-color,#777) 35%,#080818));
       box-shadow:0 0 1.2vh color-mix(in srgb,var(--terrain-color,#777) 42%,transparent);
       font:700 1.35vh/1.15 Marudeco,sans-serif; letter-spacing:.04em; }
+  #battleOutcome{position:absolute;z-index:15;left:50%;top:50%;transform:translate(-50%,-50%);width:min(800px,88vw);pointer-events:none;color:#fbf5e5;font-family:var(--font-mincho,serif)}
+  #battleOutcome[hidden]{display:none}
+  #battleOutcome .messageWindow{position:relative;background:rgba(6,7,9,.88);border:1px solid #948259;padding:26px 36px;text-align:center;border-radius:0}
+  #battleOutcome .corner{position:absolute;left:9px;top:9px;width:34px;height:34px;background:linear-gradient(90deg,#ecd69e,#cfb57400) left top/100% 1px no-repeat,linear-gradient(180deg,#ecd69e,#cfb57400) left top/1px 100% no-repeat}
+  #battleOutcome .corner.tr{left:auto;right:9px;transform:rotate(90deg)}
+  #battleOutcome .corner.bl{top:auto;bottom:9px;transform:rotate(-90deg)}
+  #battleOutcome .corner.br{left:auto;right:9px;top:auto;bottom:9px;transform:rotate(180deg)}
+  #battleOutcome h2{margin:0 0 12px;font-size:clamp(18px,2.8vh,30px);font-weight:500}
+  #battleOutcome p{margin:0;font-size:clamp(13px,1.9vh,20px);line-height:1.6}
   #bCmpTerrain { width:4.8vh; height:4.8vh; padding:.45vh; border:1px solid rgba(255,255,255,.55);
       border-radius:50%; filter:drop-shadow(0 1px 3px #000); }
   #bCmpTerrain svg { display:block; width:100%; height:100%; overflow:visible; }
@@ -299,7 +308,7 @@
   .battleSummonerLabel small { color:#f2d062; font:700 1vh/1 sans-serif; letter-spacing:.16em; }
   .supportRevealStage { position:fixed; inset:0; z-index:79; display:grid; place-items:center; pointer-events:none;
       background:radial-gradient(circle,rgba(245,217,117,.2),rgba(8,5,20,.72) 55%,transparent 75%); animation:supportStageIn .25s ease both; }
-  .supportRevealStage .scardB { width:28vh; height:40.4vh; filter:drop-shadow(0 2vh 3vh rgba(0,0,0,.85)); }
+  .supportRevealStage .scardB { width:28vh; height:calc(28vh * 470 / 300); filter:drop-shadow(0 2vh 3vh rgba(0,0,0,.85)); }
   .supportRevealStage .supportStatus { font:700 2.5vh/1.3 Marudeco,sans-serif; text-shadow:0 2px 7px #000; }
   .supportRevealStage.none { color:#fff4d5; font:700 4vh/1 Marudeco,sans-serif; }
   @keyframes supportStageIn { from{opacity:0;transform:scale(.72)} to{opacity:1;transform:none} }
@@ -335,7 +344,7 @@
     0% { opacity:0; transform:translate(-50%,-10%) scale(.25); }
     22% { opacity:.8; } 100% { opacity:0; transform:translate(-50%,-10%) scale(1.25); }
   }
-  #battleFooter { position:absolute; z-index:6; left:12vw; right:12vw; bottom:2.6vh; text-align:center; }
+  #battleFooter { display:none; position:absolute; z-index:6; left:12vw; right:12vw; bottom:2.6vh; text-align:center; }
   #bankruptCut { position:fixed; inset:0; z-index:88; display:none; align-items:center; justify-content:center;
       background:rgba(8,4,10,.82); }
   #bankruptCut.on { display:flex; animation:bkIn .4s ease; }
@@ -379,14 +388,15 @@
   #bcap { font-size:2.3vh; letter-spacing:.3em; color:var(--gold-soft); min-height:1.5em; font-family:'Reggae One','Yu Mincho',serif; }
   #bnotes { font-size:1.35vh; color:rgba(246,237,211,.78); line-height:1.45; min-height:2.2vh; }
   .supportSlot { text-align:center; perspective:500px; }
+  .supportSlot .supportStatus { display:none; }
   .supportStatus { font-size:1.25vh; color:#f1ddb0; letter-spacing:.08em; margin-top:.7vh; min-height:1.5em; }
-  .scardB { display:inline-block; width:12vh; height:17.3vh; perspective:500px; }
+  .scardB { display:inline-block; width:12vh; height:18.8vh; perspective:500px; }
   @media (max-aspect-ratio:16/10) {
     #battleField { width:99vw; }
     .battleTeam.atk { grid-template-columns:minmax(16vw,19vw) minmax(6vh,8vh) minmax(19vh,23vh); }
     .battleTeam.def { grid-template-columns:minmax(19vh,23vh) minmax(6vh,8vh) minmax(16vw,19vw); }
     .bdAbility p { font-size:1.05vh; -webkit-line-clamp:4; }
-    .scardB { width:8vh; height:11.5vh; }
+    .scardB { width:8vh; height:calc(8vh * 470 / 300); }
     #battleCompare { width:min(49vw,69vh); font-size:4vh; }
     .battleCompareRow { grid-template-columns:minmax(5rem,1fr) 2.3ch 4.8vh 2.3ch minmax(5rem,1fr); }
     .battleDfLabels { grid-template-columns:minmax(5rem,1fr) 2.3ch 4.8vh 2.3ch minmax(5rem,1fr); }
@@ -490,7 +500,7 @@
   #summonCut { position:fixed; inset:0; display:none; z-index:66; align-items:center;
       justify-content:center; perspective:1400px; background:radial-gradient(circle,rgba(32,29,58,.6),rgba(8,7,20,.9)); }
   #summonCut.on { display:flex; }
-  #scCard { position:relative; height:min(76vh,760px); aspect-ratio:2/3; overflow:hidden; isolation:isolate;
+  #scCard { position:relative; height:min(76vh,760px); aspect-ratio:300/470; overflow:hidden; isolation:isolate;
       border-radius:2.8vh; background:#1b6f9c; box-shadow:0 3vh 7vh rgba(0,0,0,.55);
       transform-style:preserve-3d; }
   #summonCut.on #scCard { animation:scCardIn var(--summon-card-duration,1s) cubic-bezier(.16,.86,.2,1) both; }
@@ -526,7 +536,7 @@
   #spellCut { position:fixed; inset:0; display:none; z-index:67; align-items:center; justify-content:center;
       gap:4vw; perspective:1400px; background:radial-gradient(circle,rgba(45,24,70,.66),rgba(8,7,20,.92)); }
   #spellCut.on { display:flex; }
-  #spellCard { position:relative; height:min(72vh,720px); aspect-ratio:2/3; overflow:hidden; isolation:isolate;
+  #spellCard { position:relative; height:min(72vh,720px); aspect-ratio:300/470; overflow:hidden; isolation:isolate;
       border-radius:2.8vh; background:#24143f; box-shadow:0 3vh 7vh rgba(0,0,0,.6); transform-style:preserve-3d; }
   #spellCut.on #spellCard { animation:scCardIn 1s cubic-bezier(.16,.86,.2,1) both; }
   #spellCard::before { content:""; position:absolute; z-index:12; inset:1.5%; border:2px solid #d6b65b;
@@ -756,7 +766,7 @@
   @keyframes titleOrbit { to { transform:translate(-50%,-50%) rotate(360deg); } }
   @keyframes titleOrbitReverse { to { transform:translate(-50%,-50%) rotate(-360deg); } }
   .titleCards { position:absolute; inset:0; z-index:1; pointer-events:none; perspective:1200px; }
-  .titleCardSlot { --r:0deg; --delay:0s; --dur:6s; position:absolute; aspect-ratio:2/3;
+  .titleCardSlot { --r:0deg; --delay:0s; --dur:6s; position:absolute; aspect-ratio:300/470;
       transform:rotate(var(--r)); transform-origin:center; }
   .titleCardSlot:nth-child(1) { left:7%; top:13%; width:clamp(116px,11.5vw,210px); z-index:2;
       --r:-10deg; --delay:-1.2s; --dur:6.4s; }
@@ -1272,7 +1282,7 @@
     background:radial-gradient(circle at 35% 50%,rgba(54,170,201,.32),transparent 34%),rgba(5,9,22,.9);
     pointer-events:none; }
   #healRewardCutin.on { display:grid; animation:healRewardIn .35s ease both; }
-  #healRewardCard { position:relative; width:min(28vw,340px); aspect-ratio:2/3; overflow:hidden; isolation:isolate;
+  #healRewardCard { position:relative; width:min(28vw,340px); aspect-ratio:300/470; overflow:hidden; isolation:isolate;
     border-radius:2.2vh; box-shadow:0 0 0 2px #e8d27d,0 0 38px rgba(79,216,235,.58); }
   #healRewardMessage { color:#f7efd8; text-align:left; text-shadow:0 2px 8px #000; }
   #healRewardMessage h2 { margin:0 0 2vh; color:#83e5f4; font:700 clamp(28px,4.2vw,66px)/1.15 Marudeco,sans-serif; }
@@ -1281,6 +1291,10 @@
   #healRewardMessage small { display:block; margin-top:1.5vh; color:#bed9df; font-size:clamp(14px,1.4vw,22px); }
   @keyframes healRewardIn { from{opacity:0;transform:scale(.97)} to{opacity:1;transform:scale(1)} }
   @media (prefers-reduced-motion:reduce) { #healRewardCutin.on { animation:none; } }
+
+  /* Shared approved card back. All faces use the common 300:470 geometry. */
+  .battleCardBack,.sfaceB.sbackB,.cardFlyBack{background:#070707 url('/assets/cards/card-back-v1.webp') center/100% 100% no-repeat;border:0;padding:0;box-shadow:none;border-radius:5.5% / 3.5%}
+  .cardFlyBack{width:26px;height:calc(26px * 470 / 300)}
 </style>
 <link rel="stylesheet" href="/wind-supply-ui.css?release=164"><script defer src="/wind-supply-ui.js?v=2&release=164"></script>
 <link rel="stylesheet" href="/result-review.css?v=20260929-3&release=164"><script src="/game-cards.js"></script><script src="/result-review.js?v=20260929-3&release=164"></script><link rel="stylesheet" href="/battle-external.css?release=164"><link rel="stylesheet" href="/hud-rank.css?v=20260929-6&release=164">
@@ -1456,6 +1470,7 @@ body.passiveBattle #boardNotice[data-actor][data-owner=g][data-scene=passive] .e
     <div class="battleSummoner atk" id="bAtkSummoner"></div>
     <div class="battleSummoner def" id="bDefSummoner"></div>
     <div id="bresult"></div>
+    <section id="battleOutcome" hidden role="status" aria-live="polite"><div class="messageWindow"><div class="lineDecor" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div><h2></h2><p></p></div></section>
     <div id="battleTitle">侵略戦闘</div>
     <div id="battleField">
       <section class="battleTeam atk">
@@ -1590,7 +1605,7 @@ const QR = (() => {
 <script src="/map-ui.js?v=158"></script>
 <link rel="stylesheet" href="/assets/lobby-ticket/lobby-ticket.css?v=2&release=164">
 <script src="/assets/lobby-ticket/lobby-ticket.js?v=2&release=164"></script>
-<script src="/game_timing.js?entry=v2&release=164&upgrade=20261005"></script>
+<script src="/game_timing.js?entry=v2&release=164&upgrade=20261005&battle=20261018"></script>
 <script src="/result-graph-audio.js?v=3&release=164"></script>
 <script src="/fx_manifest.js"></script>
 <script src="/vendor/phaser.min.js"></script>
@@ -1601,12 +1616,12 @@ const QR = (() => {
 <script src="/board-actor.js?v=2&release=164&noir=166"></script>
 <script src="/board-effects.js?v=3&handdiscard=center"></script>
 <script src="/board-notice.js?v=4&release=164&noir=166"></script>
-<link rel="stylesheet" href="/board-enemy-land.css?v=1&release=164">
-<script src="/board-enemy-land.js?v=1&release=164"></script>
+<link rel="stylesheet" href="/board-enemy-land.css?v=1&release=169">
+<script src="/board-enemy-land.js?v=1&release=169"></script>
 <link rel="stylesheet" href="/board-land-stop.css?v=1&release=164">
 <script src="/board-land-stop.js?v=1&release=164"></script>
-<link rel="stylesheet" href="/board-next-notices.css?v=1&release=164">
-<script src="/board-next-notices.js?v=1&release=164&noir=166"></script>
+<link rel="stylesheet" href="/board-next-notices.css?v=1&release=164&cardback=20261019">
+<script src="/board-next-notices.js?v=1&release=164&noir=166&cardback=20261019"></script>
 <link rel="stylesheet" href="/board-milestones.css?v=1&release=164">
 <script src="/board-milestones.js?v=1&release=164"></script>
 <link rel="stylesheet" href="/board-goal-notice.css?v=1&release=164">
@@ -2111,7 +2126,7 @@ function flyCardBacks(pid2, n) {
   for (let k = 0; k < (n || 2); k++) setTimeout(() => {
     const c = document.createElement('div');
     c.className = 'cardFlyBack';
-    c.textContent = '❖';
+    c.setAttribute('role','img');c.setAttribute('aria-label','カード裏面');
     c.style.left = from.x + 'px'; c.style.top = from.y + 'px';
     document.body.appendChild(c);
     requestAnimationFrame(() => {
@@ -4278,18 +4293,18 @@ const statLabel = kind => kind === 'df' ? '<small>DF</small>'
 const supportBackHTML = (status, sup) => {
   const creature = sup && typeof sup === 'object' && sup.kind === 'creature';
   return `<div class="scardB"><div class="sflipB${sup !== undefined ? ' readyToOpen' : ''}">
-  <div class="sfaceB sbackB">❖</div>
+  <div class="sfaceB sbackB" role="img" aria-label="カード裏面"></div>
   <div class="sfaceB sfrontB${creature ? ' creatureSupport' : ''}">${!sup || sup === 'none'
     ? '<div style="font-size:2.5vh">─</div><div>ウェポンなし</div>'
     : sup ? (creature
         ? `<img src="${battleCreatureSupportArt(sup)}" alt="${battleSupportName(sup)}">`
         : battleSupportArt(sup) ? `<img src="/assets/cards/${battleSupportArt(sup)}" alt="">` : '<div style="font-size:2.5vh">⚔</div>')
-      + (creature ? '' : '<div>' + battleSupportName(sup) + '</div>' + battleSupportExile(sup)) : ''}</div>
+      + (creature ? '' : '<div>' + battleSupportName(sup) + '</div>') : ''}</div>
   </div></div><div class="supportStatus">${status}</div>`;
 };
 
 function battleCreatureHTML(cid, level, reveal) {
-  if (!cid) return `<div class="battleCardBack"><div>❖</div><small>攻撃クリーチャー選択中</small></div>`;
+  if (!cid) return `<div class="battleCardBack" role="img" aria-label="侵略クリーチャー選択中"></div>`;
   const base = state.catalog.CREATURES[cid.replace(/_f$/, '')];
   const evolved = /_f$/.test(cid) || (level >= (state.evoLevel || 3) && !!base.evo);
   return `<div class="battleCreatureCard${reveal ? ' reveal' : ''}">${summonCardHTML(cid, evolved)}</div>`;
@@ -4332,7 +4347,7 @@ function battleDetailHTML(pid, cid, level, mods = [], exileCount = null, effectS
     ${soulCount !== null ? `<div class="bdSoul">廃棄札 ${soulCount}枚　【魂喰らい】DF +${soulCount * 5}</div>` : ''}
     <div class="bdAbility ${effectStateClass(effectState)}"><b>【${title}】${effectState ? `<span class="effectStateTag">${effectStateLabel(effectState)}</span>` : ''}</b><p>${body}</p>
       ${effectState && effectState.reason ? `<small class="effectReason">${effectState.reason}</small>` : ''}</div>
-    <div class="bdMods">${mods.filter(Boolean).map(x=>`<span>${x}</span>`).join('') || '<span>戦闘補正なし</span>'}</div>`;
+`;
 }
 
 function attackMeterHTML(baseAt, at) {
@@ -4403,6 +4418,7 @@ function renderBattlePreview(bp) {
       $(id).style.filter = 'none';
     });
     $('battleFx').innerHTML = '';
+    $('battleOutcome').hidden=true;
     $('bresult').classList.remove('show'); $('bresult').textContent = '';
     $('bnotes').textContent = '';
     hideLogo(true);
@@ -4425,6 +4441,7 @@ function renderBattlePreview(bp) {
     $('bDefStats').innerHTML = previewStatsHTML(bp.defender, bp.defCreature, bp.defLevel || 1, bp.defDamage || 0, 'def', 0, bp.previewStats.defender);
   }
   updateBattleCompare();
+  $('bAtkSupport').dataset.revealed='false';$('bDefSupport').dataset.revealed='false';
   $('bAtkSupport').innerHTML = supportBackHTML(bp.supportReady.attacker ? '選択済み' : '選択中…');
   $('bDefSupport').innerHTML = supportBackHTML(bp.supportReady.defender ? '選択済み' : '選択中…');
   $('bcap').textContent = bp.phase === 'pick_attacker'
@@ -4486,7 +4503,8 @@ function updateBattleCompare() {
   $('bCmpDefHp').textContent = totalDurability('bDefStats');
   const mirrorBar = (sourceId, selector, targetId) => {
     const source = $(sourceId) && $(sourceId).querySelector(selector), target = $(targetId);
-    if (!source || !target) return;
+    if (!target) return;
+    if (!source) { target.replaceChildren();target.classList.remove('over');return; }
     target.innerHTML = source.innerHTML;
     target.classList.toggle('over', !!source.closest('.attackMeter.over'));
   };
@@ -4495,9 +4513,9 @@ function updateBattleCompare() {
   mirrorBar('bAtkStats', '.durabilityBar', 'bCmpAtkHpBar');
   mirrorBar('bDefStats', '.durabilityBar', 'bCmpDefHpBar');
   const b = activeBattleData;
-  const battleState = state.battlePreview || b || state.lastBattle;
-  const atkSupportDf = battleState ? Math.max(0, Number(battleState.atkPostDf || 0) - Number(battleState.atkPreDf || 0)) : 0;
-  const defSupportDf = battleState ? Math.max(0, Number(battleState.defPostDf || 0) - Number(battleState.defPreDf || 0)) : 0;
+  const battleState = b || state.battlePreview || state.lastBattle;
+  const atkSupportDf = battleState && b && $('bAtkSupport').dataset.revealed === 'true' ? Math.max(0, Number(battleState.atkPostDf || 0) - Number(battleState.atkPreDf || 0)) : 0;
+  const defSupportDf = battleState && b && $('bDefSupport').dataset.revealed === 'true' ? Math.max(0, Number(battleState.defPostDf || 0) - Number(battleState.defPreDf || 0)) : 0;
   $('bCmpAtkDf').textContent = atkSupportDf ? `ウェポン DF+${atkSupportDf}` : '';
   $('bCmpDefDf').textContent = defSupportDf ? `ウェポン DF+${defSupportDf}` : '';
   const elem = battleState && (battleState.terrainElem || (state.tiles && state.tiles[battleState.tile] && state.tiles[battleState.tile].e));
@@ -4596,18 +4614,40 @@ async function revealBattleSupport(b, side) {
   stage.innerHTML = supportBackHTML(`${atkSide ? '攻撃側' : '防衛側'}　${battleSupportName(sup)}　${battleSupportMods(sup).replace(/<[^>]+>/g,'')}`, sup);
   document.body.appendChild(stage); await wait(160);
   stage.querySelector('.sflipB').classList.add('open'); await wait(650);
-  const preAt = atkSide ? (b.atkPreAt ?? b.atkBaseAt) : (b.defPreAt ?? b.defBaseAt);
-  const postAt = atkSide ? (b.atkPostAt ?? b.st) : (b.defPostAt ?? b.defSt);
-  const hp = atkSide ? (b.atkPostHp ?? b.atkHp) : (b.defPostHp ?? b.hp);
-  const preDf = atkSide ? (b.atkPreDf ?? 0) : (b.defPreDf ?? 0);
-  const postDf = atkSide ? (b.atkPostDf ?? b.atkDf ?? 0) : (b.defPostDf ?? b.df ?? 0);
-  await Promise.all([countBattleStat(statsId,'at',preAt,postAt), animateDurability(statsId,hp,preDf,hp,postDf,hp+postDf)]);
   stage.style.transition = 'opacity .25s,transform .25s'; stage.style.opacity = '0'; stage.style.transform = `translateX(${atkSide ? '-34vw' : '34vw'}) scale(.45)`;
   await wait(260); stage.remove();
   $(slotId).querySelector('.sflipB').classList.add('open');
   $(slotId).querySelector('.supportStatus').textContent = 'ウェポン公開';
+  $(slotId).dataset.revealed='true';
 }
 
+async function applyBattleWeaponStats(b) {
+  await Promise.all(['atk','def'].map(async side=>{
+    const a=side==='atk',id=a?'bAtkStats':'bDefStats';
+    const preAt=a?(b.atkPreAt??b.atkBaseAt):(b.defPreAt??b.defBaseAt);
+    const postAt=a?(b.atkPostAt??b.st):(b.defPostAt??b.defSt);
+    const hp=a?(b.atkPostHp??b.atkHp):(b.defPostHp??b.hp);
+    const preDf=a?(b.atkPreDf??0):(b.defPreDf??0);
+    const postDf=a?(b.atkPostDf??b.atkDf??0):(b.defPostDf??b.df??0);
+    await Promise.all([countBattleStat(id,'at',preAt,postAt),animateDurability(id,hp,preDf,hp,postDf,hp+postDf)]);
+  }));
+}
+function battleOutcomeText(b) {
+  if(b.win)return null; // A successful invader is placed on the captured territory.
+  const name=b.atkCreature.replace(/_f$/,'');
+  if(!b.atkSurvived && name==='gaston')return {title:'侵略したクリーチャーは帰還した',body:'侵略したクリーチャーはHPが無くなったが、旋風の能力で手札に戻った'};
+  if(!b.atkSurvived)return {title:'侵略したクリーチャーは破壊された',body:'侵略したクリーチャーはHPが無くなったため捨て札に移動した'};
+  if(b.moveFrom!=null)return {title:'侵略したクリーチャーは生還した',body:'侵略したクリーチャーはHPが残ったため元の領地に戻った'};
+  return {title:'侵略したクリーチャーは生還した',body:b.corridor?'侵略したクリーチャーはHPが残ったため手札に戻った':'侵略したクリーチャーはHPが残ったため手札に残った'};
+}
+async function showBattleOutcome(b) {
+  const text=battleOutcomeText(b);if(!text)return;
+  const host=$('battleOutcome'),parent=host.parentNode;
+  document.body.appendChild(host);host.style.position='fixed';host.style.zIndex='91';
+  host.querySelector('h2').textContent=text.title;host.querySelector('p').textContent=text.body;
+  $('bresult').classList.remove('show');$('bcap').textContent='';host.hidden=false;
+  try{await wait(GAME_TIMING.battleOutcome);}finally{host.hidden=true;parent.appendChild(host);host.style.position='';host.style.zIndex='';}
+}
 async function playBattle(b) {
   cutBusy++;
   try {
@@ -4616,7 +4656,8 @@ async function playBattle(b) {
   const C = state.catalog;
   const atk = player(b.attacker), def = player(b.defender);
   renderBattleSummoners(b.attacker, b.defender);
-  renderBattleExternalModifiers({...b,externalModifiers:Object.fromEntries(Object.entries(b.externalModifiers||{}).map(([side,list])=>[side,list.filter(e=>!e.passive)]))});
+  renderBattleExternalModifiers({...b,externalModifiers:Object.fromEntries(Object.entries(b.externalModifiers||{}).map(([side,list])=>[side,list.filter(e=>!(e.passive&&e.charId==='redani'))]))});
+  $('battleOutcome').hidden=true;
   const atkElem = C.CREATURES[b.atkCreature.replace(/_f$/, '')].elem || 'neutral';
   const defElem = C.CREATURES[b.defCreature.replace(/_f$/, '')].elem || 'neutral';
   const dLv = b.defLevel || (state.owners[b.tile] ? state.owners[b.tile].level : 1);
@@ -4636,13 +4677,14 @@ async function playBattle(b) {
     $('battle').classList.add('on');
     setBgm('battle');
   }
+  $('bAtkSupport').dataset.revealed='false';$('bDefSupport').dataset.revealed='false';
   $('bAtkSupport').innerHTML = supportBackHTML('公開待ち', b.atkSupport);
   $('bDefSupport').innerHTML = supportBackHTML('公開待ち', b.defSupport);
   $('bAtkStats').innerHTML = finalStatsHTML(b, 'atk', 'pre');
   $('bDefStats').innerHTML = finalStatsHTML(b, 'def', 'pre');
   updateBattleCompare();
-  $('bAtkDetail').innerHTML = battleDetailHTML(b.attacker, b.atkCreature, 1, battleDetailMods(b, 'atk'), b.atkExileCount, b.effectStates && b.effectStates.attacker);
-  $('bDefDetail').innerHTML = battleDetailHTML(b.defender, b.defCreature, dLv, battleDetailMods(b, 'def'), b.defExileCount, b.effectStates && b.effectStates.defender);
+  $('bAtkDetail').innerHTML = battleDetailHTML(b.attacker, b.atkCreature, 1, [], b.atkExileCount, resultSnapshot.battlePreview?.effectStates?.attacker);
+  $('bDefDetail').innerHTML = battleDetailHTML(b.defender, b.defCreature, dLv, b.terrain ? ['地形補正：DF +'+b.terrain] : [], b.defExileCount, resultSnapshot.battlePreview?.effectStates?.defender);
   $('bnotes').innerHTML = '';
   $('bcap').textContent = 'ウェポン ─ 攻撃側から公開';
   ['bAtk','bDef'].forEach(id => $(id).classList.remove('lungeL','lungeR','dead'));
@@ -4657,8 +4699,9 @@ async function playBattle(b) {
   $('bcap').textContent = 'ウェポン ─ 防衛側を公開';
   await revealBattleSupport(b, 'def');
   renderBattleExternalModifiers(b);
-  for(const side of ['attacker','defender'])for(const effect of b.externalModifiers?.[side]||[])
-    if(effect.passive)await BoardPassives.present({player:b[side],charId:effect.charId,kind:'battle'},state,presentationMs);
+  $('bAtkDetail').innerHTML = battleDetailHTML(b.attacker,b.atkCreature,1,battleDetailMods(b,'atk'),b.atkExileCount,b.effectStates?.attacker);
+  $('bDefDetail').innerHTML = battleDetailHTML(b.defender,b.defCreature,dLv,battleDetailMods(b,'def'),b.defExileCount,b.effectStates?.defender);
+  await applyBattleWeaponStats(b);
   $('bAtkStats').innerHTML = finalStatsHTML(b, 'atk');
   $('bDefStats').innerHTML = finalStatsHTML(b, 'def');
   updateBattleCompare();
@@ -4783,8 +4826,8 @@ async function playBattle(b) {
     if (b.preempt) {
       // 先制は反撃の代わり(§8.7) → 反撃なしでそのまま帰還
       if (bwOn) BW.returnHome('atk');
-      pop('bAtk', '帰還(全快)', true);
-      $('bcap').textContent = C.CREATURES[b.atkCreature].name + 'は耐えて手札に帰還';
+
+      $('bcap').textContent = '';
       return showResult('防衛成功', 900);
     }
     $('bcap').textContent = '防衛側の反撃!';
@@ -4802,8 +4845,8 @@ async function playBattle(b) {
       $('bcap').textContent = '';
     } else {
       if (bwOn) BW.returnHome('atk');
-      pop('bAtk', '帰還(全快)', true);
-      $('bcap').textContent = C.CREATURES[b.atkCreature].name + 'は耐えて手札に帰還';
+
+      $('bcap').textContent = '';
     }
     return showResult('防衛成功', 900);
   })();
@@ -4820,9 +4863,11 @@ async function playBattle(b) {
       color:(b.win ? atk : def).color, speed:presentationContext ? presentationContext.speed : 1 })
     : Promise.resolve();
   await Promise.all([resultDone,resultFxDone]);
+  await showBattleOutcome(b);
   if (b.evolutionPrayer && !Array.isArray(b.moneyEvents)) await showBannerAsync('進化の祈り', `+${b.evolutionPrayer.gold}G（配置${b.evolutionPrayer.providers.length}体分）`);
   await BoardNotice.battle(b,()=>state,{ms:presentationMs,onHud:renderHUD});
   } finally {
+    $('battleOutcome').hidden=true;
     // ハイブリッド戦闘の後始末(§11.4: 一時オブジェクト・Tweenを残さない。stopは冪等)
     try { if (typeof BW !== 'undefined') BW.stop(); } catch (e) {}
     BoardNotice.finish(b); renderHUD();

@@ -23,11 +23,11 @@
   <link rel="icon" href="/assets/site/spark-star.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/site/design-system.css?v=154">
   <link rel="stylesheet" href="/site/site-pages.css?v=154-2">
-  <link rel="stylesheet" href="/site/cards.css?v=154-2">
+  <link rel="stylesheet" href="/site/cards.css?v=169-20261019">
   <link rel="stylesheet" href="/site/site-header.css?v=154-3">
   <script src="/analytics.js"></script>
   <script src="/site/site-pages.js?v=154-2" defer></script>
-  <script src="/site/cards.js?v=154-2" defer></script>
+  <script src="/site/cards.js?v=169-20261019" defer></script>
   <link rel="stylesheet" href="/site/site-audio.css?v=1">
   <script src="/site/site-audio.js?v=2&release=164" defer></script>
   <link rel="stylesheet" href="/site/navigation.css?v=1&release=164">
@@ -66,7 +66,7 @@
         <p class="sub-kicker">OFFICIAL CARD ARCHIVE</p>
         <h1 class="sub-title" id="page-title">CARDS</h1>
         <p class="sub-lead">名前や効果からカードを探し、進化前後の能力を見比べられます。デッキと領地を組み立てる一手を見つけよう。</p>
-        <p class="sub-meta" aria-live="polite"><span>GAME VERSION <b data-version>1.66</b></span><span><b data-total>82</b> CARD TYPES</span><span><b data-evolutions>44</b> EVOLUTIONS</span></p>
+        <p class="sub-meta" aria-live="polite"><span>GAME VERSION <b data-version>1.69</b></span><span><b data-total>84</b> CARD TYPES</span><span><b data-evolutions>46</b> EVOLUTIONS</span></p>
       </div>
     </section>
 
@@ -76,18 +76,34 @@
         <form class="catalog-filter" data-filter-form role="search">
           <div class="catalog-filter__count"><strong data-result-count>—</strong><span>件</span></div>
           <label class="catalog-filter__search"><span class="visually-hidden">カード名・効果を検索</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.2"></circle><path d="m15.5 15.5 5 5"></path></svg><input type="search" name="query" placeholder="名前や効果を検索" autocomplete="off"></label>
-          <label><span class="visually-hidden">カードの種類</span><select name="kind"><option value="all">すべての種類</option><option value="creature">クリーチャー</option><option value="spell">スペル</option><option value="weapon">ウェポン</option></select></label>
-          <label><span class="visually-hidden">属性</span><select name="element"><option value="all">すべての属性</option><option value="fire">火属性</option><option value="water">水属性</option><option value="earth">土属性</option><option value="wind">風属性</option><option value="neutral">無属性</option></select></label>
-          <label><span class="visually-hidden">レアリティ</span><select name="rarity"><option value="all">すべてのレアリティ</option><option value="N">N</option><option value="R">R</option><option value="UR">UR</option></select></label>
+          <label class="catalog-filter__select catalog-filter__kind"><span class="visually-hidden">カードの種類</span><select name="kind"><option value="all">すべての種類</option><option value="creature">クリーチャー</option><option value="spell">スペル</option><option value="weapon">ウェポン</option></select></label>
+          <label class="catalog-filter__select catalog-filter__rarity"><span class="visually-hidden">レアリティ</span><select name="rarity"><option value="all">全レアリティ</option><option value="N">N</option><option value="R">R</option><option value="UR">UR</option></select></label>
           <button class="catalog-filter__clear" type="reset">条件をクリア</button>
+          <fieldset class="catalog-filter__group" data-filter-group="element">
+            <legend>属性 <small>複数選択可</small></legend>
+            <div class="catalog-filter__options">
+              <button type="button" data-filter-value="all" aria-pressed="true">すべて</button>
+              <button type="button" data-filter-value="fire" aria-pressed="false"><span class="catalog-element" aria-hidden="true"></span>火</button>
+              <button type="button" data-filter-value="water" aria-pressed="false"><span class="catalog-element" aria-hidden="true"></span>水</button>
+              <button type="button" data-filter-value="earth" aria-pressed="false"><span class="catalog-element" aria-hidden="true"></span>土</button>
+              <button type="button" data-filter-value="wind" aria-pressed="false"><span class="catalog-element" aria-hidden="true"></span>風</button>
+              <button type="button" data-filter-value="neutral" aria-pressed="false"><span class="catalog-element" aria-hidden="true"></span>無</button>
+            </div>
+          </fieldset>
         </form>
 
+        <div class="catalog-evolution" role="group" aria-label="全カードの進化表示">
+          <span>進化表示</span>
+          <button type="button" data-all-evolution="base" aria-pressed="true" disabled>すべて進化前</button>
+          <button type="button" data-all-evolution="evolution" aria-pressed="false" disabled>すべて進化後</button>
+          <span class="visually-hidden" data-evolution-status role="status"></span>
+        </div>
         <div class="catalog-summary">
-          <p data-result-summary>カード情報を読み込んでいます</p>
+          <p data-result-summary role="status">カード情報を読み込んでいます</p>
           <span>カードを選ぶと詳細を表示</span>
         </div>
         <div class="catalog-state" data-catalog-state role="status">カード情報を読み込んでいます。</div>
-        <div class="catalog-grid" data-card-grid aria-live="polite"></div>
+        <div class="catalog-grid" data-card-grid></div>
         <div class="catalog-sentinel" data-card-sentinel aria-hidden="true"></div>
       </div>
     </section>
@@ -95,7 +111,7 @@
 
   <dialog class="card-dialog" data-card-dialog aria-labelledby="card-dialog-title">
     <div class="card-dialog__frame">
-      <button class="card-dialog__close" type="button" data-dialog-close aria-label="カード詳細を閉じる">×</button>
+      <button class="card-dialog__close" type="button" data-dialog-close aria-label="カード詳細を閉じる"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
       <div class="card-dialog__visual" data-dialog-card></div>
       <div class="card-dialog__info">
         <p class="card-dialog__kind" data-dialog-kind></p>
