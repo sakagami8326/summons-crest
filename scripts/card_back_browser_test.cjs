@@ -15,7 +15,7 @@ const out=path.resolve(__dirname,'../output/card-back-approved-20261019');
   await p.waitForFunction(()=>!document.querySelector('#battleCutin').classList.contains('on'));if(size.width===1280)await p.screenshot({path:path.join(out,'battle-card-backs.png')});
  }
  await p.setViewportSize({width:1280,height:720});await p.evaluate(()=>{document.querySelector('#battle').classList.remove('on');BoardNotice.effect(BoardNext.rare(state.players[0]),state,{ms:n=>n*5});});
- await p.waitForSelector('#boardNotice .rareHand');await p.waitForFunction(()=>[...document.querySelectorAll('.rareHand img')].every(e=>e.complete&&e.naturalWidth===900));assert.equal(await p.locator('.rareHand img').count(),3);
+ await p.waitForSelector('#boardNotice .rareHand');await p.waitForFunction(()=>[...document.querySelectorAll('.rareHand img')].every(e=>e.complete&&e.naturalWidth===900));assert.equal(await p.locator('.rareHand img').count(),1);
  const ratios=await p.locator('.rareHand img').evaluateAll(es=>es.map(e=>{const s=getComputedStyle(e);return parseFloat(s.width)/parseFloat(s.height)}));assert(ratios.every(r=>Math.abs(r-300/470)<.002));await p.waitForTimeout(1300);await p.screenshot({path:path.join(out,'rare-card-backs.png')});
- assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'browser-report.json'),JSON.stringify(report,null,2));console.log('PASS shared card back: four viewports, battle/weapon/reveal/fly ratios and rare fan');
+ assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'browser-report.json'),JSON.stringify(report,null,2));console.log('PASS shared card back: four viewports, battle/weapon/reveal/fly ratios and single rare card');
 }finally{await browser.close()}})().catch(e=>{console.error(e);process.exit(1)});
