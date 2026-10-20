@@ -1,0 +1,23 @@
+/* One finish for every real card surface. Text is printed above the foil. */
+.cardFinished{isolation:isolate}
+.cardFinished>.cardFinishLayers{position:absolute;inset:0;z-index:10;pointer-events:none;border-radius:inherit;overflow:hidden;contain:paint}
+.cardFinishLayers>i{position:absolute;inset:0;display:block;border-radius:inherit;pointer-events:none}
+.cardFinishPaper{position:absolute;inset:var(--finish-info-top,var(--card-info-top,70.8%)) 0 0;background:var(--paper,#f6e9c8);z-index:4;pointer-events:none}
+.cardFinished :is(.ccInfo,.spInfo,.suInfo,.scInfo,.game-card__info){z-index:auto!important;background:transparent!important}
+.cardFinished :is(.ccHeader,.spHeader,.suHead,.ccCost,.ccStats,.ccEffect,.spText,.suPower,.suText,.scHead,.spHead,.scCost,.scStats,.scEffect,.spInfo>h3,.spInfo>p,.game-card__header,.game-card__cost,.game-card__stats,.game-card__effect,.game-card__power,.game-card__exile,.cardExileTag,.site-card-name,.shopCompactName,.shopCompactFooter){z-index:30!important}
+.cardFinished :is(.ccStats,.ccEffect,.spText,.suPower,.suText,.scStats,.scEffect,.spInfo>h3,.spInfo>p,.game-card__stats,.game-card__effect,.game-card__power){position:relative}
+.cardFinished :is(.ccEffect p,.spText,.suText){color:var(--cardInk,#172536)}
+.cardFinished.game-card{--finish-info-top:68%}
+.cardFinished .shopCompactFooter{position:absolute}
+.cardFinished.sfrontB>div:not(.cardFinishLayers){position:relative;z-index:30}
+.cardFinishWhite{mix-blend-mode:screen;background:linear-gradient(115deg,transparent 22%,#fff2 36%,#fff9 46%,#fffd 49%,#fff3 54%,transparent 65%);background-size:350% 100%;opacity:.7;animation:cardFinishSweep 5s ease-in-out infinite}
+.cardFinishStars{mix-blend-mode:screen;opacity:.8;background:url('/assets/cards/finish-stars.svg') center/100% 100%;animation:cardFinishTwinkle 5s ease-in-out infinite}
+.cardFinishShards{background:url('/assets/cards/finish-shards.svg') center/100% 100%;mix-blend-mode:screen;opacity:.24;filter:brightness(1.6)}
+.cardFinishPrism{background:url('/assets/cards/finish-shards.svg') center/100% 100%;mix-blend-mode:screen;filter:brightness(2);mask-image:linear-gradient(115deg,transparent 38%,#0006 45%,#000 50%,#0006 55%,transparent 62%);mask-size:300% 100%;opacity:.85;animation:cardFinishFacetGlint 7s ease-in-out infinite}
+.cardFinished[data-finish-rarity=UR]>.cardFinishLayers::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(112deg,transparent 34%,#8d56ff33 39%,#7553ff99 43%,#179fffbb 46%,#19dfc8bb 49%,#f8df45bb 52%,#ff8553aa 55%,#ef51ba88 58%,#9459ff44 62%,transparent 67%);background-size:360% 100%;background-repeat:no-repeat;mix-blend-mode:soft-light;filter:saturate(1.8) opacity(.3);opacity:0;animation:cardFinishRainbow 7s .75s ease-in-out infinite both}
+.cardFinished.finishOffscreen>.cardFinishLayers>i,.cardFinished.finishOffscreen>.cardFinishLayers::after{animation-play-state:paused}
+@keyframes cardFinishSweep{0%,15%{background-position:100% 0}65%,100%{background-position:0% 0}}
+@keyframes cardFinishTwinkle{0%,25%,100%{opacity:.15}45%{opacity:.9}65%{opacity:.3}}
+@keyframes cardFinishFacetGlint{0%,18%{mask-position:100% 0;opacity:0}32%{opacity:.85}63%{mask-position:0% 0;opacity:.85}78%,100%{mask-position:0% 0;opacity:0}}
+@keyframes cardFinishRainbow{0%,20%{background-position:110% 50%;opacity:0}27%{opacity:.48}38%{opacity:.68}47%{opacity:.5}54%,100%{background-position:-10% 50%;opacity:0}}
+@media(prefers-reduced-motion:reduce){.cardFinishLayers>i,.cardFinishLayers::after{animation:none!important}.cardFinishWhite{opacity:.14;background-position:45% 0}.cardFinishStars{opacity:.4}.cardFinishPrism{opacity:.25;mask-position:center}.cardFinished[data-finish-rarity=UR]>.cardFinishLayers::after{opacity:.1;background-position:center}}

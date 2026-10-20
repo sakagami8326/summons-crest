@@ -145,7 +145,7 @@ for (const creature of ['mermaid','night_jelly','samurai_saga','kamadoma_f','nom
   G.rooms.delete(r.code);
 }
 const board = fs.readFileSync(path.join(__dirname,'public/board.html'),'utf8');
-const renderSupport = new Function('state', board.slice(board.indexOf('const supportCardId ='), board.indexOf('function battleCreatureHTML(')) + '\nreturn supportBackHTML;')({catalog:{CREATURES:G.CREATURES,SUPPORTS:G.SUPPORTS}});
+const renderSupport = new Function('state', board.slice(board.indexOf('function cardFinishMeta('),board.indexOf('function summonCardHTML('))+board.slice(board.indexOf('const supportCardId ='), board.indexOf('function battleCreatureHTML(')) + '\nreturn supportBackHTML;')({catalog:{CREATURES:G.CREATURES,SUPPORTS:G.SUPPORTS,SPELLS:{}}});
 const supportUsers = Object.keys(G.CREATURES).filter(G.creatureSupportEnabled);
 ok(JSON.stringify(supportUsers.slice().sort()) === JSON.stringify(['survey','survey_f','shuterio','shuterio_f'].sort()), 'all four support ability forms audited');
 for (const user of supportUsers) {

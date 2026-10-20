@@ -5,7 +5,7 @@ const G=new Function('require','__dirname','setInterval','setTimeout',src+`
 return {CREATURES,CHAR_DECKS,makeRoom,startGame,beginTurn,handleChoose,moveMarlow,marlowDests,stepDests,tilesOf,
 windSupplyProviders,grantWindSupply,pauseWindSupply,startWindSupply,acknowledgeWindSupply,finishWindSupply,
 publicState,serializeRoom,restoreRoom,startBattle,resolveBattle,makeDeck,shopRandomPool,publicCardCatalog,rooms,botCardScore};`)
-(require,__dirname,()=>0,(fn,ms)=>{timers.push({fn,ms});return 0;});
+(require('./test_helpers/default-rarity-require.cjs'),__dirname,()=>0,(fn,ms)=>{timers.push({fn,ms});return 0;});
 let checks=0;const eq=(a,b,m)=>{assert.deepEqual(a,b,m);checks++;},ok=(a,m)=>{assert.ok(a,m);checks++;};
 function game(mapId='starting_corridor') {
  const r=G.makeRoom('normal',mapId);r.players=[{id:'a',name:'甲',charId:'mio'},{id:'d',name:'乙',charId:'adel'}];G.startGame(r);r.players.sort((a,b)=>a.id.localeCompare(b.id));

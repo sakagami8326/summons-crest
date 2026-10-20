@@ -1315,7 +1315,8 @@ body.passiveBattle #boardNotice[data-actor][data-owner=g][data-scene=passive]{to
 body.passiveBattle #boardNotice[data-actor][data-owner=g][data-scene=passive] .messageWindow{width:100%;min-height:0;padding:12px 20px}
 body.passiveBattle #boardNotice .actorStand,body.passiveBattle #boardNotice .cutinStage,body.passiveBattle #boardNotice .crestStage{display:none}
 body.passiveBattle #boardNotice[data-actor][data-owner=g][data-scene=passive] .effectHeading h2{font-size:24px}
-#boardNotice .nativeReward{display:flex;align-items:center;justify-content:center;gap:16px}#boardNotice .nativeReward img{width:64px;height:64px;object-fit:contain}</style></head>
+#boardNotice .nativeReward{display:flex;align-items:center;justify-content:center;gap:16px}#boardNotice .nativeReward img{width:64px;height:64px;object-fit:contain}</style><link rel="stylesheet" href="/card-finish.css?v=20261021-foil160-rainbow30"><script src="/card-finish.js?v=20261020" defer></script>
+</head>
 <body>
   <img id="logoImg" src="/assets/summons-code-gold.svg" alt="SUMMONS CODE">
   <div id="connBar" style="display:none; position:fixed; top:0; left:50%; transform:translateX(-50%);
@@ -3778,6 +3779,7 @@ function renderPawnsDom(layout) {
   }
 }
 
+function cardFinishMeta(cid) {const C=state.catalog,c=C.CREATURES[cid]||C.SPELLS[cid]||C.SUPPORTS[cid];return c?'<span hidden class="cardFinishMeta" data-rarity="'+(c.rarity||(C.SUPPORTS[cid]?'R':'N'))+'"></span>':'';}
 function summonCardHTML(cid, forceEvolved = false) {
   const bid = cid.replace(/_f$/, ''), evolved = forceEvolved || bid !== cid;
   const base = state.catalog.CREATURES[bid], cr = state.catalog.CREATURES[cid] || base;
@@ -3788,7 +3790,7 @@ function summonCardHTML(cid, forceEvolved = false) {
   const title = m ? m[1] : '特殊能力', body = m ? m[2] : (fx || '効果なし');
   const nameSize = name.length <= 6 ? '6.8vh' : name.length <= 9 ? '5.2vh' : '4.2vh';
   const elemIcon = base.elem ? `<span class="scElem"><svg viewBox="-34 -36 68 72">${ELEM[base.elem]}</svg></span>` : '<span class="scElem">◇</span>';
-  return `<img class="scBg" src="/assets/cards/bg-${elem}.webp"><div class="scHead">${elemIcon}<div class="scName" style="font-size:${nameSize}">${name}</div></div>
+  return `${cardFinishMeta(cid)}<img class="scBg" src="/assets/cards/bg-${elem}.webp"><div class="scHead">${elemIcon}<div class="scName" style="font-size:${nameSize}">${name}</div></div>
     <img class="scArt" src="/assets/cards/${evolved ? 'e_' : 'c_'}${bid}.webp">
     <div class="scCost"><img class="frame" src="/assets/cards/cost-frame.svg"><img class="coin" src="/assets/cards/cost-coin.svg"><b>${base.cost || 0}G</b></div>
     <div class="scBrush"></div><div class="scInfo"><div class="scStats">
@@ -3917,7 +3919,7 @@ function spellCardHTML(sid) {
   const bg = dedicated || '/assets/cards/bg-spell-v1.webp';
   const fallback = dedicated || sid === 'sp_evolve' ? '' : `<img class="spFallback" src="/assets/c_${sid}.png" onerror="this.style.display='none'">`;
   const nameSize = sp.name.length <= 6 ? '6.2vh' : sp.name.length <= 8 ? '5.1vh' : '4.2vh';
-  return `<img class="spBg${sid === 'sp_evolve' ? ' spBgFitted' : ''}" src="${bg}">${fallback}<div class="spHead"><div class="spName" style="font-size:${nameSize}">${sp.name}</div></div>
+  return `${cardFinishMeta(sid)}<img class="spBg${sid === 'sp_evolve' ? ' spBgFitted' : ''}" src="${bg}">${fallback}<div class="spHead"><div class="spName" style="font-size:${nameSize}">${sp.name}</div></div>
     <div class="scCost"><img class="frame" src="/assets/cards/cost-frame.svg"><img class="coin" src="/assets/cards/cost-coin.svg"><b>${sp.cost || 0}G</b></div>
     <div class="scBrush"></div><div class="spInfo"><h3>【呪文効果】</h3><p>${sp.desc}</p></div>
     ${sp.exileAfterUse ? '<div class="cardExileTag">廃棄</div>' : ''}`;
@@ -4294,7 +4296,7 @@ const supportBackHTML = (status, sup) => {
   const creature = sup && typeof sup === 'object' && sup.kind === 'creature';
   return `<div class="scardB"><div class="sflipB${sup !== undefined ? ' readyToOpen' : ''}">
   <div class="sfaceB sbackB" role="img" aria-label="カード裏面"></div>
-  <div class="sfaceB sfrontB${creature ? ' creatureSupport' : ''}">${!sup || sup === 'none'
+  <div class="sfaceB sfrontB${creature ? ' creatureSupport' : ''}">${sup && sup !== 'none' ? cardFinishMeta(supportCardId(sup)) : ''}${!sup || sup === 'none'
     ? '<div style="font-size:2.5vh">─</div><div>ウェポンなし</div>'
     : sup ? (creature
         ? `<img src="${battleCreatureSupportArt(sup)}" alt="${battleSupportName(sup)}">`

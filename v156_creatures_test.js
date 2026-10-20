@@ -7,7 +7,7 @@ src = src.replace(/server\.listen\([\s\S]*?\}\);\s*$/, '');
 const G = new Function('require', '__dirname', 'process', 'console', 'setInterval',
   src + '\n;return { VERSION, CREATURES, MARKET_POOL, makeDeck, shopRandomPool, publicCardCatalog,' +
   ' makeRoom, startGame, chainCount, earthLandBattleBonus, recordHeal, resolveBattle, publicState, TILES, rooms };')(
-  require, __dirname, process, console, () => {});
+  require('./test_helpers/default-rarity-require.cjs'), __dirname, process, console, () => {});
 
 let pass = 0;
 const ok = (value, name) => { if (!value) throw new Error('FAIL: ' + name); pass++; };

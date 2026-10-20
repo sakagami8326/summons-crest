@@ -892,7 +892,8 @@
 </style><style>
 #shopPassive{position:absolute;top:2dvh;left:27vw;right:2vw;min-height:9dvh;display:flex;align-items:center;justify-content:center;color:#f2dfad;background:#08111dde;font-size:clamp(12px,3.5dvh,19px);padding:1dvh 2vw;border:1px solid #a28c55}
 #shopPassive[hidden]{display:none}.passiveShop #shopShelf{top:13dvh}.passiveShop .shopProduct .shopCard{height:35dvh}
-</style></head>
+</style><link rel="stylesheet" href="/card-finish.css?v=20261021-foil160-rainbow30"><script src="/card-finish.js?v=20261020" defer></script>
+</head>
 <body>
   <div id="connBar" style="display:none; position:fixed; top:0; left:50%; transform:translateX(-50%);
     z-index:98; background:#5A1512; color:#F5B0A5; font-size:1.8dvh; letter-spacing:2px;
@@ -1732,10 +1733,7 @@ function showGainToast(n) {
   clearTimeout(gainT);
   gainT = setTimeout(() => el.classList.remove('on'), 2000);
 }
-function rareDrawDecoration(cid) {
-  const c=state?.catalog?.CREATURES[cid]||state?.catalog?.SPELLS[cid];
-  return c?.rarity==='UR'?'<span class="urShine" aria-hidden="true"></span><span class="urStar s1" aria-hidden="true">✦</span><span class="urStar s2" aria-hidden="true">✦</span>':'';
-}
+function rareDrawDecoration(cid) { return ''; }
 function revealHeading(reason) {
   if(reason==='lost_censor')return '禁書検閲で捨てられたカード';
   if(reason==='lost_toxy')return '瘴気連鎖で捨てられたカード';
@@ -2028,6 +2026,7 @@ function creatureEffectParts(fx) {
   const m = String(fx || '').match(/^【([^】]+)】\s*(.*)$/);
   return m ? { title:m[1], body:m[2] } : { title:'特殊能力', body:fx || '効果なし' };
 }
+function cardFinishMeta(cid) { const C=state.catalog,c=C.CREATURES[cid]||C.SPELLS[cid]||C.SUPPORTS[cid];return c?'<span hidden class="cardFinishMeta" data-rarity="'+(c.rarity|| (C.SUPPORTS[cid]?'R':'N'))+'"></span>':''; }
 function creatureFaceBody(cid, cr, evolved) {
   const bid = cid.replace(/_f$/, '');
   const isEvo = evolved || /_f$/.test(cid);
@@ -2042,7 +2041,7 @@ function creatureFaceBody(cid, cr, evolved) {
   const elemIcon = cr.elem
     ? `<span class="ccElem"><svg viewBox="-34 -36 68 72">${ELEM_MINI[cr.elem]}</svg></span>`
     : `<span class="ccElem none">◇</span>`;
-  return `<img class="ccBg" src="/assets/cards/bg-${elem}.webp" alt="">
+  return `${cardFinishMeta(cid)}<img class="ccBg" src="/assets/cards/bg-${elem}.webp" alt="">
     <div class="ccHeader">${elemIcon}<div class="ccName" data-card-name>${name}</div></div>
     <div class="ccCost"><img class="ccCostFrame" src="/assets/cards/cost-frame.svg" alt=""><img class="ccCoin" src="/assets/cards/cost-coin.svg" alt=""><span class="ccCostValue">${(isEvo ? cr.evoCost ?? cr.cost : cr.cost) || 0}G</span></div>
     ${art}<div class="ccBrush"></div>
@@ -2057,7 +2056,7 @@ function spellFaceBody(cid, spl) {
   const art = dedicated
     ? `<img class="spArt${cid === 'sp_evolve' ? ' spArtFitted' : ''}" src="${dedicated}" alt="">`
     : `<img class="spArt" src="/assets/cards/bg-spell-v1.webp" alt=""><div class="spFallback">${spellArt(cid, '100%')}</div>`;
-  return `${art}<div class="spHeader"><div class="spName" data-card-name>${spl.name}</div></div>
+  return `${cardFinishMeta(cid)}${art}<div class="spHeader"><div class="spName" data-card-name>${spl.name}</div></div>
     <div class="ccCost"><img class="ccCostFrame" src="/assets/cards/cost-frame.svg" alt=""><img class="ccCoin" src="/assets/cards/cost-coin.svg" alt=""><span class="ccCostValue">${spl.cost || 0}G</span></div>
     <div class="ccBrush"></div><div class="spInfo ${spl.desc.length > 42 ? 'long' : ''}"><p class="spText">${spl.desc}</p></div>
     ${spl.exileAfterUse ? '<div class="cardExileTag">廃棄</div>' : ''}<span class="cardDetailHint">詳細で全文表示</span>`;
@@ -2066,7 +2065,7 @@ function supportFaceBody(cid, sup) {
   const art = supportArt(cid);
   const power = supportPower(sup);
   const text = supportDescription(sup);
-  return `<img class="suBg" src="/assets/cards/bg-weapon-v1.webp" alt=""><div class="suHead"><div class="suName" data-card-name>${sup.name}</div></div>
+  return `${cardFinishMeta(cid)}<img class="suBg" src="/assets/cards/bg-weapon-v1.webp" alt=""><div class="suHead"><div class="suName" data-card-name>${sup.name}</div></div>
     <div class="suArt">${art}</div><div class="ccCost"><img class="ccCostFrame" src="/assets/cards/cost-frame.svg" alt=""><img class="ccCoin" src="/assets/cards/cost-coin.svg" alt=""><span class="ccCostValue">${sup.cost || 0}G</span></div>
     <div class="ccBrush"></div><div class="suInfo"><h2 class="suPower">${power}</h2><p class="suText">${text}</p></div>
     ${sup.exileAfterUse ? '<div class="cardExileTag">廃棄</div>' : ''}<span class="cardDetailHint">詳細で全文表示</span>`;
@@ -2392,7 +2391,7 @@ function shopCompactHTML(item, visit, insufficient = false) {
     art = supportArt(item.card); stats = `<div class="shopCompactKind">${kind}</div>`;
   }
   const supportClass = sup ? ` support-${item.card}` : '';
-  return `<div class="shopCompact ${cr ? 'creature' : spl ? 'spell' : sup ? 'support' : 'remove'}${supportClass}">${bg}
+  return `<div class="shopCompact ${cr ? 'creature' : spl ? 'spell' : sup ? 'support' : 'remove'}${supportClass}">${cardFinishMeta(item.card)}${bg}
     <div class="shopCompactShade"></div><div class="shopCompactName" data-card-name>${name}</div>
     <div class="shopCompactArt">${art}</div><div class="shopCompactFooter">
       <div class="shopCompactPrice">${shopPriceHTML(item, visit, insufficient)}</div>${stats || `<div class="shopCompactKind">${kind}</div>`}

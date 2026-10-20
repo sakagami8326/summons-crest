@@ -8,7 +8,7 @@ const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<
       ? `<img src="${escapeHtml(art)}" alt="${name}" loading="lazy" decoding="async" width="1024" height="1024">`
       : `<span class="game-card__fallback">${name.slice(0, 2)}</span>`;
     if (card.kind === 'creature') {
-      return `<div class="game-card game-card--creature" data-element="${escapeHtml(card.element)}">
+      return `<div data-finish-rarity="${escapeHtml(card.rarity || 'N')}" class="game-card game-card--creature" data-element="${escapeHtml(card.element)}">
         <img class="game-card__background" src="/assets/cards/bg-${escapeHtml(card.element)}.webp" alt="" loading="lazy" decoding="async" width="1024" height="1536">
         <div class="game-card__header"><strong class="game-card__name">${name}</strong></div>
         <div class="game-card__art">${artHtml}</div><span class="game-card__cost">${card.cost}G</span>
@@ -18,14 +18,14 @@ const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<
         </div><p class="game-card__effect">${effect}</p></div></div>`;
     }
     if (card.kind === 'spell') {
-      return `<div class="game-card game-card--spell${card.id === 'sp_evolve' ? ' game-card--evolve' : ''}">
+      return `<div data-finish-rarity="${escapeHtml(card.rarity || 'N')}" class="game-card game-card--spell${card.id === 'sp_evolve' ? ' game-card--evolve' : ''}">
         <img class="game-card__background" src="/assets/cards/bg-spell-v1.webp" alt="" loading="lazy" decoding="async" width="1024" height="1536">
         <div class="game-card__header"><strong class="game-card__name">${name}</strong></div>
         <div class="game-card__art">${artHtml}</div><span class="game-card__cost">${card.cost}G</span>
         <div class="game-card__info"><p class="game-card__effect">${effect}</p></div>${card.exileAfterUse ? '<span class="game-card__exile">廃棄</span>' : ''}</div>`;
     }
     const power = card.at ? `AT＋${card.at}` : card.hp ? `DF＋${card.hp}` : '能力';
-    return `<div class="game-card game-card--weapon">
+    return `<div data-finish-rarity="${escapeHtml(card.rarity || 'N')}" class="game-card game-card--weapon">
       <img class="game-card__background" src="/assets/cards/bg-weapon-v1.webp" alt="" loading="lazy" decoding="async" width="1024" height="1536">
       <div class="game-card__header"><strong class="game-card__name">${name}</strong></div>
       <div class="game-card__art">${artHtml}</div><span class="game-card__cost">${card.cost}G</span>

@@ -2,7 +2,7 @@ const fs=require('fs'), assert=require('assert/strict');
 const src=fs.readFileSync(__dirname+'/server.js','utf8').replace(/server\.listen\([\s\S]*?\}\);\s*$/,'');
 const G=new Function('require','__dirname','setInterval','setTimeout',src+`
 return {makeRoom,startGame,askRoll,askForge,handleChoose,publicState,serializeRoom,restoreRoom,
- SPELLS,CREATURES,CHAR_DECKS,makeDeck,shopRandomPool,publicCardCatalog,standardBot,rooms};`)(require,__dirname,()=>0,()=>0);
+ SPELLS,CREATURES,CHAR_DECKS,makeDeck,shopRandomPool,publicCardCatalog,standardBot,rooms};`)(require('./test_helpers/default-rarity-require.cjs'),__dirname,()=>0,()=>0);
 let checks=0;
 const eq=(a,b,m)=>{assert.deepEqual(a,b,m);checks++;};
 const ok=(x,m)=>{assert.ok(x,m);checks++;};

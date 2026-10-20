@@ -1,7 +1,7 @@
 'use strict';
 const fs=require('fs'),assert=require('assert/strict');
 const src=fs.readFileSync(__dirname+'/server.js','utf8').replace(/server\.listen\([\s\S]*?\}\);\s*$/,'');
-const G=new Function('require','__dirname','setInterval','setTimeout',src+`;return {CREATURES,SPELLS,CHARS,ULTS,CHAR_DECKS,makeRoom,startGame,handleChoose,onCreatureSummoned,askRoll,queueLandEvolution,processPlacementQueue,ownedCardSnapshot,publicState,serializeRoom,restoreRoom,rooms,resolveUltSequence,beginUltSequence,performMove,resolveTile,cavernGate,cavernTeleport,calculateBattle,makeDeck,shopRandomPool,publicCardCatalog,tilesOf,mapOf,botStandard:standardBot};`)(require,__dirname,()=>0,()=>0);
+const G=new Function('require','__dirname','setInterval','setTimeout',src+`;return {CREATURES,SPELLS,CHARS,ULTS,CHAR_DECKS,makeRoom,startGame,handleChoose,onCreatureSummoned,askRoll,queueLandEvolution,processPlacementQueue,ownedCardSnapshot,publicState,serializeRoom,restoreRoom,rooms,resolveUltSequence,beginUltSequence,performMove,resolveTile,cavernGate,cavernTeleport,calculateBattle,makeDeck,shopRandomPool,publicCardCatalog,tilesOf,mapOf,botStandard:standardBot};`)(require('./test_helpers/default-rarity-require.cjs'),__dirname,()=>0,()=>0);
 let checks=0;const eq=(a,b,m)=>{assert.deepEqual(a,b,m);checks++;},ok=(a,m)=>{assert.ok(a,m);checks++;};
 function game(map='starting_corridor'){
  const r=G.makeRoom('normal',map);r.players=[{id:'a',name:'使用者',charId:'noir'},{id:'b',name:'対戦相手',charId:'grease'}];G.startGame(r);r.players.sort((a,b)=>a.id.localeCompare(b.id));

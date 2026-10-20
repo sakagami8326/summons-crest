@@ -1,7 +1,7 @@
 'use strict';
 const fs=require('fs'),assert=require('assert/strict');
 const source=fs.readFileSync(__dirname+'/server.js','utf8').replace(/server\.listen\([\s\S]*?\}\);\s*$/,'');
-const G=new Function('require','__dirname','setInterval','setTimeout',source+`;return {VERSION,CREATURES,CHAR_DECKS,MARKET_POOL,makeDeck,shopRandomPool,publicCardCatalog,makeRoom,startGame,tilesOf,calculateBattle,resolveBattle,landCombatUi,landDefenseStats,creatureEffectUi,resolveTile,publicState,publicBattle,serializeRoom,restoreRoom,rooms,botChooseOption};`)(require,__dirname,()=>0,()=>0);
+const G=new Function('require','__dirname','setInterval','setTimeout',source+`;return {VERSION,CREATURES,CHAR_DECKS,MARKET_POOL,makeDeck,shopRandomPool,publicCardCatalog,makeRoom,startGame,tilesOf,calculateBattle,resolveBattle,landCombatUi,landDefenseStats,creatureEffectUi,resolveTile,publicState,publicBattle,serializeRoom,restoreRoom,rooms,botChooseOption};`)(require('./test_helpers/default-rarity-require.cjs'),__dirname,()=>0,()=>0);
 let checks=0;const eq=(a,b,m)=>{assert.deepEqual(a,b,m);checks++},ok=(a,m)=>{assert.ok(a,m);checks++};
 function game(map='starting_corridor',cid='hibami',level=1,attacker='magado'){
  const r=G.makeRoom('normal',map);r.players=[{id:'a',name:'侵略者',charId:'adel'},{id:'d',name:'防衛者',charId:'linnei'}];G.startGame(r);r.players.sort((a,b)=>a.id.localeCompare(b.id));

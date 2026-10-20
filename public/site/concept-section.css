@@ -295,7 +295,7 @@ body {
   margin-top: 1.2rem;
 }
 
-.concept__cards img {
+.concept__cards > .conceptCard {
   position: absolute;
   left: 50%;
   bottom: 0;
@@ -309,9 +309,9 @@ body {
   transform-origin: 50% 110%;
 }
 
-.concept__cards img:nth-child(1) { transform: translateX(-82%) rotate(-15deg); }
-.concept__cards img:nth-child(2) { z-index: 2; transform: translateX(-50%); }
-.concept__cards img:nth-child(3) { transform: translateX(-18%) rotate(15deg); }
+.concept__cards > .conceptCard:nth-child(1) { transform: translateX(-82%) rotate(-15deg); }
+.concept__cards > .conceptCard:nth-child(2) { z-index: 2; transform: translateX(-50%); }
+.concept__cards > .conceptCard:nth-child(3) { transform: translateX(-18%) rotate(15deg); }
 
 .concept__phone > span {
   display: block;
@@ -386,3 +386,5 @@ body {
   .concept__visual::after,
   .concept__orbit { animation: none; }
 }
+
+.concept__cards > .conceptCard{display:block;overflow:hidden}.conceptCard>img{display:block;width:100%;height:100%;object-fit:cover}

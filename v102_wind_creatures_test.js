@@ -7,7 +7,7 @@ src = src.replace(/server\.listen\([\s\S]*?\}\);\s*$/, '');
 const G = new Function('require', '__dirname', 'process', 'console', 'setInterval',
   src + '\n;return { VERSION, CREATURES, MARKET_POOL, makeDeck, TILES, marlowSources,' +
   ' marlowDests, moveMarlow, creatureSupportEnabled, askUpgrade, handleChoose };')(
-  require, __dirname, process, console, () => {});
+  require('./test_helpers/default-rarity-require.cjs'), __dirname, process, console, () => {});
 
 let pass = 0;
 function ok(value, name) {

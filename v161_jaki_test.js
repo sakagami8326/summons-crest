@@ -2,7 +2,7 @@ const fs=require('fs'),assert=require('assert/strict');
 const source=fs.readFileSync(__dirname+'/server.js','utf8').replace(/server\.listen\([\s\S]*?\}\);\s*$/,'');
 const G=new Function('require','__dirname','setInterval','setTimeout',source+`
 return {CREATURES,CHAR_DECKS,makeRoom,startGame,resolveBattle,continuePostBattle,handleChoose,publicState,
- serializeRoom,restoreRoom,makeDeck,shopRandomPool,publicCardCatalog,standardBot,rooms};`)(require,__dirname,()=>0,()=>0);
+ serializeRoom,restoreRoom,makeDeck,shopRandomPool,publicCardCatalog,standardBot,rooms};`)(require('./test_helpers/default-rarity-require.cjs'),__dirname,()=>0,()=>0);
 let checks=0;
 const eq=(a,b,m)=>{assert.deepEqual(a,b,m);checks++;},ok=(a,m)=>{assert.ok(a,m);checks++;};
 function game(){const r=G.makeRoom();r.players=[{id:'p1',name:'甲',charId:'grease'},{id:'p2',name:'乙',charId:'adel'}];

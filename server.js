@@ -299,6 +299,8 @@ const ULTS = {
   villa:  { name: '墓守の協奏曲', desc: '廃棄枚数だけ進み、廃棄から最大3枚を手札へ戻す。その後ダイスを振る' },
   nerasio:{ name: '天地転成', desc: '自分の領地を1〜2か所選び、選んだ属性へ永続的に変更する' },
 };
+// Local rarity editor settings; UR retains the internal L value used by draw rules.
+require('./card-rarity-settings').apply({CREATURES,SPELLS,SUPPORTS});
 for (const [cid, c] of Object.entries({ ...CREATURES }))
   if (c.evo) CREATURES[cid + '_f'] = { name: c.evo, elem: c.elem, st: c.evoSt, hp: c.evoHp,
     cost: c.evoCost ?? c.cost, fx: c.evoFx || c.fx, rarity: c.rarity, forged: true };
@@ -402,7 +404,7 @@ function publicCardCatalog() {
     kind: 'weapon',
     name: card.name,
     element: null,
-    rarity: null,
+    rarity: displayRarity(card.rarity) || 'R',
     cost: card.cost || 0,
     at: card.st || 0,
     hp: card.hp || 0,
@@ -2506,7 +2508,7 @@ function startDraft(r, p, resume, availableAt) {
   const cards = r.deck.splice(0, 3);
   const ranks = { N: 0, R: 1, L: 2 };
   const info = c => CREATURES[c] || SPELLS[c] || SUPPORTS[c];
-  const rarity = c => SUPPORTS[c] ? 'R' : info(c).rarity;
+  const rarity = c => SUPPORTS[c] ? SUPPORTS[c].rarity || 'R' : info(c).rarity;
   const top = cards.reduce((a, c) => ranks[rarity(c)] > ranks[a] ? rarity(c) : a, 'N');
   r.draft = { player: p.id, cards, resume, aura: top };
   ask(r, p.id, 'draft', 'カードを1枚選んで獲得(残りは山札の底へ)', cards.map(c => ({
@@ -5073,7 +5075,7 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const p = url.pathname;
   if(p === '/game-cards.js'){res.writeHead(200,{'Content-Type':'text/javascript; charset=utf-8','Cache-Control':'no-cache'});return res.end(gameCardSource);}
-  if(['/upgrade-ui.js','/phone-upgrade.js','/phone-upgrade.css','/board-upgrade.js','/board-upgrade.css','/phone-player-target.js','/phone-player-target.css','/phone-land.js','/phone-land.css','/phone-enemy-choice.js','/phone-enemy-choice.css','/phone-summoners.js','/phone-summoners.css','/board-audio-settings.js','/board-settings.js','/board-settings.css','/board-flow-notices.js','/board-flow-notices.css','/board-route.js','/board-route.css','/board-finale.js','/board-finale.css','/board-goal-notice.js','/board-goal-notice.css','/board-land-stop.js','/board-land-stop.css','/board-next-notices.js','/board-next-notices.css','/board-enemy-land.js','/board-enemy-land.css','/board-actor.js','/board-actor.css','/board-effects.js','/board-notice.js','/board-notice.css','/board-milestones.js','/board-milestones.css','/result-review.js','/result-review.css','/rare-draw.css','/battle-external.css','/phone-card-picker.js','/phone-card-picker.css','/phone-deck.css','/hud-rank.js','/hud-rank.css'].includes(p))return serveFile(res,p.slice(1));
+  if(['/card-finish.css','/card-finish.js','/upgrade-ui.js','/phone-upgrade.js','/phone-upgrade.css','/board-upgrade.js','/board-upgrade.css','/phone-player-target.js','/phone-player-target.css','/phone-land.js','/phone-land.css','/phone-enemy-choice.js','/phone-enemy-choice.css','/phone-summoners.js','/phone-summoners.css','/board-audio-settings.js','/board-settings.js','/board-settings.css','/board-flow-notices.js','/board-flow-notices.css','/board-route.js','/board-route.css','/board-finale.js','/board-finale.css','/board-goal-notice.js','/board-goal-notice.css','/board-land-stop.js','/board-land-stop.css','/board-next-notices.js','/board-next-notices.css','/board-enemy-land.js','/board-enemy-land.css','/board-actor.js','/board-actor.css','/board-effects.js','/board-notice.js','/board-notice.css','/board-milestones.js','/board-milestones.css','/result-review.js','/result-review.css','/rare-draw.css','/battle-external.css','/phone-card-picker.js','/phone-card-picker.css','/phone-deck.css','/hud-rank.js','/hud-rank.css'].includes(p))return serveFile(res,p.slice(1));
   if (p === '/') return serveFile(res, 'site/index.html');
   if (p === '/news') return serveFile(res, 'site/news-index.html', url.searchParams.get('category'));
   if (p === '/news/2026-10-13-summoner-passives') return serveFile(res, 'site/news-2026-10-13-summoner-passives.html');

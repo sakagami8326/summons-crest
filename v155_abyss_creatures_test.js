@@ -8,7 +8,7 @@ const G = new Function('require', '__dirname', 'process', 'console', 'setInterva
   src + '\n;return { VERSION, CREATURES, MARKET_POOL, makeDeck, shopRandomPool, publicCardCatalog,' +
   ' makeRoom, makeFixtureRoom, startGame, performMove, onCreatureSummoned, handleChoose, tollOf, activeAbyssMarks,' +
   ' reconcileAbyssMarks, abyssMarkBonusFor, publicState, botChooseOption, serializeRoom, restoreRoom, rooms, TILES };')(
-  require, __dirname, process, console, () => {});
+  require('./test_helpers/default-rarity-require.cjs'), __dirname, process, console, () => {});
 
 let pass = 0;
 const ok = (value, name) => { if (!value) throw new Error('FAIL: ' + name); pass++; };
