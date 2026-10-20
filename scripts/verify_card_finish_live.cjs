@@ -1,7 +1,7 @@
 'use strict';
 const fs=require('fs'),path=require('path'),assert=require('assert/strict'),crypto=require('crypto');
 const root=path.resolve(__dirname,'..'),base='https://summonscode.jp',out=path.join(root,'output/release-card-finish-20261021');fs.mkdirSync(out,{recursive:true});
-const normal=s=>s.replace(/\r\n/g,'\n'),local=p=>normal(fs.readFileSync(path.join(root,p),'utf8'));
+const normal=s=>s.replace(/\r\n/g,'\n'),local=p=>{const text=fs.readFileSync(path.join(root,p),'utf8');return normal(p==='public/site/index.html'?require('../site-news').render(text):text)};
 (async()=>{const expected=local('public/card-finish.css');let deployed=false;for(let n=0;n<24;n++){const r=await fetch(base+'/card-finish.css?verify='+Date.now());if(r.ok&&normal(await r.text())===expected){deployed=true;break;}console.log('deployment pending');await new Promise(r=>setTimeout(r,10000));}assert(deployed,'production CSS did not update');const report={time:new Date().toISOString(),routes:{},files:{},rarities:{}};
  const fixture=await(await fetch(base+'/api/fixture?verify='+Date.now())).json();assert.equal(fixture.ver,'1.69');report.version=fixture.ver;
  for(const[url,file]of [['/','public/site/index.html'],['/phone','public/phone.html'],['/play?fixture=1&guide=done','public/board.html'],['/cards','public/site/cards.html'],['/summoners','public/site/summoners.html']]){const r=await fetch(base+url+(url.includes('?')?'&':'?')+'verify='+Date.now());assert.equal(r.status,200,url);assert.equal(normal(await r.text()),local(file),url+' exact client');report.routes[url]=r.status;}
