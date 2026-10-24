@@ -1,0 +1,75 @@
+{
+  "id": "move_B",
+  "label": "移動 B：石のコマ",
+  "category": "コマ移動",
+  "wav": "move_B.wav",
+  "ogg": "move_B.ogg",
+  "qa": {
+    "sample_rate": 48000,
+    "channels": 1,
+    "seconds": 0.12,
+    "peak_dbfs": -14.0,
+    "rms_dbfs": -33.85,
+    "onset_ms": 5,
+    "tail_silence_ms": 55,
+    "clipped_samples": 0,
+    "start_value_max": 0.0,
+    "end_value_max": 0.0,
+    "ogg_peak_dbfs": -13.76
+  },
+  "source": "output/audio-studio/priority-sfx-v1/move_B_raw.wav",
+  "trim_seconds": [
+    0.0,
+    0.1
+  ],
+  "gain_db": -6.18,
+  "generation": {
+    "kind": "generate",
+    "title": "priority_move_B",
+    "original_idea": "最優先部分の効果音を複数案づつ作ってみて",
+    "audio_type": "sfx",
+    "prompt": "Delicate repeatable movement step.",
+    "prompt_used": "TrackType: SFX, Delicate repeatable movement step, one small stone game token, one crisp light click landing on a tile with short soft resonance, smooth stone, dry ceramic tick, tiny low knock, close centered isolated one shot.",
+    "sound_fields": {
+      "source": "one small stone game token",
+      "action": "one crisp light click landing on a tile with short soft resonance",
+      "material": "smooth stone, dry ceramic tick, tiny low knock",
+      "space": "close centered isolated one shot"
+    },
+    "bpm": null,
+    "seconds": 1.0,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 102206,
+    "candidate": 1,
+    "file": "priority_move_B.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-10-22T21:24:18",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -7.82,
+    "raw_peak_dbfs": -7.82,
+    "ceiling_gain_db": 0.0,
+    "candidates": [
+      {
+        "path": "output/audio-studio/priority-sfx-v1/move_B_raw.wav",
+        "seed": 102206
+      }
+    ]
+  },
+  "design": {
+    "id": "move_B",
+    "label": "移動 B：石のコマ",
+    "duration": 1,
+    "seed": 102206,
+    "source": "one small stone game token",
+    "action": "one crisp light click landing on a tile with short soft resonance",
+    "material": "smooth stone, dry ceramic tick, tiny low knock",
+    "space": "close centered isolated one shot",
+    "prompt": "Delicate repeatable movement step."
+  },
+  "deployed_file": "public/assets/se_pawn_step_b_v1.wav"
+}

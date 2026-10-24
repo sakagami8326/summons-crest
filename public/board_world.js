@@ -1221,10 +1221,12 @@ const PW = (() => {
             P.tw = null;
             place(P, it.x, it.y, it);
             if (dist > 8) dustBurst(it.x, it.y, 3, 0xB8AE8F, it.z + 1);  // 着地の小粒子(品質係数・liteは0)
+            it.onLand?.();
           },
         });
       } else {
         place(P, it.x, it.y, it);
+        it.onLand?.();
       }
       P.x = it.x; P.y = it.y;
     }

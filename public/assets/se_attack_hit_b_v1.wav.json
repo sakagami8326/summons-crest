@@ -1,0 +1,75 @@
+{
+  "id": "hit_B",
+  "label": "攻撃 B：重い衝撃",
+  "category": "攻撃命中",
+  "wav": "hit_B.wav",
+  "ogg": "hit_B.ogg",
+  "qa": {
+    "sample_rate": 48000,
+    "channels": 2,
+    "seconds": 0.755,
+    "peak_dbfs": -4.0,
+    "rms_dbfs": -20.5,
+    "onset_ms": 0,
+    "tail_silence_ms": 30,
+    "clipped_samples": 0,
+    "start_value_max": 0.0,
+    "end_value_max": 0.0,
+    "ogg_peak_dbfs": -4.26
+  },
+  "source": "output/audio-studio/priority-sfx-v1/hit_B_raw.wav",
+  "trim_seconds": [
+    0.06499,
+    0.8
+  ],
+  "gain_db": -1.0,
+  "generation": {
+    "kind": "generate",
+    "title": "priority_hit_B",
+    "original_idea": "最優先部分の効果音を複数案づつ作ってみて",
+    "audio_type": "sfx",
+    "prompt": "Weighty monster battle impact.",
+    "prompt_used": "TrackType: SFX, Weighty monster battle impact, heavy fantasy creature strike, one powerful blow with immediate deep impact and short crumbling decay, dense low thump, rocky crunch, restrained magical crackle, close dry single game hit.",
+    "sound_fields": {
+      "source": "heavy fantasy creature strike",
+      "action": "one powerful blow with immediate deep impact and short crumbling decay",
+      "material": "dense low thump, rocky crunch, restrained magical crackle",
+      "space": "close dry single game hit"
+    },
+    "bpm": null,
+    "seconds": 1.5,
+    "negative_prompt": null,
+    "cfg": 1.0,
+    "steps": 8,
+    "variations": 1,
+    "seed": 102202,
+    "candidate": 1,
+    "file": "priority_hit_B.wav",
+    "sample_rate": 44100,
+    "bit_depth": 24,
+    "created": "2026-10-22T21:23:45",
+    "backend": "sa3-torch",
+    "model": "medium + same-l",
+    "peak_dbfs": -3.0,
+    "raw_peak_dbfs": -0.6,
+    "ceiling_gain_db": -2.4,
+    "candidates": [
+      {
+        "path": "output/audio-studio/priority-sfx-v1/hit_B_raw.wav",
+        "seed": 102202
+      }
+    ]
+  },
+  "design": {
+    "id": "hit_B",
+    "label": "攻撃 B：重い衝撃",
+    "duration": 1.5,
+    "seed": 102202,
+    "source": "heavy fantasy creature strike",
+    "action": "one powerful blow with immediate deep impact and short crumbling decay",
+    "material": "dense low thump, rocky crunch, restrained magical crackle",
+    "space": "close dry single game hit",
+    "prompt": "Weighty monster battle impact."
+  },
+  "deployed_file": "public/assets/se_attack_hit_b_v1.wav"
+}

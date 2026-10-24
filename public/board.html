@@ -1611,7 +1611,7 @@ const QR = (() => {
 <script src="/fx_manifest.js"></script>
 <script src="/vendor/phaser.min.js"></script>
 <script src="/assets/board-tiles.js?v=2"></script>
-<script src="/board_world.js?release=pawns-entry-v2&loading=v1"></script>
+<script src="/board_world.js?release=pawns-entry-v2&loading=v1&sfx=1"></script>
 <link rel="stylesheet" href="/board-notice.css?v=2&release=164">
 <link rel="stylesheet" href="/board-actor.css?v=3&handdiscard=horizontal">
 <script src="/board-actor.js?v=2&release=164&noir=166"></script>
@@ -1972,7 +1972,7 @@ async function hopStep() {
   hopState.sN++;
   const idx = hopState.path ? hopState.path[hopState.sN - 1] : (hopState.from + hopState.sN * (hopState.dir || 1) + 28 * 40) % 28;
   pawnAnim[hopState.id] = idx;
-  renderPawns();
+  renderPawns({ landingPlayer:hopState.id });
   const activeHop=hopState;
   const gates=(hopState.events||[]).filter(e=>e.type==='gate'&&e.step===hopState.sN);
   if(gates.length){
@@ -2413,8 +2413,10 @@ let bgmN = null, bgmR = null, bgmBattle = null, bgmSelect = null, bgmResult = nu
 let bgmFadeTimer = null, bgmFadeFrom = null;
 const caveBgm = {};
 let seTelop = null, seSummon = null, seEvolve = null, seBattleFinish = null, seCastleBonus = null, seUltCutin = null;
+let sePawnStep = null;
+const attackHitVoices = [];
 const audioList = () => [bgmN, bgmR, bgmBattle, bgmSelect, bgmResult, ...Object.values(caveBgm),
-  seTelop, seSummon, seEvolve, seBattleFinish, seCastleBonus, seUltCutin].filter(Boolean);
+  seTelop, seSummon, seEvolve, seBattleFinish, seCastleBonus, seUltCutin, sePawnStep, ...attackHitVoices].filter(Boolean);
 function stopAudio(a) {
   if (!a) return;
   try { a.pause(); a.currentTime = 0; } catch (e) {}
@@ -2462,9 +2464,12 @@ function initAudio() {
   seBattleFinish = new Audio('/assets/se_battle_finish.mp3');
   seCastleBonus = new Audio('/assets/se_castle_bonus.mp3');
   seUltCutin = new Audio('/assets/se_ult_cutin.mp3');
+  sePawnStep = new Audio('/assets/se_pawn_step_b_v1.wav');
+  // Two voices preserve the first hit's tail when a combo lands its next hit.
+  attackHitVoices.push(new Audio('/assets/se_attack_hit_b_v1.wav'), new Audio('/assets/se_attack_hit_b_v1.wav'));
   seTelop.volume = 0.6; seSummon.volume = 0.72; seEvolve.volume = 0.76;
   seBattleFinish.volume = 0.82; seCastleBonus.volume = 0.78; seUltCutin.volume = 0.9;
-  [seTelop, seSummon, seEvolve, seBattleFinish, seCastleBonus, seUltCutin].forEach(a => {
+  [seTelop, seSummon, seEvolve, seBattleFinish, seCastleBonus, seUltCutin, sePawnStep, ...attackHitVoices].forEach(a => {
     a.preload = 'auto'; a.muted = true;
     a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = bgmMuted; })
       .catch(() => { a.muted = bgmMuted; });
@@ -2484,6 +2489,10 @@ function initAudio() {
 function playSe(a) {
   if (!a || bgmMuted || BoardAudioSettings.value.se === 0) return;
   try { a.pause(); a.currentTime = 0; a.play().then(audioStarted).catch(reportAudioBlocked); } catch (e) {}
+}
+function playAttackHit() {
+  if (document.hidden) return;
+  playSe(attackHitVoices.find(a => a.paused || a.ended) || attackHitVoices[0]);
 }
 function boardBgmTrack(which) {
   if (state?.mapId === 'twin_gate_cavern' && (which === 'normal' || which === 'reach')) {
@@ -2506,6 +2515,8 @@ function applyBoardAudioVolume() {
   const v=BoardAudioSettings.value;
   if (!bgmFadeTimer) audioList().filter(a=>a.loop).forEach(a=>{a.volume=bgmVolume(a);});
   [seTelop,seSummon,seEvolve,seBattleFinish,seCastleBonus,seUltCutin].forEach((a,i)=>{if(a)a.volume=[.6,.72,.76,.82,.78,.9][i]*v.se/100;});
+  if (sePawnStep) sePawnStep.volume = .9 * v.se / 100;
+  attackHitVoices.forEach(a => { a.volume = .85 * v.se / 100; });
   window.SummonsEvolution?.setVolume(v.se/100);
   resultGraphAudio?.setVolume(v.se/100);
   document.dispatchEvent(new Event('board-audio-change'));
@@ -3073,7 +3084,7 @@ async function runFxHarness(name) {
     const from = state.players[0].pos;
     for (let s2 = 1; s2 <= 8; s2++) {
       pawnAnim[p0] = (from + s2) % 28;
-      renderPawns();
+      renderPawns({ landingPlayer:p0 });
       await new Promise(r => setTimeout(r, GAME_TIMING.stepMs));
       PW.pump(2);
     }
@@ -3751,10 +3762,18 @@ function pawnLayout() {
              zs: GEO[pp][0] + GEO[pp][1] + 100 };
   });
 }
-function renderPawns() {
+function renderPawns({landingPlayer} = {}) {
   const layout = pawnLayout();
+  if (landingPlayer) {
+    const instance = state.stateInstanceId, room = state.code;
+    const pawn = layout.find(it => it.id === landingPlayer);
+    if (pawn) pawn.onLand = () => {
+      if (!document.hidden && state?.phase === 'playing' && state.code === room && state.stateInstanceId === instance) playSe(sePawnStep);
+    };
+  }
   if (renderModeActive === 'phaser') return PW.syncPawns(layout);
   renderPawnsDom(layout);
+  layout.find(it => it.id === landingPlayer)?.onLand?.();
 }
 function renderPawnsDom(layout) {
   const layer = $('pawnLayer');
@@ -4238,6 +4257,7 @@ function battleTrailFx(elem, target, heavy) {
     'battleFxTrail ' + (target === 'atk' ? 'toAtk' : 'toDef'));
 }
 function battleImpactFx(elem, target, heavy) {
+  playAttackHit();
   const group = typeof FX_ASSETS !== 'undefined' && FX_ASSETS[elem || 'neutral'];
   const common = typeof FX_ASSETS !== 'undefined' && FX_ASSETS.common;
   const at = target === 'atk' ? 'atAtk' : 'atDef';

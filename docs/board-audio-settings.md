@@ -17,4 +17,10 @@
 
 ## 検証
 
+2026-10-22 ローカル実装：試聴候補の攻撃B（重い衝撃）と移動B（石のコマ）を採用。
+攻撃音は通常戦闘の命中・反撃・連撃に同期し、2音声で連撃の余韻を保持する。
+移動音は通常／洞窟マップの実際のホップ着地で1回再生する。再描画やコマの重なり調整だけでは鳴らさない。
+既存の全体OFF・効果音0%・音量変更で両音源を制御する。音源と生成設定は `public/assets/se_attack_hit_b_v1.wav(.json)`、`se_pawn_step_b_v1.wav(.json)`。
+`board_priority_sfx_browser_test.js` が実際の音声デコード、連撃の音声重なり、反撃、両マップの着地、ミュートと音量を確認する。2026-10-24の公開対象はこの2音源と再生処理のみ。ダイス・G移動の試聴候補とスペルは含めない。
+
 `npm.cmd test`、`board_settings_browser_test.js`。実際の盤面HTML/APIによる保存終了・BOT速度・設定保持・音量とフェード・0%・再生再試行・Web Audio出力・表示/キーボードを確認。画像/ログは `output/audio-settings-integration`。Android実機と聴感評価は未確認。
