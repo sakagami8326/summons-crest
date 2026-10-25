@@ -98,7 +98,7 @@
         <div class="game-card__info"><p class="game-card__effect">${effect}</p></div>${card.exileAfterUse ? '<span class="game-card__exile">廃棄</span>' : ''}</div>`;
     }
     const power = card.at ? `AT＋${card.at}` : card.hp ? `DF＋${card.hp}` : '能力';
-    return `<div data-finish-rarity="${escapeHtml(card.rarity || 'N')}" class="game-card game-card--weapon">
+    return `<div data-finish-rarity="${escapeHtml(card.rarity || 'N')}" class="game-card game-card--weapon" data-card-art="${escapeHtml(card.id)}">
       <img class="game-card__background" src="/assets/cards/bg-weapon-v1.webp" alt="" loading="lazy" decoding="async" width="1024" height="1536">
       <div class="game-card__header"><strong class="game-card__name">${name}</strong></div>
       <div class="game-card__art">${artHtml}</div><span class="game-card__cost">${side.cost ?? card.cost}G</span>

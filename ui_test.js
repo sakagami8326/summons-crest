@@ -9,7 +9,7 @@ const fs = require('fs');
 // ===== サーバー(in-process) =====
 let ssrc = fs.readFileSync('server.js', 'utf8').replace(/server\.listen\([\s\S]*?\}\);\s*$/, '');
 const S = new Function('require', '__dirname', 'process', 'console', 'setInterval',
-  ssrc + ';return {makeRoom,startSelect,handleChoose,advancePassiveResolution,resolveUltSequence,continuePostBattle,publicState,isSelectionReady,startGame,SPELLS,doRoll,CHARS,CHAR_DECKS,ULTS};')(
+  ssrc + ';return {makeRoom,startSelect,handleChoose,advancePassiveResolution,resolveUltSequence,continuePostBattle,publicState,isSelectionReady,startSelectionDraw,advanceSelectionDraw,startGame,SPELLS,doRoll,CHARS,CHAR_DECKS,ULTS};')(
   require, __dirname, process, { log: () => {}, error: console.error }, () => 0);
 
 // ===== リーア仮実装 =====
@@ -391,6 +391,13 @@ function runGame(g) {
       const atBefore = (r.lastDice || {}).at, dirBefore = (r.players.find(q => q.id === pid2) || {}).dir;
       if (opt.id === 'roll') P.setRolling(true);
       S.handleChoose(r, pid2, opt.id);
+      // This phone-only DOM harness advances the TV's image-ready acknowledgement and reveal clock.
+      // Real TV/phone timing and the waiting UI are covered in summoner_random_browser_test.js.
+      if (r.phase === 'select' && r.selectionDraw?.phase === 'preparing') {
+        if (S.isSelectionReady(r)) throw new Error('抽選演出前に開始可能になった');
+        S.startSelectionDraw(r);
+        S.advanceSelectionDraw(r, Math.max(...r.selectionDraw.targets.map(t => t.stopAt)) + 1);
+      }
       // 全員確定後、テレビ側の「ゲーム開始」押下を再現する。
       if (r.phase === 'select' && S.isSelectionReady(r)) S.startGame(r);
       if (opt.id === 'roll' && P.getRolling()) {

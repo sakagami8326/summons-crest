@@ -1,0 +1,17 @@
+#selectOv .summonerTitle>span,#selectOv .summonerHint,#selectOv .scSlotStatus>span,#selectOv .scChosenLine>b,#selectOv .scChosenLine>span:last-child{display:none}
+#selectOv .summonerHead{min-height:8vh;margin-bottom:2vh;flex-shrink:0}
+#selectOv #selRow{flex-shrink:0}
+#selectOv .selectionStart{margin-top:8vh;min-height:6vh;flex-shrink:0}
+#selectOv #selectionStartMsg:empty{display:none}
+#selectOv .scChosenMeta{top:67%;height:auto;justify-content:flex-start}
+#selectOv .scPlayerPlate{height:2.8vh;box-sizing:border-box;flex:none;white-space:nowrap}
+#selectOv .scChosenName{min-height:3.2vh}
+#selectOv .scBotBadge{border:0;border-radius:0;background:#d8bd7f;color:#151924;padding:.16vh .35vw;font-weight:700;line-height:1.15;box-shadow:none}
+.selectionRandomSlot{border-color:#d7c08a!important}
+.selectionRandomSlot .scPortrait{background:radial-gradient(ellipse at center,#3d354a,#111724 70%)}
+.selectionRandomSlot .scPortrait::after{background:linear-gradient(transparent 48%,#060b17dc 75%,#060b17f5)}
+.selectionRandomFace{position:absolute;inset:0;display:grid;place-items:center;color:#efdba9}
+.selectionRandomGlyph{font:400 clamp(80px,21vh,240px)/1 Georgia,serif;color:#e7d6ad;text-shadow:0 0 34px #d0b16b30}
+.selectionDrawFrames{position:absolute;inset:0}
+#selectOv .selectionDrawFrames img{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover;object-position:center 22%;visibility:hidden;display:block}
+#selectOv .selectionDrawFrames img.selectionCurrent{visibility:visible}

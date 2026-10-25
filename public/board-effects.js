@@ -55,7 +55,8 @@ window.BoardEffects = (() => {
       left=`<div class="effectSource spellSource"><div class="sourceCard"><review-game-card card-id="${esc(sid)}"></review-game-card></div></div>`;
       const result=e.display||{},snap=e.targets?.[0],cid=result.creature||snap?.creature;
       if(result.beforeHp!=null)body=`<div class="targetResult">${target(cid,s)}${pair('HP',n(result.beforeHp),n(result.afterHp))}</div>${result.df?'<div class="effectPill">次の戦闘 DF +10</div>':''}${sid==='sp_flame_vortex'?'<div class="effectPill">次の侵略者 AT +10</div>':''}`;
-      else if(sid==='sp_gold')body=result.gold!=null?metric('ic_gold.png','獲得','+'+n(result.gold),'G'):text('Gを獲得');
+      else if(sid==='sp_gold'||sid==='sp_chain_gold')body=result.gold!=null?metric('ic_gold.png','獲得','+'+n(result.gold),'G'):text('Gを獲得');
+      else if(sid==='sp_mana_forge')body=text('ソード・シールドを山札へ');
       else if(sid==='sp_insight')body=metric('ic_hand.png','手札に追加','+'+n(e.n),'枚');
       else if(sid==='sp_quake'&&result.beforeLevel!=null)body=`<div class="targetResult">${target(cid,s)}${pair('領地レベル','Lv.'+result.beforeLevel,'Lv.'+result.afterLevel)}</div>`;
       else if(e.elem)body=`<div class="targetResult">${target(cid,s)}<div class="elementPair">${result.beforeElem?element(result.beforeElem):''}${arrow}${element(e.elem)}</div></div>`;

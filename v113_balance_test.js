@@ -16,7 +16,7 @@ eq([C.beruf.cost,C.morbill.cost,C.fugorm.cost,C.garble.cost,C.goagoa.cost,C.zati
   [60,60,80,100,100,60],'summon costs');
 ok(C.detropas.fx.includes('AT+10'),'Pack grants AT+10 per fire land');
 ok(C.qbaby.fx.includes('自分の火領地'),'Queen affects all friendly fire lands');
-ok(C.kbaby.fx.includes('1.5倍')&&C.kbaby.fx.includes('2倍'),'King uses toll multipliers');
+ok(C.kbaby.fx.includes('1.5倍')&&C.kbaby.evoFx.includes('2倍'),'King uses toll multipliers');
 ok(C.beruf.fx.includes('DF+10')&&C.beruf.fx.includes('上限なし'),'Shade grants uncapped DF');
 {
   const r=G.makeRoom(); r.players=[{id:'p',name:'P',discard:[]}];

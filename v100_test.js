@@ -182,6 +182,31 @@ for (const [id] of rows) {
   G.rooms.delete(r.code);
 }
 
+// Lia's Flame Vortex remains spell damage even though its source is an ultimate.
+for (const [creature,level,injury,damage,defeated] of [
+  ['bunnyhop',1,0,0,false], ['bunnyhop',2,5,0,false],
+  ['bunnyhop',3,0,10,false], ['bunnyhop_f',1,0,10,false],
+  ['bedebero',1,5,0,false], ['beruf',1,0,10,false], ['gecko',1,20,10,true],
+]) {
+  const r = game(['lia', 'adel']), p = r.players.find(x => x.charId === 'lia');
+  const enemy = r.players.find(x => x.id !== p.id);
+  r.turn = r.players.indexOf(p); r.pending = {};
+  r.owners[1] = { player:enemy.id, level, creature, dmg:injury };
+  r.pending[p.id] = { type:'ult_lia', selected:[1], options:[{id:'lu:confirm'}] };
+  const discards = enemy.discard.length;
+  G.handleChoose(r,p.id,'lu:confirm'); G.resolveUltSequence(r);
+  const result = r.lastSpellFx.results[0];
+  eq([result.damage,result.defeated],[damage,defeated],`Lia ultimate uses spell resistance: ${creature} Lv${level}`);
+  if(defeated)eq(enemy.discard.length,discards+1,'lethal ultimate damage discards its victim');
+  else {
+    eq(r.owners[1].dmg,injury+damage,'damage persists correctly after ultimate resolution');
+    eq(enemy.discard.length,discards,'spell immunity/reduction does not discard its creature');
+  }
+  ok(r.tileFx[1].vortex && r.tileFx[1].vortexSource.charId==='lia','immunity preserves the Vortex invasion bonus');
+  if(creature==='beruf')eq(r.owners[1].shade,1,'ultimate spell damage still triggers Shade');
+  G.rooms.delete(r.code);
+}
+
 // Adele: all friendly creatures heal and receive one-use defense ward.
 {
   const r = game(['adel', 'lia']);

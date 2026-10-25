@@ -48,7 +48,7 @@ try {
    if(level===3 && G.CREATURES[cid].evo)old.battle.atkCreature=cid+'_f';
    seed=10;G.referenceBattle(old);seed=10;G.resolveBattle(next);
    // The frozen resolver predates result-only counters; compare all combat state.
-   const combatOnly=r=>{const c=copy(r);if(c.lastBattle){delete c.lastBattle.externalModifiers;delete c.lastBattle.moneyEvents;delete c.lastBattle.tollWaived;}c.players.forEach(p=>{delete p.cardsCollected;delete p.tollCollected;});c.owners.forEach(o=>{if(o)delete o.evolutionAbilityUsed;});return c;};
+   const combatOnly=r=>{const c=copy(r);if(c.lastBattle){delete c.lastBattle.externalModifiers;delete c.lastBattle.moneyEvents;delete c.lastBattle.supportPayments;delete c.lastBattle.summonPayment;delete c.lastBattle.tollWaived;}c.players.forEach(p=>{delete p.cardsCollected;delete p.tollCollected;});c.owners.forEach(o=>{if(o)delete o.evolutionAbilityUsed;});return c;};
    eq(combatOnly(next),combatOnly(old),`full combat unchanged: ${cid}/${defender}/Lv${level}`);
    for(const [a,b] of [['atkDmg','st'],['effHp','hp'],['defDF','df'],['dealt','dealt'],['win','win'],['atkSurvived','atkSurvived'],['counterDealt','counterDealt']])eq(q[a],next.lastBattle[b],'prediction matches actual '+b);
  }
@@ -125,7 +125,7 @@ try {
  {
    const g=game();g.p.hand=['gecko'];g.p.gold=0;g.enemy.hand=[];g.p.pos=1;
    g.r.owners[1]={player:g.enemy.id,creature:'gaston',level:1,dmg:20};g.r.elemOv[1]='fire';
-   eq(decide(g,pd('tile',['invade','toll'])).id,'invade','free invasion does not invent a summon fee or reserve');
+   eq(decide(g,pd('tile',['invade','toll'])).id,'toll','unfunded hand invasion is not available');
  }
  {
    const g=game();g.p.charId='mio';g.p.gold=2000;g.p.hand=['sp_bedrock_uplift','gaston'];

@@ -27,8 +27,8 @@ eq([j.name,j.evo,j.elem,j.rarity,j.cost,j.st,j.hp,j.evoSt,j.evoHp],['ジャキ',
 eq(G.CREATURES.bedebero.st,20,'Bedebero AT balance');
 eq(G.CREATURES.jaki_f.fx,j.fx,'ability shared by both forms');
 for(const pool of [G.makeDeck(),G.shopRandomPool()])eq([pool.filter(c=>c==='jaki').length,pool.includes('jaki_f')],[2,false],'two base cards only');
-eq(G.makeDeck().length,172,'common deck total');
-eq(G.publicCardCatalog().counts,{total:84,creatures:53,evolutions:46,spells:26,weapons:5},'public counts');
+eq(G.makeDeck().length,179,'common deck total');
+eq(G.publicCardCatalog().counts,{total:87,creatures:53,evolutions:46,spells:28,weapons:6},'public counts');
 eq(G.CHAR_DECKS.grease,['nome','nome','nome','jaki','jaki','cleo','sp_gold','sp_insight','sp_evolve','shield','shield','jinx'],'approved starter');
 for(const form of ['jaki','jaki_f'])for(const defense of [false,true]){
  const g=battle({form,defense,hand:['nome','nome']});

@@ -72,7 +72,7 @@ const boardWorld=fs.readFileSync(path.join(__dirname,'public','board_world.js'),
   const {r,p}=roomFor('grease');
   const d={id:'p2',name:'P2',charId:'mio',gold:500,pos:1,dir:1,lap:1,hand:[],deck:[],discard:[],exile:[],battleWins:0,shrineVisits:0,ultUsed:false,spellCast:false,bankrupt:false};
   r.players.push(d); r.owners[1]={player:d.id,level:1,creature:'nome'}; r.elemOv[1]='water';
-  G.startBattle(r,p,1);
+  p.hand=['gecko'];G.startBattle(r,p,1);
   eq(G.publicState(r,p.id).battlePreview.terrainElem,'water','battle preview persists overridden terrain element');
 }
 const nextNotices=fs.readFileSync(path.join(__dirname,'public','board-next-notices.js'),'utf8');

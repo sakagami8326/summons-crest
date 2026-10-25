@@ -20,7 +20,7 @@ function grant(g,src,dst) {const before=G.windSupplyProviders(g.r,g.p);g.r.owner
 eq([G.CREATURES.poponga.cost,G.CREATURES.poponga.st,G.CREATURES.poponga.hp],[80,20,40],'base');
 eq([G.CREATURES.poponga_f.cost,G.CREATURES.poponga_f.st,G.CREATURES.poponga_f.hp],[80,35,60],'evolved');
 for(const pool of [G.makeDeck(),G.shopRandomPool()])eq([pool.filter(x=>x==='poponga').length,pool.includes('poponga_f')],[2,false],'two R base copies');
-eq(G.publicCardCatalog().counts,{total:84,creatures:53,evolutions:46,spells:26,weapons:5},'catalog');
+eq(G.publicCardCatalog().counts,{total:87,creatures:53,evolutions:46,spells:28,weapons:6},'catalog');
 eq(Object.entries(G.CHAR_DECKS).filter(([,deck])=>deck.includes('poponga')).map(([id,deck])=>[id,deck.filter(c=>c==='poponga').length]),[['mio',1]],'one Poponga in Mio starter only');
 for(const map of ['starting_corridor','twin_gate_cavern']){
  const g=game(map),[a,b,c]=g.lands;g.put(a);g.put(b,'marlow');
@@ -79,7 +79,7 @@ for(const map of ['starting_corridor','twin_gate_cavern']){
 }
 for(const win of [true,false]){
  const g=game();g.put(1);g.put(22,win?'jaki_f':'orphe');g.put(21,win?'gecko':'nome_f',g.d.id,1);g.r.elemOv[21]='earth';
- G.startBattle(g.r,g.p,21);Object.assign(g.r.battle,{atkCreature:win?'jaki_f':'orphe',moveFrom:22,supports:{a:{kind:'none'},d:{kind:'none'}}});g.r.pending={};
+ g.p.hand.push(win?'jaki_f':'orphe');G.startBattle(g.r,g.p,21);g.p.hand.pop();Object.assign(g.r.battle,{atkCreature:win?'jaki_f':'orphe',moveFrom:22,supports:{a:{kind:'none'},d:{kind:'none'}}});g.r.pending={};
  G.resolveBattle(g.r);eq(g.r.lastBattle.win,win,'expected battle result');
  eq(g.p.hand.length,win?2:1,'draw only for committed invasion');
  if(win){eq(g.r.pending.a.type,'frontline_swap','frontline offered after draw');ok(g.r.pending.a.options.some(o=>o.card==='garble'),'draw can supply replacement');}
@@ -106,7 +106,7 @@ for(const win of [true,false]){
 }
 {
  const g=game();g.put(1);g.put(22,'jaki_f');g.put(21,'gecko',g.d.id);g.r.elemOv[21]='earth';g.r.clients=new Set([{viewerId:null}]);
- G.startBattle(g.r,g.p,21);Object.assign(g.r.battle,{atkCreature:'jaki_f',moveFrom:22,supports:{a:{kind:'none'},d:{kind:'none'}}});g.r.pending={};
+ g.p.hand.push('jaki_f');G.startBattle(g.r,g.p,21);g.p.hand.pop();Object.assign(g.r.battle,{atkCreature:'jaki_f',moveFrom:22,supports:{a:{kind:'none'},d:{kind:'none'}}});g.r.pending={};
  G.resolveBattle(g.r);eq(g.r.pending.a.type,'creature_effect','battle draw presentation precedes frontline');
  const id=g.r.windSupply.id;G.finishWindSupply(g.r,id);eq(g.r.pending.a.type,'frontline_swap','battle continuation after presentation');
  eq(g.p.hand.length,2,'battle resumed without second draw');

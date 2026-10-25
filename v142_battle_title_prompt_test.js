@@ -23,6 +23,7 @@ ok(Number(pkg.version.replace(/\.0$/, '')) >= 1.52, 'package release includes v1
 
 // 前回結果が残っていても新しい戦闘は独立したキーで公開される。
 const battleRoom = G.makeFixtureRoom();
+battleRoom.players[0].hand.push('gecko');battleRoom.players[0].gold=1000;
 battleRoom.lastBattle = { at:1, attacker:'old-a', defender:'old-d' };
 const battleTile = battleRoom.owners.findIndex(o => o && o.player !== battleRoom.players[0].id);
 G.startBattle(battleRoom, battleRoom.players[0], battleTile);

@@ -20,7 +20,7 @@ module.exports = function createStandardBot(A) {
   const handledPending = new Set(('creature_effect abyss_mark curse_target daitekkan_recover direction draft forge forget gate market '
     +'marlow_dest marlow_src mermaid_heal move_a move_b overflow pick_creature pick_draw quake_target roll route_choice '
     +'samurai_elem select_char select_wait sell spell_target spell_evolve frontline_swap step_a step_b support swap_land swap_pick tile toxy_target '
-    +'passive_resolve passive_reward passive_mio passive_lia ult_grease ult_lia ult_mio ult_nerasio_elem ult_nerasio_land ult_resolve ult_villa_recover upgrade upgrade_lv gaust_exile fatal_exile card_search inkcrow_discard censor_pick censor_target gate_pass_evolve').split(' '));
+    +'passive_resolve passive_reward passive_mio passive_lia ult_grease ult_lia ult_mio ult_nerasio_elem ult_nerasio_land ult_resolve ult_villa_recover upgrade upgrade_lv gaust_exile fatal_exile mana_forge card_search inkcrow_discard censor_pick censor_target gate_pass_evolve').split(' '));
 
   function view(raw, me, pending) {
     const r = {};
@@ -90,7 +90,7 @@ module.exports = function createStandardBot(A) {
     const out=[{kind:'none'}]; let skip=reserved;
     for (const id of p.hand) {
       if (skip && id===cid) { skip=false; continue; }
-      if (W[id]) out.push({kind:'support',cardId:id});
+      if (W[id] && W[id].cost<=p.gold) out.push({kind:'support',cardId:id});
       else if (C[id] && creatureSupportEnabled(cid) && C[id].cost<=p.gold)
         out.push({kind:'creature',cardId:id});
     }
@@ -100,7 +100,7 @@ module.exports = function createStandardBot(A) {
     if (p.handCount <= (attacker&&!fromLand?1:0)) return [{kind:'none'}];
     const out=[{kind:'none'}];
     for (const field of ['st','hp','jinx']) {
-      const ids=Object.keys(W).filter(id=>W[id][field]);
+      const ids=Object.keys(W).filter(id=>W[id][field] && W[id].cost<=p.gold);
       ids.sort((a,b)=>Number(W[b][field])-Number(W[a][field]));
       if(ids[0]) out.push({kind:'support',cardId:ids[0]});
     }
@@ -111,7 +111,7 @@ module.exports = function createStandardBot(A) {
     }
     return out.filter((x,i,a)=>a.findIndex(y=>y.kind===x.kind&&y.cardId===x.cardId)===i);
   }
-  const supportCost = s => s.kind==='creature'?C[s.cardId].cost:0;
+  const supportCost = s => s.kind==='creature'?C[s.cardId].cost:s.kind==='support'?W[s.cardId].cost:0;
   function combat(r,p,b,ownSupport) {
     const attack = b.attacker===p.id, rival=player(r,attack?b.defender:b.attacker);
     const rivalCid=attack?r.owners[b.tile].creature:b.atkCreature;
@@ -137,9 +137,15 @@ module.exports = function createStandardBot(A) {
   function invasion(r,p,tile,cids=p.hand.filter(id=>C[id]),extra={}) {
     const o=r.owners[tile]; if(!o || o.player===p.id) return null;
     const trials=[];
-    for(const cid of [...new Set(cids)]) for(const sup of supports(r,p,cid,extra.moveFrom===undefined&&!extra.corridor)) {
-      const b={tile,attacker:p.id,defender:o.player,atkCreature:cid,...extra};
-      trials.push({...combat(r,p,b,sup),cid,sup});
+    for(const cid of [...new Set(cids)]) {
+      const summon=extra.moveFrom===undefined&&!extra.corridor ? C[cid].cost : 0;
+      if(summon>p.gold)continue;
+      const next=clone(r),caster=player(next,p.id);caster.gold-=summon;
+      for(const sup of supports(next,caster,cid,extra.moveFrom===undefined&&!extra.corridor)) {
+        const b={tile,attacker:p.id,defender:o.player,atkCreature:cid,...extra};
+        const result=combat(next,caster,b,sup);
+        trials.push({...result,score:result.score-summon,fee:result.fee+summon,cid,sup});
+      }
     }
     return trials.sort((a,b)=>b.score-a.score||a.fee-b.fee)[0]||null;
   }
@@ -266,6 +272,11 @@ module.exports = function createStandardBot(A) {
         out.push({sid,cost:fee,score:benefit-fee-12,reason:S[sid].name+'の効果と費用を比較',...extra});
     };
     if(sid==='sp_gold') add(Math.max(1,p.lap)*100);
+    else if(sid==='sp_chain_gold') add(Math.max(0,...['fire','water','earth','wind'].map(e=>own.filter(t=>tileElem(r,t)===e).length))*100);
+    else if(sid==='sp_mana_forge') {
+      const cheapest=Math.min(...p.hand.filter(id=>C[id]).map(id=>cardValue(r,p,id)));
+      if(Number.isFinite(cheapest))add(130+(p.charId==='villa'?45:0)-cheapest*.5);
+    }
     else if(sid==='sp_insight') add(Math.min(2,Math.max(0,7-p.hand.length+1))*50);
     else if(sid==='sp_censor') add(r.players.some(q=>q.id!==p.id&&!q.bankrupt&&q.handCount>0)?110:0);
     else if(sid==='sp_evolve') {
@@ -444,6 +455,9 @@ module.exports = function createStandardBot(A) {
         const item=visit.items.find(x=>x.slotId===o.id.slice(4));
         add(o.id,botPurchaseScore(r,p,item,botCashReserve(r,p))-20,'補充価値と購入後の予算',{cost:item?.price||0,cards:1});
       }
+    } else if(pd.type==='mana_forge') {
+      const cost=effectiveSpellCost(r,p,'sp_mana_forge');
+      for(const o of opts.filter(o=>C[o.card])) add(o.id,130-cost-cardValue(r,p,o.card)*.5+(p.charId==='villa'?45:0),'廃棄する戦力と生成するウェポンを比較');
     } else if(['draft','pick_draw','daitekkan_recover','ult_villa_recover','overflow','forget','gaust_exile','fatal_exile'].includes(pd.type)) {
       const discard=['overflow','forget','gaust_exile','fatal_exile'].includes(pd.type);
       for(const o of opts.filter(o=>!cancelled(o.id)&&o.id!=='vr:confirm')) {

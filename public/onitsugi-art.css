@@ -1,0 +1,28 @@
+/* Approved viewer: scale 150%, X -5.6%, Y -3.9%, original angle.
+   Opaque bounds (alpha >= 200): (102,182)..(924,1318), source 1024x1536.
+   Anchor the visible blade to the whole card, keeping the chain over the paper. */
+.supportCard:has([data-weapon-art="onitsugi"]) .suArt,
+.game-card--weapon[data-card-art="onitsugi"] .game-card__art {
+  inset:0; width:100%; height:100%; z-index:7; overflow:visible;
+}
+.supportCard:has([data-weapon-art="onitsugi"]) .suArt img,
+.game-card--weapon[data-card-art="onitsugi"] .game-card__art img {
+  position:absolute; width:65%; height:auto; max-width:none; max-height:none;
+  left:47.30478515625%; top:calc(9.1% + 55.7958984375cqw);
+  transform:translate(-50%,-50%) scale(var(--onitsugi-art-scale,1.5));
+  object-fit:contain; filter:drop-shadow(0 2px 3px #0005);
+}
+.supportCard:has([data-weapon-art="onitsugi"]) .suInfo,
+.game-card--weapon[data-card-art="onitsugi"] .game-card__info { z-index:auto; background:transparent; }
+.supportCard:has([data-weapon-art="onitsugi"]) .suInfo::before,
+.game-card--weapon[data-card-art="onitsugi"] .game-card__info::before {
+  content:""; position:absolute; inset:0; z-index:6; background:var(--paper,#f6e9c8); pointer-events:none;
+}
+.supportCard:has([data-weapon-art="onitsugi"]) :is(.suPower,.suText),
+.game-card--weapon[data-card-art="onitsugi"] :is(.game-card__power,.game-card__effect) { position:relative; z-index:9; }
+.supportCard:has([data-weapon-art="onitsugi"]) .suHead,
+.game-card--weapon[data-card-art="onitsugi"] .game-card__header { z-index:10; }
+.supportCard:has([data-weapon-art="onitsugi"]) .suText { -webkit-line-clamp:5; line-clamp:5; }
+.game-card--weapon[data-card-art="onitsugi"] .game-card__effect { -webkit-line-clamp:5; line-clamp:5; }
+.supportCard:has([data-weapon-art="onitsugi"]) .cardExileTag,
+.game-card--weapon[data-card-art="onitsugi"] .game-card__exile { bottom:1.2%; }

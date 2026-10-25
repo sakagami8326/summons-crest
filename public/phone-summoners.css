@@ -36,7 +36,8 @@
 #phoneSummoners .listHeader h1{font-size:clamp(20px,3vw,34px);letter-spacing:.12em}
 #phoneSummoners .previewTag{font:10px Georgia;letter-spacing:.25em;color:#c9bc99}
 #phoneSummoners .elementFilters{position:absolute;left:2.5vw;top:19dvh;display:flex;flex-direction:column;gap:2dvh}
-#phoneSummoners .elementFilters button{display:grid;place-items:center;width:6vw;max-width:65px;height:12dvh;max-height:58px;padding:9px;border:1px solid transparent;background:transparent;border-radius:0;color:#dac389;transition:background .2s,box-shadow .2s}
+#phoneSummoners .elementFilters button{display:flex;align-items:center;justify-content:center;width:6vw;max-width:65px;height:12dvh;max-height:58px;padding:0;line-height:0;border:1px solid transparent;background:transparent;border-radius:0;color:#dac389;transition:background .2s,box-shadow .2s}
+#phoneSummoners#phoneSummoners .elementFilters button>svg,#phoneSummoners#phoneSummoners .elementFilters button>.elementIcon{display:block;flex:none;margin:0;max-width:calc(100% - 8px);max-height:calc(100% - 8px)}
 #phoneSummoners .elementFilters button>svg{width:30px;height:30px}
 #phoneSummoners .elementFilters button[aria-pressed=true]{background:#c7ae6019;border-color:#d4bb7170;box-shadow:inset 0 0 22px #b7974020,0 0 18px #cfb46a12}
 #phoneSummoners .elementFilters button:hover{background:#ffffff0b}
@@ -91,6 +92,14 @@
 #phoneSummoners .chooseSummoner{height:10dvh;min-height:33px;flex:none;display:flex;align-items:center;justify-content:center;gap:20px;border:1px solid #d5bb7c;border-radius:0;background:linear-gradient(110deg,#e3d09d,#aa8950);color:#171c22!important;font-size:clamp(13px,1.6vw,19px)!important;letter-spacing:.07em;box-shadow:0 3px 20px #0004}
 #phoneSummoners .chooseSummoner svg{width:22px;height:22px}
 #phoneSummoners .chooseSummoner.chosen{background:#2a4943;color:#e4f9e3!important}
+#phoneSummoners .randomChoice{--accent:#d9c58f;--element-bg:radial-gradient(ellipse,#393240,#10141f);color:#ead8ac;animation:none!important}
+#phoneSummoners .randomChoice .selectionRandomGlyph{position:absolute;inset:5% 0 14%;display:grid;place-items:center;font:400 clamp(65px,31dvh,150px)/1 Georgia,serif;color:#e7d6ad;pointer-events:none}
+#phoneSummoners .randomChoice .tileName{justify-content:center}
+#phoneSummoners .randomChoice:disabled{opacity:.5;cursor:default}
+#phoneSummoners .randomWaitingFace{position:absolute;inset:20% 0 5%;display:grid;place-items:center}
+#phoneSummoners .randomWaitingFace .selectionRandomGlyph{font:400 44dvh/1 Georgia,serif;color:#e7d6ad;text-shadow:0 0 34px #d0b16b30}
+#phoneSummoners .randomWaiting .reselectSummoner:disabled{opacity:.35;cursor:default}
+#phoneSummoners.randomResult .backList,#phoneSummoners.randomResult .summonerArrow{display:none}
 #phoneSummoners .starterZoom{position:absolute;inset:0;background:#05090de8;backdrop-filter:blur(8px);z-index:20;display:grid;place-items:center}
 #phoneSummoners .zoomFrame{height:88dvh;aspect-ratio:300/470;position:relative}
 #phoneSummoners .zoomClose{position:absolute;top:15px;right:20px;width:42px;height:42px;border:1px solid #d3ba77;border-radius:50%;background:#101621;display:grid;place-items:center;padding:0}

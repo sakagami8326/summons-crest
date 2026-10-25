@@ -10,7 +10,7 @@ const crypto = require('crypto');
 const SITE_NEWS = require('./site-news');
 const START_DEVICE = require('./public/assets/start-guide/device');
 
-const VERSION = '1.69';
+const VERSION = '1.70';
 const MAPS = require('./public/map-definitions');
 const mapOf = r => MAPS[r.mapId || 'starting_corridor'];
 const tilesOf = r => mapOf(r).tiles;
@@ -104,19 +104,19 @@ const CREATURES = {
   // スターター(基本形 → LvMAXで進化)
   gecko:  { name: 'バーンゲッコー', evo: 'サラマンダー',   elem: 'fire',  st: 30, hp: 25, cost: 50, evoSt: 60, evoHp: 40, fx: '【猛攻】攻撃時AT+10', rarity: 'N' },
   orphe:  { name: 'オルフェ',       evo: 'ウンディーネ',   elem: 'water', st: 30, hp: 30, cost: 50, evoSt: 45, evoHp: 50, fx: '【清流】この土地の通行料+20%', rarity: 'N' },
-  nome:   { name: 'ノーム',         evo: 'アースゴーレム', elem: 'earth', st: 10, hp: 40, cost: 50, evoSt: 30, evoHp: 65, fx: '【岩壁】防衛時、地形補正+10(進化+20)', rarity: 'N' },
+  nome:   { name: 'ノーム',         evo: 'アースゴーレム', elem: 'earth', st: 10, hp: 40, cost: 50, evoSt: 30, evoHp: 65, fx: '【岩壁】防衛時、地形補正+10', evoFx: '【岩壁】防衛時、地形補正+20', rarity: 'N' },
   gaston: { name: 'ガストン',       evo: 'ガストレイド',   elem: 'wind',  st: 20, hp: 40, cost: 50, evoSt: 40, evoHp: 60, fx: '【旋風】敗北しても消滅せず手札に戻る', rarity: 'N' },
   cleo:   { name: 'クレオ',         evo: 'クレステッド',   elem: null,    st: 30, hp: 30, cost: 50, evoSt: 50, evoHp: 45, fx: '【適応】どの属性でも地形補正を得る', rarity: 'N' },
   // マーケット
   magado:  { name: 'マガドー', evo: 'マグナガルム', elem: 'fire', st: 55, hp: 35, cost: 120, evoSt: 75, evoHp: 55, rarity: 'R' },
-  qbaby:   { name: 'クイーンベビー', evo: 'クイーン', elem: 'fire', st: 35, hp: 30, cost: 120, evoSt: 55, evoHp: 50, fx: '【女王の威光】自分の火領地の防衛DF+10(進化+20)', rarity: 'L' },
+  qbaby:   { name: 'クイーンベビー', evo: 'クイーン', elem: 'fire', st: 35, hp: 30, cost: 120, evoSt: 55, evoHp: 50, fx: '【女王の威光】自分の火領地の防衛DF+10', evoFx: '【女王の威光】自分の火領地の防衛DF+20', rarity: 'L' },
   hibami:  { name: 'ヒバミ', evo: 'エンラージャ', elem: 'fire', st: 20, hp: 40, cost: 80, evoSt: 30, evoHp: 60, fx: '【炎威】防衛時、この戦闘中、侵略側のAT−10（最低0）。', evoFx: '【炎威】防衛時、この戦闘中、侵略側のAT−20（最低0）。', rarity: 'R' },
   suminoko: { name:'スミノコ', evo:'クロムクロ', elem:'fire', st:10, hp:50, cost:85, evoSt:20, evoHp:70, evoCost:100, rarity:'R', fx:'【炭鎧】防衛で生存するとDF+5を蓄積。上限なし、移動・進化で維持', evoFx:'【炭鎧】防衛で生存するとDF+10を蓄積。上限なし、移動・進化で維持' },
   cresteria:{ name: 'クレステリア',    elem: 'water', st: 20, hp: 50, cost: 90, fx: '【真珠】召喚時、ウェポン「シールド」1枚をデッキに加える', rarity: 'N' },
-  kbaby:   { name: 'キングベビー', evo: 'キング', elem: 'water', st: 30, hp: 40, cost: 120, evoSt: 50, evoHp: 60, fx: '【王の徴収】配置土地の通行料1.5倍(進化後2倍)', rarity: 'L' },
+  kbaby:   { name: 'キングベビー', evo: 'キング', elem: 'water', st: 30, hp: 40, cost: 120, evoSt: 50, evoHp: 60, fx: '【王の徴収】配置土地の通行料1.5倍', evoFx: '【王の徴収】配置土地の通行料2倍', rarity: 'L' },
   ludi:    { name: 'ルディ', evo: 'シンルー', elem: 'wind', st: 25, hp: 40, cost: 120, evoSt: 45, evoHp: 60, fx: '【雲隠れ】防衛時、相手のウェポンを無効化', rarity: 'R' },
   garble:  { name: 'ガーブル', evo: 'ガレス・ゲイル', elem: 'wind', st: 35, hp: 25, cost: 100, evoSt: 55, evoHp: 45, fx: '【風刃】攻撃時、相手の地形補正を無視', rarity: 'R' },
-  barbaro: { name: 'バルバロ', evo: 'バーグランダ', elem: 'earth', st: 30, hp: 45, cost: 120, evoSt: 50, evoHp: 65, fx: '【逆鱗】防衛成功時、相手から30G奪う(進化50G)', rarity: 'R' },
+  barbaro: { name: 'バルバロ', evo: 'バーグランダ', elem: 'earth', st: 30, hp: 45, cost: 120, evoSt: 50, evoHp: 65, fx: '【逆鱗】防衛成功時、相手から30G奪う', evoFx: '【逆鱗】防衛成功時、相手から50G奪う', rarity: 'R' },
   detropas:{ name: 'デトロパス', evo: 'クラーケンイービル', elem: 'fire', st: 30, hp: 25, cost: 60, evoSt: 50, evoHp: 45, fx: '【群れ】攻撃時、自分の火領地1つにつきAT+10', rarity: 'N' },
   goagoa:  { name: 'ゴアゴア', evo: 'ノーク・ゴーア', elem: 'water', st: 40, hp: 40, cost: 100, evoSt: 60, evoHp: 65, fx: '【深海】防衛成功時、自分の負傷を10回復する', rarity: 'R' },
   fugorm:  { name: 'フーゴルム', evo: 'ゴーレムアイン', elem: 'earth', st: 35, hp: 40, cost: 80, evoSt: 55, evoHp: 60, fx: '【鍛冶】召喚時、ウェポン「ソード」を得る', rarity: 'N' },
@@ -124,8 +124,8 @@ const CREATURES = {
   zati:    { name: 'ザーティー', evo: 'ザンティアー', elem: 'wind', st: 40, hp: 30, cost: 60, evoSt: 60, evoHp: 50, fx: '【略奪】侵略成功時、相手から50G奪う', rarity: 'N' },
   pakawata:{ name: 'パカワタ',         elem: 'wind',  st: 50, hp: 25, cost: 130, fx: '【先制】防衛時、侵略側より先に攻撃する', rarity: 'L' },
   avalanche:{ name: 'アヴァランチ', evo: 'アヴァランチジャイアント', elem: 'earth', st: 20, hp: 40, cost: 120, evoSt: 30, evoHp: 60, fx: '【双撃】侵略時、同じATで2回続けて攻撃する', rarity: 'L' },
-  bonerex: { name: 'ボーンレックス', evo: 'ディノガルド', elem: 'earth', st: 35, hp: 45, cost: 110, evoSt: 55, evoHp: 65, fx: '【骨鎧】防衛時DF+10(進化+20)', rarity: 'R' },
-  morbill: { name: 'モービル', evo: 'モルドラ', elem: 'earth', st: 30, hp: 45, cost: 60, evoSt: 50, evoHp: 65, fx: '【腐蝕】侵略時、相手の防衛DF-10(進化-20)', rarity: 'N' },
+  bonerex: { name: 'ボーンレックス', evo: 'ディノガルド', elem: 'earth', st: 35, hp: 45, cost: 110, evoSt: 55, evoHp: 65, fx: '【骨鎧】防衛時DF+10', evoFx: '【骨鎧】防衛時DF+20', rarity: 'R' },
+  morbill: { name: 'モービル', evo: 'モルドラ', elem: 'earth', st: 30, hp: 45, cost: 60, evoSt: 50, evoHp: 65, fx: '【腐蝕】侵略時、相手の防衛DF-10', evoFx: '【腐蝕】侵略時、相手の防衛DF-20', rarity: 'N' },
   mimic:   { name: 'ミミック',         elem: null,    st: 30, hp: 30, cost: 70, fx: '【擬態】戦闘時、相手の基礎AT/HPをコピー', rarity: 'N' },
   beruf:   { name: 'ベルーフ・シェイド', evo: 'デスベルーフ', elem: null, st: 20, hp: 50, cost: 60, evoSt: 40, evoHp: 70, fx: '【死影】スペルダメージを受けるたびDF+10。上限なし、土地を離れるまで持続', rarity: 'N' },
   grayble: { name: 'グレイブル', evo: 'グランガルム', elem: 'fire', st: 40, hp: 30, cost: 80, evoSt: 65, evoHp: 45,
@@ -207,6 +207,8 @@ const ITEMS = {}; // v0.34: 呪いアイテムは廃止(スペル「衰弱の呪
 const SPELLS = {
   sp_censor: { name:'禁書検閲', rarity:'R', cost:80,
     desc:'敵1人の手札からランダムな2枚を自分だけ確認し、1枚を選んで捨てさせる。その後1枚引く' },
+  sp_chain_gold: { name:'チェインゴールド', rarity:'N', cost:0, desc:'自分の最大連鎖数×100Gを得る。領地がない場合は使用できない' },
+  sp_mana_forge: { name:'マナフォージ', rarity:'R', cost:70, desc:'手札のクリーチャー1枚を廃棄し、ソードとシールドを各1枚、自分の山札へ加えてシャッフルする' },
   sp_gold:   { name: 'ゴールド', rarity: 'N', cost: 0,
                desc: '現在の周回数×100Gを得る' },
   sp_weaken: { name: '衰弱の呪文', rarity: 'N', cost: 200, hp: 20,
@@ -245,7 +247,7 @@ const SPELLS = {
   sp_fatal_reward:{ name: 'フェイタルリワード', rarity: 'N', cost: 80,
                desc: 'カードを1枚引き、その後手札1枚を廃棄する' },
   sp_swap:   { name: 'チェンジ', rarity: 'R', cost: 30,
-               desc: '自分の領地のクリーチャーを手札のクリーチャーと交代する(召喚コスト別途。元のクリーチャーは捨て札へ・負傷は回復)' },
+               desc: '自分の領地のクリーチャーを手札のクリーチャーと交代する(召喚コスト別途。元のクリーチャーは手札へ戻る。領地Lvを維持・HP全快で配置)' },
   sp_dice_1: { name: 'ダイス1', rarity: 'R', cost: 50, fixedDice: 1,
                desc: 'このターン、ダイスの出目を1に固定する' },
   sp_dice_2: { name: 'ダイス2', rarity: 'R', cost: 50, fixedDice: 2,
@@ -260,6 +262,7 @@ const SPELLS = {
                desc: 'このターン、ダイスの出目を6に固定する' },
 };
 const SUPPORTS = {
+  onitsugi: { name:'鬼継ノ太刀', rarity:'R', st:10, hp:0, cost:80, frontlineSwap:true, exileAfterUse:true, fx:'勝利時、召喚コストを払い、手札の別のクリーチャーと交代できる。元のクリーチャーは手札へ戻る。' },
   weapon:  { name: 'ソード',           st: 20, hp: 0,  cost: 60, exileAfterUse: true },
   gweapon: { name: 'ヘビーアックス',   st: 40, hp: 0,  cost: 120, exileAfterUse: true },
   shield:  { name: 'シールド',         st: 0,  hp: 20, cost: 60, exileAfterUse: true },
@@ -316,6 +319,8 @@ const ART_IDS = (() => {
   } catch (e) { return []; }
 })();
 const PUBLIC_SPELL_ART = {
+  sp_chain_gold:'/assets/cards/spell-chain-gold-art-v2.webp',
+  sp_mana_forge:'/assets/cards/spell-mana-forge-art-v2.webp',
   sp_censor: '/assets/cards/spell-censor-art-v2.webp',
   sp_evolve: '/assets/cards/spell-evolve-art-v8.webp',
   sp_gold: '/assets/cards/spell-gold-art-v1.webp',
@@ -344,6 +349,7 @@ const PUBLIC_SPELL_ART = {
   sp_dice_6: '/assets/cards/spell-dice-6.webp',
 };
 const PUBLIC_SUPPORT_ART = {
+  onitsugi:'/assets/cards/weapon-onitsugi-no-tachi-art-v2.webp',
   weapon: '/assets/cards/support-sword-v1.webp',
   gweapon: '/assets/cards/support-heavy-axe-v1.webp',
   shield: '/assets/cards/support-shield-v2.webp',
@@ -416,7 +422,7 @@ function publicCardCatalog() {
   }));
   publicCatalogCache = {
     version: VERSION,
-    updatedAt: '2026-10-04',
+    updatedAt: '2026-10-25',
     counts: {
       total: creatures.length + spells.length + weapons.length,
       creatures: creatures.length,
@@ -430,7 +436,7 @@ function publicCardCatalog() {
 }
 const RARITY_COPIES = { L: 1, R: 2, N: 3 };
 const MARKET_COPY_OVERRIDES = { marlow: 3, mist_jelly: 2 };
-const RANDOM_SUPPORT_POOL = ['gweapon', 'gshield', 'weapon', 'shield', 'jinx'];
+const RANDOM_SUPPORT_POOL = ['gweapon', 'gshield', 'weapon', 'shield', 'jinx', 'onitsugi'];
 const SHOP_SUPPORT_POOL = ['gweapon', 'gshield'];
 const RANDOM_SUPPORT_COPIES = 2;
 function makeDeck() {
@@ -507,6 +513,7 @@ setInterval(() => {
   for (const [code, r] of rooms) {
     if ((r.lastActivity || 0) < cutoff) {
       clearBotTimer(r);
+      clearSelectionDrawTimer(r);
       clearUltTimer(r);
       clearTurnTransitionTimer(r);
       clearTimeout(r.windSupplyTimer);
@@ -525,6 +532,7 @@ function makeRoom(mode = 'normal', mapId = 'starting_corridor') {
     code: code4(), phase: 'lobby', clients: new Set(), players: [], mapId,
     movement: null, routePreview: null,
     botMode: mode === 'bot', botTimer: null, botActionSeq: 0, presentationSpeed: 1,
+    selectionDraw: null, selectionDrawTimer: null,
     boardSeen: false, turnTransition: null, turnTransitionTimer: null,
     turnEpoch: 0, promptSeq: 0, stateRev: 0, stateInstanceId: crypto.randomBytes(16).toString('hex'), processedActions: [],
     owners: MAPS[mapId].tiles.map(() => null),        // { player, level, creature }
@@ -880,6 +888,16 @@ function enemyLandUi(r) {
     stats:landDefenseStats(r,p.pos),externalModifiers:battleExternalModifiers(r,b),
     barrier:!!r.barrier[o.player],canInvade:pd.options.some(x=>x.id==='invade')};
 }
+function maxOwnChain(r, playerId) {
+  return Math.max(0,...['fire','water','earth','wind'].map(e=>chainCount(r,playerId,e)));
+}
+function askManaForge(r,p) {
+  if(!p.hand.includes('sp_mana_forge') || effectiveSpellCost(r,p,'sp_mana_forge')>p.gold || spellLimitReached(r,p)) return askRoll(r,p);
+  const opts=p.hand.flatMap((card,index)=>CREATURES[card]?[{id:'mf:'+index,card,index,label:cardName(card)}]:[]);
+  if(!opts.length)return askRoll(r,p);
+  opts.push({id:'mf:cancel',label:'やめる'});
+  ask(r,p.id,'mana_forge','廃棄するクリーチャーを選ぶ',opts);
+}
 function cardName(cardId) {
   return (CREATURES[cardId] || SPELLS[cardId] || SUPPORTS[cardId] || { name: cardId }).name;
 }
@@ -1154,11 +1172,11 @@ function tollOf(r, i) {
 }
 // スペルの直接ダメージ処理: 不動(ベデベロ-10)・死影(ベルーフDF+10/上限なし)・撃破は捨て札
 // 戻り値: true=撃破して空き地化
-function spellDamage(r, i, raw, srcName, isSpellCard = true) {
+function spellDamage(r, i, raw, srcName, isSpellDamage = true) {
   const o = r.owners[i];
   if (!o) return false;
   const cE = CREATURES[o.creature];
-  if (isSpellCard && baseId(o.creature) === 'bunnyhop' && !isEvolved(o)) {
+  if (isSpellDamage && baseId(o.creature) === 'bunnyhop' && !isEvolved(o)) {
     log(r, `【耐魔】バニホップは${srcName}のダメージを受けない`);
     return false;
   }
@@ -1587,8 +1605,10 @@ function resolveUltSequenceAction(r) {
       if (!before || before.player === p.id) continue;
       r.tileFx[i] = r.tileFx[i] || {}; r.tileFx[i].vortex = true; r.tileFx[i].vortexSource = {charId:'lia'};
       const creature = before.creature;
-      results.push({ tile: i, creature, damage: 10,
-        defeated: spellDamage(r, i, 10, '紅蓮の方程式', false) });
+      const damageBefore = before.dmg || 0;
+      // 炎の渦は必殺技から発生した場合もスペルダメージとして耐性を適用する。
+      const defeated = spellDamage(r, i, 10, '紅蓮の方程式');
+      results.push({ tile: i, creature, damage: (before.dmg || 0) - damageBefore, defeated });
     }
     log(r, `🔥 ${p.name}は${results.length}か所に炎の渦を発生させた`);
     spellFx(r, 'sp_flame_vortex', results.map(x => x.tile), p.id,
@@ -1644,6 +1664,8 @@ function askRoll(r, p) {
   for (const sid of spellLimitReached(r,p) ? [] : [...new Set(p.hand.filter(c => SPELLS[c]))]) {
     const spellCost = effectiveSpellCost(r, p, sid);
     if (spellCost > p.gold) continue;
+    if (sid === 'sp_chain_gold' && !maxOwnChain(r,p.id)) continue;
+    if (sid === 'sp_mana_forge' && !p.hand.some(c=>CREATURES[c])) continue;
     if (sid === 'sp_evolve' && !p.hand.some(canEvolveHandCard)) continue;
     if (sid === 'sp_censor' && !censorTargets(r,p).length) continue;
     if (sid === 'sp_weaken' &&
@@ -2304,7 +2326,7 @@ function resolveTile(r, p, mioUlt = false) {
     log(r, `🛡 ${enemy.name}の大結界により侵略できない!`);
     // v0.73: 結界が侵略を阻んだ瞬間(TVの衝撃時発光 ─ plan_phaser4 §8.4)
     r.lastBarrierHit = { tile: i, owner: o.player, by: p.id, at: stamp(r) };
-  } else if (p.hand.some(c => CREATURES[c])) opts.push({ id: 'invade', label: mioUlt ? '⚔ 侵略する（追い風の導き：AT+20）' : '⚔ 侵略する' });
+  } else if (p.hand.some(c => CREATURES[c] && CREATURES[c].cost <= p.gold)) opts.push({ id: 'invade', label: mioUlt ? '⚔ 侵略する（追い風の導き：AT+20）' : '⚔ 侵略する' });
   ask(r, p.id, 'tile', `${enemy.name}の領地(${ELEM_JA[tileElem(r, p.pos)] || ''}属性 Lv${o.level} / 通行料${toll}G)`, opts);
   // 選択と戦闘に紐付け、通行料支払い・別の移動・次の手番へ持ち越さない。
   if (mioUlt) r.pending[p.id].mioUlt = true;
@@ -2574,9 +2596,10 @@ function askMarket(r, p) {
 
 // ===== 侵略戦闘 =====
 function startBattle(r, attacker, tileIdx, mioUlt = false) {
-  const opts = attacker.hand.filter(c => CREATURES[c])
-    .map(c => ({ id: 'atk:' + c, card: c, cost: 0,
+  const opts = attacker.hand.filter(c => CREATURES[c] && CREATURES[c].cost <= attacker.gold)
+    .map(c => ({ id: 'atk:' + c, card: c, cost: CREATURES[c].cost,
       label: `${CREATURES[c].name}(AT${CREATURES[c].st}${mioUlt ? '+20' : ''})で攻める` }));
+  if (!opts.length) { r.battle=null; return resolveTile(r,attacker,mioUlt); }
   r.battle = { tile: tileIdx, attacker: attacker.id, defender: r.owners[tileIdx].player,
                atkCreature: null, supports: {}, mioUlt, startedAt: stamp(r), evolutionPrayerProviders:evolutionPrayerProviders(r) };
   ask(r, attacker.id, 'pick_creature', '侵略! 手札からクリーチャーを選べ', opts);
@@ -2587,9 +2610,13 @@ function creatureSupportEnabled(creatureId) {
 function askSupports(r) {
   const b = r.battle;
   for (const pid of [b.attacker, b.defender]) {
-    const p = pById(r, pid);
-    const opts = p.hand.filter(c => SUPPORTS[c])
-      .map(c => ({ id: 'sup:s:' + c, card: c, cost: 0, label: `${SUPPORTS[c].name}を出す` }));
+    askSupport(r,pid);
+  }
+}
+function askSupport(r,pid) {
+    const b=r.battle,p = pById(r, pid);
+    const opts = p.hand.filter(c => SUPPORTS[c] && SUPPORTS[c].cost <= p.gold)
+      .map(c => ({ id: 'sup:s:' + c, card: c, cost: SUPPORTS[c].cost, label: `${SUPPORTS[c].name}を出す(−${SUPPORTS[c].cost}G)` }));
     const battleCreature = pid === b.attacker ? b.atkCreature : r.owners[b.tile].creature;
     if (creatureSupportEnabled(battleCreature)) {
       let skippedReserved = false;
@@ -2607,7 +2634,6 @@ function askSupports(r) {
     }
     opts.push({ id: 'sup:none', label: 'ウェポンなしで挑む' });
     ask(r, pid, 'support', '⚔ ウェポンを秘密裏に選べ', opts);
-  }
 }
 function supportChoice(raw) {
   if (!raw || raw === 'none' || raw.kind === 'none') return { kind: 'none' };
@@ -2637,17 +2663,31 @@ function consumeBattleSupport(r, pid, choice) {
   const c = supportChoice(choice);
   if (c.kind === 'none') return;
   const p = pById(r, pid);
-  const idx = p.hand.indexOf(c.cardId);
-  if (idx < 0) return;
+  const idx = p.hand.indexOf(c.cardId), cost=battleSupportCost(c);
+  if (idx < 0 || !Number.isFinite(cost) || cost > p.gold) return;
+  const beforeGold=p.gold;
+  p.gold-=cost;
   p.hand.splice(idx, 1);
   if (c.kind === 'creature') {
-    const cost = CREATURES[c.cardId].cost;
-    p.gold = Math.max(0, p.gold - cost);
     p.discard.push(c.cardId);
   } else {
     if (SUPPORTS[c.cardId].exileAfterUse) exileCard(r, p, c.cardId, 'battle_support', true);
     else p.discard.push(c.cardId);
   }
+  return {player:pid,card:c.cardId,amount:cost,beforeGold,afterGold:p.gold};
+}
+function battleSupportCost(choice) {
+  const c=supportChoice(choice);
+  return c.kind==='none'?0:(c.kind==='creature'?CREATURES[c.cardId]:c.kind==='support'?SUPPORTS[c.cardId]:null)?.cost ?? Infinity;
+}
+function canUseBattleSupport(r,pid,choice) {
+  const c=supportChoice(choice),p=pById(r,pid),b=r.battle;
+  if(c.kind==='none')return true;
+  if(!p || !b || !p.hand.includes(c.cardId) || battleSupportCost(c)>p.gold)return false;
+  if(c.kind==='support')return !!SUPPORTS[c.cardId];
+  const creature=pid===b.attacker?b.atkCreature:r.owners[b.tile]?.creature;
+  return c.kind==='creature' && creatureSupportEnabled(creature) &&
+    (pid!==b.attacker || c.cardId!==b.atkCreature || p.hand.filter(id=>id===c.cardId).length>=2);
 }
 function battleAttackerId(r, battle) {
   if (/_f$/.test(battle.atkCreature)) return battle.atkCreature;
@@ -2852,6 +2892,15 @@ function calculateBattle(r, b = r.battle) {
 }
 
 function resolveBattle(r) {
+  if(!r.battle)return;
+  // Recheck all secret choices before applying stats, charging, or consuming cards.
+  let retry=false;
+  for(const pid of [r.battle.attacker,r.battle.defender]) {
+    if(!canUseBattleSupport(r,pid,r.battle.supports[pid])) {
+      delete r.battle.supports[pid];askSupport(r,pid);retry=true;
+    }
+  }
+  if(retry)return;
   // Ordered, authoritative cash movements for the board's battle settlement UI.
   const moneyEvents = [];
   const battlePay = (payer, receiver, amount, reason, source) => {
@@ -2869,7 +2918,11 @@ function resolveBattle(r) {
   b.windSupplyProviders ||= windSupplyProviders(r, atk);
   markMatchCause(r, 'invasion', { actor: atk.id, target: def.id, tile: b.tile });
   // ウェポンは勝敗問わず消費
-  for (const [pid, sc] of Object.entries(b.supports)) consumeBattleSupport(r, pid, sc);
+  const supportPayments=[];
+  for (const [pid, sc] of Object.entries(b.supports)) {
+    const payment=consumeBattleSupport(r,pid,sc);
+    if(payment)supportPayments.push(payment);
+  }
 
   const battleResultUi = { win, atkSurvived, atkSupport: aSup, defSupport: dSup, attacker: atk.id };
   r.lastBattle = { battleKey: b.startedAt || null, tile: b.tile, attacker: atk.id, defender: def.id,
@@ -2903,6 +2956,8 @@ function resolveBattle(r) {
     remainHp: win ? 0 : effHp - dealt,
     terrain, terrainBreakdown: terrainUi,
     effectStates: battleEffectStates(r, b, battleResultUi),
+    ...(supportPayments.length?{supportPayments}:{}),
+    ...(b.summonPayment?{summonPayment:b.summonPayment}:{}),
     curse, notes, win, moneyEvents, tollWaived:!win && !!(mvSrc || corridor), at: stamp(r) };
   log(r, `⚔ ${atk.name}の${ac.name}(AT${atkDmg}${hitsDone === 2 ? '×2回' : ''}) vs ${def.name}の${dc.name}(HP${effHp}/DF${defDF}) → 実ダメージ${dealt}`);
   for (const n of notes) log(r, n);
@@ -3010,7 +3065,8 @@ function resolveBattle(r) {
   }
   if(win && hasPassive(r,atk,'grease') && atkEvolved)atk.passiveGreaseTile=b.tile;
   r.battleAfter = { winner: bWinner.id, attacker: atk.id, defender: def.id, tile: b.tile,
-    invasionWon: !!win, mermaidDone: false, recoveryDone: false };
+    invasionWon: !!win, mermaidDone: false, recoveryDone: false,
+    ...(SUPPORTS[(win ? aEff : dEff)?.cardId]?.frontlineSwap ? {weaponFrontline:true} : {}) };
   // Let a newly placed Jomagia search the weapon just acquired as its battle reward.
   const rewardSearch=win&&!mvSrc&&!corridor&&baseId(b.atkCreature)==='joma'&&isEvolved(r.owners[b.tile]);
   if(rewardSearch){
@@ -3077,13 +3133,13 @@ function continuePostBattle(r) {
     }
   }
   const placed = r.owners[state.tile];
-  if (!state.frontlineDone && placed?.player === winner.id && baseId(placed.creature) === 'jaki') {
+  if (!state.frontlineDone && placed?.player === winner.id && (baseId(placed.creature) === 'jaki' || state.weaponFrontline)) {
     state.frontlineDone = true;
     const opts = winner.hand.flatMap((card, i) => CREATURES[card] && CREATURES[card].cost <= winner.gold
       ? [{ id: 'fl:' + i, card, cost: CREATURES[card].cost, label: `${cardName(card)}(−${CREATURES[card].cost}G)` }] : []);
     if (opts.length) {
       opts.push({ id: 'fl:cancel', label: '交代しない' });
-      ask(r, winner.id, 'frontline_swap', '【戦線交代】手札から配置するクリーチャーを選ぶ（召喚コストが必要）', opts);
+      ask(r, winner.id, 'frontline_swap', `${state.weaponFrontline ? '【鬼継ノ太刀】' : '【戦線交代】'}配置するクリーチャーを選ぶ`, opts);
       Object.assign(r.pending[winner.id], { tile: state.tile, source: placed.creature });
       return;
     }
@@ -3120,10 +3176,10 @@ function committingSpell(p,pend,id) {
   if(/:cancel$/.test(id))return null;
   if(pend.type==='roll' && id.startsWith('sp:')) {
     const sid=id.slice(3);
-    return ['sp_gold','sp_insight','sp_gale','sp_ward','sp_bloodstained_blade','sp_wind_shift','sp_fatal_reward'].includes(sid)||SPELLS[sid]?.fixedDice ? sid : null;
+    return ['sp_chain_gold','sp_gold','sp_insight','sp_gale','sp_ward','sp_bloodstained_blade','sp_wind_shift','sp_fatal_reward'].includes(sid)||SPELLS[sid]?.fixedDice ? sid : null;
   }
   return ({censor_target:'sp_censor',curse_target:'sp_weaken',quake_target:'sp_quake',spell_target:p.pendSpell,
-    step_b:'sp_step',move_b:'sp_move',swap_pick:'sp_swap',spell_evolve:'sp_evolve'})[pend.type]||null;
+    mana_forge:'sp_mana_forge',step_b:'sp_step',move_b:'sp_move',swap_pick:'sp_swap',spell_evolve:'sp_evolve'})[pend.type]||null;
 }
 function advancePassiveResolution(r,now=Date.now()) {
   for(const [pid,pending] of Object.entries(r.pending)) {
@@ -3239,7 +3295,7 @@ function handleChooseAction(r, playerId, optionId) {
     const i = Number(optionId.slice(3)), selected = pend.options.find(x => x.id === optionId);
     const card = p.hand[i], info = CREATURES[card];
     if (!state || state.winner !== p.id || state.tile !== pend.tile || !state.frontlineDone || p.bankrupt ||
-        !o || o.player !== p.id || o.creature !== pend.source || baseId(o.creature) !== 'jaki' ||
+        !o || o.player !== p.id || o.creature !== pend.source || (baseId(o.creature) !== 'jaki' && !state.weaponFrontline) ||
         !Number.isInteger(i) || card !== selected?.card || !info || info.cost > p.gold) return continuePostBattle(r);
     const returned = o.creature;
     p.hand.splice(i, 1);
@@ -3290,6 +3346,22 @@ function handleChooseAction(r, playerId, optionId) {
     return resumeAfterExileEffects(r, { type: 'placement', player: p.id, pend });
   }
 
+  if (pend.type === 'mana_forge') {
+    if(optionId==='mf:cancel')return askRoll(r,p);
+    const selected=pend.options.find(o=>o.id===optionId), card=p.hand[selected?.index];
+    const sid='sp_mana_forge',cost=effectiveSpellCost(r,p,sid);
+    if(!selected || card!==selected.card || !CREATURES[card] || !p.hand.includes(sid) || cost>p.gold || spellLimitReached(r,p))return askRoll(r,p);
+    p.hand.splice(selected.index,1);
+    p.hand.splice(p.hand.indexOf(sid),1);p.discard.push(sid);
+    p.gold-=cost;p.spellCast=true;onSpellCast(r,p,sid);
+    exileCard(r,p,card,'mana_forge');
+    gainToDeck(r,p,['weapon','shield'],'mana_forge');
+    r.lastEvent={type:'spell',player:p.id,name:SPELLS[sid].name,desc:SPELLS[sid].desc,at:stamp(r)};
+    log(r,'マナフォージ ─ '+p.name+'は「'+cardName(card)+'」を廃棄し、ソードとシールドを山札に加えた(−'+cost+'G)');
+    spellFx(r,sid,[],p.id);
+    return resumeAfterExileEffects(r,{type:'roll',player:p.id});
+  }
+
   if (pend.type === 'fatal_exile') {
     const i = +optionId.slice(3);
     if (i >= 0 && i < p.hand.length) {
@@ -3326,18 +3398,15 @@ function handleChooseAction(r, playerId, optionId) {
   // --- キャラ選択 ---
   if (pend.type === 'select_char') {
     if (optionId === 'unpick') {
-      p.charId = null; p.confirmed = false;
-      if (r.botMode && !p.isBot) r.players.filter(q => q.isBot).forEach((q, i) => {
-        q.charId = null; q.confirmed = false; q.name = `BOT ${String.fromCharCode(65 + i)}`;
-        delete r.pending[q.id];
-      });
+      p.charId = null; p.confirmed = false; p.randomSelection = false;
+      if (!p.isBot) resetBotCharacters(r);
       return askSelect(r, p);
     }
-    p.charId = optionId; p.confirmed = true;
+    p.randomSelection = optionId === 'random';
+    p.charId = p.randomSelection ? null : optionId; p.confirmed = true;
     // テレビで開始するまでは、全員がいつでも選び直せる状態を保つ。
     ask(r, p.id, 'select_wait', '他のプレイヤーを待っています…', [{ id: 'unpick', label: 'キャラを選び直す' }]);
-    log(r, `${p.name}は${CHARS[optionId].name}を選択`);
-    if (r.botMode && !p.isBot) assignBotCharacters(r, p.charId);
+    log(r, `${p.name}は${p.randomSelection ? 'ランダム' : CHARS[optionId].name}を選択`);
     return trySelectResolve(r);
   }
 
@@ -3487,6 +3556,8 @@ function handleChooseAction(r, playerId, optionId) {
     const sid = optionId.slice(3);
     const spellCost = effectiveSpellCost(r, p, sid);
     if (spellLimitReached(r,p) || !p.hand.includes(sid) || spellCost > p.gold) return askRoll(r, p);
+    if (sid === 'sp_mana_forge') return askManaForge(r,p);
+    if (sid === 'sp_chain_gold' && !maxOwnChain(r,p.id)) return askRoll(r,p);
     if (sid === 'sp_evolve') return askSpellEvolve(r, p);
     if (sid === 'sp_censor') return askCensor(r,p);
     const castLog = () => {
@@ -3516,6 +3587,14 @@ function handleChooseAction(r, playerId, optionId) {
       if (ri >= 0) p.discard.push(p.resolving.splice(ri, 1)[0]);
       spellFx(r, sid, [], p.id, { exiled: false });
       return askRoll(r, p);
+    }
+    if (sid === 'sp_chain_gold') {
+      const count=maxOwnChain(r,p.id),gain=count*100;
+      castLog();p.gold+=gain;
+      r.lastEvent.desc='最大'+count+'連鎖 ─ '+gain+'Gを獲得';
+      log(r,'チェインゴールド ─ '+p.name+'は'+gain+'Gを得た(所持'+p.gold+'G)');
+      spellFx(r,sid,[],p.id,{display:{gold:gain}});
+      return askRoll(r,p);
     }
     if (sid === 'sp_gold') {
       castLog();
@@ -3831,8 +3910,8 @@ function handleChooseAction(r, playerId, optionId) {
       if (o && o.player === p.id && p.hand.includes(c) &&
           CREATURES[c].cost + spellCost <= p.gold) {
         const oldC = o.creature;
-        p.discard.push(oldC);                 // 元のクリーチャーは捨て札へ
         p.hand.splice(p.hand.indexOf(c), 1);
+        p.hand.push(oldC);                    // 戦線交代と同じく、元のクリーチャーを手札へ戻す
         o.creature = c; o.dmg = 0; o.shade = 0; delete o.charcoalDf; delete o.iceWard; delete o.abyssMarkTarget; delete o.evolutionAbilityUsed;  // 新クリーチャーは全快で配置
         p.hand.splice(p.hand.indexOf('sp_swap'), 1);
         p.discard.push('sp_swap');
@@ -3840,8 +3919,8 @@ function handleChooseAction(r, playerId, optionId) {
         p.spellCast = true;
         onSpellCast(r, p, 'sp_swap');
         r.lastEvent = { type: 'spell', player: p.id, name: SPELLS.sp_swap.name,
-          desc: `${CREATURES[oldC].name}に代わり${CREATURES[c].name}が領地に立った`, at: stamp(r) };
-        log(r, `📜 ${p.name}が${SPELLS.sp_swap.name}! ${CREATURES[oldC].name}に代わり${CREATURES[c].name}が領地に立った(−${spellCost + CREATURES[c].cost}G)`);
+          desc: `${CREATURES[oldC].name}を手札へ戻し、${CREATURES[c].name}を配置した`, at: stamp(r) };
+        log(r, `📜 ${p.name}が${SPELLS.sp_swap.name}! ${CREATURES[oldC].name}を手札へ戻し、${CREATURES[c].name}を配置した(−${spellCost + CREATURES[c].cost}G)`);
         spellFx(r, 'sp_swap', [p.swapI], p.id, { cid: oldC });
         summonPaused = onCreatureSummoned(r, p, c, 'swap', swapTile);
       }
@@ -3866,7 +3945,11 @@ function handleChooseAction(r, playerId, optionId) {
     return askRoll(r, p);
   }
   if (pend.type === 'select_wait') {
-    if (optionId === 'unpick') { p.charId = null; p.confirmed = false; return askSelect(r, p); }
+    if (optionId === 'unpick') {
+      p.charId = null; p.confirmed = false; p.randomSelection = false;
+      if (!p.isBot) resetBotCharacters(r);
+      return askSelect(r, p);
+    }
     return;
   }
   if (pend.type === 'sell') {
@@ -4102,6 +4185,10 @@ function handleChooseAction(r, playerId, optionId) {
     const c = optionId.slice(4);
     if (!r.battle || !CREATURES[c] || !p.hand.includes(c) ||
         !(pend.options || []).some(o => o.id === optionId)) return;
+    if(CREATURES[c].cost>p.gold)return startBattle(r,p,r.battle.tile,!!r.battle.mioUlt);
+    const beforeGold=p.gold;
+    p.gold-=CREATURES[c].cost;
+    r.battle.summonPayment={player:p.id,card:c,amount:CREATURES[c].cost,beforeGold,afterGold:p.gold};
     r.battle.atkCreature = c;
     return askSupports(r);
   }
@@ -4113,7 +4200,7 @@ function handleChooseAction(r, playerId, optionId) {
       choice = { kind: 'none' };
     } else if (optionId.startsWith('sup:s:')) {
       const cardId = optionId.slice(6);
-      if (!SUPPORTS[cardId] || !p.hand.includes(cardId)) return;
+      if (!SUPPORTS[cardId] || !p.hand.includes(cardId) || SUPPORTS[cardId].cost>p.gold) return askSupport(r,playerId);
       choice = { kind: 'support', cardId };
     } else if (optionId.startsWith('sup:c:')) {
       const cardId = optionId.slice(6);
@@ -4170,24 +4257,74 @@ function handleChooseAction(r, playerId, optionId) {
 
 // ===== キャラ選択フェーズ =====
 function addBotPlayers(r) {
-  if (!r.botMode || r.players.some(p => p.isBot)) return;
-  for (let i = 0; i < 3; i++) r.players.push({
+  if (!r.botMode) return;
+  const existing = r.players.filter(p => p.isBot).length;
+  const missing = Math.max(0, 4 - r.players.length);
+  for (let i = existing; i < existing + missing; i++) r.players.push({
     id: `bot${crypto.randomBytes(4).toString('hex')}`, name: `BOT ${String.fromCharCode(65 + i)}`,
     isBot: true, confirmed: false,
   });
-  log(r, 'BOT3体が参加した');
+  if (missing) log(r, `BOT${missing}体が参加した`);
 }
-function assignBotCharacters(r, humanChar) {
-  const bots = r.players.filter(p => p.isBot);
-  if (!r.botMode || bots.length !== 3 || bots.every(p => p.confirmed)) return;
-  const available = shuffle(Object.keys(CHARS).filter(cid => CHARS[cid].selectable !== false && cid !== humanChar));
-  bots.forEach((bot, i) => {
-    bot.charId = available[i];
-    bot.name = CHARS[bot.charId].name;
-    bot.confirmed = true;
-    ask(r, bot.id, 'select_wait', 'ゲーム開始を待っています…', []);
-    log(r, `BOTは${bot.name}を選択`);
+function resetBotCharacters(r) {
+  clearSelectionDrawTimer(r); r.selectionDraw = null;
+  r.players.filter(p => !p.isBot && p.randomSelection).forEach(p => {
+    p.charId = null; p.confirmed = true;
+    ask(r, p.id, 'select_wait', '', [{ id:'unpick', label:'選び直す' }]);
   });
+  r.players.filter(p => p.isBot).forEach((p, i) => {
+    p.charId = null; p.confirmed = false; p.name = `BOT ${String.fromCharCode(65 + i)}`;
+    delete r.pending[p.id];
+  });
+}
+function assignBotCharacters(r) {
+  if (r.selectionDraw) return;
+  const bots = r.players.filter(p => p.isBot || p.randomSelection);
+  const humans = r.players.filter(p => !p.isBot);
+  if (!bots.length || humans.some(p => !p.confirmed)) return;
+  const taken = new Set(humans.filter(p => !p.randomSelection).map(p => p.charId));
+  const available = shuffle(Object.keys(CHARS).filter(cid => CHARS[cid].selectable !== false && !CHARS[cid].upcoming && CHAR_DECKS[cid] && !taken.has(cid)));
+  const targets = [];
+  bots.forEach((bot, i) => {
+    const label = bot.name;
+    bot.charId = available[i];
+    if (bot.isBot) bot.name = CHARS[bot.charId].name;
+    bot.confirmed = true;
+    targets.push({playerId:bot.id,charId:bot.charId,label,revealed:false,stopAt:null,
+      sequence:Array.from({length:22},(_,n)=>available[(n+i)%available.length]).concat(bot.charId)});
+  });
+  if (r.phase !== 'select') return;
+  r.selectionDraw = {id:`selection-${stamp(r)}`,phase:'preparing',startedAt:null,targets};
+  for (const p of humans) ask(r,p.id,'select_wait','',[]);
+}
+function clearSelectionDrawTimer(r) { clearTimeout(r.selectionDrawTimer); r.selectionDrawTimer = null; }
+function armSelectionDraw(r) {
+  clearSelectionDrawTimer(r);
+  const draw = r.selectionDraw;
+  if (r.phase !== 'select' || draw?.phase !== 'rolling') return;
+  const next = Math.min(...draw.targets.filter(t=>!t.revealed).map(t=>t.stopAt));
+  if (!Number.isFinite(next)) return;
+  r.selectionDrawTimer = setTimeout(()=>{
+    if (r.selectionDraw?.id !== draw.id || r.phase !== 'select') return;
+    advanceSelectionDraw(r); broadcast(r);
+  },Math.min(2147483647,Math.max(0,next-Date.now())));
+}
+function startSelectionDraw(r, reducedMotion=false) {
+  const draw = r.selectionDraw;
+  if (r.phase !== 'select' || draw?.phase !== 'preparing') return;
+  draw.phase='rolling'; draw.startedAt=Date.now()+300;
+  draw.targets.forEach((t,i)=>t.stopAt=draw.startedAt+(reducedMotion?200+i*100:2400+i*300));
+  armSelectionDraw(r);
+}
+function advanceSelectionDraw(r, now=Date.now()) {
+  const draw = r.selectionDraw;
+  if (r.phase !== 'select' || draw?.phase !== 'rolling') return;
+  draw.targets.forEach(t=>{if(now>=t.stopAt)t.revealed=true;});
+  if (draw.targets.every(t=>t.revealed)) {
+    draw.phase='done'; clearSelectionDrawTimer(r);
+    for (const p of r.players.filter(p=>!p.isBot)) ask(r,p.id,'select_wait','',[{id:'unpick',label:'選び直す'}]);
+    log(r,'全員の召喚士が確定しました。テレビ画面からゲームを開始してください');
+  } else armSelectionDraw(r);
 }
 function startSelect(r) {
   if (r.botMode) addBotPlayers(r);
@@ -4199,20 +4336,24 @@ function askSelect(r, p) {
   const taken = r.players.filter(x => x.confirmed && x.id !== p.id).map(x => x.charId);
   const opts = Object.entries(CHARS).filter(([id, c]) => c.selectable !== false && !taken.includes(id))
     .map(([id, c]) => ({ id, label: `${c.name}を使う` }));
+  opts.push({id:'random',label:'ランダム'});
   ask(r, p.id, 'select_char', '使用するキャラクターを選んでください', opts);
 }
 function isSelectionReady(r) {
   if (r.phase !== 'select' || r.players.length < 2) return false;
+  if (r.selectionDraw && r.selectionDraw.phase !== 'done') return false;
   if (!r.players.every(p => p.confirmed && p.charId &&
       CHARS[p.charId]?.selectable !== false && CHAR_DECKS[p.charId])) return false;
   return new Set(r.players.map(p => p.charId)).size === r.players.length;
 }
 function trySelectResolve(r) {
-  if (!r.players.every(p => p.confirmed)) return;
+  const humans = r.players.filter(p => !p.isBot);
+  if (!humans.every(p => p.confirmed)) return;
   const groups = Object.entries(CHARS).filter(([, c]) => c.selectable !== false).map(([cid]) => cid)
-    .map(cid => ({ cid, who: r.players.filter(p => p.charId === cid) }))
+    .map(cid => ({ cid, who: humans.filter(p => !p.randomSelection && p.charId === cid) }))
     .filter(g => g.who.length >= 2);
   if (groups.length === 0) {
+    assignBotCharacters(r);
     if (isSelectionReady(r)) log(r, '全員の召喚士が確定しました。テレビ画面からゲームを開始してください');
     return;
   }
@@ -4232,6 +4373,7 @@ function trySelectResolve(r) {
   });
 }
 function startGame(r) {
+  clearSelectionDrawTimer(r); r.selectionDraw = null;
   const invalid = r.players.find(p => !p.charId || CHARS[p.charId]?.selectable === false || !CHAR_DECKS[p.charId]);
   if (invalid) {
     invalid.charId = null;
@@ -4371,7 +4513,7 @@ function botPurchaseScore(r, p, item, reserve) {
   if (!item || item.sold || item.kind === 'remove' || !Number.isFinite(item.price) || item.price < 0) return -Infinity;
   const id=item.card, cards=botInventory(p);
   if (!CREATURES[id] && !SPELLS[id] && !SUPPORTS[id]) return -Infinity;
-  const cost=CREATURES[id]?.cost || (SPELLS[id] ? effectiveSpellCost(r,p,id) : 0);
+  const cost=CREATURES[id]?.cost ?? (SPELLS[id] ? effectiveSpellCost(r,p,id) : SUPPORTS[id]?.cost || 0);
   if (cards.filter(x=>baseId(x)===baseId(id)).length>=2 ||
       SUPPORTS[id] && cards.filter(x=>SUPPORTS[x]).length>=3 ||
       p.gold-item.price<Math.max(reserve,cost+100)) return -Infinity;
@@ -4492,6 +4634,7 @@ function publicState(r, viewerId) {
     presentationSpeed: r.presentationSpeed === 2 ? 2 : 1,
     botMode: !!r.botMode,
     selectionReady: isSelectionReady(r),
+    selectionDraw: r.phase === 'select' ? r.selectionDraw || null : null,
     tiles: tilesOf(r).map((t, i) => r.elemOv[i] ? Object.assign({}, t, { e: r.elemOv[i] }) : t),
     tolls: r.owners.map((o, i) => o ? tollOf(r, i) : 0),
     landStats: r.owners.map((o,i)=>o ? {...landDefenseStats(r,i),saleValue:Math.round(landValue(r,i)*0.7)} : null),
@@ -4535,7 +4678,7 @@ function publicState(r, viewerId) {
             resume: r.draft ? r.draft.resume : null, promptId:v.promptId, turnEpoch:v.turnEpoch }]
         : v.type === 'pick_draw' && k !== viewerId
           ? [k, { type: v.type, prompt: v.prompt, options: [], until: v.until }]  // 候補カードは本人だけに見せる
-          : ['roll', 'tile', 'pick_creature', 'overflow', 'forget', 'gaust_exile', 'fatal_exile', 'ult_villa_recover', 'daitekkan_recover', 'spell_evolve', 'frontline_swap', 'ult_grease', 'card_search', 'inkcrow_discard', 'censor_pick', 'gate_pass_evolve'].includes(v.type) && k !== viewerId
+          : ['roll', 'tile', 'pick_creature', 'overflow', 'forget', 'gaust_exile', 'fatal_exile', 'mana_forge', 'ult_villa_recover', 'daitekkan_recover', 'spell_evolve', 'frontline_swap', 'ult_grease', 'card_search', 'inkcrow_discard', 'censor_pick', 'gate_pass_evolve'].includes(v.type) && k !== viewerId
             ? [k, { type: v.type, prompt: v.prompt, options: [], selectedCount: (v.selected || []).length }]
           : v.type === 'support' && k !== viewerId
             ? [k, { type: v.type, prompt: 'ウェポンを選択中', options: [] }]
@@ -4553,7 +4696,10 @@ function publicState(r, viewerId) {
         ? { cards: r.lastGain.cards.slice() } : { cards: undefined }) : null,
     catalog: { PASSIVES:require('./public/summoner-passives'), CREATURES:displayCardGroup(CREATURES), SUPPORTS:displayCardGroup(SUPPORTS), ITEMS, CHARS, ULTS, SPELLS:displayCardGroup(SPELLS), STARTER_DECKS: CHAR_DECKS, artIds: ART_IDS },
     players: r.players.map(p => ({
-      id: p.id, name: p.name, charId: p.charId || null, confirmed: !!p.confirmed,
+      id: p.id,
+      name: r.phase==='select' && p.isBot && r.selectionDraw?.targets.find(t=>t.playerId===p.id&&!t.revealed)?.label || p.name,
+      charId: r.phase==='select' && r.selectionDraw?.targets.some(t=>t.playerId===p.id&&!t.revealed) ? null : p.charId || null,
+      randomSelection: !!p.randomSelection, confirmed: !!p.confirmed,
       isBot: !!p.isBot,
       color: p.color || '#888', pos: p.pos || 0, gold: p.gold ?? 0,
       battleWins: p.battleWins || 0, shrineVisits: p.shrineVisits || 0, ultUsed: !!p.ultUsed,
@@ -4618,10 +4764,11 @@ const SAVE_VER = 1;
 // ルームのフィールド分類表。ルームに新しいキーを追加したら必ずどちらかに分類すること
 // (save_testが未分類キーを検出して失敗する)
 const ROOM_RUNTIME_KEYS = new Set(['clients', 'lastActivity', 'routePreview', 'upgradePreview', 'botTimer', 'botActionSeq', 'ultTimer', 'processedActions', 'turnReadyAt', 'turnTransitionTimer', 'boardSeen', 'matchCause', 'windSupplyTimer']);  // 保存しない
+ROOM_RUNTIME_KEYS.add('selectionDrawTimer');
 const ROOM_PERSIST_KEYS = new Set([                                            // 保存する
   'passiveVersion', 'passiveNotices', 'passiveEarthBaseline',
   'code', 'phase', 'players', 'owners', 'deck', 'market', 'turn', 'round', 'log',
-  'pending', 'titles', 'duel', 'lastBattle', 'winner', 'barrier', 'elemOv', 'tileFx',
+  'pending', 'titles', 'duel', 'selectionDraw', 'lastBattle', 'winner', 'barrier', 'elemOv', 'tileFx',
   'curses', 'boardToken', 'atSeq', 'saveRev', 'battle', 'draft',
   'dirPend', 'halfMarket', 'shopVisit', 'effectQueue', 'effectResume', 'battleAfter',
   'lastEvent', 'lastDice', 'lastUlt', 'ultSequence', 'lastHeal', 'lastSeal', 'lastRuin', 'lastDraw', 'lastGain',
@@ -4682,6 +4829,7 @@ function validateSave(save) {
   if (!Array.isArray(d.players) || d.players.length < 1 || d.players.length > 4) return 'プレイヤー数が不正です';
   const ids = new Set();
   for (const q of d.players) {
+    if(q?.randomSelection!=null&&typeof q.randomSelection!=='boolean')return 'ランダム選択状態が不正です';
     if (!q || typeof q.id !== 'string' || !q.id || q.id.length > 24 || ids.has(q.id)) return 'プレイヤーIDが不正です';
     ids.add(q.id);
     if (typeof q.name !== 'string' || q.name.length > 16) return 'プレイヤー名が不正です';
@@ -4775,6 +4923,23 @@ function validateSave(save) {
   if (d.elemOv != null)
     for (const e of Object.values(d.elemOv))
       if (!['fire', 'water', 'earth', 'wind'].includes(e)) return '属性上書きが不正です';
+  if (d.selectionDraw != null) {
+    const draw=d.selectionDraw, targets=draw.targets;
+    if(d.phase!=='select'||typeof draw.id!=='string'||draw.id.length>100||!['preparing','rolling','done'].includes(draw.phase)||
+       !Array.isArray(targets)||targets.length<1||targets.length>4||new Set(targets.map(t=>t?.playerId)).size!==targets.length||
+       new Set(targets.map(t=>t?.charId)).size!==targets.length) return '召喚士の抽選状態が不正です';
+    if(draw.phase==='preparing'?draw.startedAt!==null:!Number.isFinite(draw.startedAt))return '召喚士の抽選時刻が不正です';
+    for(const t of targets) {
+      const p=d.players.find(p=>p.id===t?.playerId);
+      if(!p||(!p.isBot&&!p.randomSelection)||!CHARS[t.charId]||CHARS[t.charId].selectable===false||p.charId!==t.charId||
+         typeof t.label!=='string'||t.label.length>32||typeof t.revealed!=='boolean'||!Array.isArray(t.sequence)||t.sequence.length!==23||
+         t.sequence.at(-1)!==t.charId||t.sequence.some(id=>!CHARS[id]||CHARS[id].selectable===false)||
+         (draw.phase==='preparing'?t.stopAt!==null||t.revealed:!Number.isFinite(t.stopAt)||t.stopAt<draw.startedAt)||
+         (draw.phase==='done'&&!t.revealed))return '召喚士の抽選候補が不正です';
+    }
+    const chosen=d.players.filter(p=>!targets.some(t=>t.playerId===p.id)&&p.confirmed).map(p=>p.charId);
+    if(targets.some(t=>chosen.includes(t.charId)))return '召喚士の抽選結果が重複しています';
+  }
   if (d.matchAnalytics != null) {
     // Analytics validation follows map-specific movement validation below.
     if (typeof d.matchAnalytics !== 'object' || !Array.isArray(d.matchAnalytics.assetTimeline) ||
@@ -4830,7 +4995,7 @@ function restoreRoom(save) {
   if (existing && existing.boardToken !== d.boardToken)
     return { error: `ルーム${d.code}は使用中のため復元できません(既存のルームを閉じてから再試行してください)`, status: 409 };
   const room = Object.assign(d, { stateInstanceId: crypto.randomBytes(16).toString('hex'), clients: new Set(), lastActivity: Date.now(), botTimer: null, botActionSeq: 0,
-    ultTimer: null, processedActions: [], turnTransitionTimer: null, boardSeen: true });
+    ultTimer: null, processedActions: [], turnTransitionTimer: null, selectionDrawTimer: null, boardSeen: true });
   if (room.botMode == null) room.botMode = false;
   room.mapId=room.mapId || 'starting_corridor';
   room.movement=room.movement || null; room.routePreview=null;
@@ -4893,11 +5058,13 @@ function restoreRoom(save) {
     }
   // ここから先は失敗しない操作のみ(原子的な差し替え)
   if (existing) {
+    clearSelectionDrawTimer(existing);
     clearTimeout(existing.windSupplyTimer);
     for (const c of existing.clients) { try { c.res.end(); } catch (e) {} }
     rooms.delete(d.code);
   }
   rooms.set(room.code, room);
+  if (room.selectionDraw?.phase === 'rolling') advanceSelectionDraw(room);
   // 選択ドロー中のセーブは候補2枚ごと復元される(v0.63: 制限時間なし)
   if (room.windSupply?.active) armWindSupply(room);
   for (const pend of Object.values(room.pending || {}))
@@ -5111,6 +5278,10 @@ const server = http.createServer(async (req, res) => {
   if (p === '/map-definitions.js' || p === '/map-ui.js' || p === '/map-ui.css' || p === '/analytics.js' || p === '/wind-supply-ui.js' || p === '/wind-supply-ui.css' || p === '/game_timing.js' || p === '/board_world.js' || p === '/battle_world.js' || p === '/ult_fx_world.js' ||
       p === '/fx_manifest.js' || p === '/result-graph-audio.js' || p === '/evolution-fx.js' || p === '/evolution-charge-audio.js' || p.startsWith('/vendor/'))
     return serveFile(res, p.slice(1));
+  if (p === '/board-fullscreen.js') return serveFile(res, 'board-fullscreen.js');
+  if (p === '/onitsugi-art.css') return serveFile(res,p.slice(1));
+  if (p === '/board-bot-fill.js' || p === '/board-bot-fill.css') return serveFile(res, p.slice(1));
+  if (p === '/board-summoner-random.js' || p === '/board-summoner-random.css') return serveFile(res,p.slice(1));
   if (p === '/api/fixture') {
     // v0.66: 描画パリティ確認用の固定state(ルームは登録しない・開発用)
     return json(res, publicState(url.searchParams.get('result') ? makeResultFixtureRoom() : makeFixtureRoom(), null));
@@ -5221,6 +5392,7 @@ const server = http.createServer(async (req, res) => {
     if (r) {
       if (b.token !== r.boardToken) return json(res, { error: '権限がありません' }, 403);  // v0.62
       clearBotTimer(r);
+      clearSelectionDrawTimer(r);
       clearUltTimer(r);
       clearTurnTransitionTimer(r);
       for (const c of r.clients) { try { c.res.end(); } catch (e) {} }
@@ -5241,8 +5413,29 @@ const server = http.createServer(async (req, res) => {
     const r = rooms.get((b.room || '').toUpperCase());
     if (!r) return json(res, { error: 'no room' }, 404);
     touch(r);
-    if (b.type === 'start_select' && r.phase === 'lobby' &&
-        (r.botMode ? r.players.filter(q => !q.isBot).length === 1 : r.players.length >= 2)) startSelect(r);
+    if (b.type === 'start_select') {
+      const explicit = Object.hasOwn(b, 'fillBots') || Object.hasOwn(b, 'expectedHumanCount');
+      if (explicit) {
+        if (b.token !== r.boardToken) return json(res, { error: '権限がありません' }, 403);
+        if (typeof b.fillBots !== 'boolean' || !Number.isInteger(b.expectedHumanCount) || b.expectedHumanCount < 1 || b.expectedHumanCount > 4)
+          return json(res, { error: '参加人数とBOT補充の選択を確認してください' }, 400);
+      }
+      if (r.phase !== 'lobby') return json(res, r.phase === 'select' ? { ok: true, alreadyStarted: true } : { error: 'キャラ選択は開始済みです' }, r.phase === 'select' ? 200 : 409);
+      const humanCount = r.players.filter(q => !q.isBot).length;
+      if (explicit && b.expectedHumanCount !== humanCount)
+        return json(res, { error: '参加人数が変わりました。もう一度確認してください', humanCount }, 409);
+      if (r.botMode ? humanCount !== 1 : humanCount < 2 || humanCount > 4)
+        return json(res, { error: '参加人数を確認してください' }, 409);
+      if (explicit && b.fillBots && humanCount < 4) r.botMode = true;
+      startSelect(r);
+    }
+    else if (b.type === 'selection_draw_ready') {
+      if (b.token !== r.boardToken) return json(res,{error:'権限がありません'},403);
+      if (r.phase !== 'select' || !r.selectionDraw || b.drawId !== r.selectionDraw.id)
+        return json(res,{error:'召喚士の選択状態が変わりました'},409);
+      if (typeof b.reducedMotion !== 'boolean') return json(res,{error:'演出設定が不正です'},400);
+      startSelectionDraw(r,b.reducedMotion);
+    }
     else if (b.type === 'start_game') {
       if (b.token !== r.boardToken) return json(res, { error: '権限がありません' }, 403);
       if (!isSelectionReady(r))
@@ -5254,6 +5447,8 @@ const server = http.createServer(async (req, res) => {
       if (actor && actor.isBot) return json(res, { error: 'BOTは外部から操作できません' }, 403);
       const pend = r.pending[b.playerId];
       if (!actor || !pend) return json(res, { error: 'この操作は終了しています', state: publicState(r, b.playerId) }, 409);
+      if (r.phase === 'select' && b.promptId != null && (b.promptId !== pend.promptId || b.turnEpoch !== pend.turnEpoch))
+        return json(res,{error:'選択状況が変わりました',state:publicState(r,b.playerId)},409);
       if (r.phase === 'playing' && (b.turnEpoch !== pend.turnEpoch || b.promptId !== pend.promptId))
         return json(res, { error: '手番が更新されました', state: publicState(r, b.playerId) }, 409);
       if (r.phase === 'playing' && (!b.actionId || (r.processedActions || []).includes(b.actionId)))

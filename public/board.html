@@ -741,12 +741,17 @@
   #ticker { max-height:min(25vh,190px); min-height:46px; overflow:hidden; padding:9px 12px 7px;
       font-size:clamp(10px,.8vw,12px); letter-spacing:.7px; line-height:1.55; overflow-wrap:anywhere; }
   #leftUtility.logExpanded #ticker { overflow-y:auto; scrollbar-width:thin; scrollbar-color:rgba(242,208,98,.7) rgba(0,0,0,.18); }
-  #utilityFooter { min-height:35px; display:flex; align-items:center; gap:7px; padding:6px 8px;
+  #utilityFooter { min-height:35px; display:flex; flex-wrap:wrap; align-items:center; gap:7px; padding:6px 8px;
       border-top:1px solid rgba(201,162,39,.28); background:rgba(4,5,16,.28); border-radius:0 0 9px 9px; }
-  #optBtn,#bgmBtn,#logExpandBtn { flex:none; min-height:24px; padding:3px 9px; border-radius:6px; cursor:pointer;
+  #optBtn,#bgmBtn,#logExpandBtn,#boardFullscreenBtn { flex:none; min-height:24px; padding:3px 9px; border-radius:6px; cursor:pointer;
       background:rgba(16,13,36,.72); border:1px solid rgba(201,162,39,.55); color:var(--gold-soft);
       font-size:11px; letter-spacing:.7px; }
   #logExpandBtn { display:none; align-items:center; gap:4px; }
+  #boardFullscreenBtn { display:inline-flex; align-items:center; justify-content:center; gap:4px; white-space:nowrap; }
+  #boardFullscreenBtn svg { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+  #boardFullscreenBtn:focus-visible { outline:2px solid var(--gold-soft); outline-offset:3px; }
+  #boardFullscreenBtn:disabled { opacity:.45; cursor:default; }
+  #boardFullscreenStatus { padding:4px 10px 8px; font-size:11px; line-height:1.5; }
   #verTag { margin-left:auto; font-size:9.5px; color:rgba(241,232,208,.46); letter-spacing:.6px; white-space:nowrap; }
   #optMenu { display:none; position:absolute; left:calc(100% + 10px); bottom:0; z-index:75;
       background:rgba(16,13,36,.98); border:1px solid var(--gold); border-radius:12px;
@@ -962,7 +967,7 @@
     #leftUtility { left:14px; bottom:10px; width:296px; }
     #ticker { max-height:min(25vh,158px); min-height:40px; padding:7px 10px 6px; }
     #utilityFooter { min-height:32px; padding:5px 7px; gap:5px; }
-    #optBtn,#bgmBtn,#logExpandBtn { min-height:22px; padding:2px 7px; font-size:10px; }
+    #optBtn,#bgmBtn,#logExpandBtn,#boardFullscreenBtn { min-height:22px; padding:2px 7px; font-size:10px; }
     #verTag { font-size:8.5px; }
     #titleBonusPanel { gap:5px; }
 
@@ -1389,9 +1394,11 @@ body.passiveBattle #boardNotice[data-actor][data-owner=g][data-scene=passive] .e
     <div id="utilityFooter">
       <button id="logExpandBtn" aria-expanded="false" aria-controls="ticker">履歴を広げる</button>
       <button id="optBtn" style="display:none;">設定</button>
+      <button id="boardFullscreenBtn" type="button" aria-pressed="false" title="全画面にする"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6"/></svg><span>全画面</span></button>
       <button id="bgmBtn" style="display:none;">♪ ON</button>
       <div id="verTag"></div>
     </div>
+    <div id="boardFullscreenStatus" role="status" hidden></div>
     <div id="optMenu">
       <div style="font-size:12px; color:rgba(241,232,208,.7); letter-spacing:2px;">ルームコード ─ スマホで参加/復帰</div>
       <div id="optCode" style="font-size:30px; letter-spacing:8px; color:var(--gold-soft);
@@ -1615,7 +1622,7 @@ const QR = (() => {
 <link rel="stylesheet" href="/board-notice.css?v=2&release=164">
 <link rel="stylesheet" href="/board-actor.css?v=3&handdiscard=horizontal">
 <script src="/board-actor.js?v=2&release=164&noir=166"></script>
-<script src="/board-effects.js?v=3&handdiscard=center"></script>
+<script src="/board-effects.js?v=170&handdiscard=center"></script>
 <script src="/board-notice.js?v=4&release=164&noir=166"></script>
 <link rel="stylesheet" href="/board-enemy-land.css?v=1&release=169">
 <script src="/board-enemy-land.js?v=1&release=169"></script>
@@ -2674,10 +2681,10 @@ document.getElementById('selectionStartBtn').onclick = async () => {
       body:JSON.stringify({ room:code, type:'start_game', token:boardToken }) });
     const out = await res.json();
     if (!res.ok || out.error) throw new Error(out.error || 'ゲームを開始できませんでした');
-    const matchType = state.botMode ? 'bot' : 'multiplayer';
+    const matchType = state.botMode && state.players.filter(p => !p.isBot).length === 1 ? 'bot' : 'multiplayer';
     const playerCount = Array.isArray(state.players) ? state.players.length : 0;
     const botCount = Array.isArray(state.players) ? state.players.filter(player => player.isBot).length : 0;
-    window.SummonsAnalytics?.trackOnce(`match-start:${code}`, state.botMode ? 'bot_match_started' : 'match_started', {
+    window.SummonsAnalytics?.trackOnce(`match-start:${code}`, matchType === 'bot' ? 'bot_match_started' : 'match_started', {
       match_type: matchType,
       player_count: playerCount,
       bot_count: botCount,
@@ -2722,6 +2729,7 @@ function connectBoard() {
     if (state && (next.phase !== state.phase || next.turn !== state.turn || next.turnEpoch !== state.turnEpoch))
       resetPresentationCamera('phase-or-turn-change');
     state = next;
+    window.BoardBotFill?.update();
     stateReceivedAt = Date.now();
     if(reconnecting && state.mapId==='twin_gate_cavern' && state.phase==='playing' && previousPhase!=='select'){
       prev.phase=state.phase;prev.turn=state.turn;prev.turnEpoch=state.turnEpoch;
@@ -2737,7 +2745,7 @@ function connectBoard() {
       const resultId = state.resultReview?.id || state.matchResult?.id || `${code}:ended`;
       const players = Array.isArray(state.players) ? state.players : [];
       window.SummonsAnalytics?.trackOnce(`match-completed:${code}:${resultId}`, 'match_completed', {
-        match_type: state.botMode ? 'bot' : 'multiplayer',
+        match_type: state.botMode && players.filter(p => !p.isBot).length === 1 ? 'bot' : 'multiplayer',
         player_count: players.length,
         bot_count: players.filter(player => player.isBot).length,
         round_count: Number(state.round) || 0,
@@ -2770,8 +2778,7 @@ function enterRoom(c, phoneUrl, token) {
     try { localStorage.removeItem('sc_board'); localStorage.removeItem('sc_btoken'); } catch (e) {}
     location.reload();
   };
-  $('startBtn').onclick = () =>
-    fetch('/api/action', { method: 'POST', body: JSON.stringify({ room: code, type: 'start_select' }) });
+  $('startBtn').onclick = () => window.BoardBotFill.start();
   try {
     localStorage.setItem('sc_board', code);
     if (boardToken) localStorage.setItem('sc_btoken', boardToken);
@@ -3587,6 +3594,16 @@ window.addEventListener('boardtilesready',()=>{
   if(state?.catalog){ownersCache='';renderBoard();}
 });
 function windowState(){return state;}
+let summonPawnMask=null;
+function boardPawnAlpha(id){
+  const masked=summonPawnMask?.scope===state?.code+':'+state?.stateInstanceId&&summonPawnMask.ids.includes(id);
+  return Math.min(BoardUpgrade.pawnAlpha(id),masked ? 0.015 : 1);
+}
+function syncPawnOpacity(ids){
+  for(const id of ids){const alpha=boardPawnAlpha(id);PW.setPawnOpacity([id],alpha);
+    for(const key of ['pw-','pws-']){const el=$(key+id);if(el)el.style.opacity=alpha;}
+  }
+}
 BoardUpgrade.configure({
  state:()=>state,queue:queuePresentation,wait,ms:ms=>presentationMs(ms),
  zoom:(tile,actor)=>beginPresentationZoom(tile,'land-upgrade',actor),
@@ -3595,7 +3612,7 @@ BoardUpgrade.configure({
  stopEvolution:()=>SummonsEvolution.cancel(),
  draw:async()=>{const done=renderBoard();renderPawns();await done;},
  glow:setInspectionGlow,impact:()=>playSe(seTelop),
- pawnOpacity:(ids,alpha)=>{PW.setPawnOpacity(ids,alpha);for(const id of ids)for(const key of ['pw-','pws-']){const el=$(key+id);if(el)el.style.opacity=alpha;}},
+ pawnOpacity:ids=>syncPawnOpacity(ids),
  creatureOpacity:(tile,alpha)=>{PW.setCreatureOpacity(tile,alpha);document.querySelectorAll(`[data-evolution-tile="${tile}"],[data-placement-shadow="${tile}"]`).forEach(el=>el.style.opacity=alpha);},
  point:(tile,level)=>{
   const p=proj(GEO[tile][0],GEO[tile][1]),y=p.y-(level-1)*7+6;
@@ -3764,6 +3781,7 @@ function pawnLayout() {
 }
 function renderPawns({landingPlayer} = {}) {
   const layout = pawnLayout();
+  syncPawnOpacity(layout.map(p=>p.id));
   if (landingPlayer) {
     const instance = state.stateInstanceId, room = state.code;
     const pawn = layout.find(it => it.id === landingPlayer);
@@ -3794,7 +3812,7 @@ function renderPawnsDom(layout) {
     el.style.zIndex = it.z;
     sh.style.left = it.x + 'px'; sh.style.top = (it.y - 5) + 'px';
     sh.style.zIndex = it.zs;
-    el.style.opacity=sh.style.opacity=BoardUpgrade.pawnAlpha(it.id);
+    el.style.opacity=sh.style.opacity=boardPawnAlpha(it.id);
   }
 }
 
@@ -3820,13 +3838,15 @@ function summonCardHTML(cid, forceEvolved = false) {
 async function playSummonPresentation(tile, owner, snapshot = state) {
   cutBusy++;
   bannerUntil = Math.max(bannerUntil, Date.now() + presentationMs(BoardMilestones.duration + 3100));
-  let cameraToken=null;
+  let cameraToken=null,pawnMask=null;
   const instance=state?.stateInstanceId,room=state?.code;
   maskPlacementTile(tile,true);
   try {
     hideLogo(true);
     await BoardMilestones.present('summon', { tile, owner, element:snapshot.tiles[tile].e }, snapshot, {ms:presentationMs});
     if(state?.stateInstanceId!==instance||state?.code!==room||state?.phase!=='playing')return;
+    pawnMask={scope:room+':'+instance,ids:state.players.filter(p=>(pawnAnim[p.id]??p.pos)===tile).map(p=>p.id)};
+    summonPawnMask=pawnMask;syncPawnOpacity(pawnMask.ids);
     cameraToken=beginPresentationZoom(tile,'summon',owner.player);
     await wait(900);
     if(cameraOwner?.token!==cameraToken)return;
@@ -3839,10 +3859,14 @@ async function playSummonPresentation(tile, owner, snapshot = state) {
     await fxDone;
   } finally {
     maskPlacementTile(tile,false);
-    if(cameraToken)await endPlacementZoom(cameraToken);
-    $('summonCut').classList.remove('on');
-    hideLogo(false);
-    cutBusy = Math.max(0, cutBusy - 1);
+    try{if(cameraToken)await endPlacementZoom(cameraToken);}
+    finally{
+      if(summonPawnMask===pawnMask)summonPawnMask=null;
+      if(pawnMask)syncPawnOpacity(pawnMask.ids);
+      $('summonCut').classList.remove('on');
+      hideLogo(false);
+      cutBusy = Math.max(0, cutBusy - 1);
+    }
   }
 }
 
@@ -3907,6 +3931,8 @@ async function playEvolvePresentation(tile, owner) {
 }
 
 const DEDICATED_SPELL_ART = {
+  sp_chain_gold:'/assets/cards/spell-chain-gold-art-v2.webp',
+  sp_mana_forge:'/assets/cards/spell-mana-forge-art-v2.webp',
   sp_censor:'/assets/cards/spell-censor-art-v2.webp',
   sp_evolve:'/assets/cards/spell-evolve-art-v8.webp',
   sp_gold:'/assets/cards/spell-gold-art-v1.webp',
@@ -4290,6 +4316,7 @@ function playBattleOpening(key) {
 const supportCardId = sup => typeof sup === 'string' ? sup : sup && sup.cardId;
 const hasBattleSupport = sup => !!sup && sup !== 'none';
 const SUPPORT_ART_FILE = {
+  onitsugi:'weapon-onitsugi-no-tachi-art-v2.webp',
   weapon:'support-sword-v1.webp', gweapon:'support-heavy-axe-v1.webp',
   shield:'support-shield-v2.webp', gshield:'support-big-shield-v1.webp',
   jinx:'support-disarm-v1.webp'
@@ -4969,11 +4996,12 @@ function render() {
       $('selectionStartBtn').textContent = 'ゲーム開始';
       $('selectionStartMsg').textContent = '';
     }
-    if (state.duel && state.duel.at !== prev.duelAt) {
+    if (state.duel && state.duel.at !== prev.duelAt && !['rolling','done'].includes(state.selectionDraw?.phase)) {
       prev.duelAt = state.duel.at;
       playDuel(state.duel);
     }
   } else $('duelOv').classList.remove('on');
+  window.BoardSummonerRandom?.update(state);
   if (state.phase === 'playing' || state.phase === 'ended') {
     const logicalTurn = state.players[state.turn] && state.players[state.turn].id;
     if (!visualTurnId || !state.players.some(p => p.id === visualTurnId)) visualTurnId = logicalTurn || null;
@@ -5592,5 +5620,10 @@ fitWorld();
 </dialog>
 
 <script src="/board-settings.js?v=1&release=164"></script>
+<script src="/board-fullscreen.js?v=1"></script>
+<link rel="stylesheet" href="/board-bot-fill.css?v=1">
+<script src="/board-bot-fill.js?v=1"></script>
+<link rel="stylesheet" href="/board-summoner-random.css?v=1">
+<script src="/board-summoner-random.js?v=1"></script>
 </body>
 </html>

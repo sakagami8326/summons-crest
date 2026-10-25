@@ -447,9 +447,6 @@
   .myResultBreak { display:grid; grid-template-columns:1fr auto; gap:.7dvh 3dvh; font-size:max(1.8dvh,12px); }
   .myResultBreak b { color:#efd588; }
   .myResultStats { margin-top:1.5dvh; padding-top:1.2dvh; border-top:1px solid rgba(214,180,83,.28); color:#cfc2a4; }
-  .myTurning { margin-top:1.4dvh; display:flex; flex-direction:column; gap:.65dvh; }
-  .myTurning article { padding:.7dvh 1.2dvh; border-left:3px solid #d3aa42; background:#090d1dbf; }
-  .myTurning b { display:block; color:#f0d48b; } .myTurning span { color:#cfc2aa; font-size:max(1.45dvh,10px); }
   /* ダイス画像ボタン */
   .diceImgBtn { position:relative; isolation:isolate; background:none; border:none; cursor:pointer; padding:0; height:100%;
         display:flex; align-items:center; justify-content:center; }
@@ -892,7 +889,7 @@
 </style><style>
 #shopPassive{position:absolute;top:2dvh;left:27vw;right:2vw;min-height:9dvh;display:flex;align-items:center;justify-content:center;color:#f2dfad;background:#08111dde;font-size:clamp(12px,3.5dvh,19px);padding:1dvh 2vw;border:1px solid #a28c55}
 #shopPassive[hidden]{display:none}.passiveShop #shopShelf{top:13dvh}.passiveShop .shopProduct .shopCard{height:35dvh}
-</style><link rel="stylesheet" href="/card-finish.css?v=20261021-foil160-rainbow30"><script src="/card-finish.js?v=20261020" defer></script>
+</style><link rel="stylesheet" href="/onitsugi-art.css?v=20261025"><link rel="stylesheet" href="/card-finish.css?v=20261021-foil160-rainbow30"><script src="/card-finish.js?v=20261020" defer></script>
 </head>
 <body>
   <div id="connBar" style="display:none; position:fixed; top:0; left:50%; transform:translateX(-50%);
@@ -1013,18 +1010,18 @@
 <script src="/ult_fx_world.js"></script>
 <link rel="stylesheet" href="/phone-card-picker.css?v=20260928-draw5&release=164&noir=166">
 <link rel="stylesheet" href="/phone-deck.css?release=164">
-<link rel="stylesheet" href="/phone-summoners.css?v=20261013-metal-signature">
-<script src="/phone-summoners.js?v=20261013-metal-signature"></script>
+<link rel="stylesheet" href="/phone-summoners.css?v=20261024-random">
+<script src="/phone-summoners.js?v=20261024-random"></script>
 <script src="/phone-card-picker.js?v=20260928-draw5&release=164&noir=166"></script>
 <link rel="stylesheet" href="/phone-enemy-choice.css?v=20261001-1&release=169">
-<script src="/phone-enemy-choice.js?v=20261001-1&release=169"></script>
+<script src="/phone-enemy-choice.js?v=20261025-payment&release=170"></script>
 <link rel="stylesheet" href="/phone-player-target.css?v=20261004-1&release=166">
 <script src="/phone-player-target.js?v=20261004-1&release=166"></script>
 <link rel="stylesheet" href="/phone-upgrade.css?v=20261004-1">
 <script src="/upgrade-ui.js?v=20261004-1"></script>
 <script src="/phone-upgrade.js?v=20261004-1"></script>
 <link rel="stylesheet" href="/phone-land.css?v=20261002-3&release=165&charcoal=169">
-<script src="/phone-land.js?v=20261016-lia&charcoal=169"></script>
+<script src="/phone-land.js?v=20261024-marlow"></script>
 <script src="/phone-orientation-fullscreen.js?v=1"></script>
 <script>
 const $ = id => document.getElementById(id);
@@ -1096,6 +1093,7 @@ const ELEM_MINI = {"fire":"<g transform=\"scale(0.0636) translate(-364.2,-542.7)
 const GLYPH = { weapon: () => sic('sword', '7.5dvh'), gweapon: () => sic('sword', '7.5dvh'),
   shield: () => sic('up', '7.5dvh'), gshield: () => sic('up', '7.5dvh'), jinx: () => '❂' };
 const SUPPORT_ART = {
+  onitsugi:'/assets/cards/weapon-onitsugi-no-tachi-art-v2.webp',
   weapon: '/assets/cards/support-sword-v1.webp',
   gweapon: '/assets/cards/support-heavy-axe-v1.webp',
   shield: '/assets/cards/support-shield-v2.webp',
@@ -1106,11 +1104,13 @@ const supportArt = cid => SUPPORT_ART[cid]
   ? `<img src="${SUPPORT_ART[cid]}" alt="">`
   : (GLYPH[cid] ? GLYPH[cid]() : sic('sword', '7.5dvh'));
 // アートが存在するスペル(無いものは呪文アイコンで代用)
-const SPELL_ART = new Set(['sp_censor','sp_gold','sp_weaken','sp_gale','sp_quake','sp_volcanic_core','sp_abyssal_pearl',
+const SPELL_ART = new Set(['sp_chain_gold','sp_mana_forge','sp_censor','sp_gold','sp_weaken','sp_gale','sp_quake','sp_volcanic_core','sp_abyssal_pearl',
   'sp_earth_mother_stone','sp_sky_crystal','sp_flame_vortex','sp_bloodstained_blade',
   'sp_bedrock_uplift','sp_wind_shift','sp_ward','sp_step','sp_move','sp_insight','sp_swap',
   'sp_evolve','sp_fatal_reward','sp_dice_1','sp_dice_2','sp_dice_3','sp_dice_4','sp_dice_5','sp_dice_6']);
 const DEDICATED_SPELL_ART = {
+  sp_chain_gold:'/assets/cards/spell-chain-gold-art-v2.webp',
+  sp_mana_forge:'/assets/cards/spell-mana-forge-art-v2.webp',
   sp_censor:'/assets/cards/spell-censor-art-v2.webp',
   sp_evolve:'/assets/cards/spell-evolve-art-v8.webp',
   sp_gold:'/assets/cards/spell-gold-art-v1.webp',
@@ -1520,8 +1520,8 @@ function getCardPicker() {
 }
 function buildPickOv(title, sections, cancelId) {
   const p=pend(), type=p.type;
-  const names={frontline_swap:'戦線交代',overflow:'手札上限',swap_pick:'チェンジ',spell_evolve:'エヴォルヴ',forge:'鍛錬',gaust_exile:'魂の選別',fatal_exile:'フェイタルリワード',ult_grease:'進化の胎動',ult_villa_recover:'墓守の協奏曲',daitekkan_recover:'再鋳造',forget:'忘却'};
-  const action={frontline_swap:'交代する',swap_pick:'交代する',spell_evolve:'進化させる',forge:'進化させる',overflow:'捨てる',gaust_exile:'廃棄する',fatal_exile:'廃棄する',forget:'廃棄する',daitekkan_recover:'回収する',ult_grease:'選択する',ult_villa_recover:'選択する'};
+  const names={mana_forge:'マナフォージ',frontline_swap:'戦線交代',overflow:'手札上限',swap_pick:'チェンジ',spell_evolve:'エヴォルヴ',forge:'鍛錬',gaust_exile:'魂の選別',fatal_exile:'フェイタルリワード',ult_grease:'進化の胎動',ult_villa_recover:'墓守の協奏曲',daitekkan_recover:'再鋳造',forget:'忘却'};
+  const action={mana_forge:'廃棄する',frontline_swap:'交代する',swap_pick:'交代する',spell_evolve:'進化させる',forge:'進化させる',overflow:'捨てる',gaust_exile:'廃棄する',fatal_exile:'廃棄する',forget:'廃棄する',daitekkan_recover:'回収する',ult_grease:'選択する',ult_villa_recover:'選択する'};
   Object.assign(names,{card_search:'サーチ',inkcrow_discard:'インクの選別',censor_pick:'禁書検閲',gate_pass_evolve:'門通過ボーナス'});
   Object.assign(action,{card_search:'手札に加える',inkcrow_discard:'捨てる',censor_pick:'捨てさせる',gate_pass_evolve:'進化させる'});
   const paid=['frontline_swap','swap_pick','spell_evolve','forge','forget','gate_pass_evolve'].includes(type);
@@ -1533,7 +1533,7 @@ function buildPickOv(title, sections, cancelId) {
       location:option?.zone==='land'?'土地 '+option.tile:(e.location || null)};
   })}));
   $('deckOv').classList.remove('on');
-  getCardPicker().show({title:names[type] || title,sections:entries,cancelId,action:action[type] || '選択する',danger:['overflow','gaust_exile','fatal_exile','forget'].includes(type),showGold:paid,
+  getCardPicker().show({title:names[type] || title,sections:entries,cancelId,action:action[type] || '選択する',danger:['mana_forge','overflow','gaust_exile','fatal_exile','forget'].includes(type),showGold:paid,
     count:type==='overflow'?me().hand.length+' → 7':multi?(p.selected||[]).length+' / '+(type==='ult_grease'?2:3):null,
     confirmId,confirmLabel:type==='ult_grease'?'進化を確定':'回収する',
     ...(type==='gate_pass_evolve'?{
@@ -1933,13 +1933,12 @@ function renderResult() {
     }
     const mine = (result.rankings || []).find(q => q.id === pid);
     if (mine) {
-      const points = (result.turningPoints || []).filter(tp => tp.actor === pid || tp.target === pid || Object.prototype.hasOwnProperty.call(tp.deltas || {}, pid)).slice(0,3);
       $('resultTitle').textContent = mine.rank === 1 ? 'VICTORY' : 'YOUR RESULT';
       $('resList').innerHTML = `<div class="myResultCard"><div class="myResultHero"><img src="/assets/full_${mine.charId}.png" alt=""><div class="myResultRank">${mine.rank}位</div></div>
         <div><h2>${mine.name}</h2><div class="myResultTotal">${(mine.assets.total||0).toLocaleString()}G</div>
         <div class="myResultBreak"><span>所持金</span><b>${(mine.assets.gold||0).toLocaleString()}G</b><span>領地価値</span><b>${(mine.assets.land||0).toLocaleString()}G</b><span>称号価値</span><b>${(mine.assets.title||0).toLocaleString()}G</b></div>
         <div class="myResultStats">領地 ${mine.landCount||0}　戦闘勝利 ${mine.battleWins||0}　祠参拝 ${mine.shrineVisits||0}</div>
-        ${points.length ? `<div class="myTurning">${points.map((tp,i)=>`<article><b>転換点 ${i+1}　${tp.title||''}</b><span>${tp.detail||''}${tp.badge?'／'+tp.badge:''}</span></article>`).join('')}</div>` : ''}</div></div>`;
+        </div></div>`;
       openBlockingOverlay('resultOv');
       return;
     }
@@ -2066,7 +2065,7 @@ function supportFaceBody(cid, sup) {
   const power = supportPower(sup);
   const text = supportDescription(sup);
   return `${cardFinishMeta(cid)}<img class="suBg" src="/assets/cards/bg-weapon-v1.webp" alt=""><div class="suHead"><div class="suName" data-card-name>${sup.name}</div></div>
-    <div class="suArt">${art}</div><div class="ccCost"><img class="ccCostFrame" src="/assets/cards/cost-frame.svg" alt=""><img class="ccCoin" src="/assets/cards/cost-coin.svg" alt=""><span class="ccCostValue">${sup.cost || 0}G</span></div>
+    <div class="suArt" data-weapon-art="${cid}">${art}</div><div class="ccCost"><img class="ccCostFrame" src="/assets/cards/cost-frame.svg" alt=""><img class="ccCoin" src="/assets/cards/cost-coin.svg" alt=""><span class="ccCostValue">${sup.cost || 0}G</span></div>
     <div class="ccBrush"></div><div class="suInfo"><h2 class="suPower">${power}</h2><p class="suText">${text}</p></div>
     ${sup.exileAfterUse ? '<div class="cardExileTag">廃棄</div>' : ''}<span class="cardDetailHint">詳細で全文表示</span>`;
 }
@@ -2074,8 +2073,8 @@ function supportPower(sup) {
   return sup.jinx ? sup.name : sup.st ? `AT＋${sup.st}` : `DF＋${sup.hp}`;
 }
 function supportDescription(sup) {
-  return sup.jinx ? '相手のウェポンを無効化する。'
-    : `${sup.st ? '攻撃力' : '防御力'}を${sup.st || sup.hp}上昇させる。`;
+  return sup.fx || (sup.jinx ? '相手のウェポンを無効化する。'
+    : `${sup.st ? '攻撃力' : '防御力'}を${sup.st || sup.hp}上昇させる。`);
 }
 function fitCreatureNames(root) {
   const scope = root || document;
@@ -2813,7 +2812,7 @@ function taskPrompt(p) {
     spell_target:'対象の領地を選べ', move_a:'移動するクリーチャーを選べ', move_b:'入れ替える相手を選べ',
     swap_land:'交代する領地を選べ', step_a:'移動するクリーチャーを選べ', step_b:'移動先を選べ',
     marlow_src:'移動するマーローを選べ', marlow_dest:'移動先を選べ',
-    gaust_exile:'廃棄するカードを選べ', fatal_exile:'廃棄するカードを選べ',
+    mana_forge:'廃棄するクリーチャーを選べ', gaust_exile:'廃棄するカードを選べ', fatal_exile:'廃棄するカードを選べ',
     ult_villa_recover:'回収するカードを選べ', daitekkan_recover:'回収するウェポンを選べ',
     mermaid_heal:'回復する味方を選べ', frontline_swap:'戦線交代 ─ 配置するクリーチャーを選べ',
     abyss_mark:'深淵標を置く領地を選べ',
@@ -3059,7 +3058,7 @@ function render() {
   $('msg').textContent = p ? taskPrompt(p) : waitingTaskPrompt();
 
   const pnow = pend();
-  if (!pnow || !['forget', 'overflow', 'forge', 'spell_evolve', 'frontline_swap', 'ult_grease', 'swap_pick', 'card_search', 'inkcrow_discard', 'censor_pick', 'gate_pass_evolve'].includes(pnow.type)) closePickOv();
+  if (!pnow || !['mana_forge', 'forget', 'overflow', 'forge', 'spell_evolve', 'frontline_swap', 'ult_grease', 'swap_pick', 'card_search', 'inkcrow_discard', 'censor_pick', 'gate_pass_evolve'].includes(pnow.type)) closePickOv();
   if (m.bankrupt) {
     $('msg').textContent = '破産 ─ 観戦中';
     A.innerHTML = '';
@@ -3181,6 +3180,9 @@ function render() {
     $('diceDock').innerHTML = `<div style="font-size:max(2dvh,13px);color:var(--gold-soft)">${state.lastDice ? state.lastDice.value + ' が出た' : ''}</div>`;
     A.innerHTML = '';
     showActionOverlay(p.prompt, p.options.map(o => ({ id:o.id, label:iconize(o.label), desc:'進む方向を決定します' })), { key:`direction|${p.prompt}` });
+  } else if (p.type === 'mana_forge') {
+    $('msg').textContent=taskPrompt(p);A.innerHTML='';
+    buildPickOv('マナフォージ',[{name:'手札',entries:p.options.filter(o=>/^mf:\d+$/.test(o.id)).map(o=>({card:o.card,pickId:o.id}))}],'mf:cancel');
   } else if (p.type === 'frontline_swap') {
     $('msg').textContent = taskPrompt(p);
     A.innerHTML = '';

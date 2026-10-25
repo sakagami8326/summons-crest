@@ -13,8 +13,10 @@ function game({defense=false,creature='gecko_f',level=1,providers=['evol'],move=
  r.owners[21]={player:d.id,level,creature:defense?creature:'gecko'};r.elemOv[21]='earth';
  a.hand=[defense?'orphe':creature];
  if(move){r.owners[22]={player:a.id,level,creature};a.hand=[];}
+ if(move)a.hand=[creature];
  G.startBattle(r,a,21);
  Object.assign(r.battle,{atkCreature:defense?'orphe':creature,supports:{a:{kind:'none'},d:{kind:'none'}},...(move?{moveFrom:22}:{})});
+ if(move)a.hand=[];
  if(old)delete r.battle.evolutionPrayerProviders;
  r.pending={};return {r,a,d,p};
 }
@@ -24,7 +26,7 @@ eq([c.name,c.evo,c.elem,c.rarity,c.cost,c.st,c.hp,c.evoSt,c.evoHp],['エヴォ�
 eq([e.cost,e.st,e.hp,e.elem],[120,40,70,null],'evolved summon stats');
 ok(c.fx.includes('100G')&&e.fx.includes('300G')&&e.fx.includes('重複'),'ability text');
 for(const pool of [G.makeDeck(),G.shopRandomPool()])eq([pool.filter(x=>x==='evol').length,pool.includes('evol_f')],[2,false],'R two base copies');
-eq(G.makeDeck().length,172,'deck total');eq(G.publicCardCatalog().counts,{total:84,creatures:53,evolutions:46,spells:26,weapons:5},'catalog counts');
+eq(G.makeDeck().length,179,'deck total');eq(G.publicCardCatalog().counts,{total:87,creatures:53,evolutions:46,spells:28,weapons:6},'catalog counts');
 ok(!Object.values(G.CHAR_DECKS).some(deck=>deck.includes('evol')),'starter decks unchanged');
 for(const defense of [false,true])for(const [providers,total] of [[['evol'],100],[['evol_f'],300],[['evol','evol_f'],400],[['evol_f','evol_f'],600],[['evol','evol','evol_f'],500]]){
  const g=game({defense,providers,creature:defense?'nome_f':'gecko_f'}),reward=finish(g);

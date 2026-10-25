@@ -175,7 +175,7 @@ for (const cid of Object.keys(G.CREATURES)) {
 }
 for (const cid of Object.keys(G.SUPPORTS)) {
   const html = renderSupport('公開',G.supportStats(cid));
-  ok(html.includes('/assets/cards/support-'), `${cid}: normal weapon art preserved`);
+  ok(html.includes(cid === 'onitsugi' ? '/assets/cards/weapon-onitsugi-no-tachi-art-v2.webp' : '/assets/cards/support-'), `${cid}: normal weapon art preserved`);
 }
 if (failures.length) throw new Error(`${failures.length}/${checks} failed:\n${failures.join('\n')}`);
 console.log(`MOVE / CREATURE SUPPORT ALL ${checks} CHECKS PASSED`);

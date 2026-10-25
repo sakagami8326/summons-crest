@@ -15,7 +15,7 @@ window.PhoneEnemyChoice=(()=>{
   const evolved=o.creature.endsWith('_f')||!!(baseCard.evo&&o.level>=s.evoLevel);
   const name=evolved?baseCard.evo||c.name:c.name;
   return {s,p,ui,o,owner,c,name,stats:ui.stats,attackReduction:s.landCombat?.[ui.tile]?.attackReduction||0,charcoal:s.landCombat?.[ui.tile]?.charcoalGain?{df:s.landCombat[ui.tile].charcoalDf,gain:s.landCombat[ui.tile].charcoalGain}:null,gold:player.gold,toll:s.tolls[ui.tile],remaining:player.gold-s.tolls[ui.tile],
-   allowed:p.options.some(x=>x.id==='invade'),reason:ui.barrier?'結界で侵略できません':player.hand?.some(id=>s.catalog.CREATURES[id])?'現在は侵略できません':'手札にクリーチャーがありません',
+   allowed:p.options.some(x=>x.id==='invade'),reason:ui.barrier?'結界で侵略できません':player.hand?.some(id=>s.catalog.CREATURES[id])?(player.hand.some(id=>s.catalog.CREATURES[id]?.cost<=player.gold)?'現在は侵略できません':'召喚コストが不足しています'):'手札にクリーチャーがありません',
    art:'/assets/'+(evolved?'e_':'c_')+base+'.png',
    context:JSON.stringify([s.code,s.stateInstanceId,pid,s.turnEpoch,p.promptId,ui.tile,p.options.map(x=>x.id)])};
  }

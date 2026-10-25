@@ -24,7 +24,7 @@ for(const invalid of ['marker','queue tile','queue card','resume','gate epoch'])
 }
 eq(G.CHARS.noir.elem,null,'neutral summoner');eq(G.CHAR_DECKS.noir.length,12,'12-card deck');
 eq(counts(G.CHAR_DECKS.noir),{cleo:2,inkcrow:1,joma:1,yomiga:1,kagetsuzuri:1,sp_gold:1,sp_insight:1,sp_censor:1,shield:2,jinx:1},'approved starter counts');
-eq(G.publicCardCatalog().counts,{total:84,creatures:53,evolutions:46,spells:26,weapons:5},'catalog');
+eq(G.publicCardCatalog().counts,{total:87,creatures:53,evolutions:46,spells:28,weapons:6},'catalog');
 for(const pool of [G.makeDeck(),G.shopRandomPool()])for(const id of ['inkcrow','joma','yomiga','kagetsuzuri']){eq(pool.filter(c=>c===id).length,2,'R copies');ok(!pool.includes(id+'_f'),'no evolved market copies');}
 for(const [id,cost,st,hp,est,ehp] of [['inkcrow',80,20,40,40,80],['joma',90,10,40,30,90],['yomiga',100,20,35,40,80],['kagetsuzuri',110,30,45,60,75]]){
  eq([G.CREATURES[id].cost,G.CREATURES[id].st,G.CREATURES[id].hp,G.CREATURES[id+'_f'].st,G.CREATURES[id+'_f'].hp],[cost,st,hp,est,ehp],id+' stats');

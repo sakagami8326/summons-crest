@@ -92,8 +92,12 @@
 .game-card--spell .game-card__effect { -webkit-line-clamp: 5; line-clamp: 5; }
 .game-card--weapon .game-card__background { filter: saturate(.92); }
 .game-card--weapon .game-card__art { top: 11%; left: 9%; width: 82%; height: 49%; }
+/* Use a fixed image anchor so the grid's intrinsic image size cannot overflow the art area. */
+.game-card--weapon .game-card__art img { position:absolute; left:50%; top:55%; width:70%; height:auto;
+  max-width:none; max-height:none; transform:translate(-50%,-50%); object-fit:contain; }
+.game-card--weapon[data-card-art="onitsugi"] { --onitsugi-art-scale:1.3; }
 .game-card--weapon .game-card__power { margin: 0 0 6%; color: #a32156; font: 700 clamp(.72rem, 8cqw, 1.25rem)/1 var(--sc-font-card); text-align: center; }
-.game-card__exile { position: absolute; right: 6%; bottom: 4%; color: #bd2632; font: 700 clamp(.55rem, 4.6cqw, .8rem)/1 var(--sc-font-card); }
+.game-card__exile { position: absolute; z-index:30; right: 6%; bottom: 4%; color: #bd2632; font: 700 clamp(.55rem, 4.6cqw, .8rem)/1 var(--sc-font-card); }
 
 .card-dialog { width: min(68rem, calc(100% - 2rem)); max-height: min(48rem, calc(100dvh - 2rem)); padding: 0; border: 1px solid rgb(239 217 143 / 60%); color: var(--sc-parchment-100); background: #111326; box-shadow: 0 2rem 7rem rgb(0 0 0 / 70%); }
 .card-dialog::backdrop { background: rgb(3 4 10 / 84%); backdrop-filter: blur(5px); }

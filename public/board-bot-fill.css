@@ -1,0 +1,21 @@
+#botFillDialog{box-sizing:border-box;position:fixed;inset:0;margin:auto;width:520px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overflow:auto;padding:26px 28px 20px;color:#f0e8d3;background:linear-gradient(135deg,#161a20f5,#070a0dfa);border:1px solid #aa905670;box-shadow:0 20px 70px #0009;backdrop-filter:blur(12px);font-family:'Yu Mincho',serif}
+#botFillDialog::backdrop{background:#05091190}
+#botFillDialog header{display:flex;align-items:center;justify-content:space-between;gap:16px}
+#botFillHeading{margin:0;font-size:24px;font-weight:500;letter-spacing:.08em}
+#botFillClose{display:grid;place-items:center;flex:none;width:40px;height:40px;padding:0;line-height:0;color:#d9c694;background:#0002;border:1px solid #ab945252;cursor:pointer}
+#botFillClose svg{display:block;width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round}
+#botFillCopy{margin:24px 0;line-height:1.8;font-size:16px}
+#botFillError{color:#f1bca7;font-size:13px;line-height:1.7;margin:0 0 16px}
+.botFillActions{display:flex;flex-direction:column;gap:12px}
+.botFillActions button{width:100%;min-height:48px;padding:10px 16px;border:1px solid #b49d5b65;background:#151a1d;color:#ead7a9;font:16px 'Yu Mincho',serif;cursor:pointer}
+#botFillYes{border-color:#d3b571;background:#8d713327;color:#f5dfa7}
+#botFillBack{display:block;margin:16px auto 0;padding:8px 20px;border:0;background:transparent;color:#c4b58f;font:14px 'Yu Mincho',serif;cursor:pointer}
+#botFillDialog [hidden]{display:none!important}
+#botFillDialog button:disabled{opacity:.45;cursor:default}
+#botFillDialog button:hover:not(:disabled){filter:brightness(1.2)}
+#botFillDialog :focus-visible{outline:2px solid #f3d995;outline-offset:3px}
+.botFillCorner{position:absolute;width:40px;height:32px;pointer-events:none}
+.botFillCorner:before,.botFillCorner:after{content:'';position:absolute;left:0;top:0;background:linear-gradient(90deg,#e6c677,transparent)}
+.botFillCorner:before{width:100%;height:1px}.botFillCorner:after{width:1px;height:100%;background:linear-gradient(#e6c677,transparent)}
+.botFillCorner.tl{left:8px;top:8px}.botFillCorner.br{right:8px;bottom:8px;transform:scale(-1)}
+@media(max-height:560px){#botFillDialog{padding:16px 24px 12px}#botFillHeading{font-size:22px}#botFillCopy{margin:12px 0}.botFillActions{flex-direction:row}.botFillActions button{flex:1;font-size:14px}#botFillBack{margin-top:10px}}

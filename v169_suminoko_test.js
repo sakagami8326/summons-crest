@@ -10,10 +10,10 @@ function game(map='starting_corridor',level=1,attacker='nome'){
  const tiles=G.tilesOf(r).flatMap((t,i)=>t.t==='land'?[i]:[]),tile=tiles[0];r.elemOv[tile]='water';r.owners[tile]={player:'d',creature:'suminoko',level,dmg:0};r.players[0].pos=tile;
  r.battle={attacker:'a',defender:'d',tile,atkCreature:attacker,supports:{},startedAt:Date.now()};return {r,tile,tiles};
 }
-eq(G.VERSION,'1.69','version');
+eq(G.VERSION,'1.70','version');
 eq([G.CREATURES.suminoko.st,G.CREATURES.suminoko.hp,G.CREATURES.suminoko.cost,G.CREATURES.suminoko_f.st,G.CREATURES.suminoko_f.hp,G.CREATURES.suminoko_f.cost],[10,50,85,20,70,100],'approved stats and separate evolution cost');
 for(const pool of [G.makeDeck(),G.shopRandomPool()])eq([pool.filter(x=>x==='suminoko').length,pool.includes('suminoko_f')],[2,false],'pool');
-eq(G.makeDeck().length,172,'deck count');eq(G.publicCardCatalog().counts,{total:84,creatures:53,evolutions:46,spells:26,weapons:5},'catalog counts');
+eq(G.makeDeck().length,179,'deck count');eq(G.publicCardCatalog().counts,{total:87,creatures:53,evolutions:46,spells:28,weapons:6},'catalog counts');
 eq(G.publicCardCatalog().cards.find(c=>c.id==='suminoko').evolution.cost,100,'catalog evolution cost');
 ok(Object.values(G.CHAR_DECKS).every(d=>!d.includes('suminoko')),'no starter additions');
 for(const map of ['starting_corridor','twin_gate_cavern'])for(const level of [1,3]){

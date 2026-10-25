@@ -82,5 +82,8 @@
   "gweapon": "UR",
   "shield": "N",
   "gshield": "UR",
-  "jinx": "R"
+  "jinx": "R",
+  "sp_chain_gold": "N",
+  "sp_mana_forge": "R",
+  "onitsugi": "R"
 }

@@ -11,12 +11,12 @@ function game(map='starting_corridor',cid='hibami',level=1,attacker='magado'){
  r.battle={attacker:'a',defender:'d',tile,atkCreature:attacker,supports:{},startedAt:Date.now()};
  return {r,tile};
 }
-eq(G.VERSION,'1.69','version');
+eq(G.VERSION,'1.70','version');
 eq([G.CREATURES.hibami.name,G.CREATURES.hibami_f.name,G.CREATURES.hibami.elem,G.CREATURES.hibami.rarity],['ヒバミ','エンラージャ','fire','R'],'identity');
 eq([G.CREATURES.hibami.st,G.CREATURES.hibami.hp,G.CREATURES.hibami.cost,G.CREATURES.hibami_f.st,G.CREATURES.hibami_f.hp,G.CREATURES.hibami_f.cost],[20,40,80,30,60,80],'stats');
 for(const pool of [G.makeDeck(),G.shopRandomPool()])eq([pool.filter(x=>x==='hibami').length,pool.includes('hibami_f')],[2,false],'R pool; no evolved cards');
-eq([G.MARKET_POOL.length,G.makeDeck().length],[48,172],'pool totals');
-eq(G.publicCardCatalog().counts,{total:84,creatures:53,evolutions:46,spells:26,weapons:5},'catalog counts');
+eq([G.MARKET_POOL.length,G.makeDeck().length],[48,179],'pool totals');
+eq(G.publicCardCatalog().counts,{total:87,creatures:53,evolutions:46,spells:28,weapons:6},'catalog counts');
 ok(G.publicCardCatalog().cards.find(c=>c.id==='hibami'),'public card');
 ok(Object.values(G.CHAR_DECKS).every(deck=>!deck.includes('hibami')),'starter decks unchanged');
 for(const map of ['starting_corridor','twin_gate_cavern'])for(const [cid,level,loss,at,hp] of [['hibami',1,10,20,40],['hibami',3,20,30,60],['hibami_f',1,20,30,60]]){

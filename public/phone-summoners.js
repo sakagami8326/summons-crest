@@ -5,6 +5,16 @@ window.PhoneSummonerSelection={create(root,{card:bigCardHTML,icon:sic,send,onOpe
  const pending=()=>snapshot?.pending?.[playerId];
  const available=id=>pending()?.type==='select_char'&&pending().options.some(o=>o.id===id)&&!snapshot.players.some(p=>p.id!==playerId&&p.confirmed&&p.charId===id)&&C.CHARS[id]?.selectable!==false&&!C.CHARS[id]?.upcoming;
  const canUnpick=()=>pending()?.options?.some(o=>o.id==='unpick');
+ const canRandom=()=>pending()?.type==='select_char'&&pending().options.some(o=>o.id==='random');
+ const randomGlyph='<span class="selectionRandomGlyph" aria-hidden="true">?</span>';
+ function selectionView(){
+  root.classList.toggle('randomResult',!!(self()?.randomSelection&&self()?.charId));
+  if(self()?.randomSelection&&!self()?.charId){
+   active=null;root.dataset.view='random';
+   root.innerHTML=`<section class="summonerList randomWaiting"><header class="listHeader"><h1>ランダム</h1><button class="reselectSummoner" ${!canUnpick()||submitting?'disabled':''}>選び直す</button></header><div class="randomWaitingFace">${randomGlyph}</div></section>`;
+   root.querySelector('.reselectSummoner').onclick=()=>submit('unpick');
+  }else active?detail(active):list();
+ }
 
  const difficulty={redani:1,linnei:1,grease:2,mio:3,lia:2,adel:2,villa:3,nerasio:1,noir:3};
  const englishNames={redani:'Redani',linnei:'Linnei',grease:'Grease',mio:'Mio',lia:'Lia',adel:'Adel',villa:'Villa',nerasio:'Nerasio',noir:'Noir'};
@@ -20,6 +30,9 @@ window.PhoneSummonerSelection={create(root,{card:bigCardHTML,icon:sic,send,onOpe
  const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  function list(){active=null;root.dataset.view='list';root.innerHTML=`<section class="summonerList"><header class="listHeader"><h1>召喚士を選択</h1><span class="selectionStatus" role="status">${self()?.confirmed?esc(C.CHARS[self().charId]?.name||'')+'で決定':''}</span>${canUnpick()?'<button class="reselectSummoner">選び直す</button>':''}</header><nav class="elementFilters" aria-label="属性で絞り込み"><button data-filter="all" aria-label="全属性" aria-pressed="${filter==='all'}"><svg viewBox="0 0 32 32"><path d="m16 2 5 9 9 5-9 5-5 9-5-9-9-5 9-5Z"/></svg></button>${Object.keys(names).map(e=>`<button data-filter="${e}" aria-label="${names[e]}属性" aria-pressed="${filter===e}" style="--accent:${colors[e]}">${icon(e)}</button>`).join('')}</nav><div class="rosterScroll"><div class="roster">${ids.filter(id=>filter==='all'||element(id)===filter).map((id,i)=>`<button class="summonerTile ${available(id)?'':'unavailable'} ${self()?.charId===id?'mine':''}" data-id="${id}" style="${vars(id)};--order:${i}" aria-label="${C.CHARS[id].name}の詳細"><div class="tileBackdrop"></div><img class="tileCrest" src="/assets/element-${element(id)==='water'?'water-v2':element(id)}.svg" alt=""><img class="tileArt" src="${art(id)}" alt=""><span class="tileName">${icon(element(id))}<b>${C.CHARS[id].name}</b></span>${tileStatus(id)}</button>`).join('')||'<p class="rosterEmpty">該当する召喚士はいません</p>'}</div></div><span class="scrollCue" aria-hidden="true">⌄</span></section>`;
  root.querySelector('.rosterScroll').scrollTop=scroll;
+ const random=document.createElement('button');random.className='summonerTile randomChoice';random.dataset.randomSelection='';random.style.setProperty('--order',ids.length);
+ random.setAttribute('aria-label','ランダム');random.disabled=submitting||!canRandom();random.innerHTML=`<div class="tileBackdrop"></div>${randomGlyph}<span class="tileName"><b>ランダム</b></span>`;
+ random.onclick=()=>submit('random');root.querySelector('.roster').append(random);
  root.querySelector('.reselectSummoner')?.addEventListener('click',()=>submit('unpick'));
  root.querySelector('.rosterScroll').onscroll=e=>{scroll=e.currentTarget.scrollTop;};
  root.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{if(busy||submitting)return;filter=b.dataset.filter;scroll=0;list();});
@@ -60,26 +73,29 @@ window.PhoneSummonerSelection={create(root,{card:bigCardHTML,icon:sic,send,onOpe
  }
  function chooseLabel(id){if(submitting)return '確定中…';if(self()?.charId===id&&canUnpick())return '選び直す';if(available(id))return 'この召喚士を選ぶ';if(C.CHARS[id].selectable===false||C.CHARS[id].upcoming)return '準備中';return self()?.confirmed?'選択済み':'選択できません';}
  async function submit(id){
- if(submitting||root.hidden||!(id==='unpick'?canUnpick():available(id)))return;
+ if(submitting||root.hidden||!(id==='unpick'?canUnpick():id==='random'?canRandom():available(id)))return;
  const token=++submission;submitting=true;root.querySelector('.selectionFeedback')?.remove();
  const button=root.querySelector('.chooseSummoner,.reselectSummoner');if(button){button.disabled=true;button.textContent='確定中…';}
  let failure='';
  try{const res=await send(id);if(!res?.ok)failure=res?.status===409?'選択状況が変わりました':'通信できませんでした。もう一度お試しください';}
  catch(e){failure='通信できませんでした。もう一度お試しください';}
- finally{if(token===submission&&!root.hidden){submitting=false;signature='';active?detail(active):list();if(failure){const msg=document.createElement('div');msg.className='selectionFeedback';msg.setAttribute('role','alert');msg.textContent=failure;root.append(msg);}}}
+ finally{if(token===submission&&!root.hidden){submitting=false;signature='';selectionView();if(failure){const msg=document.createElement('div');msg.className='selectionFeedback';msg.setAttribute('role','alert');msg.textContent=failure;root.append(msg);}}}
  }
- function hide(){inspecting=false;root.classList.remove('inspecting');root.hidden=true;transitionId++;submission++;busy=false;submitting=false;active=null;signature='';root.replaceChildren();root.classList.remove('arrive');}
+ function hide(){inspecting=false;root.classList.remove('inspecting','randomResult');root.hidden=true;transitionId++;submission++;busy=false;submitting=false;active=null;signature='';root.replaceChildren();root.classList.remove('arrive');}
  function update(next,meId){
  if(next?.phase!=='select'){hide();return;}
  const nextScope=[next.code,next.stateInstanceId,meId].join('|');
  if(scope!==nextScope){hide();filter='all';scroll=0;scope=nextScope;}
+ const wasRandom=!!self()?.randomSelection;
  snapshot=next;playerId=meId;C=next.catalog;ids=[...preferred.filter(id=>C.CHARS[id]),...Object.keys(C.CHARS).filter(id=>!preferred.includes(id))];if(active&&!C.CHARS[active])active=null;
- const key=JSON.stringify([nextScope,next.pending[meId],next.players.map(p=>[p.id,p.name,p.charId,p.confirmed]),C.CHARS,C.STARTER_DECKS]);
+ if(wasRandom&&!self()?.randomSelection)active=null;
+ if(self()?.randomSelection&&self()?.charId)active=self().charId;
+ const key=JSON.stringify([nextScope,next.pending[meId],next.players.map(p=>[p.id,p.name,p.charId,p.confirmed,p.randomSelection]),C.CHARS,C.STARTER_DECKS]);
  if(key===signature&&!root.hidden)return;
  const opening=root.hidden;root.hidden=false;if(opening)onOpen();
  transitionId++;busy=false;root.classList.remove('arrive');
  const zoom=root.querySelector('.starterZoom');if(zoom)zoom.remove();
- active?detail(active):list();if(zoom)root.append(zoom);signature=key;
+ selectionView();if(zoom)root.append(zoom);signature=key;
  }
  window.addEventListener('resize',fit);document.addEventListener('keydown',e=>{if(root.hidden)return;if(root.querySelector('.starterZoom')){if(e.key==='Escape')root.querySelector('.zoomClose').click();return;}if(active&&!inspecting&&e.key==='ArrowRight')step(1);if(active&&!inspecting&&e.key==='ArrowLeft')step(-1);if(active&&e.key==='Escape'){if(inspecting)hide();else transition(list,'back');}});
  new ResizeObserver(fit).observe(root);

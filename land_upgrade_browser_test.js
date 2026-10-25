@@ -2,7 +2,7 @@
 const fs=require('fs'),path=require('path'),assert=require('assert/strict'),{chromium}=require('playwright');
 const root=__dirname,out=path.join(root,'output/land-upgrade-integration');fs.mkdirSync(out,{recursive:true});
 const source=fs.readFileSync('server.js','utf8').replace(/server\.listen\([\s\S]*?\}\);\s*$/,'');
-const G=new Function('require','__dirname','setInterval','setTimeout',source+';return {server,rooms,makeFixtureRoom,askUpgrade,handleChoose,publicState,broadcast};')(require,root,()=>0,()=>0);
+const G=new Function('require','__dirname','setInterval','setTimeout',source+';return {server,rooms,makeFixtureRoom,askUpgrade,landUpgradeUi,handleChoose,publicState,broadcast};')(require,root,()=>0,()=>0);
 function fixture(code,level=1,creature='poponga'){
  code=code.toUpperCase();
  const r=G.makeFixtureRoom(),p=r.players[0];Object.assign(r,{code,phase:'playing',turn:0,turnEpoch:12,turnReadyAt:0,turnTransition:null,pending:{},tileFx:{},curses:{},barrier:{},lastUpgrade:null,boardToken:'upgrade-test'});r.owners.fill(null);
@@ -27,14 +27,14 @@ async function phone(browser,base,r,p,width){const page=await browser.newPage({v
   await page.close();reports.push({phone:width,passed:true});console.log('PASS phone frame, art, badge, back and skip',width);
  }
  {
-  const {r,p}=fixture('UPRETRY');p.gold=80;G.askUpgrade(r,p,'自領地');
+  const {r,p}=fixture('UPRETRY'),budget=G.landUpgradeUi(r,p,21).levels[0].cost;p.gold=budget;G.askUpgrade(r,p,'自領地');
   const page=await phone(browser,base,r,p,844);page.on('pageerror',e=>errors.push(e.message));await page.evaluate(()=>choose('up:21'));await page.locator('#phoneUpgrade:not([hidden])').waitFor();
   assert(await page.locator('#phoneUpgrade [data-level="3"]').isDisabled());assert(await page.locator('#phoneUpgrade [data-level="4"]').isDisabled());
   let fail=true;
   await page.route('**/api/action',route=>{const data=route.request().postDataJSON();if(fail&&data.optionId==='ul:21:2'){fail=false;return route.fulfill({status:503,contentType:'application/json',body:'{"error":"test"}'});}return route.continue();});
   await page.locator('#phoneUpgrade [data-level="2"]').tap();await page.locator('#phoneUpgrade .upgradeConfirm').tap();
   await page.waitForFunction(()=>document.querySelector('#phoneUpgrade .summary')?.textContent.includes('送信できません'));
-  assert.equal(p.gold,80);await page.locator('#phoneUpgrade .upgradeConfirm').tap();await page.waitForFunction(()=>document.getElementById('phoneUpgrade').hidden);assert.equal(p.gold,0);assert.equal(r.owners[21].level,2);
+  assert.equal(p.gold,budget);await page.locator('#phoneUpgrade .upgradeConfirm').tap();await page.waitForFunction(()=>document.getElementById('phoneUpgrade').hidden);assert.equal(p.gold,0);assert.equal(r.owners[21].level,2);
   await page.close();reports.push({phone:'affordability and network retry',passed:true});console.log('PASS disabled unaffordable levels, failed action and retry');
  }
  for(const [name,current,target,creature,renderMode,reduced] of [['jump',1,4,'poponga','phaser',false],['ordinary',1,2,'poponga','phaser',true],['max',3,4,'poponga','dom',true],['cancel',1,4,'poponga','phaser',false]]){

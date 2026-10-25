@@ -33,7 +33,7 @@ for(const mapId of Object.keys(G.MAPS)) {
  const g=game(mapId);ultimate(g);eq(g.p.pos,1,'Mio reaches target '+mapId);
  ok(g.r.pending[g.p.id].options.some(o=>o.id==='invade'&&o.label.includes('AT+20')),'prompt shows buff');
  restore(g);choose(g,'invade');choose(g,'atk:cleo');restore(g);
- const b=g.r.battle;b.supports={p1:'weapon',p2:'jinx'};
+ g.q.hand=['jinx'];const b=g.r.battle;b.supports={p1:'weapon',p2:'jinx'};
  const buffed=G.calculateBattle(g.r),normal=G.calculateBattle(g.r,{...b,mioUlt:false});
  eq(buffed.atkDmg-normal.atkDmg,20,'bonus survives Disarm '+mapId);
  eq(buffed.defSt,normal.defSt,'defense AT does not receive bonus');
@@ -42,7 +42,7 @@ for(const mapId of Object.keys(G.MAPS)) {
  ok(view.r.battle.mioUlt,'BOT view retains public buff');
  G.resolveBattle(g.r);eq(g.r.lastBattle.atkPostAt,50,'actual battle applies base30 + ultimate20 with weapon disarmed');
  ok(g.r.lastBattle.notes.some(n=>n.includes('追い風の導き')),'battle explains bonus');
- G.startBattle(g.r,g.p,1);g.r.battle.atkCreature='cleo';
+ g.p.hand.push('cleo');G.startBattle(g.r,g.p,1);g.r.battle.atkCreature='cleo';
  ok(!g.r.battle.mioUlt,'subsequent ordinary invasion has no buff');
 }
 for(const action of ['toll','empty','own','barrier']) {
